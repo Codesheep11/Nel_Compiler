@@ -56,6 +56,8 @@ public class Instruction extends User {
     protected BasicBlock parentBlock;
     protected final InstType instType;
     public final String resName;
+    public BasicBlock earliest; // GCM - 最早可被调度到的块
+    public BasicBlock latest; // GCM - 最晚可被调度到的块
 
     public InstType getInstType() {
         return instType;
