@@ -1,220 +1,116 @@
-//package midend;
-//
-//import mir.*;
-//import mir.Module;
-//
-//import java.util.ArrayList;
-//import java.util.Collection;
-//import java.util.HashSet;
-//
-//public class RemovePhi {
-//
-//    private static Collection<Function> functions;
-//
-//    public static void run(Module module) {
-//        functions = module.getFuncSet();
-//        RemovePhiAddPCopy();
-//        ReplacePCopy();
-//    }
-//
-//    private static void RemovePhiAddPCopy() {
-//        for (Function function: functions) {
-//            if (function.isExternal()) {
-//                continue;
-//            }
-//            removeFuncPhi(function);
-//        }
-//    }
-//
-//    private static void ReplacePCopy() {
-//        for (Function function: functions) {
-//            if (function.isExternal()) {
-//                continue;
-//            }
-//            replacePCopyForFunc(function);
-//        }
-//    }
-//
-//
-//    private static void removeFuncPhi(Function function) {
-//
-//        //将所有对phi的赋值更改为PhiCopy
-//        for (BasicBlock bb:
-//                function.getBlocks()) {
-//            if (!(bb.getFirstInst() instanceof Instruction.Phi)) {
-//                continue;
-//            }
-//            ArrayList<BasicBlock> pres = new ArrayList<>();
-//            for (BasicBlock block:bb.getPreBlocks()) {
-//                pres.add(block);
-//            }
-//            ArrayList<Instruction.PhiCopy> PhiCopys = new ArrayList<>();
-//
-//            for (int i = 0; i < pres.size(); i++) {
-//
-//                BasicBlock incomeBB = pres.get(i);
-//
-//                if (incomeBB.getSucBlocks().size() > 1) {
-//                    BasicBlock mid = new BasicBlock(incomeBB.getLabel()+"_to_"+bb.getLabel(), function);
-//                    Instruction.PhiCopy phiCopy = new Instruction.PhiCopy(mid, new ArrayList<>(), new ArrayList<>());
-//                    PhiCopys.add(phiCopy);
-//                    addMidBB(incomeBB, mid, bb);
-//                } else {
-//                    Instruction endInstr = incomeBB.getLastInst();
-//                    Instruction.PhiCopy phiCopy = new Instruction.PhiCopy(incomeBB, new ArrayList<>(), new ArrayList<>());
-//                    phiCopy.remove();
-//                    incomeBB.getInstructions().insertBefore(phiCopy, endInstr);
-//                    PhiCopys.add(phiCopy);
-//                }
-//
-//            }
-//
-//            Instruction inst = bb.getFirstInst();
-//            while (inst instanceof Instruction.Phi) {
-//                for (int i = 0; i < ((Instruction.Phi) inst).getSize(); i++) {
-//                    PhiCopys.get(i).add(inst, ((Instruction.Phi) inst).getOptionalValue(i));
-//                }
-//                if (!(inst.getNext() instanceof Instruction)) {
-//                    break;
-//                }
-//                inst = (Instruction) inst.getNext();
-//            }
-//
-//
-//            //todo: 是否应该删除phi？，phi可以留下作为占位适应后端？
-////            inst = bb.getFirstInst();
-////            while (inst instanceof Instruction.Phi) {
-////                inst.remove();
-////                if (inst.getNext() instanceof Instruction)
-////                    inst = (Instruction) inst.getNext();
-////                else
-////                    break;
-////            }
-//        }
-//    }
-//
-//    private static void addMidBB(BasicBlock src, BasicBlock mid, BasicBlock target) {
-//        src.getSucBlocks().remove(target);
-//        src.getSucBlocks().add(mid);
-//        mid.getPreBlocks().add(src);
-//        mid.getSucBlocks().add(target);
-//        target.getPreBlocks().remove(src);
-//        target.getPreBlocks().add(mid);
-//
-//        Instruction inst = src.getLastInst();
-//        assert inst instanceof Instruction.Branch;
-//
-//        inst.replaceUseOfWith(target, mid);
-//        new Instruction.Jump(target, mid);
-//
-//    }
-//
-//    private static void replacePCopyForFunc(Function function) {
-//
-//        for (BasicBlock bb:
-//                function.getBlocks()) {
-//            ArrayList<Instruction> moves = new ArrayList<>();
-//            ArrayList<Instruction> PhiCopys = new ArrayList<>();
-//            for (Instruction inst:
-//                    bb.getInstructions()) {
-//                if (!(inst instanceof Instruction.PhiCopy)) {
-//                    continue;
-//                }
-//                PhiCopys.add(inst);
-//                ArrayList<Value> targets = ((Instruction.PhiCopy) inst).getLHS();
-//                ArrayList<Value> srcs = ((Instruction.PhiCopy) inst).getRHS();
-//
-//                HashSet<String> tagNameSet = new HashSet<>();
-//                HashSet<String> srcNameSet = new HashSet<>();
-//
-//                removeUndefCopy(targets, srcs, tagNameSet, srcNameSet);
-//
-//
-//                //将PhiCopy替换为move
-//                while (!checkPhiCopy(targets, srcs)) {
-//                    boolean temp = false;
-//                    for (int i = 0; i < targets.size(); i++) {
-//                        String tagName = targets.get(i).getDescriptor();
-//                        if (!srcNameSet.contains(tagName)) {
-//                            Instruction move = new Instruction.Move(bb, targets.get(i).getType(), targets.get(i), srcs.get(i));
-//                            moves.add(move);
-//
-//                            tagNameSet.remove(targets.get(i).getDescriptor());
-//                            srcNameSet.remove(srcs.get(i).getDescriptor());
-//
-//                            targets.remove(i);
-//                            srcs.remove(i);
-//
-//                            temp = true;
-//                            break;
-//                        }
-//                    }
-//
-//                    //处理undef的phi入口
-//                    if (!temp) {
-//                        for (int i = 0; i < targets.size(); i++) {
-//                            String srcName = srcs.get(i).getDescriptor();
-//                            Value src = srcs.get(i);
-//                            Value target = targets.get(i);
-//                            if (!srcs.get(i).getDescriptor().equals(targets.get(i).getDescriptor())) {
-//                                Constant newSrc = GlobalVariable.getUndef(target.getType());
-//                                Instruction move = new Instruction.Move(bb, target.getType(), newSrc, src);
-//                                moves.add(move);
-//                                srcs.set(i, newSrc);
-//
-//                                srcNameSet.remove(srcName);
-//                                srcNameSet.add(move.getDescriptor());
-//                            }
-//                        }
-//                    }
-//
-//                }
-//
-//            }
-//            for (Instruction inst: PhiCopys) {
-//                inst.remove();
-//            }
-//            for (Instruction inst: moves) {
-//                inst.remove();;
-//                bb.getInstructions().insertBefore(inst, bb.getLastInst());
-//            }
-//
-//        }
-//    }
-//
-//    private static boolean checkPhiCopy(ArrayList<Value> targets, ArrayList<Value> srcs) {
-//        for (int i = 0; i < targets.size(); i++) {
-//            if (!targets.get(i).getDescriptor().equals(srcs.get(i).getDescriptor())) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
-//
-//    private static void removeUndefCopy(ArrayList<Value> targets, ArrayList<Value> srcs,
-//                                 HashSet<String> tagNames, HashSet<String> srcNames) {
-//        ArrayList<Value> tempTag = new ArrayList<>();
-//        ArrayList<Value> tempSrc = new ArrayList<>();
-//        for (int i = 0; i < targets.size(); i++) {
-//
-//            if (GlobalVariable.undefTable.containsKey(srcs.get(i))) {
-//                continue;
-//            }
-//            tempTag.add(targets.get(i));
-//            tempSrc.add(srcs.get(i));
-//        }
-//        targets.clear();
-//        srcs.clear();
-//        targets.addAll(tempTag);
-//        srcs.addAll(tempSrc);
-//
-//
-//        for (Value value: targets) {
-//            tagNames.add(value.getDescriptor());
-//        }
-//        for (Value value: srcs) {
-//            srcNames.add(value.getDescriptor());
-//        }
-//
-//    }
-//}
+package midend;
+
+import mir.*;
+import mir.Module;
+
+import java.util.ArrayList;
+
+public class RemovePhi {
+    private static int idx = 0;
+
+    public static void run(Module module) {
+        for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) {
+                continue;
+            }
+            removePhiAddPhiCopy(function);
+            PhiCopy2move(function);
+        }
+    }
+
+    public static void removePhiAddPhiCopy(Function function) {
+        for (BasicBlock bb : function.getBlocks()) {
+            if (!(bb.getFirstInst() instanceof Instruction.Phi)) {
+                continue;
+            }
+            ArrayList<BasicBlock> pres = new ArrayList<>(bb.getPreBlocks());
+            for (BasicBlock pre : pres) {
+                Instruction.PhiCopy phiCopy = new Instruction.PhiCopy(pre, new ArrayList<>(), new ArrayList<>());
+                phiCopy.remove();
+                if (pre.getSucBlocks().size() > 1) {
+                    addMidBB(pre, phiCopy, bb);
+                }
+                else {
+                    Instruction term = pre.getLastInst();
+                    pre.getInstructions().insertBefore(phiCopy, term);
+                }
+            }
+            for (Instruction phi : bb.getInstructions()) {
+                if (phi instanceof Instruction.Phi) {
+                    for (BasicBlock pre : bb.getPreBlocks()) {
+                        Value v = ((Instruction.Phi) phi).getOptionalValue(pre);
+                        //如果value为空，说明value是关键边，phi中值映射来自pre前一个基本块
+                        if (v == null) {
+                            v = ((Instruction.Phi) phi).getOptionalValue(pre.getPreBlocks().get(0));
+                        }
+                        Instruction.PhiCopy pc = (Instruction.PhiCopy) pre.getLastInst().getPrev();
+                        pc.add(phi, v);
+                    }
+                    phi.remove();
+                }
+                else {
+                    break;
+                }
+            }
+        }
+    }
+
+    public static void addMidBB(BasicBlock pre, Instruction.PhiCopy phiCopy, BasicBlock bb) {
+        BasicBlock mid = new BasicBlock(pre.getParentFunction().getBBName(), pre.getParentFunction());
+        phiCopy.remove();
+        mid.addInstFirst(phiCopy);
+        Instruction term = pre.getLastInst();
+        term.replaceUseOfWith(bb, mid);
+        new Instruction.Jump(mid, bb);
+        pre.getSucBlocks().remove(bb);
+        pre.getSucBlocks().add(mid);
+        mid.getPreBlocks().add(pre);
+        mid.getSucBlocks().add(bb);
+        bb.getPreBlocks().remove(pre);
+        bb.getPreBlocks().add(mid);
+    }
+
+    public static void PhiCopy2move(Function function) {
+        for (BasicBlock bb : function.getBlocks()) {
+            Instruction end = bb.getLastInst();
+            ArrayList<Instruction.Move> seq = new ArrayList<>();
+            ArrayList<Instruction.PhiCopy> phiCopies = new ArrayList<>();
+            while (end.getPrev() instanceof Instruction.PhiCopy) {
+                Instruction.PhiCopy phiCopy = (Instruction.PhiCopy) end.getPrev();
+                phiCopies.add(phiCopy);
+                ArrayList<Value> LHS = new ArrayList<>(phiCopy.getLHS());
+                ArrayList<Value> RHS = new ArrayList<>(phiCopy.getRHS());
+                while (!LHS.isEmpty()) {
+                    for (int i = 0; i < LHS.size(); i++) {
+                        Value phi = LHS.get(i);
+                        if (RHS.contains(phi)) {
+                            continue;
+                        }
+                        Instruction.Move move = new Instruction.Move(bb, phi.getType(), RHS.get(i), phi);
+                        move.remove();
+                        seq.add(move);
+                        phiCopy.delete(LHS.get(i), RHS.get(i));
+                    }
+                    if (!phiCopy.getLHS().isEmpty()) {
+                        Value src = phiCopy.getRHS().get(0);
+                        Value temp = new Value("temp" + idx++, src.getType());
+                        Instruction.Move move = new Instruction.Move(bb, src.getType(), src, temp);
+                        move.remove();
+                        seq.add(move);
+                        phiCopy.changeRS(0, temp);
+                    }
+                    LHS = new ArrayList<>(phiCopy.getLHS());
+                    RHS = new ArrayList<>(phiCopy.getRHS());
+                }
+                end = (Instruction) end.getPrev();
+            }
+            for (Instruction.PhiCopy pc : phiCopies) {
+                pc.remove();
+            }
+            end = bb.getLastInst();
+            for (Instruction.Move move : seq) {
+                bb.getInstructions().insertBefore(move, end);
+            }
+        }
+    }
+}
