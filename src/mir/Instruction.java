@@ -38,8 +38,6 @@ public class Instruction extends User {
         FREM,
         PHICOPY,
         MOVE;
-
-
     }
 
     public static class ResNameManager {

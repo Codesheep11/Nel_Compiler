@@ -6,6 +6,11 @@ import mir.Function;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+/**
+ * 支配图
+ * @author ReActor, Srchycz
+ * @date 2024/6/16
+ */
 public class DominanceGraph {
     private final Function parentFunction;
     private BasicBlock entry;
@@ -21,6 +26,7 @@ public class DominanceGraph {
         this.entry = parentFunction.getEntry();
         buildDominatorSet();
         buildImmDominateTree();
+        buildDomDepth();
         buildDominanceFrontier();
         //printDomInfo();
     }
@@ -209,6 +215,17 @@ public class DominanceGraph {
         }
     }
 
+    private void buildDomDepth() {
+        dfsDomTree(entry, 0);
+    }
+
+    private void dfsDomTree(BasicBlock cur, int dep) {
+        cur.setDomDepth(dep);
+        for (BasicBlock domTreeChild : cur.getDomTreeChildren()) {
+            dfsDomTree(domTreeChild, dep + 1);
+        }
+    }
+
     private void buildDominanceFrontier() {
         // 枚举控制图的边
         for (BasicBlock a : blocks) {
@@ -216,7 +233,6 @@ public class DominanceGraph {
                 BasicBlock x = a;
                 while (x != null && !strictlyDominates(x, b)) {
                     x.getDomFrontiers().add(b);
-
                     x = x.getIdom();
                 }
             }
