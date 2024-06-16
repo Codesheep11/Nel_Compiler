@@ -85,6 +85,9 @@ public class LoopForsetBuild {
             dfsLoopTree(child);
             root.blocks.removeAll(child.blocks);
         }
+        for (BasicBlock block : root.blocks) {
+            block.setLoop(root);
+        }
     }
 
     /**

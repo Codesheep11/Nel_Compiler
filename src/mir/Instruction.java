@@ -843,6 +843,10 @@ public class Instruction extends User {
             return values.size() == 1;
         }
 
+        public LinkedHashMap<BasicBlock, Value> getOptionalValues() {
+            return optionalValues;
+        }
+
         @Override
         public void replaceUseOfWith(Value value, Value v) {
             if (!(getOperands().contains(value) || optionalValues.containsKey(value))) {
@@ -1214,6 +1218,7 @@ public class Instruction extends User {
     }
 
     public static class PhiCopy extends Instruction {
+
         private ArrayList<Value> LHS;
         private ArrayList<Value> RHS;
 
@@ -1235,6 +1240,18 @@ public class Instruction extends User {
         public void add(Value lhs, Value rhs) {
             LHS.add(lhs);
             RHS.add(rhs);
+            if (rhs == null) {
+                System.out.println("null");
+            }
+        }
+
+        public void delete(Value lhs, Value rhs) {
+            LHS.remove(lhs);
+            RHS.remove(rhs);
+        }
+
+        public void changeRS(int idx, Value rhs) {
+            RHS.set(idx, rhs);
         }
 
         @Override
@@ -1265,7 +1282,7 @@ public class Instruction extends User {
 
         @Override
         public String toString() {
-            return "move " + target.getDescriptor() + " " + src.getDescriptor();
+            return "move " + target.getDescriptor() + " <-- " + src.getDescriptor();
         }
 
         public Value getSrc() {

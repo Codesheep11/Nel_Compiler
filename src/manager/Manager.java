@@ -55,7 +55,7 @@ public class Manager {
             //System.err.println("Midend here");
             Module module = visitor.module;
             if (arg.opt) {
-//                Mem2Reg.run(module);
+                Mem2Reg.run(module);
 //                FunctionInline.run(module);
 //                LoopForsetBuild.build(module);
 //                LoopInVarLift.run(module);
@@ -68,7 +68,7 @@ public class Manager {
 //                    function.buildControlFlowGraph();
 //                }
 //                DeadCodeDelete.run(module);
-//                RemovePhi.run(module);
+                RemovePhi.run(module);
             }
             for (Function function : module.getFuncSet()) {
                 if (function.isExternal()) {
