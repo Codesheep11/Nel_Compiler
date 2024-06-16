@@ -117,6 +117,17 @@ public class BasicBlock extends Value {
         return this.domDepth;
     }
 
+    public void setLoop(Loop loop) {
+        this.loop = loop;
+    }
+
+    public int getLoopDepth() {
+        if (loop == null) {
+            return 0;
+        }
+        return loop.getDepth();
+    }
+
     public boolean isTerminated() {
         if (instructions.isEmpty()) {
             return false;
