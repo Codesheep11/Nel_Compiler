@@ -18,9 +18,11 @@ public class BasicBlock extends Value {
     private LinkedList<BasicBlock> sucBlocks; // 控制图-后继块
     // 支配图属性
     private BasicBlock idom; // 支配图-直接支配块
-    private HashSet<BasicBlock> domSet = new HashSet<>(); // 支配图-支配块集合
+    private HashSet<BasicBlock> domSet = new HashSet<>(); // 支配图-支配块集合 (指的是支配该块的所有块, 即支配树上的父节点)
     private final HashSet<BasicBlock> domFrontiers = new HashSet<>(); // 支配图-支配边界
     private final LinkedList<BasicBlock> domTreeChildren = new LinkedList<>(); // 支配图-支配树孩子
+
+    private int domDepth = -1; // 支配图-深度
 
     public Loop loop = null;// 循环信息
     public boolean isDeleted = false;
@@ -105,6 +107,14 @@ public class BasicBlock extends Value {
 
     public void setDomSet(HashSet<BasicBlock> domSet) {
         this.domSet = domSet;
+    }
+
+    public void setDomDepth(int dep) {
+        this.domDepth = dep;
+    }
+
+    public int getDomDepth() {
+        return this.domDepth;
     }
 
     public boolean isTerminated() {
