@@ -13,6 +13,7 @@ import java.util.LinkedList;
  * 采用单例模式设计 <br />
  * 使用 StackManager.getInstance()获取实例 <br />
  * 注意: 当前的栈帧管理没有给通过a0-a7寄存器传递的参数保留空间
+ * @author Srchycz
  */
 public class StackManager {
 
