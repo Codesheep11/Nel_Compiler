@@ -172,7 +172,7 @@ public class LoopForsetBuild {
      * 从循环头开始，dfs寻找循环中的基本块
      *
      * @param loop
-     * @param header
+     * @param cur
      */
     private static void findLoopBlocks(Loop loop, BasicBlock cur) {
 //        System.out.println("find loopBlocks: " + header.getLabel());

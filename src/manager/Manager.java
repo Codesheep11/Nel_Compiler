@@ -55,28 +55,19 @@ public class Manager {
             //System.err.println("Midend here");
             Module module = visitor.module;
             if (arg.opt) {
-                //mem2reg
-                Mem2Reg.run(module);
-                //inline
-                FunctionInline.run(module);
-                //LoopNestTreeBuilder
-                LoopForsetBuild.build(module);
-//                LoopInvariantCodeMotion
-                LoopInVarLift.run(module);
-//                LCSSA
-                LCSSA.run(module);
-
-                LCSSA.remove(module);
-
-                //dead code delete
-                for (Function function : module.getFuncSet()) {
-                    if (function.isExternal()) {
-                        continue;
-                    }
-                    function.buildControlFlowGraph();
-                }
-                DeadCodeDelete.run(module);
-
+//                Mem2Reg.run(module);
+//                FunctionInline.run(module);
+//                LoopForsetBuild.build(module);
+//                LoopInVarLift.run(module);
+//                LCSSA.run(module);
+//                LCSSA.remove(module);
+//                for (Function function : module.getFuncSet()) {
+//                    if (function.isExternal()) {
+//                        continue;
+//                    }
+//                    function.buildControlFlowGraph();
+//                }
+//                DeadCodeDelete.run(module);
 //                RemovePhi.run(module);
             }
             for (Function function : module.getFuncSet()) {

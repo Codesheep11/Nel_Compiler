@@ -8,6 +8,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 
+/**
+ * 对于循环中定义的值，如果在循环外部被使用，则在循环出口添加phi
+ */
 public class LCSSA {
     //循环出口构建LCSSA
     public static void run(Module module) {
