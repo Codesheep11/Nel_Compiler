@@ -55,6 +55,13 @@ public class RemovePhi {
         }
     }
 
+    /**
+     * 添加关键边：在pre和bb之间插入一个新的基本块，将phiCopy插入到新的基本块中
+     *
+     * @param pre
+     * @param phiCopy
+     * @param bb
+     */
     public static void addMidBB(BasicBlock pre, Instruction.PhiCopy phiCopy, BasicBlock bb) {
         BasicBlock mid = new BasicBlock(pre.getParentFunction().getBBName(), pre.getParentFunction());
         phiCopy.remove();

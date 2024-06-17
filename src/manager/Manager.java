@@ -56,19 +56,18 @@ public class Manager {
             Module module = visitor.module;
             if (arg.opt) {
                 Mem2Reg.run(module);
-//                FunctionInline.run(module);
-//                LoopForsetBuild.build(module);
-//                LoopInVarLift.run(module);
-//                LCSSA.run(module);
-//                LCSSA.remove(module);
-//                for (Function function : module.getFuncSet()) {
-//                    if (function.isExternal()) {
-//                        continue;
-//                    }
-//                    function.buildControlFlowGraph();
-//                }
-//                DeadCodeDelete.run(module);
-                RemovePhi.run(module);
+                FunctionInline.run(module);
+                LoopForsetBuild.build(module);
+                LoopInVarLift.run(module);
+                LCSSA.run(module);
+                LCSSA.remove(module);
+                for (Function function : module.getFuncSet()) {
+                    if (function.isExternal()) {
+                        continue;
+                    }
+                    function.buildControlFlowGraph();
+                }
+                DeadCodeDelete.run(module);
             }
             for (Function function : module.getFuncSet()) {
                 if (function.isExternal()) {
@@ -78,8 +77,10 @@ public class Manager {
             }
             if (arg.LLVM) outputLLVM(arg.outPath, module);
             else {
+                RemovePhi.run(module);
                 CodeGen codeGen = new CodeGen();
                 riscvModule riscvmodule = codeGen.genCode(module);
+                outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
