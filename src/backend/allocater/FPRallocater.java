@@ -89,29 +89,46 @@ public class FPRallocater {
             ArrayList<riscvInstruction> contains = new ArrayList<>(reg.use);
             HashSet<riscvInstruction> uses = new HashSet<>();
             HashSet<riscvInstruction> defs = new HashSet<>();
+            HashSet<riscvInstruction> uds = new HashSet<>();
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
             for (riscvInstruction ins : contains) {
-                if (ins.def.contains(reg)) defs.add(ins);
-                else uses.add(ins);
+                if (ins.def.contains(reg) && ins.use.contains(reg)) uds.add(ins);
+                else if (ins.def.contains(reg)) defs.add(ins);
+                else if (ins.use.contains(reg)) uses.add(ins);
+            }
+            for (riscvInstruction ud : uds) {
+                Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                riscvInstruction store = new LS(ud.block, tmp, sp, offset, LS.LSType.fsw, true);
+                riscvInstruction load = new LS(ud.block, tmp, sp, offset, LS.LSType.flw, true);
+                ud.replaceUseReg(reg, tmp);
+                ud.block.riscvInstructions.insertAfter(store, ud);
+                ud.block.riscvInstructions.insertBefore(load, ud);
             }
             for (riscvInstruction def : defs) {
-                if (defs.size() > 1) throw new RuntimeException("rewrite error");
                 //如果定义点是lw或者ld指令，则不需要sw保护？
                 //错误的，定义点也可能会溢出，比如call多个load或者多个arg
+                //非 ssa 在使用点使用新的虚拟寄存器
                 if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).rs1 == reg) {
                     LS.LSType type = ((LS) def).type;
-                    if (type == LS.LSType.flw) {
+                    if (type == LS.LSType.fsw) {
                         StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                         continue;
                     }
                 }
                 riscvInstruction store;
+                Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                store = new LS(def.block, reg, sp, offset, LS.LSType.fsw, true);
+                store = new LS(def.block, tmp, sp, offset, LS.LSType.fsw, true);
+                def.replaceUseReg(reg, tmp);
                 def.block.riscvInstructions.insertAfter(store, def);
             }
             for (riscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
+                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1 == reg) {
+                    StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                    continue;
+                }
                 riscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
@@ -239,7 +256,7 @@ public class FPRallocater {
             }
             moveList.removeAll(freezeMoves);
             for (R2 move : moveList) {
-                if (freezeReg.contains(move.rd) || freezeReg.contains(move.rd)) {
+                if (freezeReg.contains(move.rs) || freezeReg.contains(move.rd)) {
                     freezeReg.remove((Reg) move.rd);
                     freezeReg.remove((Reg) move.rs);
                 }
