@@ -7,6 +7,7 @@ import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.*;
 import backend.riscv.riscvInstruction.*;
+import mir.Instruction;
 
 import java.util.*;
 
@@ -66,6 +67,7 @@ public class GPRallocater {
             while (true) {
                 //标记第几轮循环
 //                System.out.println(func.name + " GPR round: " + pass++);
+//                System.out.println(func);
                 //建立冲突图
                 moveList = new HashSet<>();
                 moveNodes = new HashSet<>();
@@ -91,19 +93,30 @@ public class GPRallocater {
      */
     public void ReWrite() {
         for (Reg reg : spillNodes) {
-//            System.out.println("rewrite:" + reg);
+//            System.out.println("spill: " + reg);
             ArrayList<riscvInstruction> contains = new ArrayList<>(reg.use);
             HashSet<riscvInstruction> uses = new HashSet<>();
             HashSet<riscvInstruction> defs = new HashSet<>();
+            HashSet<riscvInstruction> uds = new HashSet<>();
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
             for (riscvInstruction ins : contains) {
-                if (ins.def.contains(reg)) defs.add(ins);
-                else uses.add(ins);
+                if (ins.def.contains(reg) && ins.use.contains(reg)) uds.add(ins);
+                else if (ins.def.contains(reg)) defs.add(ins);
+                else if (ins.use.contains(reg)) uses.add(ins);
+            }
+            for (riscvInstruction ud : uds) {
+                Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                riscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
+                riscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
+                ud.replaceUseReg(reg, tmp);
+                ud.block.riscvInstructions.insertAfter(store, ud);
+                ud.block.riscvInstructions.insertBefore(load, ud);
             }
             for (riscvInstruction def : defs) {
-                if (defs.size() > 1) throw new RuntimeException("rewrite error");
                 //如果定义点是lw或者ld指令，则不需要sw保护？
                 //错误的，定义点也可能会溢出，比如call多个load或者多个arg
+                //非 ssa 在使用点使用新的虚拟寄存器
                 if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).rs1 == reg) {
                     LS.LSType type = ((LS) def).type;
                     if (type == LS.LSType.ld || type == LS.LSType.lw) {
@@ -112,12 +125,18 @@ public class GPRallocater {
                     }
                 }
                 riscvInstruction store;
+                Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                store = new LS(def.block, reg, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
+                store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
+                def.replaceUseReg(reg, tmp);
                 def.block.riscvInstructions.insertAfter(store, def);
             }
             for (riscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
+                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1 == reg) {
+                    StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                    continue;
+                }
                 riscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
@@ -245,7 +264,7 @@ public class GPRallocater {
             }
             moveList.removeAll(freezeMoves);
             for (R2 move : moveList) {
-                if (freezeReg.contains(move.rd) || freezeReg.contains(move.rd)) {
+                if (freezeReg.contains(move.rs) || freezeReg.contains(move.rd)) {
                     freezeReg.remove((Reg) move.rd);
                     freezeReg.remove((Reg) move.rs);
                 }
@@ -333,7 +352,7 @@ public class GPRallocater {
                                 }
                             }
                             //删除move指令
-                            move.remove();
+                            deleteMove(move);
                             merge = true;
                             change = true;
                             break;
@@ -351,7 +370,7 @@ public class GPRallocater {
                                 }
                             }
                             //删除move指令
-                            move.remove();
+                            deleteMove(move);
                             merge = true;
                             change = true;
                             break;
@@ -385,14 +404,17 @@ public class GPRallocater {
                         moveNodes.remove(oldReg);
                         moveNodes.remove(newReg);
                         moveList.remove(move);
+                        boolean flag = false;
                         for (R2 m : moveList) {
                             if (m.use.contains(newReg) || m.def.contains(newReg)) {
                                 moveNodes.add(newReg);
+                                flag = true;
                                 break;
                             }
                         }
+
                         //删除move指令
-                        move.remove();
+                        deleteMove(move);
                         merge = true;
                         change = true;
                         break;
@@ -400,6 +422,16 @@ public class GPRallocater {
                 }
             }
         }
+    }
+
+    public void deleteMove(R2 move) {
+        for (Reg reg : move.use) {
+            reg.use.remove(move);
+        }
+        for (Reg reg : move.def) {
+            reg.use.remove(move);
+        }
+        move.remove();
     }
 
     /**
@@ -413,7 +445,10 @@ public class GPRallocater {
         if (r1 == r2) return true;
         if (r1.preColored && r2.preColored)
             if (r1.phyReg == r2.phyReg) return true;
-            else throw new RuntimeException("can't merge precolored regs");
+            else {
+                return false;
+//                throw new RuntimeException("can't merge precolored regs");
+            }
         if (curCG.get(r1).contains(r2)) return false;
         //合并策略1：如果两个节点的合并节点度数小于K，则可以合并
         HashSet<Reg> neighbors = new HashSet<>();
@@ -522,6 +557,7 @@ public class GPRallocater {
             moveNodes.add((Reg) move.rs);
         }
         moveList.removeAll(conflictMove);
+//        System.out.println(conflictGraph);
     }
 
     /**

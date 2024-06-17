@@ -116,17 +116,17 @@ public class LCSSA {
                     if (instr instanceof Instruction.Phi) {
                         Instruction.Phi phi = (Instruction.Phi) instr;
                         if (phi.isLCSSA) {
-                            if (phi.getSize() != 1) {
-                                throw new RuntimeException("LCSSA phi size != 1\n");
-                            }
                             Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
-                            for (Use use : phi.getUses()) {
-                                use.getUser().replaceUseOfWith(phi, v);
-                            }
+                            phi.replaceAllUsesWith(v);
+//                            for (Use use : phi.getUses()) {
+//                                use.getUser().replaceUseOfWith(phi, v);
+//                            }
                             instr.remove();
                         }
                     }
-                    else break;
+                    else {
+                        break;
+                    }
                 }
             }
         }
