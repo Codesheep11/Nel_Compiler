@@ -2,6 +2,7 @@ package midend;
 
 import mir.*;
 import manager.CentralControl;
+import mir.Module;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +10,7 @@ import java.util.Iterator;
 
 /**
  * 全局值编号
+ *
  * @author Srchycz
  */
 public class GlobalValueNumbering {
@@ -18,14 +20,23 @@ public class GlobalValueNumbering {
 
     }
 
-    public static void run(Function function) {
+    public static void run(Module module) {
         if (!CentralControl._GVN_OPEN) return;
+        for (Function func : module.getFuncSet()) {
+            if(func.isExternal()) continue;
+            run(func);
+        }
+    }
+
+
+    public static void run(Function function) {
         function.buildDominanceGraph();
         GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
     }
 
     /**
      * 对基本块进行全局值编号, 并依照支配树向下传递
+     *
      * @param block 基本块
      */
     private static void GVN4Block(BasicBlock block, HashSet<String> records, HashMap<String, Instruction> recordInstructions) {
@@ -42,7 +53,8 @@ public class GlobalValueNumbering {
                 if (records.contains(key)) {
                     inst.replaceAllUsesWith(recordInstructions.get(key));
                     iter.remove();
-                } else {
+                }
+                else {
                     records.add(key);
                     recordInstructions.put(key, inst);
                 }
@@ -59,7 +71,7 @@ public class GlobalValueNumbering {
             case FAdd:
             case FMUL:
             case ADD:
-            case MUL:{
+            case MUL: {
                 String operand1 = inst.getOperands().get(0).getName();
                 String operand2 = inst.getOperands().get(1).getName();
                 if (operand1.compareTo(operand2) > 0) {
@@ -78,12 +90,12 @@ public class GlobalValueNumbering {
             case Icmp:
             case REM:
             case SUB:
-            case DIV:{
+            case DIV: {
                 String operand1 = inst.getOperands().get(0).getName();
                 String operand2 = inst.getOperands().get(1).getName();
                 return inst.getInstType().name() + "," + operand1 + "," + operand2;
             }
-            case GEP:{
+            case GEP: {
                 String base = inst.getOperands().get(0).getName();
                 StringBuilder indices = new StringBuilder();
                 for (int i = 1; i < inst.getOperands().size(); i++) {
@@ -94,7 +106,7 @@ public class GlobalValueNumbering {
                 }
                 return inst.getInstType() + "," + base + "," + indices;
             }
-            case Zext:{
+            case Zext: {
                 return inst.getInstType().name() + "," + inst.getOperands().get(0).toString() + "," + inst.getType();
             }
             default: {
@@ -113,7 +125,7 @@ public class GlobalValueNumbering {
             Value operand1 = instruction.getOperands().get(0);
             Value operand2 = instruction.getOperands().get(1);
             if (operand1 instanceof Constant op1 && operand2 instanceof Constant op2) {
-                if(instruction.getType().isInt32Ty()){
+                if (instruction.getType().isInt32Ty()) {
                     int val1 = (int) op1.getConstValue();
                     int val2 = (int) op2.getConstValue();
                     int result = 0;
@@ -123,11 +135,13 @@ public class GlobalValueNumbering {
                         case MUL -> result = val1 * val2;
                         case DIV -> result = val1 / val2;
                         case REM -> result = val1 % val2;
-                        default -> { }
+                        default -> {
+                        }
                     }
                     instruction.replaceAllUsesWith(new Constant.ConstantInt(result));
                     return true;
-                } else if(instruction.getType().isFloatTy()){
+                }
+                else if (instruction.getType().isFloatTy()) {
                     float val1 = (float) op1.getConstValue();
                     float val2 = (float) op2.getConstValue();
                     float result = 0;
@@ -137,7 +151,8 @@ public class GlobalValueNumbering {
                         case FMUL -> result = val1 * val2;
                         case FDIV -> result = val1 / val2;
                         case FREM -> result = val1 % val2;
-                        default -> { }
+                        default -> {
+                        }
                     }
                     instruction.replaceAllUsesWith(new Constant.ConstantFloat(result));
                     return true;
