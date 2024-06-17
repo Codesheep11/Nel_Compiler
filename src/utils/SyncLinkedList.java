@@ -158,6 +158,7 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
         public void remove() {
             cur.getPrev().setNext(cur.getNext());
             cur.getNext().setPrev(cur.getPrev());
+            cur = cur.getNext();
         }
 
 

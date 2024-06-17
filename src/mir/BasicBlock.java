@@ -20,7 +20,7 @@ public class BasicBlock extends Value {
     private BasicBlock idom; // 支配图-直接支配块
     private HashSet<BasicBlock> domSet = new HashSet<>(); // 支配图-支配块集合 (指的是支配该块的所有块, 即支配树上的父节点)
     private final HashSet<BasicBlock> domFrontiers = new HashSet<>(); // 支配图-支配边界
-    private final LinkedList<BasicBlock> domTreeChildren = new LinkedList<>(); // 支配图-支配树孩子
+    private final ArrayList<BasicBlock> domTreeChildren = new ArrayList<>(); // 支配图-支配树孩子(直接支配)
 
     private int domDepth = -1; // 支配图-深度
 
@@ -97,7 +97,7 @@ public class BasicBlock extends Value {
         return domFrontiers;
     }
 
-    public LinkedList<BasicBlock> getDomTreeChildren() {
+    public ArrayList<BasicBlock> getDomTreeChildren() {
         return domTreeChildren;
     }
 
