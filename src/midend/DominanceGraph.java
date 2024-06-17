@@ -9,7 +9,7 @@ import java.util.HashSet;
 /**
  * 支配图
  * @author ReActor, Srchycz
- * @date 2024/6/16
+ * TODO: 优化支配图的构建, GVN、GCM 均需要构建支配图，考虑记录是否构建过的标志变量，减少重复 build 的代价
  */
 public class DominanceGraph {
     private final Function parentFunction;

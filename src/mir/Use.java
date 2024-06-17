@@ -7,7 +7,7 @@ import java.util.Objects;
 
 public class Use extends SyncLinkedList.SyncLinkNode {
     private final User user;
-    private Value value;
+    private final Value value;
 
     public Use(User user, Value value) {
         this.user = user;
