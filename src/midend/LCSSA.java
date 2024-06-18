@@ -15,15 +15,12 @@ public class LCSSA {
     //循环出口构建LCSSA
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
-            addPhiForFunc(function);
+            if (function.isExternal()) continue;
+            function.buildDominanceGraph();
+            addPhiForLoop(function.rootLoop);
         }
     }
 
-    private static void addPhiForFunc(Function function) {
-        for (Loop loop : function.loops) {
-            addPhiForLoop(loop);
-        }
-    }
 
     private static void addPhiForLoop(Loop loop) {
         //先对子循环进行处理
@@ -31,7 +28,7 @@ public class LCSSA {
             addPhiForLoop(child);
         }
         //再对当前循环进行处理
-        for (BasicBlock block : loop.blocks) {
+        for (BasicBlock block : loop.nowLevelBB) {
             for (Instruction instr : block.getInstructions()) {
                 //如果指令在循环外部被使用，则在循环出口添加phi
                 if (usedOutLoop(instr, loop)) {
@@ -108,7 +105,6 @@ public class LCSSA {
         return false;
     }
 
-
     public static void remove(Module module) {
         for (Function function : module.getFuncSet()) {
             for (BasicBlock block : function.getBlocks()) {
@@ -118,9 +114,6 @@ public class LCSSA {
                         if (phi.isLCSSA) {
                             Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
                             phi.replaceAllUsesWith(v);
-//                            for (Use use : phi.getUses()) {
-//                                use.getUser().replaceUseOfWith(phi, v);
-//                            }
                             instr.remove();
                         }
                     }

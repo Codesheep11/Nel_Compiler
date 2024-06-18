@@ -32,51 +32,40 @@ public class Manager {
 
     public void run() {
         try {
-            // lex
-            // System.err.println("Lexer here");
             BufferedInputStream src = new BufferedInputStream(arg.srcStream);
             TokenArray tokenArray = new TokenArray();
             Lexer lexer = new Lexer(src, tokenArray);
             lexer.lex();
-            //System.err.println("Lexer work well, now it is parser");
-            // parse
-            //System.err.println("Parser here");
             Parser parser = new Parser(tokenArray);
             Ast ast = parser.parseAst();
-            //System.err.println("Parser work well, now it is visitor");
-
-            // visit
-            //System.err.println("Visitor here");
             Visitor visitor = new Visitor();
             visitor.visitAst(ast);
-            //visitor.getManager().outputLLVM(manager.arg.outPath);
-            //System.err.println("Visitor work well, now it is midend");
-            // midend
-            //System.err.println("Midend here");
             Module module = visitor.module;
             if (arg.opt) {
                 Mem2Reg.run(module);
                 FunctionInline.run(module);
-                LoopForsetBuild.build(module);
                 LoopInVarLift.run(module);
                 GlobalValueNumbering.run(module);
                 LCSSA.run(module);
                 LCSSA.remove(module);
-                for (Function function : module.getFuncSet()) {
-                    if (function.isExternal()) {
-                        continue;
-                    }
-                    function.buildControlFlowGraph();
-                }
-                DeadCodeDelete.run(module);
+//                for (Function function : module.getFuncSet()) {
+//                    if (function.isExternal()) {
+//                        continue;
+//                    }
+//                    function.buildControlFlowGraph();
+//                }
+//                DeadCodeDelete.run(module);
             }
-            for (Function function : module.getFuncSet()) {
-                if (function.isExternal()) {
-                    continue;
-                }
-                function.buildControlFlowGraph();
+            if (arg.LLVM) {
+                outputLLVM(arg.outPath, module);
+//                for (Function function : module.getFuncSet()) {
+//                    if (function.isExternal()) {
+//                        continue;
+//                    }
+//                    System.out.println("Function: " + function.getName());
+//                    function.rootLoop.LoopInfoPrint();
+//                }
             }
-            if (arg.LLVM) outputLLVM(arg.outPath, module);
             else {
                 RemovePhi.run(module);
                 CodeGen codeGen = new CodeGen();

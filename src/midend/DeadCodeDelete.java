@@ -526,9 +526,6 @@ public class DeadCodeDelete {
                     Instruction.Phi phi = (Instruction.Phi) instr;
                     if (phi.getPreBlocks().contains(jump.getParentBlock())) break;
                     phi.changePreBlock(that, jump.getParentBlock());
-//                    phi.appendPreBlock(jump.getParentBlock());
-//                    int idx = phi.getPreBlocks().indexOf(br.getThenBlock());
-//                    phi.appendOptionalValue(phi.getOptionalValue(idx));
                 }
                 else break;
             }
@@ -537,9 +534,6 @@ public class DeadCodeDelete {
                     Instruction.Phi phi = (Instruction.Phi) instr;
                     if (phi.getPreBlocks().contains(jump.getParentBlock())) break;
                     phi.changePreBlock(that, jump.getParentBlock());
-//                    phi.appendPreBlock(jump.getParentBlock());
-//                    int idx = phi.getPreBlocks().indexOf(br.getElseBlock());
-//                    phi.appendOptionalValue(phi.getOptionalValue(idx));
                 }
                 else break;
             }
