@@ -98,7 +98,7 @@ public class Instruction extends User {
 
     public boolean gvnable() {
         return switch (instType) {
-            case ALLOC, LOAD, STORE, CALL, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE -> false;
+            case ALLOC, LOAD, STORE, CALL, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
             default -> true;
         };
     }
