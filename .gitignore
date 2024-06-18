@@ -5,3 +5,4 @@ out/
 *.txt
 
 compiler2024-nel.iml
+/src/META-INF/MANIFEST.MF

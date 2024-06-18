@@ -59,6 +59,7 @@ public class Manager {
                 FunctionInline.run(module);
                 LoopForsetBuild.build(module);
                 LoopInVarLift.run(module);
+                GlobalValueNumbering.run(module);
                 LCSSA.run(module);
                 LCSSA.remove(module);
                 for (Function function : module.getFuncSet()) {
