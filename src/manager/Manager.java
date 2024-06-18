@@ -45,6 +45,7 @@ public class Manager {
                 Mem2Reg.run(module);
                 FunctionInline.run(module);
                 LoopInVarLift.run(module);
+                GlobalValueNumbering.run(module);
                 LCSSA.run(module);
                 LCSSA.remove(module);
 //                for (Function function : module.getFuncSet()) {
