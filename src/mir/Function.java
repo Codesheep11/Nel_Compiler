@@ -6,6 +6,8 @@ import utils.SyncLinkedList;
 
 import java.util.*;
 
+import static midend.CloneInfo.bbMap;
+
 public class Function extends Value {
 
     //Note that Function is a GlobalValue and therefore also a Constant.
@@ -44,13 +46,12 @@ public class Function extends Value {
     private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
     private final SyncLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
+    public Loop rootLoop = null; // 循环信息
     //GVN
     private boolean deleted = false;
     public boolean isLeaf = true;
     private final ControlFlowGraph CG = new ControlFlowGraph(this);
     private final DominanceGraph DG = new DominanceGraph(this);
-
-    public HashSet<Loop> loops = new HashSet<>();
 
     private int countOfBB = 0;
 
@@ -72,13 +73,13 @@ public class Function extends Value {
         myArguments = arguments;
     }
 
-    public Function(Type type, String name, ArrayList<Type> argumentTypes) {
+    public Function(Type type, String name, ArrayList<Type> argumentTypes, Loop rootLoop) {
         super(Type.FunctionType.FUNC_TYPE);
         setName(name);
         entry = null;
         retType = type;
         blocks = new SyncLinkedList<>();
-
+        this.rootLoop = rootLoop;
         ArrayList<Argument> arguments = new ArrayList<>();
 
 
@@ -215,10 +216,8 @@ public class Function extends Value {
         //Instruction.Phi retPhi = null;
 
         //维护phi函数
-        HashMap<BasicBlock, BasicBlock> bbMap = new HashMap<>();
-        for (BasicBlock block : getBlocks()) {
-            bbMap.put(block, block.cloneToFunc(tagFunc, idx));
-        }
+        rootLoop.cloneToFunc(tagFunc, retBB.loop, idx);
+//        CloneInfo.fixLoopReflect();
         for (BasicBlock block : bbMap.values()) {
             for (Instruction instr : block.getInstructions()) {
                 if (instr instanceof Instruction.Phi) {
@@ -346,15 +345,5 @@ public class Function extends Value {
         String name = getName() + "_BB" + countOfBB;
         countOfBB++;
         return name;
-    }
-
-
-    /**
-     * dfs打印循环森林
-     */
-    public void printLoops() {
-        for (Loop loop : loops) {
-            loop.printLoopInfo();
-        }
     }
 }
