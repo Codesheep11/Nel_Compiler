@@ -6,6 +6,9 @@ import utils.SyncLinkedList;
 
 import java.util.*;
 
+import static manager.CentralControl._FUNC_INLINE_OPEN;
+import static midend.CloneInfo.CallbbCut;
+
 public class FunctionInline {
     private static Collection<Function> functions;
     private static Module module;
@@ -24,6 +27,7 @@ public class FunctionInline {
      *
      */
     public static void run(Module module) {
+        if (!_FUNC_INLINE_OPEN) return;
         FunctionInline.module = module;
         functions = new HashSet<>();
         for (Function function : module.getFuncSet()) {
@@ -35,10 +39,12 @@ public class FunctionInline {
             inlineFunc(function);
             module.removeFunction(function);
         }
-//        for (Function function : module.getFuncSet()) {
-//            function.buildControlFlowGraph();
-//        }
-        //System.err.println("fun_inline_end");
+        for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) {
+                continue;
+            }
+            function.buildControlFlowGraph();
+        }
     }
 
     /***
@@ -139,6 +145,7 @@ public class FunctionInline {
         Function inFunction = ((Instruction.Call) CloneInfo.getReflectedValue(call)).getParentBlock().getParentFunction();
         // 拆分前的 call Block
         BasicBlock beforeCallBB = call.getParentBlock();
+        CallbbCut.add(beforeCallBB);
         Instruction inst = null;
         for (Instruction tmp : beforeCallBB.getInstructions()) {
             if (tmp == call) {
@@ -148,18 +155,12 @@ public class FunctionInline {
         }
         assert inst != null;
         // 命名上 retBB 为 call 的下一条指令所在的基本块
-        BasicBlock retBB = new BasicBlock(function.getName() + "_ret_" + idx, inFunction);
-
-//        Instruction.Alloc alloc = null;
-//        if (!(function.getRetType() instanceof Type.VoidType)) {
-//            alloc = new Instruction.Alloc(inFunction.getFirstBlock(), function.getRetType());
-//            alloc.remove();
-//            inFunction.getFirstBlock().getInstructions().addFirst(alloc);
-//        }
+        BasicBlock retBB = new BasicBlock(function.getName() + "_ret_" + idx, inFunction, beforeCallBB.loop);
 
         Value ret = function.inlineToFunc(inFunction, retBB, call, idx);
 
-        BasicBlock afterCallBB = new BasicBlock(inFunction.getName() + "_after_call_" + function.getName() + "_" + idx, inFunction);
+        BasicBlock afterCallBB = new BasicBlock(inFunction.getName() + "_after_call_" + function.getName() + "_" + idx, inFunction, beforeCallBB.loop);
+        CallbbCut.add(afterCallBB);
         for (BasicBlock suc : beforeCallBB.getSucBlocks()) {
             for (Instruction instr : suc.getInstructions()) {
                 if (instr instanceof Instruction.Phi) {
@@ -185,11 +186,6 @@ public class FunctionInline {
             else if (instr1 instanceof Instruction.Call) {
                 Function callee = ((Instruction.Call) instr1).getDestFunction();
                 callee.use_remove(new Use(instr1, callee));
-//                instr1.remove();
-//                instr1.setParentBlock(afterCallBB);
-//                afterCallBB.getInstructions().insertBefore(instr1, newInst);
-//                newInst.remove();
-//                CloneInfo.addValueReflect(instr1, instr1);
             }
             ArrayList<Use> toFix = new ArrayList<>(instr1.getUses());
             for (Use use : toFix) {
@@ -202,9 +198,7 @@ public class FunctionInline {
         jumpToCallBB.remove();
         beforeCallBB.getInstructions().insertBefore(jumpToCallBB, inst);
         Instruction jumpToAfterCallBB = new Instruction.Jump(retBB, afterCallBB);
-        if (ret != null && ret instanceof Instruction.Phi
-                && ((Instruction.Phi) ret).getParentBlock().equals(retBB))
-        {
+        if (ret != null && ret instanceof Instruction.Phi && ((Instruction.Phi) ret).getParentBlock().equals(retBB)) {
             ret.remove();
             retBB.getInstructions().insertBefore((Instruction.Phi) ret, retBB.getFirstInst());
         }
@@ -224,7 +218,7 @@ public class FunctionInline {
         }
         //beforeCallBB.getInstructions().setEnd(inst);
         inst.remove();
-
+        CloneInfo.fixLoopReflect();
     }
 
 

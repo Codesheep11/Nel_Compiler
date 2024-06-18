@@ -46,6 +46,8 @@ public class Visitor {
         return !conds.isEmpty();
     }
 
+    private Loop curLoop = null;
+
 
     public void visitAst(Ast ast) throws SemanticError {
         assert isGlobal && currentBB == null && currentFunc == null;
@@ -942,10 +944,10 @@ public class Visitor {
                 funcDef.getFuncFParams()) {
             argumentTPs.add(parseFuncFParam(funcFParam));
         }
-
-        Function thisFunc = new Function(funcType, ident.identifier.content, argumentTPs);
+        curLoop = new Loop();
+        Function thisFunc = new Function(funcType, ident.identifier.content, argumentTPs, curLoop);
         currentFunc = thisFunc;
-        currentBB = new BasicBlock(thisFunc.getBBName(), thisFunc);
+        currentBB = new BasicBlock(thisFunc.getBBName(), thisFunc, curLoop);
         currentEntry = currentBB;
 
         ArrayList<Function.Argument> funcRParams = new ArrayList<>();
@@ -991,8 +993,7 @@ public class Visitor {
         if (!fromFunc) {
             currentSymTable = new SymTable(currentSymTable);
         }
-        for (Ast.BlockItem blockItem :
-                block.getBlockItems()) {
+        for (Ast.BlockItem blockItem : block.getBlockItems()) {
             visitBlockItem(blockItem);
         }
         if (!fromFunc) {
@@ -1094,8 +1095,8 @@ public class Visitor {
     }
 
     private void visitIfStmt(Ast.IfStmt ifStmt) throws SemanticError {
-        BasicBlock thenBlock = new BasicBlock(currentFunc.getBBName(), currentFunc);
-        BasicBlock followBlock = new BasicBlock(currentFunc.getBBName(), currentFunc);
+        BasicBlock thenBlock = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
+        BasicBlock followBlock = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
 
         conds.add(ifStmt.getCond());
         Value cond = visitCond(ifStmt.getCond(), thenBlock, followBlock);
@@ -1127,7 +1128,7 @@ public class Visitor {
         Ast.LAndExp lAndExp = iter.next();
         Constant.ConstantBool tmp = new Constant.ConstantBool(0);
         for (; iter.hasNext(); lAndExp = iter.next()) {
-            BasicBlock nextCond = new BasicBlock(currentFunc.getBBName(), currentFunc);
+            BasicBlock nextCond = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
             Value cond = visitLAndExp(lAndExp, nextCond);
             assert cond.getType().isInt1Ty();
             if (cond instanceof Constant.ConstantBool) {
@@ -1149,7 +1150,7 @@ public class Visitor {
         Ast.EqExp eqExp = iter.next();
         Constant.ConstantBool tmp = new Constant.ConstantBool(1);
         for (; iter.hasNext(); eqExp = iter.next()) {
-            BasicBlock nextCond = new BasicBlock(currentFunc.getBBName(), currentFunc);
+            BasicBlock nextCond = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
             Value cond = visitEqExp(eqExp);
             assert cond.getType().isInt1Ty();
             if (cond instanceof Constant.ConstantBool) {
@@ -1313,37 +1314,48 @@ public class Visitor {
 
     private void visitWhileStmt(Ast.WhileStmt whileStmt) throws SemanticError {
         recorders.add(new Recorder());
-
-        BasicBlock condBlock = new BasicBlock(currentFunc.getBBName(), currentFunc);
-        BasicBlock whileBlock = new BasicBlock(currentFunc.getBBName(), currentFunc);
-        BasicBlock followBlock = new BasicBlock(currentFunc.getBBName(), currentFunc);
+        curLoop = new Loop(curLoop);
+        curLoop.enterings.add(currentBB);
+        BasicBlock condBlock = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
+        curLoop.header = condBlock;
+        BasicBlock whileBlock = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
+        BasicBlock followBlock = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop.parent);
+        curLoop.exits.add(followBlock);
         new Instruction.Jump(currentBB, condBlock);
         currentBB = condBlock;
-
         conds.add(whileStmt.getCond());
         Value cond = visitCond(whileStmt.getCond(), whileBlock, followBlock);
+        curLoop.cond = cond;
         new Instruction.Branch(currentBB, cond, whileBlock, followBlock);
+        curLoop.exitings.add(currentBB);
         currentBB = whileBlock;
         visitStmt(whileStmt.getStmt());
+        curLoop.latchs.add(currentBB);
         new Instruction.Jump(currentBB, condBlock);
         currentBB = followBlock;
         Recorder recoder = recorders.peek();
-        for (Instruction.Jump jump :
-                recoder.jumps) {
+        for (Instruction.Jump jump : recoder.jumps) {
+            BasicBlock begin = jump.getParentBlock();
             switch (jump.getMark()) {
-                case BREAK -> jump.backFill(followBlock);
-                case CONTINUE -> jump.backFill(condBlock);
+                case BREAK -> {
+                    curLoop.exitings.add(begin);
+                    jump.backFill(followBlock);
+                }
+                case CONTINUE -> {
+                    curLoop.latchs.add(begin);
+                    jump.backFill(condBlock);
+                }
             }
         }
         conds.pop();
         recorders.pop();
-
+        curLoop = curLoop.parent;
     }
 
     private void visitIfElStmt(Ast.IfElStmt ifElStmt) throws SemanticError {
-        BasicBlock thenBlock = new BasicBlock(currentFunc.getBBName(), currentFunc);
-        BasicBlock elseBlock = new BasicBlock(currentFunc.getBBName(), currentFunc);
-        BasicBlock followBlock = new BasicBlock(currentFunc.getBBName(), currentFunc);
+        BasicBlock thenBlock = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
+        BasicBlock elseBlock = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
+        BasicBlock followBlock = new BasicBlock(currentFunc.getBBName(), currentFunc, curLoop);
 
         conds.add(ifElStmt.getCond());
         Value cond = visitCond(ifElStmt.getCond(), thenBlock, elseBlock);

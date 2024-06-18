@@ -1,22 +1,25 @@
-package midend;
+package mir;
 
-import mir.*;
+import midend.CloneInfo;
 
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+
+import static midend.CloneInfo.bbMap;
 
 public class Loop {
     private static int loopCounter = 0;
     private int hash;
-    public Instruction.Loop parent = null;
-    public HashSet<Instruction.Loop> children = new HashSet<>();
+    public Loop parent = null;
+    public HashSet<Loop> children = new HashSet<>();
     public HashSet<BasicBlock> nowLevelBB = new HashSet<>();
     public BasicBlock header = null;
     public HashSet<BasicBlock> enterings = new HashSet<>();
     public HashSet<BasicBlock> exitings = new HashSet<>();
     public HashSet<BasicBlock> exits = new HashSet<>();
     public HashSet<BasicBlock> latchs = new HashSet<>();
+    public Value cond;
     LinkedList<Instruction> conds;
     public boolean canAggressiveParallel = false;
     public boolean isRoot = false;
@@ -35,17 +38,23 @@ public class Loop {
         this.hash = loopCounter++;
     }
 
-    public Loop(BasicBlock header) {
-        this.header = header;
+    public Loop(Loop parent) {
         this.hash = loopCounter++;
+        this.parent = parent;
+        parent.children.add(this);
     }
 
     /**
      * 得到循环的深度
      */
     public int getDepth() {
-        if (parent == null) return 0;
-        return parent.getDepth() + 1;
+        int ret = 0;
+        Loop par = parent;
+        while (par != null) {
+            par = par.parent;
+            ret++;
+        }
+        return ret;
     }
 
     @Override
@@ -77,12 +86,13 @@ public class Loop {
         if (children.size() == 0) return nowLevelBB.contains(block);
         boolean flag = false;
         flag |= nowLevelBB.contains(block);
-        for (Instruction.Loop child : children) {
+        for (Loop child : children) {
             flag |= child.LoopContains(block);
         }
         return flag;
     }
-//
+
+    //
 //    public boolean LoopContainsAll(Collection<BasicBlock> blocks) {
 //        for (BasicBlock block : blocks) {
 //            if (!LoopContains(block)) return false;
@@ -91,18 +101,7 @@ public class Loop {
 //    }
 //
 //    //判断是否为循环不变量
-//    public boolean isInvariant(Instruction instr, LinkedList<Instruction> invariants) {
-//        if (instr instanceof Instruction.Call) return false;
-//        for (Value use : instr.getOperands()) {
-//            //如果use是常数或者use的定义点在循环之外或者use的定义点是循环不变量，那么use可以视作是不变量
-//            if (use instanceof Function.Argument) continue;
-//            if (!(use instanceof Constant || !this.defValue(use) || invariants.contains(use))) return false;
-//            //todo:这里认为对指针类型操作如果不是内存访问，就可以视作不变量，但是这里可能有优化空间
-//            if (use.getType() instanceof Type.PointerType && instr instanceof Instruction.Load || instr instanceof Instruction.Store)
-//                return false;
-//        }
-//        return true;
-//    }
+
 //
 //    /**
 //     * 合并两个循环
@@ -138,4 +137,72 @@ public class Loop {
 //        this.parent = loop.parent;
 //        this.isNatural = false;
 //    }
+    public void cloneToFunc(Function tagFunc, Loop curLoop, int idx) {
+        for (BasicBlock block : nowLevelBB) {
+            bbMap.put(block, block.cloneToFunc(tagFunc, curLoop, idx));
+        }
+        for (Loop next : children) {
+            Loop newChild = new Loop(curLoop);
+            next.cloneToFunc(tagFunc, newChild, idx);
+        }
+        CloneInfo.addLoopReflect(curLoop, this);
+    }
+
+    public void cloneFix(Loop srcLoop) {
+        for (BasicBlock block : srcLoop.nowLevelBB) {
+            this.nowLevelBB.add(bbMap.get(block));
+        }
+        for (BasicBlock block : srcLoop.enterings) {
+            this.enterings.add(bbMap.get(block));
+        }
+        for (BasicBlock block : srcLoop.exitings) {
+            this.exitings.add(bbMap.get(block));
+        }
+        for (BasicBlock block : srcLoop.exits) {
+            this.exits.add(bbMap.get(block));
+        }
+        for (BasicBlock block : srcLoop.latchs) {
+            this.latchs.add(bbMap.get(block));
+        }
+        if (srcLoop.isRoot) return;
+        this.header = bbMap.get(srcLoop.header);
+    }
+
+
+    public void LoopInfoPrint() {
+        String LoopName = "Loop_" + hash;
+        if (isRoot) System.out.println("Root " + LoopName + " begin:");
+        else {
+            System.out.println(LoopName + " begin:");
+            System.out.println("header:" + header.getLabel());
+            System.out.println("enterings:");
+            for (BasicBlock bb : enterings) {
+                System.out.println(bb.getLabel());
+            }
+            System.out.println("exitings:");
+            for (BasicBlock bb : exitings) {
+                System.out.println(bb.getLabel());
+            }
+            System.out.println("exits:");
+            for (BasicBlock bb : exits) {
+                System.out.println(bb.getLabel());
+            }
+            System.out.println("latchs:");
+            for (BasicBlock bb : latchs) {
+                System.out.println(bb.getLabel());
+            }
+        }
+        System.out.println("nowLevelBB:");
+        for (BasicBlock bb : nowLevelBB) {
+            System.out.println(bb.getLabel());
+        }
+        System.out.println("children:");
+        for (Loop child : children) {
+            System.out.println("Loop_" + child.hash);
+        }
+        System.out.println((isRoot ? "Root" : LoopName) + " End!");
+        for (Loop child : children) {
+            child.LoopInfoPrint();
+        }
+    }
 }

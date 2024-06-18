@@ -1,7 +1,6 @@
 package mir;
 
 import midend.CloneInfo;
-import midend.Loop;
 import utils.SyncLinkedList;
 
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ public class BasicBlock extends Value {
     public Loop loop = null;// 循环信息
     public boolean isDeleted = false;
 
-    public BasicBlock(String label, Function parentFunction) {
+    public BasicBlock(String label, Function parentFunction, Loop loop) {
         super(Type.LabelType.LABEL_TYPE);
         this.parentFunction = parentFunction;
         parentFunction.appendBlock(this);
@@ -35,6 +34,8 @@ public class BasicBlock extends Value {
         this.sucBlocks = new LinkedList<>();
         this.preBlocks = new LinkedList<>();
         this.instructions = new SyncLinkedList<>();
+        this.loop = loop;
+        loop.nowLevelBB.add(this);
     }
 
     public Function getParentFunction() {
@@ -117,10 +118,6 @@ public class BasicBlock extends Value {
         return this.domDepth;
     }
 
-    public void setLoop(Loop loop) {
-        this.loop = loop;
-    }
-
     public int getLoopDepth() {
         if (loop == null) {
             return 0;
@@ -174,15 +171,13 @@ public class BasicBlock extends Value {
 
 
     //函数内联的时候,维护循环信息,方便GCM
-    public BasicBlock cloneToFunc(Function function, int idx) {
-
-        BasicBlock ret = new BasicBlock(function.getName() + "_" + getLabel() + "_" + idx, function);
+    public BasicBlock cloneToFunc(Function function, Loop loop, int idx) {
+        BasicBlock ret = new BasicBlock(function.getName() + "_" + getLabel() + "_" + idx, function, loop);
         CloneInfo.addValueReflect(this, ret);
-
+        CloneInfo.bbMap.put(this, ret);
         for (Instruction inst : getInstructions()) {
             Instruction tmp = inst.cloneToBBAndAddInfo(ret);
         }
-
         return ret;
     }
 
