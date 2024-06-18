@@ -110,7 +110,7 @@ public class GlobalValueNumbering {
                 return inst.getInstType().name() + "," + inst.getOperands().get(0).toString() + "," + inst.getType();
             }
             default: {
-                System.out.println("Warning: GVN 过程遇到不明确类型！");
+                System.out.println("Warning: GVN 未处理类型: " + inst.getInstType() + "!");
                 return inst.toString();
             }
         }
