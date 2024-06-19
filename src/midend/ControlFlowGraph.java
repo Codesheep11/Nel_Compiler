@@ -48,6 +48,7 @@ public class ControlFlowGraph {
             // 找到第一条终结指令
             Instruction findFirstTerminator = block.getFirstInst();
             while (!(findFirstTerminator instanceof Instruction.Terminator)) {
+//                System.out.println(findFirstTerminator.getDescriptor());
                 findFirstTerminator = (Instruction) findFirstTerminator.getNext();
             }
             // 如果后续指令存在，删除后续指令
