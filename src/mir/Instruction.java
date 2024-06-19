@@ -103,6 +103,13 @@ public class Instruction extends User {
         };
     }
 
+    public boolean aluable() {
+        return switch (instType) {
+            case ADD, FAdd, SUB, FSUB, MUL, FMUL, DIV, FDIV, REM, FREM, Icmp, Fcmp -> true;
+            default -> false;
+        };
+    }
+
     //public Instruction
     public void fix() {
         ArrayList<Value> toReplace = new ArrayList<>();
@@ -611,6 +618,10 @@ public class Instruction extends User {
 
 
     public interface Condition {
+        Value getSrc1();
+        Value getSrc2();
+
+        String getCmpOp();
     }
 
 
@@ -638,6 +649,8 @@ public class Instruction extends User {
         public CondCode getCondCode() {
             return condCode;
         }
+
+        public String getCmpOp() { return condCode.toString(); }
 
         private Value src1;
         private Value src2;
@@ -710,6 +723,7 @@ public class Instruction extends User {
         public CondCode getCondCode() {
             return condCode;
         }
+        public String getCmpOp() { return condCode.toString(); }
 
         private Value src1;
         private Value src2;
