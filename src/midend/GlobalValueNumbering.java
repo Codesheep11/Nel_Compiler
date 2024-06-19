@@ -22,8 +22,11 @@ public class GlobalValueNumbering {
 
     public static void run(Module module) {
         if (!CentralControl._GVN_OPEN) return;
+        if (!CentralControl._GCM_OPEN) {
+            System.out.println("Warning: GVN 依赖于 GCM，请打开 GCM!");
+        }
         for (Function func : module.getFuncSet()) {
-            if(func.isExternal()) continue;
+            if (func.isExternal()) continue;
             run(func);
         }
     }
@@ -53,8 +56,7 @@ public class GlobalValueNumbering {
                 if (records.contains(key)) {
                     inst.replaceAllUsesWith(recordInstructions.get(key));
                     iter.remove();
-                }
-                else {
+                } else {
                     records.add(key);
                     recordInstructions.put(key, inst);
                 }
@@ -72,8 +74,9 @@ public class GlobalValueNumbering {
             case FMUL:
             case ADD:
             case MUL: {
-                String operand1 = inst.getOperands().get(0).getName();
-                String operand2 = inst.getOperands().get(1).getName();
+                Instruction.BinaryOperation binaryOperation = (Instruction.BinaryOperation) inst;
+                String operand1 = binaryOperation.getOperand_1().getDescriptor();
+                String operand2 = binaryOperation.getOperand_2().getDescriptor();
                 if (operand1.compareTo(operand2) > 0) {
                     // 交换顺序
                     String temp = operand1;
@@ -86,23 +89,28 @@ public class GlobalValueNumbering {
             case FREM:
             case FSUB:
             case FDIV:
-            case Fcmp:
-            case Icmp:
             case REM:
             case SUB:
             case DIV: {
-                String operand1 = inst.getOperands().get(0).getName();
-                String operand2 = inst.getOperands().get(1).getName();
+                Instruction.BinaryOperation binaryOperation = (Instruction.BinaryOperation) inst;
+                String operand1 = binaryOperation.getOperand_1().getDescriptor();
+                String operand2 = binaryOperation.getOperand_2().getDescriptor();
                 return inst.getInstType().name() + "," + operand1 + "," + operand2;
             }
+            case Fcmp:
+            case Icmp: {
+                Instruction.Condition compare = (Instruction.Condition) inst;
+                String operand1 = compare.getSrc1().getDescriptor();
+                String operand2 = compare.getSrc2().getDescriptor();
+                return compare.getCmpOp() + "," + operand1 + "," + operand2;
+            }
             case GEP: {
-                String base = inst.getOperands().get(0).getName();
+                Instruction.GetElementPtr gep = (Instruction.GetElementPtr) inst;
+                String base = gep.getBase().getDescriptor();
                 StringBuilder indices = new StringBuilder();
-                for (int i = 1; i < inst.getOperands().size(); i++) {
-                    indices.append(inst.getOperands().get(i).getName());
-                    if (i != inst.getOperands().size() - 1) {
-                        indices.append(",");
-                    }
+                for (Value val : gep.getOffsets()) {
+                    indices.append(val.getDescriptor());
+                    indices.append(",");
                 }
                 return inst.getInstType() + "," + base + "," + indices;
             }
@@ -121,9 +129,9 @@ public class GlobalValueNumbering {
      * NOTE: 现在只折叠了运算结果为 int32 和 float32的指令，之后可以考虑 int1 是否可以折叠
      */
     private static boolean tryConstantFolding(Instruction instruction) {
-        if (instruction.getOperands().size() == 2) {
-            Value operand1 = instruction.getOperands().get(0);
-            Value operand2 = instruction.getOperands().get(1);
+        if (instruction instanceof Instruction.BinaryOperation binaryOperation) {
+            Value operand1 = binaryOperation.getOperand_1();
+            Value operand2 = binaryOperation.getOperand_2();
             if (operand1 instanceof Constant op1 && operand2 instanceof Constant op2) {
                 if (instruction.getType().isInt32Ty()) {
                     int val1 = (int) op1.getConstValue();
@@ -140,8 +148,7 @@ public class GlobalValueNumbering {
                     }
                     instruction.replaceAllUsesWith(new Constant.ConstantInt(result));
                     return true;
-                }
-                else if (instruction.getType().isFloatTy()) {
+                } else if (instruction.getType().isFloatTy()) {
                     float val1 = (float) op1.getConstValue();
                     float val2 = (float) op2.getConstValue();
                     float result = 0;

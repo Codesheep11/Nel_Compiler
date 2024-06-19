@@ -64,13 +64,11 @@ public class GlobalCodeMotion {
         scheduledSet.add(instr);
         instr.earliest = entry;
         for (Value value : instr.getOperands()) {
-            if (value instanceof Instruction instrValue && instrValue.getParentBlock().getParentFunction() == entry.getParentFunction()) {
+            if (value instanceof Instruction instrValue) {
                 scheduleEarly(instrValue);
                 if (instrValue.earliest.getDomDepth() > instr.earliest.getDomDepth()) {
                     instr.earliest = instrValue.earliest;
                 }
-            } else {
-                System.out.println("Warning: GCM 向前调度遇到了非指令User!");
             }
         }
     }
@@ -98,8 +96,6 @@ public class GlobalCodeMotion {
                 if (instrUser instanceof Instruction.Phi)
                     userBlock = instrUser.latest.getIdom();
                 instr.latest = getDomLCA(instr.latest, userBlock);
-            } else {
-                System.out.println("Warning: GCM 向后调度遇到了非指令User!");
             }
         }
         // instr.latest 现在是最后可被调度到的块
