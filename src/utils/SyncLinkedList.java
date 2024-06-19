@@ -61,7 +61,7 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
     public int getSize() {
         Iterator<Type> iterator = iterator();
         int size = 0;
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             iterator.next();
             size++;
         }
@@ -91,7 +91,7 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
 
     public int find(Type node) {
         for (int i = 0; i < getSize(); i++) {
-            if (get(i)==node) {
+            if (get(i) == node) {
                 return i;
             }
         }
@@ -120,7 +120,8 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
     public boolean isEmpty() {
         if (getSize() != 0) {
             return false;
-        } else {
+        }
+        else {
             assert head.getNext() == tail;
             assert tail.getPrev() == head;
             return true;
@@ -142,7 +143,7 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
 
         @Override
         public boolean hasNext() {
-            return cur.getNext() != tail && cur.next.next != null;
+            return cur != tail && cur.getNext() != tail;
         }
 
         @Override
@@ -158,7 +159,7 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
         public void remove() {
             cur.getPrev().setNext(cur.getNext());
             cur.getNext().setPrev(cur.getPrev());
-            cur = cur.getNext();
+            // TODO: 该节点是否需要销毁
         }
 
 
@@ -187,6 +188,7 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
 
         /**
          * 在所在 SyncLinkedList中是否存在下一个非空节点
+         *
          * @return true if exist
          */
         public boolean hasNext() {
@@ -210,7 +212,7 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
          * 仅当存在父链表的时候才允许删除
          */
         public void remove() {
-            if(!hasParent) {
+            if (!hasParent) {
                 return;
             }
             assert prev != null;
