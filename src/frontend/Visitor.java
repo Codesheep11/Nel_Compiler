@@ -186,7 +186,7 @@ public class Visitor {
         //插入符号表
         Symbol symbol = new Symbol(ident, defType, initValue, isConstant, address);
         if (isGlobal) {
-            globalVariables.add(new GlobalVariable(defType, ident, initValue));
+            globalVariables.add((GlobalVariable) address);
         }
         currentSymTable.addSymbol(symbol);
     }

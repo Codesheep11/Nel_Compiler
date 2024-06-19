@@ -150,6 +150,11 @@ public class BasicBlock extends Value {
         return Objects.hash(label);
     }
 
+    @Override
+    public String getDescriptor() {
+        return label;
+    }
+
     //region outputLLVMIR
     public ArrayList<String> output() {
         if (instructions.isEmpty()) {
