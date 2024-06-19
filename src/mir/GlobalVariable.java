@@ -66,6 +66,7 @@ public class GlobalVariable extends Constant {
 
     /**
      * 获取全局变量的Constant量类型为 Constant
+     *
      * @return value
      */
     @Override
@@ -123,6 +124,6 @@ public class GlobalVariable extends Constant {
      * @return riscv全局变量名
      */
     public String getRiscGlobalVariableName() {
-        return  "g_" + ident.toString();
+        return "g_" + ident.toString();
     }
 }

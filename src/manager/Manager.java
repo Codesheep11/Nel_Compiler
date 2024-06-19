@@ -48,13 +48,13 @@ public class Manager {
                 GlobalValueNumbering.run(module);
                 LCSSA.run(module);
                 LCSSA.remove(module);
-//                for (Function function : module.getFuncSet()) {
-//                    if (function.isExternal()) {
-//                        continue;
-//                    }
-//                    function.buildControlFlowGraph();
-//                }
-//                DeadCodeDelete.run(module);
+                for (Function function : module.getFuncSet()) {
+                    if (function.isExternal()) {
+                        continue;
+                    }
+                    function.buildControlFlowGraph();
+                }
+                DeadCodeDelete.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
