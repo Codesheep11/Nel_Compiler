@@ -43,9 +43,10 @@ public class Manager {
             Module module = visitor.module;
             if (arg.opt) {
                 Mem2Reg.run(module);
-                FunctionInline.run(module);
+//                FunctionInline.run(module);
                 LoopInVarLift.run(module);
                 GlobalValueNumbering.run(module);
+                GlobalCodeMotion.run(module);
                 LCSSA.run(module);
                 LCSSA.remove(module);
 //                for (Function function : module.getFuncSet()) {
