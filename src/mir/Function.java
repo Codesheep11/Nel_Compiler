@@ -367,4 +367,24 @@ public class Function extends Value {
         countOfBB++;
         return name;
     }
+
+    /**
+     * 获取函数的dom树层序遍历
+     *
+     * @return
+     */
+    public ArrayList<BasicBlock> getDomTreeLayerSort() {
+        BasicBlock entry = getEntry();
+        ArrayList<BasicBlock> layerSort = new ArrayList<>();
+        Queue<BasicBlock> queue = new LinkedList<>();
+        queue.offer(entry);
+        while (!queue.isEmpty()) {
+            BasicBlock cur = queue.poll();
+            layerSort.add(cur);
+            for (BasicBlock child : cur.getDomTreeChildren()) {
+                queue.offer(child);
+            }
+        }
+        return layerSort;
+    }
 }
