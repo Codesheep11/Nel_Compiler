@@ -43,13 +43,9 @@ public class DeadCodeDelete {
         int blockLen = main.getBlocks().getSize();
         for (int i = blockLen - 1; i >= 0; i--) {
             BasicBlock block = main.getBlocks().get(i);
-            int instLen = block.getInstructions().getSize();
-            for (int j = instLen - 1; j >= 0; j--) {
-                Instruction inst = block.getInstructions().get(j);
-                if (inst.getInstType() == Instruction.InstType.RETURN) {
-                    newUsefulVar.add(inst);
-                }
-            }
+            Instruction inst = block.getInstructions().getLast();
+//            System.out.println(inst.getDescriptor());
+            if (inst.getInstType() == Instruction.InstType.RETURN) newUsefulVar.add(inst);
         }
     }
 
@@ -110,13 +106,8 @@ public class DeadCodeDelete {
             int blockLen = func.getBlocks().getSize();
             for (int i = blockLen - 1; i >= 0; i--) {
                 BasicBlock block = func.getBlocks().get(i);
-                int instLen = block.getInstructions().getSize();
-                for (int j = instLen - 1; j >= 0; j--) {
-                    Instruction inst = block.getInstructions().get(j);
-                    if (inst.getInstType() == Instruction.InstType.RETURN) {
-                        newUsefulVar.add(inst);
-                    }
-                }
+                Instruction inst = block.getInstructions().getLast();
+                if (inst.getInstType() == Instruction.InstType.RETURN) newUsefulVar.add(inst);
             }
             //地址作为函数参数,考虑call的实参是否活跃?
 //            for (Use use : func.getUses()) {

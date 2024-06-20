@@ -46,7 +46,7 @@ public class RemovePhi {
                         Instruction.PhiCopy pc = (Instruction.PhiCopy) pre.getLastInst().getPrev();
                         pc.add(phi, v);
                     }
-                    phi.remove();
+                    phi.delete();
                 }
                 else {
                     break;
