@@ -175,6 +175,7 @@ public class LoopInVarLift {
             //3.use是循环不变量
             //4.函数的参数
             //那么use可以视作是不变量
+            if (use instanceof Function) continue;
             if (use instanceof Function.Argument) continue;
             if (use instanceof Constant) continue;
             if (!loop.defValue(use)) continue;
