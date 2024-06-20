@@ -2,15 +2,16 @@ package mir.Ir2RiscV;
 
 
 import backend.StackManager;
-import backend.riscv.riscvInstruction.*;
-import mir.*;
+import backend.operand.Address;
+import backend.operand.Imm;
+import backend.operand.Reg;
 import backend.riscv.*;
+import backend.riscv.riscvInstruction.*;
 import mir.Module;
+import mir.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import backend.operand.*;
 
 /*by hlq*/
 
@@ -280,22 +281,24 @@ public class CodeGen {
      */
 
     /*
-     * 新更改：不再存储指针，而是绑定上一个address*/
+     * 新更改:不再存储address，而是选择直接存个指针回来*/
     private void solveAlloc(Instruction.Alloc allocInstr) {
         // 所开内存的对象大小
         Type type = allocInstr.getContentType();
         int size = type.queryBytesSizeOfType();
         StackManager.getInstance().allocOnStack(nowFunc.name, allocInstr, size);
+        //给alloc指令分配一个寄存器
+        Reg reg = VirRegMap.VRM.ensureRegForValue(allocInstr);
         // 求出这个偏移的值
         // 这里的偏移可能会超过imm的范围!!!
-        /**
-         if (offset > 2048) {
-         Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-         nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, -offset));
-         nowBlock.riscvInstructions.addLast(new R3(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.sp, 64), tmp, R3.R3Type.add));
-         } else {
-         nowBlock.riscvInstructions.addLast(new R3(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.sp, 64), new Imm(-offset), R3.R3Type.addi));
-         }*/
+        int offset = StackManager.getInstance().getPointerAddress(nowFunc.name, allocInstr).getOffset();
+        if (offset > 2048) {
+            Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+            nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, -offset));
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.sp, 64), tmp, R3.R3Type.add));
+        } else {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.sp, 64), new Imm(-offset), R3.R3Type.addi));
+        }
     }
 
     /**
@@ -322,27 +325,14 @@ public class CodeGen {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.lw));
                 }
             } else {
-                //否则我们就获得了一个具体的地址偏移
-                //这个偏移是由alloc生成的value对应的虚拟寄存器绑定的address绑定的
-                Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-                if (StackManager.getInstance().hasPointerStored(nowFunc.name, loadInstr.getAddr())) {
-                    Address address = StackManager.getInstance().getPointerAddress(nowFunc.name, loadInstr.getAddr());
-                    if (type.isInt64Ty() || type.isPointerTy()) {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, LS.LSType.ld));
-                    } else if (type.isInt32Ty() || type.isInt1Ty()) {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, LS.LSType.lw));
-                    } else {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, LS.LSType.flw));
-                    }
+                //否则我们获得了一个指针，这个指针可以通过查询计算器得到
+                Reg addr = VirRegMap.VRM.ensureRegForValue(loadInstr.getAddr());
+                if (type.isInt64Ty() || type.isPointerTy()) {
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.ld));
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.lw));
                 } else {
-                    Reg addr = VirRegMap.VRM.ensureRegForValue(loadInstr.getAddr());
-                    if (type.isInt64Ty() || type.isPointerTy()) {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.ld));
-                    } else if (type.isInt32Ty() || type.isInt1Ty()) {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.lw));
-                    } else {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.flw));
-                    }
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.flw));
                 }
             }
         }
@@ -371,25 +361,13 @@ public class CodeGen {
             } else {
                 //否则我们就获得了一个具体的地址偏移
                 //这个偏移是由alloc生成的value对应的虚拟寄存器绑定的address绑定的
-                Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-                if (StackManager.getInstance().hasPointerStored(nowFunc.name, storeInstr.getAddr())) {
-                    Address address = StackManager.getInstance().getPointerAddress(nowFunc.name, storeInstr.getAddr());
-                    if (type.isInt64Ty() || type.isPointerTy()) {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, LS.LSType.sd));
-                    } else if (type.isInt32Ty() || type.isInt1Ty()) {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, LS.LSType.sw));
-                    } else {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, LS.LSType.fsw));
-                    }
+                Reg addr = VirRegMap.VRM.ensureRegForValue(storeInstr.getAddr());
+                if (type.isInt64Ty() || type.isPointerTy()) {
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.sd));
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.sw));
                 } else {
-                    Reg addr = VirRegMap.VRM.ensureRegForValue(storeInstr.getAddr());
-                    if (type.isInt64Ty() || type.isPointerTy()) {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.sd));
-                    } else if (type.isInt32Ty() || type.isInt1Ty()) {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.sw));
-                    } else {
-                        nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.fsw));
-                    }
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.fsw));
                 }
             }
         }
@@ -413,20 +391,8 @@ public class CodeGen {
             riscvGlobalVar globalVar = gloMap.get(((GlobalVariable) getElementPtr.getBase()).ident.toString());
             nowBlock.riscvInstructions.addLast(new La(nowBlock, base, globalVar));
         } else {
-            // 不是全局的那就说明是一个局部变量指针,其地址可以用address和sp计算得到
-            if (StackManager.getInstance().hasPointerStored(nowFunc.name, getElementPtr.getBase())) {
-                Address address = StackManager.getInstance().getPointerAddress(nowFunc.name, getElementPtr.getBase());
-                base = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-                Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-                if (address.getOffset() >= 2048 || address.getOffset() <= -2048) {
-                    nowBlock.riscvInstructions.addLast(new Li(nowBlock, base, address));
-                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, base, base, sp, R3.R3Type.add));
-                } else {
-                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, base, sp, address, R3.R3Type.addi));
-                }
-            } else {
-                base = VirRegMap.VRM.ensureRegForValue(getElementPtr.getBase());
-            }
+            // 不是全局的那就说明是一个局部变量指针,已经被存起来了
+            base = VirRegMap.VRM.ensureRegForValue(getElementPtr.getBase());
         }
         // 将全局的地址和偏移量相加,获得真实的地址
         // 第一种情况:offset是计算好了的常数,不需要用指令计算
@@ -595,26 +561,12 @@ public class CodeGen {
      * 类型转换,需要注意的是这个并不改变其bit位,而仅仅改变其解释意义
      * 观察llvm处,可得实际上就是将一个指针转化为另一个种类的指针
      * 因此只需要绑定同一个虚拟寄存器即可
+     * 真的可以吗？实际上会出bug的
      */
 
     private void solveBitCast(Instruction.BitCast bitCast) {
-        // 如果在里面存着，说明是alloc开的天然指针
-        if (StackManager.getInstance().hasPointerStored(nowFunc.name, bitCast.getSrc())) {
-            Address address = StackManager.getInstance().getPointerAddress(nowFunc.name, bitCast.getSrc());
-            Reg reg = VirRegMap.VRM.ensureRegForValue(bitCast);
-            Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-            if (address.getOffset() >= 2048 || address.getOffset() <= -2048) {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, address));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, reg, tmp, sp, R3.R3Type.add));
-            } else {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, reg, sp, address, R3.R3Type.addi));
-            }
-        } else {
-            // 否则是已经计算的到的指针，可以直接绑定
-            VirRegMap.VRM.binding(bitCast.getSrc(), bitCast);
-        }
-
+        //
+        VirRegMap.VRM.binding(bitCast.getSrc(), bitCast);
     }
 
     /**
