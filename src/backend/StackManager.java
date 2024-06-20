@@ -97,18 +97,6 @@ public class StackManager {
         return new Address(offset);
     }
 
-    public boolean hasPointerStored(String funcName, Value pointer) {
-        if (!llvm2Offset.containsKey(funcName)) {
-            llvm2Offset.put(funcName, new HashMap<>());
-            if (!offsetMap.containsKey(funcName)) {
-                offsetMap.put(funcName, new HashMap<>());
-                funcSizeMap.put(funcName, 0);
-            }
-        }
-        HashMap<Value, Integer> funcMap = llvm2Offset.get(funcName);
-        return funcMap.containsKey(pointer);
-    }
-
     /**
      * 获取某个函数栈帧的大小(单位：字节) <br />
      * 该方法请保证在refill后调用，否则不会计算栈顶的参数大小
