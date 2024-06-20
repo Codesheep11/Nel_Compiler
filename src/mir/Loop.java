@@ -77,7 +77,6 @@ public class Loop {
 
     /**
      * 递归判断Block是否在循环中
-     *
      */
 
     public boolean LoopContains(BasicBlock block) {
@@ -101,15 +100,34 @@ public class Loop {
             nowLevelBB.remove(block);
         }
         //如果循环头被删除，那么整个循环被删除
-        if (header.equals(block)) {
-            header = null;
+        if (!isRoot && header.equals(block)) {
+            delete();
         }
-        //如果循环回边被删除，那么整个循环被删除
+        //如果循环回边被删除，判断是否还存在回边，如果没有，则整个循环被删除
         if (latchs.contains(block)) {
             latchs.remove(block);
+            if (latchs.size() == 0) {
+                delete();
+            }
         }
     }
 
+    public void delete() {
+        if (isRoot) {
+            throw new RuntimeException("delete: root loop can not be deleted\n");
+        }
+        //被删除的循环头的子循环全部挂到父循环上
+        for (Loop child : children) {
+            parent.children.add(child);
+            child.parent = parent;
+        }
+        //剩下基本块挂到父循环上
+        for (BasicBlock bb : nowLevelBB) {
+            parent.nowLevelBB.add(bb);
+            bb.loop = parent;
+        }
+        parent.children.remove(this);
+    }
     //
 //    public boolean LoopContainsAll(Collection<BasicBlock> blocks) {
 //        for (BasicBlock block : blocks) {

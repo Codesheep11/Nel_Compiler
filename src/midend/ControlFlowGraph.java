@@ -94,7 +94,7 @@ public class ControlFlowGraph {
         depthFirstSearch(parentFunction.getEntry());
         for (BasicBlock block : blocks) {
             if (vis.contains(block)) continue;
-            block.remove();
+            block.delete();
             block.loop.remove(block);
         }
     }
