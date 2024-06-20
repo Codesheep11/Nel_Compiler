@@ -95,7 +95,9 @@ public class DeadCodeDelete {
                 if (inst instanceof Instruction.Call) {
                     Instruction.Call call = (Instruction.Call) inst;
                     Function callee = call.getDestFunction();
-                    newUsefulVar.add(inst);
+                    if (isUsefulCall(callee)) {
+                        newUsefulVar.add(inst);
+                    }
                 }
             }
             for (Use use : block.getUses()) {
@@ -116,11 +118,32 @@ public class DeadCodeDelete {
                     }
                 }
             }
-            //地址作为函数参数在这里认为是活跃的
+            //地址作为函数参数,考虑call的实参是否活跃?
+//            for (Use use : func.getUses()) {
+//                Instruction.Call call = (Instruction.Call) use.getUser();
+//                for (int i = 0; i < call.getParams().size(); i++) {
+//                    if (call.get)
+//                }
+//            }
+            //todo 现在默认有用函数的传入数组都是有用的，以及所有的调用点都是有用的
+            //todo 但是这样可能会导致一些不必要的参数传递和冗余的调用
             for (Value p : func.getFuncRArguments()) {
                 if (p.getType().isPointerTy()) newUsefulVar.add(p);
             }
+            for (Use use : func.getUses()) {
+                Instruction.Call call = (Instruction.Call) use.getUser();
+                if (usefulVar.contains(call.getParentBlock()) || newUsefulVar.contains(call.getParentBlock())) {
+                    newUsefulVar.add(call);
+                }
+            }
         }
+    }
+
+    public static boolean isUsefulCall(Function callee) {
+        return usefulVar.contains(callee)
+                || (callee.isExternal() && !callee.getName().equals("memset"))
+                || callee.hasReadIn
+                || callee.hasPutOut;
     }
 
     private static void DeleteUselessVar(Module module) {

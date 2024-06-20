@@ -128,6 +128,14 @@ public class FunctionInline {
             call.getParentBlock().getParentFunction().buildControlFlowGraph();
             idx++;
         }
+        for (BasicBlock bb : function.getBlocks()) {
+            for (Instruction inst : bb.getInstructions()) {
+                if (inst instanceof Instruction.Call) {
+                    Function callee = ((Instruction.Call) inst).getDestFunction();
+                    callee.use_remove(new Use(inst, callee));
+                }
+            }
+        }
     }
 
 
@@ -218,6 +226,12 @@ public class FunctionInline {
         }
         //beforeCallBB.getInstructions().setEnd(inst);
         inst.remove();
+        Iterator<Value> iterator = inst.getOperands().iterator();
+        while (iterator.hasNext()) {
+            Value value = iterator.next();
+            value.use_remove(new Use(inst, value));
+            inst.use_remove(new Use(inst, value));
+        }
         CloneInfo.fixLoopReflect();
     }
 
