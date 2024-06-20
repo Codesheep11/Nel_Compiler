@@ -3,17 +3,25 @@ package midend;
 import mir.*;
 import mir.Module;
 
-public class CFGclean {
-    public static void run(Module module) {
-        cfgClean(module);
+import java.util.HashSet;
+import java.util.LinkedList;
 
-        cleanEmptyBlocks(module);
+/**
+ * 激进的死代码删除，负责删除冗余的分支，精简控制结构
+ */
+public class AggressiveDCD {
+    public static void run(Module module) {
+        for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) continue;
+//            while (RunOnFunc(function)) ;
+        }
+        CleanEmptyBlocks(module);
         for (Function function : module.getFuncSet()) {
             function.buildControlFlowGraph();
         }
     }
 
-    private static void cleanEmptyBlocks(Module module) {
+    private static void CleanEmptyBlocks(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) {
                 continue;
@@ -30,22 +38,28 @@ public class CFGclean {
         }
     }
 
-    private static void cfgClean(Module module) {
-        for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) {
-                continue;
-            }
-            while (cfgCleanFunc(function)) ;
-        }
-    }
 
-    private static boolean cfgCleanFunc(Function function) {
+    private static void RunOnFunc(Function function) {
         boolean ret = false;
 //        System.out.println("br2Jump");
-        for (BasicBlock block : function.getBlocks()) {
-            if (block.getInstructions().isEmpty()) {
-                continue;
+        HashSet<BasicBlock> visited = new HashSet<>();
+        BasicBlock entry = function.getEntry();
+        LinkedList<BasicBlock> queue = new LinkedList<>();
+        queue.add(entry);
+        while (!queue.isEmpty()) {
+            BasicBlock cur = queue.poll();
+            if (visited.contains(cur)) continue;
+            visited.add(cur);
+            Instruction term = cur.getLastInst();
+            if (cur.getLastInst() instanceof Instruction.Branch) {
+                brToJump((Instruction.Branch) term);
             }
+            if (cur.getLastInst() instanceof Instruction.Jump) {
+                queue.add(((Instruction.Jump) term).getTargetBlock());
+            }
+        }
+        for (BasicBlock block : function.getBlocks()) {
+            if (block.getInstructions().isEmpty()) continue;
             Instruction inst = block.getLastInst();
             if (inst instanceof Instruction.Return) {
                 continue;
@@ -106,7 +120,7 @@ public class CFGclean {
         }
         function.buildControlFlowGraph();
 //            buildControlFlowGraph(function);
-        return ret;
+//        return ret;
     }
 
     private static boolean brToJump(Instruction.Branch br) {

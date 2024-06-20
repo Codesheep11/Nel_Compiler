@@ -92,6 +92,26 @@ public class Loop {
         return flag;
     }
 
+    /**
+     * todo
+     * 当block从cfg图中删除时调用该方法
+     *
+     * @param block
+     */
+    public void remove(BasicBlock block) {
+        if (nowLevelBB.contains(block)) {
+            nowLevelBB.remove(block);
+        }
+        //如果循环头被删除，那么整个循环被删除
+        if (header.equals(block)) {
+            header = null;
+        }
+        //如果循环回边被删除，那么整个循环被删除
+        if (latchs.contains(block)) {
+            latchs.remove(block);
+        }
+    }
+
     //
 //    public boolean LoopContainsAll(Collection<BasicBlock> blocks) {
 //        for (BasicBlock block : blocks) {
@@ -102,7 +122,7 @@ public class Loop {
 //
 //    //判断是否为循环不变量
 
-//
+    //
 //    /**
 //     * 合并两个循环
 //     *

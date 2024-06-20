@@ -50,12 +50,7 @@ public class Manager {
                 GlobalCodeMotion.run(module);
                 LCSSA.run(module);
                 LCSSA.remove(module);
-//                for (Function function : module.getFuncSet()) {
-//                    if (function.isExternal()) {
-//                        continue;
-//                    }
-//                    function.buildControlFlowGraph();
-//                }
+                AggressiveDCD.run(module);
                 DeadCodeDelete.run(module);
             }
             if (arg.LLVM) {

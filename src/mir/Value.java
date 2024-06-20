@@ -2,6 +2,7 @@ package mir;
 
 import utils.SyncLinkedList;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 
 public class Value extends SyncLinkedList.SyncLinkNode {
@@ -35,7 +36,7 @@ public class Value extends SyncLinkedList.SyncLinkNode {
         return name;
     }
 
-    public String getDescriptor(){
+    public String getDescriptor() {
         return name;
     }
 
@@ -53,7 +54,7 @@ public class Value extends SyncLinkedList.SyncLinkNode {
     }
 
     public void use_add(Use use) {
-        if(!uses.contains(use)) {
+        if (!uses.contains(use)) {
             uses.add(use);
         }
     }
@@ -67,15 +68,28 @@ public class Value extends SyncLinkedList.SyncLinkNode {
     }
 
     /*
-        * 对 Value 使用的全替换的操作，通过单点调用User的replaceUseOfWith实现
-        * 对于被替换的Value v, 因为所有的use 边都被替换，所以v的use集合为空
-        * 强调：该方法仅为模版方法，对于一条具体的实例指令，需要在其类中重写该方法
+     * 对 Value 使用的全替换的操作，通过单点调用User的replaceUseOfWith实现
+     * 对于被替换的Value v, 因为所有的use 边都被替换，所以v的use集合为空
+     * 强调：该方法仅为模版方法，对于一条具体的实例指令，需要在其类中重写该方法
      */
     public void replaceAllUsesWith(Value v) {
         while (!use_empty()) {
             Use use = use_begin();
             // 每次必然删该条边，
             use.getUser().replaceUseOfWith(this, v);
+        }
+    }
+
+    /**
+     * 删除该Value的所有使用
+     */
+    public void delete() {
+        this.remove();
+        Iterator<Use> it = uses.iterator();
+        while (it.hasNext()) {
+            Use use = it.next();
+            use.getUser().remove();
+            it.remove();
         }
     }
 
