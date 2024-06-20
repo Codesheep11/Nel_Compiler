@@ -37,7 +37,7 @@ public class Instruction extends User {
         REM,
         FREM,
         PHICOPY,
-        MOVE;
+        MOVE
     }
 
     public static class ResNameManager {
@@ -98,15 +98,12 @@ public class Instruction extends User {
 
     public boolean gvnable() {
         return switch (instType) {
-            case ALLOC, LOAD, STORE, CALL, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
+            case ALLOC, LOAD, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
+            case CALL -> {
+                Function func = ((Call) this).getDestFunction();
+                yield func.hasReturn && !func.isExternal() && func.isStateless && !func.hasReadIn && !func.hasPutOut;
+            }
             default -> true;
-        };
-    }
-
-    public boolean aluable() {
-        return switch (instType) {
-            case ADD, FAdd, SUB, FSUB, MUL, FMUL, DIV, FDIV, REM, FREM, Icmp, Fcmp -> true;
-            default -> false;
         };
     }
 
@@ -222,7 +219,7 @@ public class Instruction extends User {
             Iterator<Value> iter = params.iterator();
             while (iter.hasNext()) {
                 Value val = iter.next();
-                str.append(val.type.toString() + " " + val.getDescriptor());
+                str.append(val.type.toString()).append(" ").append(val.getDescriptor());
                 if (iter.hasNext()) {
                     str.append(", ");
                 }
@@ -846,19 +843,12 @@ public class Instruction extends User {
         }
 
         public LinkedList<BasicBlock> getPreBlocks() {
-            LinkedList<BasicBlock> preBlocks = new LinkedList<>();
-            for (BasicBlock block : optionalValues.keySet()) {
-                preBlocks.add(block);
-            }
-            return preBlocks;
+            return new LinkedList<>(optionalValues.keySet());
         }
 
         public boolean canBeReplaced() {
             if (isLCSSA) return false;
-            HashSet<Value> values = new HashSet<>();
-            for (Value value : optionalValues.values()) {
-                values.add(value);
-            }
+            HashSet<Value> values = new HashSet<>(optionalValues.values());
             return values.size() == 1;
         }
 
@@ -956,7 +946,7 @@ public class Instruction extends User {
             );
             Iterator<Value> iter = offsets.iterator();
             while (iter.hasNext()) {
-                str.append("i32 " + iter.next().getDescriptor());
+                str.append("i32 ").append(iter.next().getDescriptor());
                 if (iter.hasNext()) {
                     str.append(", ");
                 }
@@ -979,11 +969,7 @@ public class Instruction extends User {
 
         @Override
         public GetElementPtr cloneToBB(BasicBlock newBlock) {
-            ArrayList<Value> offsets = new ArrayList<>();
-            for (Value offset :
-                    this.offsets) {
-                offsets.add(offset);
-            }
+            ArrayList<Value> offsets = new ArrayList<>(this.offsets);
             return new GetElementPtr(newBlock, base, eleType, offsets);
         }
     }
