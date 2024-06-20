@@ -50,6 +50,27 @@ public class Function extends Value {
     //GVN
     private boolean deleted = false;
     public boolean isLeaf = true;
+    /**
+     * 对内存进行了读写，这里的内存只包括全局变量
+     */
+    public boolean hasMemoryRead = false;
+    public boolean hasMemoryWrite = false;
+    /**
+     * IO操作
+     */
+    public boolean hasReadIn = false;
+    public boolean hasPutOut = false;
+    public boolean hasReturn = false;
+    /**
+     * 表示该函数有副作用，对传入的数组参数进行了写操作
+     */
+    public boolean hasSideEffect = false;
+    /**
+     * 表示该函数是无状态的,不使用/修改全局变量，传入的数组
+     */
+    public boolean isStateless = false;
+    public boolean isRecurse = false;
+
     private final ControlFlowGraph CG = new ControlFlowGraph(this);
     private final DominanceGraph DG = new DominanceGraph(this);
 
