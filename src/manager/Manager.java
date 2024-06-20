@@ -44,28 +44,22 @@ public class Manager {
             if (arg.opt) {
                 Mem2Reg.run(module);
                 FunctionInline.run(module);
+                FuncAnalysis.run(module);
                 LoopInVarLift.run(module);
                 GlobalValueNumbering.run(module);
                 GlobalCodeMotion.run(module);
                 LCSSA.run(module);
                 LCSSA.remove(module);
-                for (Function function : module.getFuncSet()) {
-                    if (function.isExternal()) {
-                        continue;
-                    }
-                    function.buildControlFlowGraph();
-                }
-                DeadCodeDelete.run(module);
-            }
-            if (arg.LLVM) {
-                outputLLVM(arg.outPath, module);
 //                for (Function function : module.getFuncSet()) {
 //                    if (function.isExternal()) {
 //                        continue;
 //                    }
-//                    System.out.println("Function: " + function.getName());
-//                    function.rootLoop.LoopInfoPrint();
+//                    function.buildControlFlowGraph();
 //                }
+                DeadCodeDelete.run(module);
+            }
+            if (arg.LLVM) {
+                outputLLVM(arg.outPath, module);
             }
             else {
                 RemovePhi.run(module);
@@ -114,6 +108,7 @@ public class Manager {
             put(PUTFARRAY.getName(), PUTFARRAY);
             put(PUTF.getName(), PUTF);
         }};
+
     }
 
 

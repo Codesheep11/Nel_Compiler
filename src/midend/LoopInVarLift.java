@@ -145,7 +145,8 @@ public class LoopInVarLift {
     }
 
     /**
-     * 判断指令是否是循环不变量
+     * 判断指令是否是循环不变量<></>
+     * todo 有副作用的函数调用或内存写入 call
      *
      * @param instr
      * @param loop
@@ -159,8 +160,7 @@ public class LoopInVarLift {
         else if (instr instanceof Instruction.Call) {
             Function callee = ((Instruction.Call) instr).getDestFunction();
             if (callee.isExternal()) return false;
-            //todo 可能存在有副作用的函数调用或内存写入
-            return false;
+            if (callee.hasSideEffect || !callee.isStateless || callee.hasReadIn || callee.hasPutOut) return false;
         }
         else if (instr instanceof Instruction.Store) {
             return false;
