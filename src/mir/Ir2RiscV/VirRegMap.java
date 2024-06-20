@@ -1,16 +1,16 @@
 package mir.Ir2RiscV;
 
 import backend.operand.Address;
-import backend.operand.Imm;
 import backend.operand.Reg;
+import backend.riscv.riscvFloat;
 import backend.riscv.riscvInstruction.LS;
 import backend.riscv.riscvInstruction.La;
 import backend.riscv.riscvInstruction.Li;
+import backend.riscv.riscvInstruction.R2;
 import mir.Constant;
 import mir.Function;
 import mir.Type;
 import mir.Value;
-import backend.riscv.*;
 
 import java.util.HashMap;
 
@@ -87,8 +87,15 @@ public class VirRegMap {
         return reg;
     }
 
+    // b的绑定为a的寄存器
     public void binding(Value a, Value b) {
         Reg reg = ensureRegForValue(a);
-        map.put(b, reg);
+        //绑定在控制流变化后会有bug，如果这个本身的寄存器提前出现呢?
+        //所以答案是，提前先看看原本有没有这个寄存器
+        if (map.containsKey(b)) {
+            CodeGen.nowBlock.riscvInstructions.addLast(new R2(CodeGen.nowBlock, map.get(b), reg, R2.R2Type.mv));
+        } else {
+            map.put(b, reg);
+        }
     }
 }
