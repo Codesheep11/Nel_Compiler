@@ -1,4 +1,5 @@
 package mir;
+
 import java.util.LinkedList;
 
 public class User extends Value {
@@ -39,13 +40,23 @@ public class User extends Value {
     /**
      * 同时删除双向边关系
      *
-     * @param value
-     * @param v
+     * @param oldvalue
+     * @param newvalue
      */
     public void replaceUseOfWith(Value value, Value v) {
         // 在 Value 的 operands 中更新
         value.use_remove(new Use(this, value));
         operands.remove(value);
         addOperand(v);
+    }
+
+    @Override
+    public void use_clear() {
+        //phi 存在自引用的情况
+        use_remove(new Use(this, this));
+        super.use_clear();
+        for (Value operand : operands) {
+            operand.use_remove(new Use(this, operand));
+        }
     }
 }

@@ -48,7 +48,6 @@ public class Function extends Value {
     private BasicBlock entry; // 入口基本块
     public Loop rootLoop = null; // 循环信息
     //GVN
-    private boolean deleted = false;
     public boolean isLeaf = true;
     /**
      * 对内存进行了读写，这里的内存只包括全局变量
@@ -115,14 +114,6 @@ public class Function extends Value {
 
     public boolean isExternal() {
         return blocks.isEmpty();
-    }
-
-    public void setDeleted() {
-        deleted = true;
-    }
-
-    public boolean isDeleted() {
-        return deleted;
     }
 
     public BasicBlock getEntry() {

@@ -139,8 +139,7 @@ public abstract class Constant extends User {
 
         @Override
         public boolean isZero() {
-            for (Constant ele :
-                    constArray) {
+            for (Constant ele : constArray) {
                 if (!ele.isZero())
                     return false;
             }
@@ -185,6 +184,21 @@ public abstract class Constant extends User {
                 }
             }
             return flatten;
+        }
+
+        public Constant getIdxEle(ArrayList<Integer> idx) {
+            if (idx.size() > ((Type.ArrayType) type).getDimensions()) {
+                throw new RuntimeException("Index out of bound");
+            }
+            Constant ret = this;
+            for (int i = 0; i < idx.size(); i++) {
+                ret = ((ConstantArray) ret).getEle(idx.get(0));
+            }
+            return ret;
+        }
+
+        public Constant getEle(int index) {
+            return constArray.get(index);
         }
 
     }

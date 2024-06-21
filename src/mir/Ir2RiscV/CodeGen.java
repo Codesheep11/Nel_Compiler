@@ -63,9 +63,6 @@ public class CodeGen {
             ansRis.addGlobalVar(rs);
         }
         for (Function function : module.getFuncSet()) {
-            if (function.isDeleted()) {
-                continue;
-            }
             if (function.isExternal()) {
                 riscvFunction rf = new riscvFunction(function);
                 ansRis.addFunction(rf);
