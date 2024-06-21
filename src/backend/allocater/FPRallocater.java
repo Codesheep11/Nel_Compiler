@@ -422,9 +422,11 @@ public class FPRallocater {
      */
     public boolean CanBeMerged(Reg r1, Reg r2) {
         if (r1 == r2) return true;
-        if (r1.preColored && r2.preColored)
+        if (r1.preColored && r2.preColored) {
             if (r1.phyReg == r2.phyReg) return true;
-            else throw new RuntimeException("can't merge precolored regs");
+            return false;
+//            else throw new RuntimeException("can't merge precolored regs");
+        }
         if (curCG.get(r1).contains(r2)) return false;
         //合并策略1：如果两个节点的合并节点度数小于K，则可以合并
         HashSet<Reg> neighbors = new HashSet<>();

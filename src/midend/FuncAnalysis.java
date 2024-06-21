@@ -5,7 +5,6 @@ import mir.Module;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 
 import static manager.Manager.ExternFunc.*;
@@ -62,11 +61,11 @@ public class FuncAnalysis {
             for (Instruction inst : bb.getInstructions()) {
                 if (inst instanceof Instruction.Load) {
                     Instruction.Load load = (Instruction.Load) inst;
-                    if (isGlobalAddr(load.getAddr())) hasMemoryRead = true;
+                    if (GlobalVarAnalysis.isGlobalAddr(load.getAddr()) != null) hasMemoryRead = true;
                 }
                 else if (inst instanceof Instruction.Store) {
                     Instruction.Store store = (Instruction.Store) inst;
-                    if (isGlobalAddr(store.getAddr())) hasMemoryWrite = true;
+                    if (GlobalVarAnalysis.isGlobalAddr(store.getAddr()) != null) hasMemoryWrite = true;
                     else if (isSideEffect(store.getAddr(), function)) hasSideEffect = true;
                 }
                 else if (inst instanceof Instruction.Call) {
@@ -105,21 +104,6 @@ public class FuncAnalysis {
         return false;
     }
 
-    /**
-     * 判断是否是全局变量
-     *
-     * @param addr
-     * @return
-     */
-
-    public static boolean isGlobalAddr(Value addr) {
-        if (addr instanceof Instruction.GetElementPtr) {
-            Instruction.GetElementPtr gep = (Instruction.GetElementPtr) addr;
-            addr = gep.getBase();
-        }
-        if (addr instanceof GlobalVariable) return true;
-        return false;
-    }
 
     /**
      * 属性传播
