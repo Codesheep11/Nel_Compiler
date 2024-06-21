@@ -80,17 +80,21 @@ public class Value extends SyncLinkedList.SyncLinkNode {
         }
     }
 
+    public void use_clear() {
+        Iterator<Use> it = uses.iterator();
+        while (it.hasNext()) {
+            Use use = it.next();
+            use.getUser().use_remove(new Use(use.getUser(), this));
+            it.remove();
+        }
+    }
+
     /**
      * 删除该Value的所有使用
      */
     public void delete() {
+        use_clear();
         this.remove();
-        Iterator<Use> it = uses.iterator();
-        while (it.hasNext()) {
-            Use use = it.next();
-            use.getUser().remove();
-            it.remove();
-        }
     }
 
 }

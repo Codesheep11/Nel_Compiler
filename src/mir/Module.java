@@ -3,6 +3,7 @@ package mir;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 
 public class Module {
     private final HashMap<String, Function> functions = new HashMap<>();
@@ -36,5 +37,19 @@ public class Module {
 
     public void removeFunction(Function function) {
         functions.remove(function.getName());
+        Iterator<BasicBlock> iterator = function.getBlocks().iterator();
+        while (iterator.hasNext()) {
+            BasicBlock basicBlock = iterator.next();
+            Iterator<Instruction> instructionIterator = basicBlock.getInstructions().iterator();
+            while (instructionIterator.hasNext()) {
+                Instruction instruction = instructionIterator.next();
+//                System.out.println("remove instruction: " + instruction.getDescriptor());
+                instruction.use_clear();
+                instructionIterator.remove();
+            }
+            basicBlock.use_clear();
+            iterator.remove();
+        }
+        function.use_clear();
     }
 }

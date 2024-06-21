@@ -45,6 +45,7 @@ public class Manager {
                 Mem2Reg.run(module);
                 FunctionInline.run(module);
                 FuncAnalysis.run(module);
+                GlobalVarAnalysis.run(module);
                 LoopInVarLift.run(module);
                 GlobalValueNumbering.run(module);
                 GlobalCodeMotion.run(module);
@@ -146,7 +147,7 @@ public class Manager {
         for (Map.Entry<String, Function> functionEntry :
                 functions.entrySet()) {
             Function function = functionEntry.getValue();
-            if (function.isDeleted() || function.isExternal()) {
+            if (function.isExternal()) {
                 continue;
             }
             outputList.addAll(function.output());
