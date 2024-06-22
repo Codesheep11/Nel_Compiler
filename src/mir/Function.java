@@ -54,6 +54,7 @@ public class Function extends Value {
      */
     public boolean hasMemoryRead = false;
     public boolean hasMemoryWrite = false;
+    public boolean hasMemoryAlloc = false;
     /**
      * IO操作
      */

@@ -54,6 +54,7 @@ public class FuncAnalysis {
     private static void BuildAttribute(Function function) {
         boolean hasMemoryRead = false;
         boolean hasMemoryWrite = false;
+        boolean hasMemoryAlloc = false;
         boolean hasReturn = !(function.getRetType() instanceof Type.VoidType);
         boolean isRecurse = false;
         boolean hasSideEffect = false;
@@ -75,11 +76,15 @@ public class FuncAnalysis {
                         isRecurse = true;
                     }
                 }
-                if (hasMemoryRead && hasMemoryWrite && isRecurse && hasSideEffect) break;
+                else if (inst instanceof Instruction.Alloc) {
+                    hasMemoryAlloc = true;
+                }
+                if (hasMemoryRead && hasMemoryWrite && isRecurse && hasSideEffect && hasMemoryAlloc) break;
             }
         }
         function.hasMemoryRead = hasMemoryRead;
         function.hasMemoryWrite = hasMemoryWrite;
+        function.hasMemoryAlloc = hasMemoryAlloc;
         function.hasReturn = hasReturn;
         function.isRecurse = isRecurse;
         function.hasSideEffect = hasSideEffect;
@@ -128,17 +133,20 @@ public class FuncAnalysis {
             Function func = workList.get(i);
             boolean hasMemoryRead = func.hasMemoryRead;
             boolean hasMemoryWrite = func.hasMemoryWrite;
+            boolean hasMemoryAlloc = func.hasMemoryAlloc;
             boolean hasReadIn = func.hasReadIn;
             boolean hasPutOut = func.hasPutOut;
             boolean hasSideEffect = func.hasSideEffect;
             for (Function callee : callGraph.get(func)) {
                 hasMemoryRead |= callee.hasMemoryRead;
                 hasMemoryWrite |= callee.hasMemoryWrite;
+                hasMemoryAlloc |= callee.hasMemoryAlloc;
                 hasReadIn |= callee.hasReadIn;
                 hasPutOut |= callee.hasPutOut;
             }
             func.hasMemoryRead = hasMemoryRead;
             func.hasMemoryWrite = hasMemoryWrite;
+            func.hasMemoryAlloc = hasMemoryAlloc;
             func.hasReadIn = hasReadIn;
             func.hasPutOut = hasPutOut;
             func.isStateless = (!hasMemoryRead) && (!hasMemoryWrite) && (!hasSideEffect);
