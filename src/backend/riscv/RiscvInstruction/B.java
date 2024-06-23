@@ -1,12 +1,19 @@
-package backend.riscv.riscvInstruction;
+package backend.riscv.RiscvInstruction;
 
 import backend.operand.Operand;
 import backend.operand.Reg;
-import backend.riscv.riscvBlock;
+import backend.riscv.RiscvBlock;
 
-public class B extends riscvInstruction {
+public class B extends RiscvInstruction {
 
     public BType type;
+
+    // 默认概率对半开
+    private double yesProb = 0.5;
+
+    public double getYesProb() {
+        return yesProb;
+    }
 
     /**
      * 注意，这里只能整数和整数比较
@@ -41,9 +48,9 @@ public class B extends riscvInstruction {
 
     public Operand rs1, rs2;
 
-    public riscvBlock targetBlock;
+    public RiscvBlock targetBlock;
 
-    public B(riscvBlock block, BType type, Operand rs1, Operand rs2, riscvBlock targetBlock) {
+    public B(RiscvBlock block, BType type, Operand rs1, Operand rs2, RiscvBlock targetBlock) {
         super(block);
         this.type = type;
         this.rs1 = rs1;

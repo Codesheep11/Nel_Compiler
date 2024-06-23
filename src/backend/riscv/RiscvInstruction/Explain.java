@@ -1,8 +1,8 @@
-package backend.riscv.riscvInstruction;
+package backend.riscv.RiscvInstruction;
 
-import backend.riscv.riscvBlock;
+import backend.riscv.RiscvBlock;
 
-public class Explain extends riscvInstruction {
+public class Explain extends RiscvInstruction {
 
     /*
     所翻译的原本的llvm,方便debug
@@ -10,7 +10,7 @@ public class Explain extends riscvInstruction {
 
     private final String content;
 
-    public Explain(riscvBlock block,String content) {
+    public Explain(RiscvBlock block, String content) {
         super(block);
         this.content = content;
     }

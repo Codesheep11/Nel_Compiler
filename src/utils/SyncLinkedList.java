@@ -21,6 +21,10 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
         return (Type) head.getNext();
     }
 
+    public void removeLast() {
+        tail.getPrev().remove();
+    }
+
     public Type getLast() {
         assert tail.getPrev() != null;
         return (Type) (tail.getPrev());
@@ -120,8 +124,7 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
     public boolean isEmpty() {
         if (getSize() != 0) {
             return false;
-        }
-        else {
+        } else {
             assert head.getNext() == tail;
             assert tail.getPrev() == head;
             return true;
