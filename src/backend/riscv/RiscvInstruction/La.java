@@ -1,16 +1,16 @@
-package backend.riscv.riscvInstruction;
+package backend.riscv.RiscvInstruction;
 
 import backend.operand.Reg;
 import backend.riscv.*;
 
-public class La extends riscvInstruction {
+public class La extends RiscvInstruction {
 
     // 所取的全局变量的地址
-    public riscvGlobalVar content;
+    public RiscvGlobalVar content;
 
     public Reg reg;
 
-    public La(riscvBlock block, Reg reg, riscvGlobalVar rb) {
+    public La(RiscvBlock block, Reg reg, RiscvGlobalVar rb) {
         super(block);
         this.content = rb;
         this.reg = reg;

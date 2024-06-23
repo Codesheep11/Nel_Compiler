@@ -2,11 +2,11 @@ package mir.Ir2RiscV;
 
 import backend.operand.Address;
 import backend.operand.Reg;
-import backend.riscv.riscvFloat;
-import backend.riscv.riscvInstruction.LS;
-import backend.riscv.riscvInstruction.La;
-import backend.riscv.riscvInstruction.Li;
-import backend.riscv.riscvInstruction.R2;
+import backend.riscv.RiscvFloat;
+import backend.riscv.RiscvInstruction.LS;
+import backend.riscv.RiscvInstruction.La;
+import backend.riscv.RiscvInstruction.Li;
+import backend.riscv.RiscvInstruction.R2;
 import mir.Constant;
 import mir.Function;
 import mir.Type;
@@ -72,7 +72,7 @@ public class VirRegMap {
         Reg reg = map.get(value);
         if (value instanceof Constant.ConstantFloat) {
             Float init = ((Float) ((Constant.ConstantFloat) value).getConstValue());
-            riscvFloat rf = new riscvFloat(init);
+            RiscvFloat rf = new RiscvFloat(init);
             CodeGen.ansRis.addGlobalVar(rf);
             Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
             CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, tmp, rf));

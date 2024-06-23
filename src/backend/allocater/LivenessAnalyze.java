@@ -1,41 +1,41 @@
 package backend.allocater;
 
 import backend.operand.Reg;
-import backend.riscv.riscvBlock;
-import backend.riscv.riscvFunction;
-import backend.riscv.riscvInstruction.riscvInstruction;
+import backend.riscv.RiscvBlock;
+import backend.riscv.RiscvInstruction.RiscvInstruction;
+import backend.riscv.RiscvFunction;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 
 public class LivenessAnalyze {
-    public riscvFunction function;
+    public RiscvFunction function;
 
-    public LivenessAnalyze(riscvFunction function) {
+    public LivenessAnalyze(RiscvFunction function) {
         this.function = function;
     }
 
     public void genInOutSet() {
-        for (riscvBlock block : function.riscvBlocks) {
+        for (RiscvBlock block : function.blocks) {
             block.clean();
-            for (riscvInstruction ins : block.riscvInstructions) {
+            for (RiscvInstruction ins : block.riscvInstructions) {
                 HashSet<Reg> tmp = new HashSet<>(ins.use);
                 tmp.removeAll(block.def);
                 block.use.addAll(tmp);
                 block.def.addAll(ins.def);
             }
         }
-        ArrayList<riscvBlock> topoSort = function.getTopoSort();
+        ArrayList<RiscvBlock> topoSort = function.getTopoSort();
         int time = 0;
         boolean changed = true;
         while (changed) {
 //            System.out.println("cycle times: " + time++);
             changed = false;
-            for (riscvBlock block : topoSort) {
+            for (RiscvBlock block : topoSort) {
                 HashSet<Reg> inSet = new HashSet();
                 HashSet<Reg> outSet = new HashSet();
                 // out = U(succ)in
-                for (riscvBlock succ : block.succBlock) {
+                for (RiscvBlock succ : block.succBlock) {
                     outSet.addAll(succ.in);
                 }
                 if (!outSet.equals(block.out)) {
@@ -52,13 +52,13 @@ public class LivenessAnalyze {
                 }
             }
         }
-        for (riscvBlock block : topoSort) {
+        for (RiscvBlock block : topoSort) {
             block.getFirst().in = block.in;
             block.getLast().out = block.out;
             int size = block.riscvInstructions.getSize();
             for (int i = size - 1; i >= 0; i--) {
 //                System.out.println("ins num: " + i + " size: " + size);
-                riscvInstruction ins = block.riscvInstructions.get(i);
+                RiscvInstruction ins = block.riscvInstructions.get(i);
                 if (i != size - 1) {
                     //out[i] = in[i+1]
                     ins.out = block.riscvInstructions.get(i + 1).in;

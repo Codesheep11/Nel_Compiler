@@ -12,8 +12,8 @@ import java.util.ArrayList;
  * 浮点变量，字符串变量，数组变量
  * 其中需要注意的是浮点数的局部初始化也都是需要开全局变量的
  */
-// xxx: riscvGlobalVar 应该继承 Operand
-public class riscvGlobalVar extends Operand {
+// xxx: RiscvGlobalVar 应该继承 Operand
+public class RiscvGlobalVar extends Operand {
     public String name;//即显示出来的label
     public GlobType type;
 
@@ -23,7 +23,7 @@ public class riscvGlobalVar extends Operand {
 
 
 
-    public riscvGlobalVar(String name, GlobType type) {
+    public RiscvGlobalVar(String name, GlobType type) {
         this.name = name;
         this.type = type;
     }
@@ -31,30 +31,30 @@ public class riscvGlobalVar extends Operand {
     /**
      * 根据输入生成对应的全局变量
      */
-    public static riscvGlobalVar genGlobalVariable(GlobalVariable mirGlobalVar) {
+    public static RiscvGlobalVar genGlobalVariable(GlobalVariable mirGlobalVar) {
         // 实际的全局变量类型
         Type mirType = mirGlobalVar.getInnerType();
         if (mirType.isFloatTy()) {
                 float floatInit = (float) mirGlobalVar.getConstValue().getConstValue();
-                return new riscvFloat(mirGlobalVar.getRiscGlobalVariableName(), floatInit);
+                return new RiscvFloat(mirGlobalVar.getRiscGlobalVariableName(), floatInit);
         } else if (mirType.isInt32Ty()) {
                 int intInit = (int) mirGlobalVar.getConstValue().getConstValue();
-                return new riscvInt(mirGlobalVar.getRiscGlobalVariableName(), intInit);
+                return new RiscvInt(mirGlobalVar.getRiscGlobalVariableName(), intInit);
         } else if (mirType.isArrayTy()) {
             // 计算字长
             int wordSize = mirType.queryBytesSizeOfType() / 4;
             if (mirGlobalVar.getConstValue() instanceof Constant.ConstantZeroInitializer) {
                 if (((Type.ArrayType) mirType).getBasicEleType().isFloatTy()) {
-                    return new riscvArray(mirGlobalVar.getRiscGlobalVariableName(), wordSize, GlobType.FLOAT);
+                    return new RiscvArray(mirGlobalVar.getRiscGlobalVariableName(), wordSize, GlobType.FLOAT);
                 } else {
-                    return new riscvArray(mirGlobalVar.getRiscGlobalVariableName(), wordSize, GlobType.INT);
+                    return new RiscvArray(mirGlobalVar.getRiscGlobalVariableName(), wordSize, GlobType.INT);
                 }
             } else {
                 ArrayList<Constant> flattened = ((Constant.ConstantArray) mirGlobalVar.getConstValue()).getFlattenedArray();
                 if (((Type.ArrayType) mirType).getBasicEleType().isFloatTy()) {
-                    return new riscvArray(mirGlobalVar.getRiscGlobalVariableName(), wordSize, GlobType.FLOAT, flattened);
+                    return new RiscvArray(mirGlobalVar.getRiscGlobalVariableName(), wordSize, GlobType.FLOAT, flattened);
                 } else {
-                    return new riscvArray(mirGlobalVar.getRiscGlobalVariableName(), wordSize, GlobType.INT, flattened);
+                    return new RiscvArray(mirGlobalVar.getRiscGlobalVariableName(), wordSize, GlobType.INT, flattened);
                 }
             }
         }
