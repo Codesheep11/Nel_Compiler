@@ -366,6 +366,7 @@ public class Function extends Value {
      * @return
      */
     public ArrayList<BasicBlock> getDomTreeLayerSort() {
+        if (entry == null) return new ArrayList<>();
         BasicBlock entry = getEntry();
         ArrayList<BasicBlock> layerSort = new ArrayList<>();
         Queue<BasicBlock> queue = new LinkedList<>();
@@ -378,5 +379,38 @@ public class Function extends Value {
             }
         }
         return layerSort;
+    }
+
+
+    /**
+     * 获取函数的反向后序遍历
+     *
+     * @return
+     */
+    public ArrayList<BasicBlock> buildReversePostOrderTraversal() {
+        ArrayList<BasicBlock> rpot = new ArrayList<>();
+        HashSet<BasicBlock> visited = new HashSet<>();
+        Stack<BasicBlock> stack = new Stack<>();
+        BasicBlock entry = this.getEntry();
+        stack.push(entry);
+        while (!stack.isEmpty()) {
+            BasicBlock current = stack.peek();
+            if (visited.contains(current)) {
+                stack.pop();
+                if (!rpot.contains(current)) {
+                    rpot.add(current);
+                }
+            }
+            else {
+                visited.add(current);
+                for (BasicBlock succ : current.getSucBlocks()) {
+                    if (!visited.contains(succ)) {
+                        stack.push(succ);
+                    }
+                }
+            }
+        }
+        Collections.reverse(rpot);
+        return rpot;
     }
 }

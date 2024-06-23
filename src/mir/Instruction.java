@@ -131,6 +131,13 @@ public class Instruction extends User {
         return !(this instanceof Terminator) && !(this instanceof Store);
     }
 
+    public boolean mayHaveNonDefUseDependency() {
+        if (this instanceof Load || this instanceof Call || this instanceof Store || this instanceof Terminator) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * 返回值决定指令Type
      */
