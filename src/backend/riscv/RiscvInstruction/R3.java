@@ -1,10 +1,10 @@
-package backend.riscv.riscvInstruction;
+package backend.riscv.RiscvInstruction;
 
 import backend.operand.Operand;
 import backend.operand.Reg;
-import backend.riscv.riscvBlock;
+import backend.riscv.RiscvBlock;
 
-public class R3 extends riscvInstruction {
+public class R3 extends RiscvInstruction {
     public R3Type type;
 
     public enum R3Type {
@@ -137,7 +137,7 @@ public class R3 extends riscvInstruction {
 
     public Operand rd, rs1, rs2;
 
-    public R3(riscvBlock block, Operand rd, Operand rs1, Operand rs2, R3Type type) {
+    public R3(RiscvBlock block, Operand rd, Operand rs1, Operand rs2, R3Type type) {
         super(block);
         this.rd = rd;
         this.rs1 = rs1;

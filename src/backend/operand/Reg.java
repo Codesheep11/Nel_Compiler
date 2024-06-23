@@ -1,6 +1,6 @@
 package backend.operand;
 
-import backend.riscv.riscvInstruction.riscvInstruction;
+import backend.riscv.RiscvInstruction.RiscvInstruction;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -162,8 +162,8 @@ public class Reg extends Operand {
 
     public void mergeReg(Reg reg) {
         //对于所有使用reg的riscv指令，将其换成this
-        HashSet<riscvInstruction> tmp = new HashSet<>(reg.use);
-        for (riscvInstruction ins : tmp) {
+        HashSet<RiscvInstruction> tmp = new HashSet<>(reg.use);
+        for (RiscvInstruction ins : tmp) {
             ins.replaceUseReg(reg, this);
         }
         reg.use.clear();

@@ -1,12 +1,11 @@
-package backend.riscv.riscvInstruction;
+package backend.riscv.RiscvInstruction;
 
 import backend.operand.Address;
-import backend.operand.Imm;
 import backend.operand.Operand;
 import backend.operand.Reg;
-import backend.riscv.riscvBlock;
+import backend.riscv.RiscvBlock;
 
-public class LS extends riscvInstruction {
+public class LS extends RiscvInstruction {
     public LSType type;
 
     public enum LSType {
@@ -46,7 +45,7 @@ public class LS extends riscvInstruction {
     //标记是否是因为寄存器分配阶段由于寄存器溢出而产生的访存指令
     public boolean isSpilled = false;
 
-    public LS(riscvBlock block, Operand rs1, Operand rs2, Operand imm, LSType type) {
+    public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand imm, LSType type) {
         super(block);
         this.rs1 = rs1;
         this.rs2 = rs2;
@@ -67,7 +66,7 @@ public class LS extends riscvInstruction {
         imm.use.add(this);
     }
 
-    public LS(riscvBlock block, Operand rs1, Operand rs2, Operand imm, LSType type, boolean isSpilled) {
+    public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand imm, LSType type, boolean isSpilled) {
         super(block);
         this.rs1 = rs1;
         this.rs2 = rs2;

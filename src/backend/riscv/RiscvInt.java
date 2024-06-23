@@ -1,14 +1,14 @@
 package backend.riscv;
 
-public class riscvInt extends riscvGlobalVar {
+public class RiscvInt extends RiscvGlobalVar {
     private final int data;
 
-    public riscvInt(String name, int data) {
+    public RiscvInt(String name, int data) {
         super(name, GlobType.INT);
         this.data = data;
     }
 
-    public riscvInt(String name) {
+    public RiscvInt(String name) {
         super(name, GlobType.INT);
         this.data = 0;
     }

@@ -2,20 +2,17 @@ package backend.allocater;
 
 import backend.StackManager;
 import backend.operand.Address;
-import backend.operand.Imm;
-import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.*;
-import backend.riscv.riscvInstruction.*;
-import mir.Instruction;
+import backend.riscv.RiscvInstruction.*;
 
 import java.util.*;
 
 public class GPRallocater {
 
-    public riscvModule module;
+    public RiscvModule module;
 
-    public riscvFunction curFunc; //当前分配的函数
+    public RiscvFunction curFunc; //当前分配的函数
 
     public HashMap<Reg, HashSet<Reg>> conflictGraph;
     public HashMap<Reg, HashSet<Reg>> curCG;
@@ -58,9 +55,9 @@ public class GPRallocater {
      *
      * @param module
      */
-    public GPRallocater(riscvModule module) {
+    public GPRallocater(RiscvModule module) {
         this.module = module;
-        for (riscvFunction func : module.funcList) {
+        for (RiscvFunction func : module.funcList) {
             if (func.isExternal) continue;
             curFunc = func;
             pass = 0;
@@ -94,26 +91,26 @@ public class GPRallocater {
     public void ReWrite() {
         for (Reg reg : spillNodes) {
 //            System.out.println("spill: " + reg);
-            ArrayList<riscvInstruction> contains = new ArrayList<>(reg.use);
-            HashSet<riscvInstruction> uses = new HashSet<>();
-            HashSet<riscvInstruction> defs = new HashSet<>();
-            HashSet<riscvInstruction> uds = new HashSet<>();
+            ArrayList<RiscvInstruction> contains = new ArrayList<>(reg.use);
+            HashSet<RiscvInstruction> uses = new HashSet<>();
+            HashSet<RiscvInstruction> defs = new HashSet<>();
+            HashSet<RiscvInstruction> uds = new HashSet<>();
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-            for (riscvInstruction ins : contains) {
+            for (RiscvInstruction ins : contains) {
                 if (ins.def.contains(reg) && ins.use.contains(reg)) uds.add(ins);
                 else if (ins.def.contains(reg)) defs.add(ins);
                 else if (ins.use.contains(reg)) uses.add(ins);
             }
-            for (riscvInstruction ud : uds) {
+            for (RiscvInstruction ud : uds) {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                riscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
-                riscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
+                RiscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
+                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
                 ud.replaceUseReg(reg, tmp);
                 ud.block.riscvInstructions.insertAfter(store, ud);
                 ud.block.riscvInstructions.insertBefore(load, ud);
             }
-            for (riscvInstruction def : defs) {
+            for (RiscvInstruction def : defs) {
                 //如果定义点是lw或者ld指令，则不需要sw保护？
                 //错误的，定义点也可能会溢出，比如call多个load或者多个arg
                 //非 ssa 在使用点使用新的虚拟寄存器
@@ -124,20 +121,20 @@ public class GPRallocater {
                         continue;
                     }
                 }
-                riscvInstruction store;
+                RiscvInstruction store;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
                 def.replaceUseReg(reg, tmp);
                 def.block.riscvInstructions.insertAfter(store, def);
             }
-            for (riscvInstruction use : uses) {
+            for (RiscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
                 if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1 == reg) {
                     StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                     continue;
                 }
-                riscvInstruction load;
+                RiscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 load = new LS(use.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
@@ -490,8 +487,8 @@ public class GPRallocater {
     public void buildConflictGraph() {
         new LivenessAnalyze(curFunc).genInOutSet();
         conflictGraph = new HashMap<>();
-        for (riscvBlock block : curFunc.riscvBlocks) {
-            for (riscvInstruction ins : block.riscvInstructions) {
+        for (RiscvBlock block : curFunc.blocks) {
+            for (RiscvInstruction ins : block.riscvInstructions) {
                 for (Reg use : ins.use) {
                     if (use.regType == Reg.RegType.GPR)
                         conflictGraph.putIfAbsent(use, new HashSet<>());
@@ -534,8 +531,8 @@ public class GPRallocater {
             }
         }
         //维护moveList
-        for (riscvBlock block : curFunc.riscvBlocks) {
-            for (riscvInstruction ins : block.riscvInstructions) {
+        for (RiscvBlock block : curFunc.blocks) {
+            for (RiscvInstruction ins : block.riscvInstructions) {
                 if (ins instanceof R2 && ((R2) ins).type == R2.R2Type.mv) {
                     moveList.add((R2) ins);
                 }

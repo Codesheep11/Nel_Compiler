@@ -1,15 +1,14 @@
-package backend.riscv.riscvInstruction;
+package backend.riscv.RiscvInstruction;
 
-import backend.operand.Operand;
 import backend.operand.Reg;
-import backend.riscv.riscvBlock;
+import backend.riscv.RiscvBlock;
 import utils.SyncLinkedList;
 
 import java.util.HashSet;
 
-public class riscvInstruction extends SyncLinkedList.SyncLinkNode {
+public class RiscvInstruction extends SyncLinkedList.SyncLinkNode {
 
-    public riscvBlock block;
+    public RiscvBlock block;
     public static int cnt = 0;
     public int id = cnt++;
 
@@ -28,7 +27,7 @@ public class riscvInstruction extends SyncLinkedList.SyncLinkNode {
         out = new HashSet<>();
     }
 
-    public riscvInstruction(riscvBlock block) {
+    public RiscvInstruction(RiscvBlock block) {
         this.block = block;
 //        block.addInstrucion(this);
     }
