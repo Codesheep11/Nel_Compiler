@@ -1,13 +1,11 @@
 package midend;
 
-import backend.riscv.riscvInstruction.B;
 import mir.BasicBlock;
 import mir.Loop;
 import mir.Value;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class CloneInfo {
     public static HashMap<Value, Value> valueMap = new HashMap<>();

@@ -1,7 +1,7 @@
 package manager;
 
 import backend.allocater.Allocater;
-import backend.riscv.riscvModule;
+import backend.riscv.RiscvModule;
 import frontend.Visitor;
 import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
@@ -60,7 +60,7 @@ public class Manager {
             else {
                 RemovePhi.run(module);
                 CodeGen codeGen = new CodeGen();
-                riscvModule riscvmodule = codeGen.genCode(module);
+                RiscvModule riscvmodule = codeGen.genCode(module);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
@@ -108,7 +108,7 @@ public class Manager {
     }
 
 
-    public void outputRiscv(String outpath, riscvModule module) throws FileNotFoundException {
+    public void outputRiscv(String outpath, RiscvModule module) throws FileNotFoundException {
         OutputStream out = new FileOutputStream(outpath);
         outputList.clear();
         outputList.add(module.toString());

@@ -4,7 +4,7 @@ import mir.Constant;
 
 import java.util.ArrayList;
 
-public class riscvArray extends riscvGlobalVar {
+public class RiscvArray extends RiscvGlobalVar {
     //全局数组来自LLVM的全局数组
     // type指的是元素个数
     // 强制压平了,且元素只有int或者float两种
@@ -17,7 +17,7 @@ public class riscvArray extends riscvGlobalVar {
     public ArrayList<Integer> values;
 
     //没有初始化的数组构造方法
-    public riscvArray(String name, int size, GlobType type) {
+    public RiscvArray(String name, int size, GlobType type) {
         super(name, type);
         this.size = size;
         this.values = new ArrayList<>();
@@ -25,7 +25,7 @@ public class riscvArray extends riscvGlobalVar {
 
     //初始化的数据构造方法
     //保证init的长度大于0
-    public riscvArray(String name, int size, GlobType type, ArrayList<Constant> init) {
+    public RiscvArray(String name, int size, GlobType type, ArrayList<Constant> init) {
         super(name, type);
         this.values = new ArrayList<>();
         if (init.isEmpty()) {

@@ -4,10 +4,10 @@ import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Imm;
 import backend.operand.Reg;
-import backend.riscv.riscvBlock;
-import backend.riscv.riscvFunction;
-import backend.riscv.riscvInstruction.*;
-import backend.riscv.riscvModule;
+import backend.riscv.RiscvBlock;
+import backend.riscv.RiscvFunction;
+import backend.riscv.RiscvInstruction.*;
+import backend.riscv.RiscvModule;
 
 import static backend.operand.Reg.PhyReg.*;
 
@@ -18,22 +18,22 @@ import static backend.operand.Reg.PhyReg.*;
  * 3.栈帧回填
  */
 public class Allocater {
-    private static riscvModule module;
+    private static RiscvModule module;
 
-    public static void run(riscvModule riscvModule) {
+    public static void run(RiscvModule riscvModule) {
         module = riscvModule;
         GPRallocater gprallocater = new GPRallocater(module);
         FPRallocater fprallocater = new FPRallocater(module);
-        for (riscvFunction func : module.funcList) {
+        for (RiscvFunction func : module.funcList) {
             if (func.isExternal) continue;
             new LivenessAnalyze(func).genInOutSet();
         }
-        for (riscvFunction func : module.funcList) {
+        for (RiscvFunction func : module.funcList) {
             if (func.isExternal) continue;
             for (J call : func.calls) {
                 if (call.type == J.JType.call) {
                     String funcName = call.funcName;
-                    riscvFunction callee = module.getFunction(funcName);
+                    RiscvFunction callee = module.getFunction(funcName);
                     RegSaveForCall(func, call, callee);
                 }
                 else {
@@ -49,8 +49,8 @@ public class Allocater {
             if (offset != null) {
                 func.getEntry().riscvInstructions.addFirst(
                         new LS(func.getEntry(), Reg.getPreColoredReg(ra, 64), Reg.getPreColoredReg(sp, 64), offset, LS.LSType.sd));
-                for (riscvBlock block : func.getExits()) {
-                    riscvInstruction ret = block.riscvInstructions.getLast();
+                for (RiscvBlock block : func.getExits()) {
+                    RiscvInstruction ret = block.riscvInstructions.getLast();
                     block.riscvInstructions.insertBefore(
                             new LS(block, Reg.getPreColoredReg(ra, 64), Reg.getPreColoredReg(sp, 64), offset, LS.LSType.ld), ret);
                 }
@@ -97,7 +97,7 @@ public class Allocater {
      * @param call   函数调用指令
      * @param callee 被调用的函数
      */
-    public static void RegSaveForCall(riscvFunction func, J call, riscvFunction callee) {
+    public static void RegSaveForCall(RiscvFunction func, J call, RiscvFunction callee) {
 //        if (callee != null) {
 //            for (Reg reg : call.out) {
 //                //call的out如果是a0，不保存
@@ -105,7 +105,7 @@ public class Allocater {
 //                    continue;
 //                }
 //                if (callee.usedRegs.contains(reg.phyReg)) {
-//                    riscvInstruction store, load;
+//                    RiscvInstruction store, load;
 //                    Address offset = StackManager.getInstance().getRegOffset(callee.name, reg.toString(), reg.bits / 8);
 //                    store = new LS(call.block, reg, new Reg(Reg.PhyReg.sp, 64), offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd);
 //                    call.block.riscvInstructions.insertBefore(store, call);
@@ -127,7 +127,7 @@ public class Allocater {
             if (reg.phyReg == zero) {
                 continue;
             }
-            riscvInstruction store, load;
+            RiscvInstruction store, load;
             Address offset = StackManager.getInstance().getRegOffset(func.name, reg.toString(), reg.bits / 8);
             store = new LS(call.block, reg, Reg.getPreColoredReg(sp, 64), offset,
                     reg.regType == Reg.RegType.FPR ? LS.LSType.fsw : (reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd));

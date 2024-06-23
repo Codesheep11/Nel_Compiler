@@ -1,12 +1,13 @@
 package mir.Ir2RiscV;
 
 
+import backend.Opt.BlockReSort;
 import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.*;
-import backend.riscv.riscvInstruction.*;
+import backend.riscv.RiscvInstruction.*;
 import mir.Module;
 import mir.*;
 
@@ -23,21 +24,21 @@ import java.util.HashMap;
  */
 
 public class CodeGen {
-    private riscvFunction nowFunc = null;
-    public static riscvBlock nowBlock = null;
+    private RiscvFunction nowFunc = null;
+    public static RiscvBlock nowBlock = null;
     /**
      * 全局和对应的riscv全局变量的映射,可以方便在后面使用的时候取到
      * 注意不能按照对象本身来定位，因为对象不一样但是可能对应的事一个东西
      */
-    private final HashMap<String, riscvGlobalVar> gloMap = new HashMap<>();
+    private final HashMap<String, RiscvGlobalVar> gloMap = new HashMap<>();
 
-    public static final riscvModule ansRis = new riscvModule();
+    public static final RiscvModule ansRis = new RiscvModule();
 
     // 为了给branch 和 jump指令进行block的存放
     // 因为branch和jump需要存的属性是riscvBlock,所以需要提前将所有llvm块和其翻译后的riscv块对应好
-    private final HashMap<BasicBlock, riscvBlock> blockMap = new HashMap<>();
+    private final HashMap<BasicBlock, RiscvBlock> blockMap = new HashMap<>();
 
-    public riscvModule genCode(Module module) {
+    public RiscvModule genCode(Module module) {
         Reg.initPreColoredRegs();
         visitModule(module);
         return ansRis;
@@ -54,28 +55,29 @@ public class CodeGen {
         // 所有全局变量都认为是一个指针,且不包含string
         // 只能是数组或者float或者int32
         for (GlobalVariable globalVariable : globalVariables) {
-            riscvGlobalVar rb = riscvGlobalVar.genGlobalVariable(globalVariable);
+            RiscvGlobalVar rb = RiscvGlobalVar.genGlobalVariable(globalVariable);
             ansRis.addGlobalVar(rb);
             gloMap.put(globalVariable.ident.toString(), rb);
         }
         for (String s : module.getGlobalStrings()) {
-            riscvString rs = new riscvString(s);
+            RiscvString rs = new RiscvString(s);
             ansRis.addGlobalVar(rs);
         }
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) {
-                riscvFunction rf = new riscvFunction(function);
+                RiscvFunction rf = new RiscvFunction(function);
                 ansRis.addFunction(rf);
                 continue;
             }
             VirRegMap.VRM.clean(function);
             visitFunction(function);
         }
-        for (riscvFunction rf : ansRis.funcList) {
-            if (riscvModule.isMain(rf)) {
+        for (RiscvFunction rf : ansRis.funcList) {
+            if (RiscvModule.isMain(rf)) {
                 rf.isMain = true;
                 ansRis.mainFunc = rf;
             }
+            BlockReSort.optimizeBlockLayout(rf);
         }
     }
 
@@ -88,11 +90,11 @@ public class CodeGen {
      * 同时参数有三种:i32,地址,float
      */
     private void visitFunction(Function function) {
-        nowFunc = new riscvFunction(function);
+        nowFunc = new RiscvFunction(function);
         ansRis.addFunction(nowFunc);
-        riscvInstruction param = new Explain(nowBlock, "param passing");
+        RiscvInstruction param = new Explain(nowBlock, "param passing");
         for (BasicBlock block : function.getBlocks()) {
-            riscvBlock riscvBlock = new riscvBlock(block);
+            RiscvBlock riscvBlock = new RiscvBlock(block);
             nowFunc.addBB(riscvBlock);
             blockMap.put(block, riscvBlock);
         }
@@ -192,7 +194,7 @@ public class CodeGen {
         // 如果是对字符串输出的话,需要将第一个参数设置成地址
         if (callInstr.strIdx != -1) {
             count_int++;
-            nowBlock.riscvInstructions.addLast(new La(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a0, 64), riscvString.RS.get(callInstr.strIdx - 1)));
+            nowBlock.riscvInstructions.addLast(new La(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a0, 64), RiscvString.RS.get(callInstr.strIdx - 1)));
         }
         for (Value para : paras) {
             Reg paraReg = VirRegMap.VRM.ensureRegForValue(para);
@@ -314,9 +316,9 @@ public class CodeGen {
             // 如果是对全局变量的访问
             if (loadInstr.getAddr() instanceof GlobalVariable) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-                riscvGlobalVar label = gloMap.get(((GlobalVariable) loadInstr.getAddr()).ident.toString());
+                RiscvGlobalVar label = gloMap.get(((GlobalVariable) loadInstr.getAddr()).ident.toString());
                 nowBlock.riscvInstructions.addLast(new La(nowBlock, tmp, label));
-                if (label.type == riscvGlobalVar.GlobType.FLOAT) {
+                if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.flw));
                 } else {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.lw));
@@ -348,9 +350,9 @@ public class CodeGen {
             // 如果是对全局变量的访问
             if (storeInstr.getAddr() instanceof GlobalVariable) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-                riscvGlobalVar label = gloMap.get(((GlobalVariable) storeInstr.getAddr()).ident.toString());
+                RiscvGlobalVar label = gloMap.get(((GlobalVariable) storeInstr.getAddr()).ident.toString());
                 nowBlock.riscvInstructions.addLast(new La(nowBlock, tmp, label));
-                if (label.type == riscvGlobalVar.GlobType.FLOAT) {
+                if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.fsw));
                 } else {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.sw));
@@ -385,7 +387,7 @@ public class CodeGen {
         if (getElementPtr.getBase() instanceof GlobalVariable) {
             // 获取全局的地址,riscv没有lw的伪指令供选择全局的,所以必须要la进来
             base = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-            riscvGlobalVar globalVar = gloMap.get(((GlobalVariable) getElementPtr.getBase()).ident.toString());
+            RiscvGlobalVar globalVar = gloMap.get(((GlobalVariable) getElementPtr.getBase()).ident.toString());
             nowBlock.riscvInstructions.addLast(new La(nowBlock, base, globalVar));
         } else {
             // 不是全局的那就说明是一个局部变量指针,已经被存起来了
@@ -444,7 +446,7 @@ public class CodeGen {
      * 这里假定跳转的范围一个j都能解决
      */
     private void solveJump(Instruction.Jump jumpInstr) {
-        riscvBlock rb = blockMap.get(jumpInstr.getTargetBlock());
+        RiscvBlock rb = blockMap.get(jumpInstr.getTargetBlock());
         nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, rb));
     }
 

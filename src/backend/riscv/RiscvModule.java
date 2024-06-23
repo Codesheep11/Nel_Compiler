@@ -2,17 +2,17 @@ package backend.riscv;
 
 import java.util.ArrayList;
 
-public class riscvModule {
-    public ArrayList<riscvFunction> funcList = new ArrayList<>();
-    public ArrayList<riscvGlobalVar> globList = new ArrayList<>();
-    public riscvFunction mainFunc;
+public class RiscvModule {
+    public ArrayList<RiscvFunction> funcList = new ArrayList<>();
+    public ArrayList<RiscvGlobalVar> globList = new ArrayList<>();
+    public RiscvFunction mainFunc;
 
-    public riscvModule() {
+    public RiscvModule() {
 
     }
 
-    public riscvFunction getFunction(String name) {
-        for (riscvFunction func : funcList) {
+    public RiscvFunction getFunction(String name) {
+        for (RiscvFunction func : funcList) {
             if (func.name.equals(name)) {
                 return func;
             }
@@ -20,15 +20,15 @@ public class riscvModule {
         return null;
     }
 
-    public static boolean isMain(riscvFunction func) {
+    public static boolean isMain(RiscvFunction func) {
         return func.name.equals("main");
     }
 
-    public void addFunction(riscvFunction function) {
+    public void addFunction(RiscvFunction function) {
         funcList.add(function);
     }
 
-    public void addGlobalVar(riscvGlobalVar gv) {
+    public void addGlobalVar(RiscvGlobalVar gv) {
         globList.add(gv);
     }
 
@@ -37,21 +37,21 @@ public class riscvModule {
         StringBuilder head = new StringBuilder(".global main\n");
         StringBuilder sb = new StringBuilder("");
         sb.append(".data\n");
-        for (riscvGlobalVar glob : globList) {
+        for (RiscvGlobalVar glob : globList) {
             sb.append(glob.toString());
         }
         head.append(".type ").append("main").append(", @function\n");
         sb.append("\n");
         sb.append(".text\n");
         sb.append(mainFunc.toString());
-        for (riscvFunction func : funcList) {
+        for (RiscvFunction func : funcList) {
             if (func.isExternal) {
                 continue;
             }
             if (func == mainFunc) {
                 continue;
             }
-            head.append(".type ").append(riscvFunction.funcNameWrap(func.name)).append(", @function\n");
+            head.append(".type ").append(RiscvFunction.funcNameWrap(func.name)).append(", @function\n");
             sb.append(func);
             sb.append("\n");
         }

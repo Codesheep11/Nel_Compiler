@@ -1,11 +1,10 @@
-package backend.riscv.riscvInstruction;
+package backend.riscv.RiscvInstruction;
 
 import backend.operand.Reg;
-import backend.riscv.riscvBlock;
-import backend.riscv.riscvFunction;
-import mir.Instruction;
+import backend.riscv.RiscvBlock;
+import backend.riscv.RiscvFunction;
 
-public class J extends riscvInstruction {
+public class J extends RiscvInstruction {
 
     public JType type;
 
@@ -31,17 +30,17 @@ public class J extends riscvInstruction {
         }
     }
 
-    public riscvBlock targetBlock;
+    public RiscvBlock targetBlock;
 
     public String funcName;
 
-    public J(riscvBlock block, JType jType) {
+    public J(RiscvBlock block, JType jType) {
         super(block);
         this.type = jType;
         //use.add(Reg.getPreColoredReg(Reg.PhyReg.ra, 64));
     }
 
-    public J(riscvBlock block, JType jType, riscvBlock targetBlock) {
+    public J(RiscvBlock block, JType jType, RiscvBlock targetBlock) {
         super(block);
         this.type = jType;
         this.targetBlock = targetBlock;
@@ -49,7 +48,7 @@ public class J extends riscvInstruction {
         targetBlock.preBlock.add(block);
     }
 
-    public J(riscvBlock block, JType jType, String funcName) {
+    public J(RiscvBlock block, JType jType, String funcName) {
         super(block);
         if (jType != JType.call) {
             throw new RuntimeException("not call but use funcName");
@@ -64,7 +63,7 @@ public class J extends riscvInstruction {
             return "\t" + type.toString();
         }
         else if (type == JType.call) {
-            return "\t" + type + "\t" + riscvFunction.funcNameWrap(funcName);
+            return "\t" + type + "\t" + RiscvFunction.funcNameWrap(funcName);
         }
         else {
             return "\t" + type + "\t\t" + targetBlock.name;

@@ -1,10 +1,10 @@
-package backend.riscv.riscvInstruction;
+package backend.riscv.RiscvInstruction;
 
 import backend.operand.Address;
 import backend.operand.Reg;
-import backend.riscv.riscvBlock;
+import backend.riscv.RiscvBlock;
 
-public class Li extends riscvInstruction {
+public class Li extends RiscvInstruction {
 
     public Integer imm;
 
@@ -12,7 +12,7 @@ public class Li extends riscvInstruction {
 
     public Reg reg;
 
-    public Li(riscvBlock block, Reg reg, Integer value) {
+    public Li(RiscvBlock block, Reg reg, Integer value) {
         super(block);
         this.imm = value;
         this.reg = reg;
@@ -20,7 +20,7 @@ public class Li extends riscvInstruction {
         reg.use.add(this);
     }
 
-    public Li(riscvBlock block, Reg reg, Address addr) {
+    public Li(RiscvBlock block, Reg reg, Address addr) {
         super(block);
         this.addr = addr;
         this.reg = reg;
