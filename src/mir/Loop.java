@@ -2,7 +2,6 @@ package mir;
 
 import midend.CloneInfo;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 
@@ -71,8 +70,7 @@ public class Loop {
     public boolean defValue(Value value) {
         if (!(value instanceof Instruction))
             throw new RuntimeException("defValue:" + value + "value is not an instruction\n");
-        if (LoopContains(((Instruction) value).getParentBlock())) return true;
-        return false;
+        return LoopContains(((Instruction) value).getParentBlock());
     }
 
     /**
@@ -80,7 +78,7 @@ public class Loop {
      */
 
     public boolean LoopContains(BasicBlock block) {
-        if (children.size() == 0) return nowLevelBB.contains(block);
+        if (children.isEmpty()) return nowLevelBB.contains(block);
         boolean flag = false;
         flag |= nowLevelBB.contains(block);
         for (Loop child : children) {
@@ -96,9 +94,7 @@ public class Loop {
      * @param block
      */
     public void remove(BasicBlock block) {
-        if (nowLevelBB.contains(block)) {
-            nowLevelBB.remove(block);
-        }
+        nowLevelBB.remove(block);
         //如果循环头被删除，那么整个循环被删除
         if (!isRoot && header.equals(block)) {
             delete();
@@ -106,7 +102,7 @@ public class Loop {
         //如果循环回边被删除，判断是否还存在回边，如果没有，则整个循环被删除
         if (latchs.contains(block)) {
             latchs.remove(block);
-            if (latchs.size() == 0) {
+            if (latchs.isEmpty()) {
                 delete();
             }
         }
