@@ -139,19 +139,22 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
     class IIterator implements Iterator<Type> {
         //实现新的迭代器
         SyncLinkNode cur;
+        SyncLinkNode nxt;
 
         IIterator() {
             cur = head;
+            nxt = head.next;
         }
 
         @Override
         public boolean hasNext() {
-            return cur != tail && cur.getNext() != tail;
+            return nxt != null && !nxt.equals(tail);
         }
 
         @Override
         public Type next() {
-            cur = cur.getNext();
+            cur = nxt;
+            nxt = nxt.next;
             return (Type) cur;
         }
 
@@ -162,7 +165,8 @@ public class SyncLinkedList<Type extends SyncLinkedList.SyncLinkNode> implements
         public void remove() {
             cur.getPrev().setNext(cur.getNext());
             cur.getNext().setPrev(cur.getPrev());
-            // TODO: 该节点是否需要销毁
+            // 禁止通过迭代器再访问该节点
+            cur = null;
         }
 
 
