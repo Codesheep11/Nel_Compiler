@@ -138,6 +138,17 @@ public class Instruction extends User {
         return false;
     }
 
+    public boolean isAssociative() {
+        return switch (instType) {
+            case ADD, MUL, FAdd, FMUL -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isSelfReferencing() {
+        return getOperands().contains(this);
+    }
+
     /**
      * 返回值决定指令Type
      */
