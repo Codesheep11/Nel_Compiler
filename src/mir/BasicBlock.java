@@ -5,16 +5,15 @@ import utils.SyncLinkedList;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Objects;
 
 public class BasicBlock extends Value {
-    private Function parentFunction; // 父函数
+    private final Function parentFunction; // 父函数
     private final String label;
     private final SyncLinkedList<Instruction> instructions;
     // 控制图属性
-    private LinkedList<BasicBlock> preBlocks; // 控制图-前驱块
-    private LinkedList<BasicBlock> sucBlocks; // 控制图-后继块
+    private final ArrayList<BasicBlock> preBlocks; // 控制图-前驱块
+    private final ArrayList<BasicBlock> sucBlocks; // 控制图-后继块
     // 支配图属性
     private BasicBlock idom; // 支配图-直接支配块
     private HashSet<BasicBlock> domSet = new HashSet<>(); // 支配图-支配块集合 (指的是支配该块的所有块, 即支配树上的父节点)
@@ -31,11 +30,50 @@ public class BasicBlock extends Value {
         this.parentFunction = parentFunction;
         parentFunction.appendBlock(this);
         this.label = label;
-        this.sucBlocks = new LinkedList<>();
-        this.preBlocks = new LinkedList<>();
+        this.sucBlocks = new ArrayList<>();
+        this.preBlocks = new ArrayList<>();
         this.instructions = new SyncLinkedList<>();
         this.loop = loop;
         loop.nowLevelBB.add(this);
+    }
+
+    private BasicBlock(String label, Function parentFunction) {
+        super(Type.LabelType.LABEL_TYPE);
+        this.parentFunction = parentFunction;
+        this.instructions = new SyncLinkedList<>();
+        this.label = label;
+        this.sucBlocks = new ArrayList<>();
+        this.preBlocks = new ArrayList<>();
+    }
+
+    /**
+     * 供循环优化使用
+     * 得到一个关系干净的基本块
+     */
+    public static BasicBlock getNewCleanBlock(String label, Function parentFunction, Loop loop) {
+        BasicBlock newBlock = new BasicBlock(label, parentFunction);
+        newBlock.loop = loop;
+        loop.nowLevelBB.add(newBlock);
+        return newBlock;
+    }
+
+    /**
+     * 获得该基本块的phi指令列表 <br>
+     * 事实上 phi 指令被认为发生在前驱块到后继块的边上 <br>
+     * 也许应该独立出来存储 <br>
+     *
+     * Warning: 不要将返回值改为 SyncLinkedList, 会破坏原有的链表关系！
+     */
+    public ArrayList<Instruction.Phi> getPhiInstructions() {
+        ArrayList<Instruction.Phi> phiInstructions = new ArrayList<>();
+        for (Instruction inst : instructions) {
+            if (inst instanceof Instruction.Phi phi) {
+                phiInstructions.add(phi);
+            } else {
+                break;
+            }
+        }
+        return phiInstructions;
     }
 
     public Function getParentFunction() {
@@ -52,6 +90,10 @@ public class BasicBlock extends Value {
 
     public Instruction getLastInst() {
         return instructions.getLast();
+    }
+
+    public Instruction.Terminator getTerminator() {
+        return (Instruction.Terminator) getLastInst();
     }
 
     public void addInstFirst(Instruction inst) {
@@ -78,11 +120,11 @@ public class BasicBlock extends Value {
         }
     }
 
-    public LinkedList<BasicBlock> getPreBlocks() {
+    public ArrayList<BasicBlock> getPreBlocks() {
         return preBlocks;
     }
 
-    public LinkedList<BasicBlock> getSucBlocks() {
+    public ArrayList<BasicBlock> getSucBlocks() {
         return sucBlocks;
     }
 
@@ -132,6 +174,34 @@ public class BasicBlock extends Value {
         return getLastInst() instanceof Instruction.Terminator;
     }
 
+    /**
+     * 替换后继块
+     *
+     * @param oldBlock 要替换掉的后继块
+     * @param newBlock 新的后继块
+     */
+    public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+//        for (int i = 0; i < sucBlocks.size(); i++) {
+//            if (sucBlocks.get(i).equals(oldBlock)) {
+//                sucBlocks.set(i, newBlock);
+//            }
+//        }
+        getTerminator().replaceSucc(oldBlock, newBlock);
+    }
+
+//    public void replacePred(BasicBlock oldBlock, BasicBlock newBlock) {
+//        for (int i = 0; i < preBlocks.size(); i++) {
+//            if (preBlocks.get(i).equals(oldBlock)) {
+//                preBlocks.set(i, newBlock);
+//            }
+//        }
+//        for (Instruction instruction : instructions) {
+//            if (instruction instanceof Instruction.Phi phi)
+//                phi.changePreBlock(oldBlock, newBlock);
+//            else break;
+//        }
+//    }
+
 
     @Override
     public boolean equals(Object object) {
@@ -166,9 +236,6 @@ public class BasicBlock extends Value {
         for (Instruction instruction :
                 instructions) {
             outputList.add("\t" + instruction.toString());
-//            if (instruction instanceof Instruction.Terminator) {
-//                break;
-//            }
         }
         return outputList;
     }

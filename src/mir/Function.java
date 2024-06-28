@@ -355,9 +355,7 @@ public class Function extends Value {
     }
 
     public String getBBName() {
-        String name = getName() + "_BB" + countOfBB;
-        countOfBB++;
-        return name;
+        return getName() + "_BB" + countOfBB++;
     }
 
     /**

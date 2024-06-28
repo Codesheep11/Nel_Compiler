@@ -8,11 +8,9 @@ import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.*;
-import mir.Function;
-import mir.GlobalVariable;
+import mir.*;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
-import mir.Type;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -50,9 +48,11 @@ public class Manager {
                 GlobalValueNumbering.run(module);
                 GlobalCodeMotion.run(module);
                 LCSSA.run(module);
-                LCSSA.remove(module);
-                AggressiveDCD.run(module);
-                DeadCodeDelete.run(module);
+//                LoopTest(module);
+//                LoopSimplifyForm.test(module);
+//                LCSSA.remove(module);
+//                AggressiveDCD.run(module);
+//                DeadCodeDelete.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
@@ -68,6 +68,14 @@ public class Manager {
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
+        }
+    }
+
+    public void LoopTest(Module module){
+        for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) continue;
+            for(Loop loop : function.rootLoop.children)
+                loop.LoopInfoPrint();
         }
     }
 

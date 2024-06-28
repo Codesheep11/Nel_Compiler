@@ -175,6 +175,10 @@ public class Instruction extends User {
         }
 
         @Override
+        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        }
+
+        @Override
         public String toString() {
             Value retValue = getRetValue();
             if (retValue != null) {
@@ -313,6 +317,7 @@ public class Instruction extends User {
      * 终结符, ValueType: Void
      */
     public interface Terminator {
+        void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock);
     }
 
     public static class Branch extends Instruction implements Terminator {
@@ -346,6 +351,15 @@ public class Instruction extends User {
 
         public BasicBlock getElseBlock() {
             return elseBlock;
+        }
+
+        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+            if (thenBlock.equals(oldBlock)) {
+                thenBlock = newBlock;
+            }
+            if (elseBlock.equals(oldBlock)) {
+                elseBlock = newBlock;
+            }
         }
 
         @Override
@@ -397,6 +411,12 @@ public class Instruction extends User {
 
         public BasicBlock getTargetBlock() {
             return targetBlock;
+        }
+
+        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+            if (targetBlock.equals(oldBlock)) {
+                targetBlock = newBlock;
+            }
         }
 
         @Override
@@ -806,7 +826,7 @@ public class Instruction extends User {
         private final Type type;
         public boolean isLCSSA = false;
 
-        private LinkedHashMap<BasicBlock, Value> optionalValues = new LinkedHashMap<>();
+        private LinkedHashMap<BasicBlock, Value> optionalValues;
 
         public Phi(BasicBlock parentBlock, Type type, LinkedHashMap<BasicBlock, Value> optionalValues) {
             super(parentBlock, type, InstType.PHI);
@@ -865,6 +885,10 @@ public class Instruction extends User {
         }
 
         public void removeOptionalValue(BasicBlock block) {
+            if (!optionalValues.containsKey(block)) {
+                System.out.println(this.parentBlock.output());
+                throw new RuntimeException("Phi removeOptionalValue: " + block.getDescriptor());
+            }
             Value value = optionalValues.get(block);
             value.use_remove(new Use(this, value));
             getOperands().remove(value);
@@ -884,6 +908,10 @@ public class Instruction extends User {
             if (isLCSSA) return false;
             HashSet<Value> values = new HashSet<>(optionalValues.values());
             return values.size() == 1;
+        }
+
+        public boolean containsBlock(BasicBlock block) {
+            return optionalValues.containsKey(block);
         }
 
         public LinkedHashMap<BasicBlock, Value> getOptionalValues() {
