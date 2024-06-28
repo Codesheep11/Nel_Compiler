@@ -1,6 +1,5 @@
 package midend;
 
-import manager.Manager;
 import mir.*;
 import mir.Module;
 
@@ -109,8 +108,7 @@ public class LCSSA {
         for (Function function : module.getFuncSet()) {
             for (BasicBlock block : function.getBlocks()) {
                 for (Instruction instr : block.getInstructions()) {
-                    if (instr instanceof Instruction.Phi) {
-                        Instruction.Phi phi = (Instruction.Phi) instr;
+                    if (instr instanceof Instruction.Phi phi) {
                         if (phi.isLCSSA) {
                             Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
                             phi.replaceAllUsesWith(v);
