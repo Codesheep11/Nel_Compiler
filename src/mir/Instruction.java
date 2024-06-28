@@ -851,6 +851,10 @@ public class Instruction extends User {
         }
 
         public void removeOptionalValue(BasicBlock block) {
+            if (!optionalValues.containsKey(block)) {
+                System.out.println(this.parentBlock.output());
+                throw new RuntimeException("Phi removeOptionalValue: " + block.getDescriptor());
+            }
             Value value = optionalValues.get(block);
             value.use_remove(new Use(this, value));
             getOperands().remove(value);
@@ -870,6 +874,10 @@ public class Instruction extends User {
             if (isLCSSA) return false;
             HashSet<Value> values = new HashSet<>(optionalValues.values());
             return values.size() == 1;
+        }
+
+        public boolean containsBlock(BasicBlock block) {
+            return optionalValues.containsKey(block);
         }
 
         public LinkedHashMap<BasicBlock, Value> getOptionalValues() {

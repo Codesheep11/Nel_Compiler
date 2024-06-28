@@ -57,6 +57,25 @@ public class BasicBlock extends Value {
         return newBlock;
     }
 
+    /**
+     * 获得该基本块的phi指令列表 <br>
+     * 事实上 phi 指令被认为发生在前驱块到后继块的边上 <br>
+     * 也许应该独立出来存储 <br>
+     *
+     * Warning: 不要将返回值改为 SyncLinkedList, 会破坏原有的链表关系！
+     */
+    public ArrayList<Instruction.Phi> getPhiInstructions() {
+        ArrayList<Instruction.Phi> phiInstructions = new ArrayList<>();
+        for (Instruction inst : instructions) {
+            if (inst instanceof Instruction.Phi phi) {
+                phiInstructions.add(phi);
+            } else {
+                break;
+            }
+        }
+        return phiInstructions;
+    }
+
     public Function getParentFunction() {
         return parentFunction;
     }
@@ -170,18 +189,18 @@ public class BasicBlock extends Value {
         getTerminator().replaceSucc(oldBlock, newBlock);
     }
 
-    public void replacePred(BasicBlock oldBlock, BasicBlock newBlock) {
+//    public void replacePred(BasicBlock oldBlock, BasicBlock newBlock) {
 //        for (int i = 0; i < preBlocks.size(); i++) {
 //            if (preBlocks.get(i).equals(oldBlock)) {
 //                preBlocks.set(i, newBlock);
 //            }
 //        }
-        for (Instruction instruction : instructions) {
-            if (instruction instanceof Instruction.Phi phi)
-                phi.changePreBlock(oldBlock, newBlock);
-            else break;
-        }
-    }
+//        for (Instruction instruction : instructions) {
+//            if (instruction instanceof Instruction.Phi phi)
+//                phi.changePreBlock(oldBlock, newBlock);
+//            else break;
+//        }
+//    }
 
 
     @Override
