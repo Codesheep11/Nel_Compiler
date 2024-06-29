@@ -22,15 +22,15 @@ public class LoopSimplifyForm {
     private static int count = 0;
 
     /**
-     *  just for test <br>
-     *  请勿将该函数作为优化 API 调用
+     * just for test <br>
+     * 请勿将该函数作为优化 API 调用
      *
      * @param module 模块
      */
     public static void test(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            for(Loop loop : function.rootLoop.children)
+            for (Loop loop : function.loopInfo.TopLevelLoops)
                 run(loop);
         }
     }
@@ -55,7 +55,7 @@ public class LoopSimplifyForm {
             entering.replaceSucc(loop.header, newPreHeader);
         }
         // 将需要维护 phi 信息提前
-        for (Instruction.Phi phi : loop.header.getPhiInstructions()){
+        for (Instruction.Phi phi : loop.header.getPhiInstructions()) {
             LinkedHashMap<BasicBlock, Value> newMap = new LinkedHashMap<>();
             for (BasicBlock entering : loop.enterings) {
                 newMap.put(entering, phi.getOptionalValue(entering));
@@ -82,7 +82,7 @@ public class LoopSimplifyForm {
             latch.replaceSucc(loop.header, newLatch);
         }
         // 将需要维护 phi 信息提前
-        for (Instruction.Phi phi : loop.header.getPhiInstructions()){
+        for (Instruction.Phi phi : loop.header.getPhiInstructions()) {
             LinkedHashMap<BasicBlock, Value> newMap = new LinkedHashMap<>();
             for (BasicBlock latch : loop.latchs) {
                 newMap.put(latch, phi.getOptionalValue(latch));
@@ -111,7 +111,7 @@ public class LoopSimplifyForm {
                 BasicBlock newExit = BasicBlock.getNewCleanBlock(getNewLabel(loop.header.getParentFunction(), "exit"), loop.header.getParentFunction(), loop1);
                 loop.exitings.forEach(exiting -> exiting.replaceSucc(exit, newExit));
                 // 将需要维护 phi 信息提前
-                for (Instruction.Phi phi : exit.getPhiInstructions()){
+                for (Instruction.Phi phi : exit.getPhiInstructions()) {
                     LinkedHashMap<BasicBlock, Value> newMap = new LinkedHashMap<>();
                     for (BasicBlock exiting : loop.exitings) {
                         if (phi.containsBlock(exiting)) {
@@ -127,7 +127,8 @@ public class LoopSimplifyForm {
 
                 new Instruction.Jump(newExit, exit);
                 newExits.add(newExit);
-            } else {
+            }
+            else {
                 newExits.add(exit);
             }
         }
