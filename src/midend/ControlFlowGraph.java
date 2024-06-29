@@ -95,7 +95,7 @@ public class ControlFlowGraph {
         for (BasicBlock block : blocks) {
             if (vis.contains(block)) continue;
             block.delete();
-            block.loop.remove(block);
+//            block.remove();
         }
     }
 

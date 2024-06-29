@@ -25,7 +25,7 @@ public class BasicBlock extends Value {
     public Loop loop = null;// 循环信息
     public boolean isDeleted = false;
 
-    public BasicBlock(String label, Function parentFunction, Loop loop) {
+    public BasicBlock(String label, Function parentFunction) {
         super(Type.LabelType.LABEL_TYPE);
         this.parentFunction = parentFunction;
         parentFunction.appendBlock(this);
@@ -33,17 +33,6 @@ public class BasicBlock extends Value {
         this.sucBlocks = new ArrayList<>();
         this.preBlocks = new ArrayList<>();
         this.instructions = new SyncLinkedList<>();
-        this.loop = loop;
-        loop.nowLevelBB.add(this);
-    }
-
-    private BasicBlock(String label, Function parentFunction) {
-        super(Type.LabelType.LABEL_TYPE);
-        this.parentFunction = parentFunction;
-        this.instructions = new SyncLinkedList<>();
-        this.label = label;
-        this.sucBlocks = new ArrayList<>();
-        this.preBlocks = new ArrayList<>();
     }
 
     /**
@@ -52,6 +41,7 @@ public class BasicBlock extends Value {
      */
     public static BasicBlock getNewCleanBlock(String label, Function parentFunction, Loop loop) {
         BasicBlock newBlock = new BasicBlock(label, parentFunction);
+        newBlock.remove();
         newBlock.loop = loop;
         loop.nowLevelBB.add(newBlock);
         return newBlock;
@@ -61,7 +51,7 @@ public class BasicBlock extends Value {
      * 获得该基本块的phi指令列表 <br>
      * 事实上 phi 指令被认为发生在前驱块到后继块的边上 <br>
      * 也许应该独立出来存储 <br>
-     *
+     * <p>
      * Warning: 不要将返回值改为 SyncLinkedList, 会破坏原有的链表关系！
      */
     public ArrayList<Instruction.Phi> getPhiInstructions() {
@@ -69,7 +59,8 @@ public class BasicBlock extends Value {
         for (Instruction inst : instructions) {
             if (inst instanceof Instruction.Phi phi) {
                 phiInstructions.add(phi);
-            } else {
+            }
+            else {
                 break;
             }
         }
@@ -243,15 +234,17 @@ public class BasicBlock extends Value {
 
 
     //函数内联的时候,维护循环信息,方便GCM
-    public BasicBlock cloneToFunc(Function function, Loop loop, int idx) {
-        BasicBlock ret = new BasicBlock(function.getName() + "_" + getLabel() + "_" + idx, function, loop);
+    public BasicBlock cloneToFunc(Function function, int idx) {
+        BasicBlock ret = new BasicBlock(function.getName() + "_" + getLabel() + "_" + idx, function);
         CloneInfo.addValueReflect(this, ret);
-        CloneInfo.bbMap.put(this, ret);
         for (Instruction inst : getInstructions()) {
             Instruction tmp = inst.cloneToBBAndAddInfo(ret);
         }
         return ret;
     }
 
+    public boolean dominates(BasicBlock block) {
+        return block.domSet.contains(this);
+    }
 
 }

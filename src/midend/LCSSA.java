@@ -16,7 +16,8 @@ public class LCSSA {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             function.buildDominanceGraph();
-            addPhiForLoop(function.rootLoop);
+            for (Loop loop : function.loopInfo.TopLevelLoops)
+                addPhiForLoop(loop);
         }
     }
 

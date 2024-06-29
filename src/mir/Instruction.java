@@ -124,6 +124,31 @@ public class Instruction extends User {
         }
     }
 
+    public boolean canbeOperand() {
+        if (this instanceof Call) {
+            return this.getType() instanceof Type.VoidType;
+        }
+        return !(this instanceof Terminator) && !(this instanceof Store);
+    }
+
+    public boolean mayHaveNonDefUseDependency() {
+        if (this instanceof Load || this instanceof Call || this instanceof Store || this instanceof Terminator) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isAssociative() {
+        return switch (instType) {
+            case ADD, MUL, FAdd, FMUL -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isSelfReferencing() {
+        return getOperands().contains(this);
+    }
+
     /**
      * 返回值决定指令Type
      */
@@ -158,7 +183,8 @@ public class Instruction extends User {
             Value retValue = getRetValue();
             if (retValue != null) {
                 return String.format("ret %s %s", retValue.getType().toString(), retValue.getDescriptor());
-            } else {
+            }
+            else {
                 return "ret void";
             }
         }
@@ -242,7 +268,8 @@ public class Instruction extends User {
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());
-            } else {
+            }
+            else {
                 return String.format("%s = call %s @%s(%s)", getDescriptor(), destFunction.getRetType().toString(), destFunction.name, paramsToString());
             }
         }
@@ -299,7 +326,8 @@ public class Instruction extends User {
         private BasicBlock elseBlock;
 
         public Branch(BasicBlock parentBlock,
-                      Value cond, BasicBlock thenBlock, BasicBlock elseBlock) {
+                      Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
+        {
             super(parentBlock, Type.VoidType.VOID_TYPE, InstType.BRANCH);
             this.cond = cond;
             this.thenBlock = thenBlock;
@@ -636,6 +664,7 @@ public class Instruction extends User {
 
     public interface Condition {
         Value getSrc1();
+
         Value getSrc2();
 
         String getCmpOp();
@@ -667,7 +696,9 @@ public class Instruction extends User {
             return condCode;
         }
 
-        public String getCmpOp() { return condCode.toString(); }
+        public String getCmpOp() {
+            return condCode.toString();
+        }
 
         private Value src1;
         private Value src2;
@@ -740,7 +771,10 @@ public class Instruction extends User {
         public CondCode getCondCode() {
             return condCode;
         }
-        public String getCmpOp() { return condCode.toString(); }
+
+        public String getCmpOp() {
+            return condCode.toString();
+        }
 
         private Value src1;
         private Value src2;
@@ -894,7 +928,8 @@ public class Instruction extends User {
                 Value val = optionalValues.get(value);
                 optionalValues.remove(value);
                 optionalValues.put((BasicBlock) v, val);
-            } else {
+            }
+            else {
                 for (BasicBlock block : optionalValues.keySet()) {
                     if (optionalValues.get(block).equals(value)) {
                         optionalValues.put(block, v);
