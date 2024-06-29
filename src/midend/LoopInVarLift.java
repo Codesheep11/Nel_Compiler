@@ -15,7 +15,8 @@ public class LoopInVarLift {
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            runLoop(function.rootLoop);
+            for (Loop loop : function.loopInfo.TopLevelLoops)
+                runLoop(loop);
         }
     }
 
@@ -35,7 +36,7 @@ public class LoopInVarLift {
     public static void liftInvariant(Loop loop) {
         BasicBlock Header = loop.header;
         Function func = Header.getParentFunction();
-        BasicBlock preHeader = new BasicBlock(func.getBBName(), func, loop.parent);
+        BasicBlock preHeader = new BasicBlock(func.getBBName(), func);
         //循环中不变量复制到preHeader
         for (Instruction instruction : invariants) {
             instruction.remove();

@@ -6,7 +6,6 @@ import utils.SyncLinkedList;
 
 import java.util.*;
 
-import static midend.CloneInfo.bbMap;
 
 public class Function extends Value {
 
@@ -46,7 +45,7 @@ public class Function extends Value {
     private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
     private final SyncLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
-    public Loop rootLoop = null; // 循环信息
+    public LoopInfo loopInfo = null; // 循环信息
     //GVN
     public boolean isLeaf = true;
     /**
@@ -54,6 +53,7 @@ public class Function extends Value {
      */
     public boolean hasMemoryRead = false;
     public boolean hasMemoryWrite = false;
+    public boolean hasMemoryAlloc = false;
     /**
      * IO操作
      */
@@ -93,13 +93,12 @@ public class Function extends Value {
         myArguments = arguments;
     }
 
-    public Function(Type type, String name, ArrayList<Type> argumentTypes, Loop rootLoop) {
+    public Function(Type type, String name, ArrayList<Type> argumentTypes) {
         super(Type.FunctionType.FUNC_TYPE);
         setName(name);
         entry = null;
         retType = type;
         blocks = new SyncLinkedList<>();
-        this.rootLoop = rootLoop;
         ArrayList<Argument> arguments = new ArrayList<>();
 
 
@@ -228,8 +227,11 @@ public class Function extends Value {
         //Instruction.Phi retPhi = null;
 
         //维护phi函数
-        rootLoop.cloneToFunc(tagFunc, retBB.loop, idx);
 //        CloneInfo.fixLoopReflect();
+        HashMap<BasicBlock, BasicBlock> bbMap = new HashMap<>();
+        for (BasicBlock block : getBlocks()) {
+            bbMap.put(block, block.cloneToFunc(tagFunc, idx));
+        }
         for (BasicBlock block : bbMap.values()) {
             for (Instruction instr : block.getInstructions()) {
                 if (instr instanceof Instruction.Phi) {
@@ -357,12 +359,14 @@ public class Function extends Value {
         return getName() + "_BB" + countOfBB++;
     }
 
+
     /**
      * 获取函数的dom树层序遍历
      *
      * @return
      */
     public ArrayList<BasicBlock> getDomTreeLayerSort() {
+        if (entry == null) return new ArrayList<>();
         BasicBlock entry = getEntry();
         ArrayList<BasicBlock> layerSort = new ArrayList<>();
         Queue<BasicBlock> queue = new LinkedList<>();
@@ -375,5 +379,74 @@ public class Function extends Value {
             }
         }
         return layerSort;
+    }
+
+    /**
+     * 获取支配树后序遍历
+     *
+     * @return 返回支配树后序遍历顺序的基本块列表
+     */
+    public ArrayList<BasicBlock> getDomTreePostOrder() {
+        if (entry == null) return new ArrayList<>();
+        ArrayList<BasicBlock> postOrder = new ArrayList<>();
+        Stack<BasicBlock> stack = new Stack<>();
+        stack.push(entry);
+        Set<BasicBlock> visited = new HashSet<>();
+        visited.add(entry);
+
+        while (!stack.isEmpty()) {
+            BasicBlock cur = stack.peek();
+            boolean allChildrenVisited = true;
+
+            for (BasicBlock child : cur.getDomTreeChildren()) {
+                if (!visited.contains(child)) {
+                    stack.push(child);
+                    visited.add(child);
+                    allChildrenVisited = false;
+                }
+            }
+
+            if (allChildrenVisited) {
+                // 如果当前节点的所有子节点都已经访问过，则将当前节点从栈中弹出并加入后序遍历结果列表中
+                stack.pop();
+                postOrder.add(cur);
+            }
+        }
+
+        // 返回支配树的后序遍历顺序的列表
+        return postOrder;
+    }
+
+
+    /**
+     * 获取函数的反向后序遍历
+     *
+     * @return
+     */
+    public ArrayList<BasicBlock> buildReversePostOrderTraversal() {
+        ArrayList<BasicBlock> rpot = new ArrayList<>();
+        HashSet<BasicBlock> visited = new HashSet<>();
+        Stack<BasicBlock> stack = new Stack<>();
+        BasicBlock entry = this.getEntry();
+        stack.push(entry);
+        while (!stack.isEmpty()) {
+            BasicBlock current = stack.peek();
+            if (visited.contains(current)) {
+                stack.pop();
+                if (!rpot.contains(current)) {
+                    rpot.add(current);
+                }
+            }
+            else {
+                visited.add(current);
+                for (BasicBlock succ : current.getSucBlocks()) {
+                    if (!visited.contains(succ)) {
+                        stack.push(succ);
+                    }
+                }
+            }
+        }
+        Collections.reverse(rpot);
+        return rpot;
     }
 }

@@ -5,7 +5,7 @@ import midend.CloneInfo;
 import java.util.HashSet;
 import java.util.LinkedList;
 
-import static midend.CloneInfo.bbMap;
+//import static midend.CloneInfo.bbMap;
 
 public class Loop {
     private static int loopCounter = 0;
@@ -32,15 +32,10 @@ public class Loop {
     public boolean idcTimeSet = false;
     public int idcTime = -1;
 
-    public Loop() {
-        isRoot = true;
-        this.hash = loopCounter++;
-    }
 
-    public Loop(Loop parent) {
+    public Loop(BasicBlock header) {
+        this.header = header;
         this.hash = loopCounter++;
-        this.parent = parent;
-        parent.children.add(this);
     }
 
     /**
@@ -88,49 +83,28 @@ public class Loop {
     }
 
     /**
-     * todo
-     * 当block从cfg图中删除时调用该方法
+     * 得到循环中的所有基本块
      *
-     * @param block
+     * @return
      */
-    public void remove(BasicBlock block) {
-        nowLevelBB.remove(block);
-        //如果循环头被删除，那么整个循环被删除
-        if (!isRoot && header.equals(block)) {
-            delete();
+    public HashSet<BasicBlock> getAllBlocks() {
+        HashSet<BasicBlock> ret = new HashSet<>(nowLevelBB);
+        for (Loop child : children) {
+            ret.addAll(child.getAllBlocks());
         }
-        //如果循环回边被删除，判断是否还存在回边，如果没有，则整个循环被删除
-        if (latchs.contains(block)) {
-            latchs.remove(block);
-            if (latchs.isEmpty()) {
-                delete();
-            }
-        }
+        return ret;
     }
 
-    public void delete() {
-        if (isRoot) {
-            throw new RuntimeException("delete: root loop can not be deleted\n");
-        }
-        //被删除的循环头的子循环全部挂到父循环上
-        for (Loop child : children) {
-            parent.children.add(child);
-            child.parent = parent;
-        }
-        //剩下基本块挂到父循环上
-        for (BasicBlock bb : nowLevelBB) {
-            parent.nowLevelBB.add(bb);
-            bb.loop = parent;
-        }
-        parent.children.remove(this);
+    public void addChildLoop(Loop loop) {
+        children.add(loop);
+        loop.parent = this;
     }
-    //
-//    public boolean LoopContainsAll(Collection<BasicBlock> blocks) {
-//        for (BasicBlock block : blocks) {
-//            if (!LoopContains(block)) return false;
-//        }
-//        return true;
-//    }
+
+    public void addNowLevelBB(BasicBlock bb) {
+        nowLevelBB.add(bb);
+        bb.loop = this;
+    }
+
 //
 //    //判断是否为循环不变量
 
@@ -169,37 +143,32 @@ public class Loop {
 //        this.parent = loop.parent;
 //        this.isNatural = false;
 //    }
-    public void cloneToFunc(Function tagFunc, Loop curLoop, int idx) {
-        for (BasicBlock block : nowLevelBB) {
-            bbMap.put(block, block.cloneToFunc(tagFunc, curLoop, idx));
+    public void genExitBB() {
+        for (Loop child : children) {
+            child.genExitBB();
         }
-        for (Loop next : children) {
-            Loop newChild = new Loop(curLoop);
-            next.cloneToFunc(tagFunc, newChild, idx);
+        HashSet<BasicBlock> allBB = getAllBlocks();
+        for (BasicBlock bb : nowLevelBB) {
+            for (BasicBlock succ : bb.getSucBlocks()) {
+                if (!allBB.contains(succ)) {
+                    exitings.add(bb);
+                    exits.add(succ);
+                }
+            }
         }
-        CloneInfo.addLoopReflect(curLoop, this);
     }
 
-    public void cloneFix(Loop srcLoop) {
-        for (BasicBlock block : srcLoop.nowLevelBB) {
-            this.nowLevelBB.add(bbMap.get(block));
+    public void genEnteringBB() {
+        for (Loop child : children) {
+            child.genEnteringBB();
         }
-        for (BasicBlock block : srcLoop.enterings) {
-            this.enterings.add(bbMap.get(block));
+        HashSet<BasicBlock> allBB = getAllBlocks();
+        for (BasicBlock bb : header.getPreBlocks()) {
+            if (!allBB.contains(bb)) {
+                enterings.add(bb);
+            }
         }
-        for (BasicBlock block : srcLoop.exitings) {
-            this.exitings.add(bbMap.get(block));
-        }
-        for (BasicBlock block : srcLoop.exits) {
-            this.exits.add(bbMap.get(block));
-        }
-        for (BasicBlock block : srcLoop.latchs) {
-            this.latchs.add(bbMap.get(block));
-        }
-        if (srcLoop.isRoot) return;
-        this.header = bbMap.get(srcLoop.header);
     }
-
 
     public void LoopInfoPrint() {
         String LoopName = "Loop_" + hash;

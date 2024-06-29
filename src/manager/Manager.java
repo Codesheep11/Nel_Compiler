@@ -44,15 +44,16 @@ public class Manager {
                 FunctionInline.run(module);
                 FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
-                LoopInVarLift.run(module);
                 GlobalValueNumbering.run(module);
                 GlobalCodeMotion.run(module);
-                LCSSA.run(module);
+                LoopInfo.build(module);
+//                LoopInVarLift.run(module);
+//                LCSSA.run(module);
 //                LoopTest(module);
-//                LoopSimplifyForm.test(module);
+                LoopSimplifyForm.test(module);
 //                LCSSA.remove(module);
-//                AggressiveDCD.run(module);
-//                DeadCodeDelete.run(module);
+                AggressiveDCD.run(module);
+                DeadCodeDelete.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
@@ -74,7 +75,7 @@ public class Manager {
     public void LoopTest(Module module){
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            for(Loop loop : function.rootLoop.children)
+            for(Loop loop : function.loopInfo.TopLevelLoops)
                 loop.LoopInfoPrint();
         }
     }

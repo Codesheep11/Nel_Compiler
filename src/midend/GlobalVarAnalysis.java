@@ -78,7 +78,7 @@ public class GlobalVarAnalysis {
             }
             if (useFunctions.size() > 1) continue;
             else if (useFunctions.size() == 0) module.getGlobalValues().remove(gv);
-            else {
+            else if (useFunctions.iterator().next().getName().equals("main")) {
                 GlobalReplace.add(gv);
                 FuncReplace(useFunctions.iterator().next(), gv);
             }
