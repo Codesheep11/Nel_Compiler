@@ -7,7 +7,6 @@ import utils.SyncLinkedList;
 import java.util.*;
 
 import static manager.CentralControl._FUNC_INLINE_OPEN;
-import static midend.CloneInfo.CallbbCut;
 
 public class FunctionInline {
     private static Collection<Function> functions;
@@ -153,7 +152,7 @@ public class FunctionInline {
         Function inFunction = ((Instruction.Call) CloneInfo.getReflectedValue(call)).getParentBlock().getParentFunction();
         // 拆分前的 call Block
         BasicBlock beforeCallBB = call.getParentBlock();
-        CallbbCut.add(beforeCallBB);
+//        CallbbCut.add(beforeCallBB);
         Instruction inst = null;
         for (Instruction tmp : beforeCallBB.getInstructions()) {
             if (tmp == call) {
@@ -163,12 +162,12 @@ public class FunctionInline {
         }
         assert inst != null;
         // 命名上 retBB 为 call 的下一条指令所在的基本块
-        BasicBlock retBB = new BasicBlock(function.getName() + "_ret_" + idx, inFunction, beforeCallBB.loop);
+        BasicBlock retBB = new BasicBlock(function.getName() + "_ret_" + idx, inFunction);
 
         Value ret = function.inlineToFunc(inFunction, retBB, call, idx);
 
-        BasicBlock afterCallBB = new BasicBlock(inFunction.getName() + "_after_call_" + function.getName() + "_" + idx, inFunction, beforeCallBB.loop);
-        CallbbCut.add(afterCallBB);
+        BasicBlock afterCallBB = new BasicBlock(inFunction.getName() + "_after_call_" + function.getName() + "_" + idx, inFunction);
+//        CallbbCut.add(afterCallBB);
         for (BasicBlock suc : beforeCallBB.getSucBlocks()) {
             for (Instruction instr : suc.getInstructions()) {
                 if (instr instanceof Instruction.Phi) {
@@ -232,7 +231,6 @@ public class FunctionInline {
             value.use_remove(new Use(inst, value));
             inst.use_remove(new Use(inst, value));
         }
-        CloneInfo.fixLoopReflect();
     }
 
 

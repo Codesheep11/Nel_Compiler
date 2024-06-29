@@ -63,7 +63,7 @@ public class RemovePhi {
      * @param bb
      */
     public static void addMidBB(BasicBlock pre, Instruction.PhiCopy phiCopy, BasicBlock bb) {
-        BasicBlock mid = new BasicBlock(pre.getParentFunction().getBBName(), pre.getParentFunction(), bb.loop);
+        BasicBlock mid = new BasicBlock(pre.getParentFunction().getBBName(), pre.getParentFunction());
         phiCopy.remove();
         mid.addInstFirst(phiCopy);
         Instruction term = pre.getLastInst();
