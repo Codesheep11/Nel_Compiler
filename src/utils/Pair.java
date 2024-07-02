@@ -42,4 +42,12 @@ public class Pair<K, V> {
     public void setValue(V value) {
         this.second = value;
     }
+
+    public K getKey() {
+        return first;
+    }
+
+    public V getValue() {
+        return second;
+    }
 }

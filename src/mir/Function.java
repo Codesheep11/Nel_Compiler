@@ -419,7 +419,7 @@ public class Function extends Value {
 
 
     /**
-     * 获取函数的反向后序遍历
+     * 获取函数的反向后序遍历，即dfs的反序
      *
      * @return
      */
