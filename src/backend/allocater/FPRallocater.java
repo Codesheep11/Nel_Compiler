@@ -107,7 +107,7 @@ public class FPRallocater {
                 //如果定义点是lw或者ld指令，则不需要sw保护？
                 //错误的，定义点也可能会溢出，比如call多个load或者多个arg
                 //非 ssa 在使用点使用新的虚拟寄存器
-                if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).rs1 == reg) {
+                if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).rs1.equals(reg)) {
                     LS.LSType type = ((LS) def).type;
                     if (type == LS.LSType.fsw) {
                         StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
@@ -123,7 +123,7 @@ public class FPRallocater {
             }
             for (RiscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
-                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1 == reg) {
+                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1.equals(reg)) {
                     StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                     continue;
                 }
@@ -246,7 +246,7 @@ public class FPRallocater {
             freezeReg.add(minReg);
             //确定freezeMoves
             for (R2 move : moveList) {
-                if (move.rd == minReg || move.rs == minReg) {
+                if (move.rd.equals(minReg) || move.rs.equals(minReg)) {
                     freezeMoves.add(move);
                     freezeReg.add((Reg) move.rd);
                     freezeReg.add((Reg) move.rs);
@@ -332,7 +332,7 @@ public class FPRallocater {
                     Reg r1 = (Reg) move.rs;
                     Reg r2 = (Reg) move.rd;
                     if (CanBeMerged(r1, r2)) {
-                        if (r1 == r2) {
+                        if (r1.equals(r2)) {
                             moveNodes.remove(r1);
                             moveList.remove(move);
                             for (R2 m : moveList) {
@@ -419,7 +419,7 @@ public class FPRallocater {
      * @return
      */
     public boolean CanBeMerged(Reg r1, Reg r2) {
-        if (r1 == r2) return true;
+        if (r1.equals(r2)) return true;
         if (r1.preColored && r2.preColored) {
             if (r1.phyReg == r2.phyReg) return true;
             return false;
