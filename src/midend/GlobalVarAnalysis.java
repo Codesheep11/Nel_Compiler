@@ -79,6 +79,7 @@ public class GlobalVarAnalysis {
             if (useFunctions.size() > 1) continue;
             else if (useFunctions.size() == 0) module.getGlobalValues().remove(gv);
             else if (useFunctions.iterator().next().getName().equals("main")) {
+                //todo 考虑非main的情况下将全局变量作为参数进行传递
                 GlobalReplace.add(gv);
                 FuncReplace(useFunctions.iterator().next(), gv);
             }

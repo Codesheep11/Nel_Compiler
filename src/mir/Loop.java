@@ -1,6 +1,7 @@
 package mir;
 
 import midend.CloneInfo;
+import midend.LoopInfo;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -18,8 +19,7 @@ public class Loop {
     public HashSet<BasicBlock> exitings = new HashSet<>();
     public HashSet<BasicBlock> exits = new HashSet<>();
     public HashSet<BasicBlock> latchs = new HashSet<>();
-    public Value cond;
-    LinkedList<Instruction> conds;
+    //todo: cond
     public boolean canAggressiveParallel = false;
     public boolean isRoot = false;
     public Boolean idcSet = false;
@@ -143,32 +143,6 @@ public class Loop {
 //        this.parent = loop.parent;
 //        this.isNatural = false;
 //    }
-    public void genExitBB() {
-        for (Loop child : children) {
-            child.genExitBB();
-        }
-        HashSet<BasicBlock> allBB = getAllBlocks();
-        for (BasicBlock bb : nowLevelBB) {
-            for (BasicBlock succ : bb.getSucBlocks()) {
-                if (!allBB.contains(succ)) {
-                    exitings.add(bb);
-                    exits.add(succ);
-                }
-            }
-        }
-    }
-
-    public void genEnteringBB() {
-        for (Loop child : children) {
-            child.genEnteringBB();
-        }
-        HashSet<BasicBlock> allBB = getAllBlocks();
-        for (BasicBlock bb : header.getPreBlocks()) {
-            if (!allBB.contains(bb)) {
-                enterings.add(bb);
-            }
-        }
-    }
 
     public void LoopInfoPrint() {
         String LoopName = "Loop_" + hash;

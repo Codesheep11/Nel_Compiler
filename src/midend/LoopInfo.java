@@ -30,10 +30,32 @@ public class LoopInfo {
         function.buildDominanceGraph();
         LoopInfo4Func();
         for (Loop loop : TopLevelLoops) {
-            loop.genEnteringBB();
-            loop.genExitBB();
+            genInfo4Loop(loop);
         }
 //        printLoopInfo();
+    }
+
+    private void genInfo4Loop(Loop loop) {
+        for (Loop child : loop.children) {
+            genInfo4Loop(child);
+        }
+        //生成loop的entering exiting exit
+        HashSet<BasicBlock> allBB = loop.getAllBlocks();
+        for (BasicBlock bb : loop.header.getPreBlocks()) {
+            if (!allBB.contains(bb)) {
+                loop.enterings.add(bb);
+            }
+        }
+        for (BasicBlock bb : loop.nowLevelBB) {
+            for (BasicBlock succ : bb.getSucBlocks()) {
+                if (!allBB.contains(succ)) {
+                    loop.exitings.add(bb);
+                    loop.exits.add(succ);
+                }
+            }
+        }
+        //寻找循环中的cond
+
     }
 
     private void printLoopInfo() {

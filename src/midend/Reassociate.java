@@ -1,111 +1,204 @@
-//package midend;
-//
-//import mir.Function;
-//import mir.Module;
-//import mir.*;
-//import utils.Pair;
-//
-//import java.util.*;
-//
-//public class Reassociate {
-//    private static ArrayList<BasicBlock> rpot;
-//    private static HashMap<BasicBlock, Integer> rankMap = new HashMap<>();
-//    private static HashMap<Value, Integer> valueRankMap = new HashMap<>();
-//    private static HashMap<Pair<Value, Value>, Integer> pairMap = new HashMap<>();
-//    private static ArrayList<Instruction> toRedo = new ArrayList<>();
-//
-//
-//    public static void run(Module module) {
-//        for (Function function : module.getFuncSet()) {
-//            if (function.isExternal()) continue;
-//            runOnFunc(function);
-//        }
-//    }
-//
-//    private static void runOnFunc(Function function) {
-//        rpot = function.buildReversePostOrderTraversal();
-//        boolean madeChange = false;
-//        buildRankMap(function);
-//        buildPairMap(rpot);
-//        for (BasicBlock BB : rpot) {
-//            Iterator<Instruction> iter = BB.getInstructions().iterator();
-//            while (iter.hasNext()) {
-//                Instruction instr = iter.next();
-//                if (instr instanceof Instruction.Terminator) continue;
-//                if (instr.getUses().size() == 0) {
-//                    instr.delete();
-//                    madeChange = true;
-//                }
-//            }
-//        }
-//        for (Instruction I : new ArrayList<>(toRedo)) {
-//            if (isTriviallyDead(I)) {
-//                recursivelyEraseDeadInst(I);
-//                madeChange = true;
-//            }
-//            else {
-//                optimizeInstruction(I);
-//            }
-//        }
-//        if (madeChange) function.buildControlFlowGraph();
-//        clear();
-//        return PreservedAnalyses.all();
-//    }
-//
-//
-//    private static void clear() {
-//        rankMap.clear();
-//        valueRankMap.clear();
-//        pairMap.clear();
-//        toRedo.clear();
-//        madeChange = false;
-//    }
-//
-//
-//    public static void buildRankMap(Function func) {
-//        int rank = 2;
-//        for (Function.Argument arg : func.getFuncRArguments()) {
-//            valueRankMap.put(arg, rank++);
-//        }
-//
-//        for (BasicBlock BB : rpot) {
-//            rankMap.put(BB, (++rank) << 16);
-//            for (Instruction instr : BB.getInstructions()) {
-//                if (instr.mayHaveNonDefUseDependency()) {
-//                    valueRankMap.put(instr, rank++);
-//                }
-//            }
-//        }
-//    }
-//
-//    public void buildPairMap(List<BasicBlock> rpot) {
-//        for (BasicBlock BB : rpot) {
-//            for (Instruction inst : BB.getInstructions()) {
-//                if (!inst.isAssociative() || !(inst instanceof Instruction.BinaryOperation)
-//                        || inst.getOperands().size() == 1 || inst.getUses().size() == 0)
-//                    continue;
-//                HashSet<Value> worklist = new HashSet<>(inst.getOperands());
-//                ArrayList<Value> ops = new ArrayList<>();
-//                while (!worklist.isEmpty()) {
-//                    Value op = worklist.iterator().next();
-//                    worklist.remove(op);
-//                    if (!(op instanceof Instruction.BinaryOperation) || op.getUses().size() > 1) {
-//                        ops.add(op);
-//                    }
-//                    else if (!inst.isSelfReferencing()) {
-//                        Instruction.BinaryOperation binary = (Instruction.BinaryOperation) op;
-//                        worklist.add(binary.getOperand_1());
-//                        worklist.add(binary.getOperand_2());
-//                    }
-//                }
-//                if (ops.size() <= 10) {
-//                    for (int i = 0; i < ops.size(); i++) {
-//                        for (int j = i + 1; j < ops.size(); j++) {
-//                            pairMap.put(new Pair<>(ops.get(i), ops.get(j)), 1);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
+package midend;
+
+import mir.Function;
+import mir.Module;
+import mir.*;
+import utils.Pair;
+
+import java.util.*;
+
+public class Reassociate {
+    private static HashMap<Value, ArrayList<Pair<Integer, Value>>> map = new HashMap<>();
+    private static HashMap<Value, Integer> number = new HashMap<>();
+
+    public static void run(Module module) {
+        for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) continue;
+            for (BasicBlock block : function.getBlocks())
+                runOnBlock(block);
+        }
+    }
+
+    private static void runOnBlock(BasicBlock block) {
+        map.clear();
+        number.clear();
+        int numberCount = 0;
+        for (Instruction inst : block.getInstructions()) {
+            number.put(inst, numberCount++);
+        }
+        for (Instruction inst : block.getInstructions()) {
+            runOnInst(inst);
+        }
+    }
+
+    private static void runOnInst(Instruction inst) {
+        if (!canbeReassociate(inst)) return;
+        BasicBlock block = inst.getParentBlock();
+        ArrayList<Pair<Integer, Value>> args = map.get(inst);
+        if (args == null) args = new ArrayList<>();
+        for (Value operand : inst.getOperands()) {
+            if (operand instanceof Instruction instOperand &&
+                    instOperand.getInstType().equals(inst.getInstType()) &&
+                    instOperand.getParentBlock().equals(block))
+            {
+                ArrayList<Pair<Integer, Value>> sub = map.get(operand);
+                if (sub.size() < 512) {
+                    args.addAll(sub);
+                    continue;
+                }
+            }
+            args.add(new Pair<>(1, operand));
+        }
+        args.sort((lhs, rhs) -> {
+            Value lv = lhs.getValue();
+            Value rv = rhs.getValue();
+            //操作数排序的主要目的是将常量放在前面，非常量按其编号从小到大排序
+            if (lv instanceof Constant && rv instanceof Constant) {
+                return Integer.compare((Integer) ((Constant) lv).getConstValue(),
+                        (Integer) ((Constant) rv).getConstValue());
+            }
+            if (lv instanceof Constant) return -1;
+            if (rv instanceof Constant) return 1;
+            return Integer.compare(getNumber(lv), getNumber(rv));
+        });
+        // 对 args 向量中的元素进行去重和合并
+        for (int i = 0; i < args.size(); i++) {
+            Pair<Integer, Value> cur = args.get(i);
+            if (cur.getKey() == 0) continue;
+            for (int j = i + 1; j < args.size(); j++) {
+                Pair<Integer, Value> next = args.get(j);
+                if (next.getValue() != cur.getValue()) break;
+                cur.setKey(cur.getKey() + next.getKey());
+                next.setKey(0);
+            }
+        }
+        Iterator<Pair<Integer, Value>> it = args.iterator();
+        while (it.hasNext()) {
+            if (it.next().getKey() == 0) it.remove();
+        }
+        map.put(inst, args);
+        //合并结束，开始进行重组
+        ArrayList<Value> reductionStorage = new ArrayList<>();
+        switch (inst.getInstType()) {
+            case ADD: {
+                for (Pair<Integer, Value> pair : args) {
+                    if (pair.getKey() == 1) reductionStorage.add(pair.getValue());
+                    else {
+                        Instruction mul = new Instruction.Mul(block, pair.getValue().getType(),
+                                pair.getValue(), new Constant.ConstantInt(pair.getKey()));
+                        mul.remove();
+                        block.getInstructions().insertBefore(mul, inst);
+                        reductionStorage.add(mul);
+                    }
+                }
+                break;
+            }
+            case MUL: {
+                for (Pair<Integer, Value> pair : args) {
+                    if (pair.getKey() == 1) reductionStorage.add(pair.getValue());
+                    else {
+                        //多次乘法转换为幂运算
+                        int c = pair.getKey();
+                        Value v = pair.getValue();
+                        while (c != 0) {
+                            if ((c & 1) != 0) reductionStorage.add(v);
+                            c >>= 1;
+                            if (c != 0) {
+                                Instruction mul = new Instruction.Mul(block, v.getType(), v, v);
+                                mul.remove();
+                                block.getInstructions().insertBefore(mul, inst);
+                                v = mul;
+                            }
+                            else break;
+                        }
+                    }
+                }
+                break;
+            }
+            case FAdd: {
+                for (Pair<Integer, Value> pair : args) {
+                    if (pair.getKey() == 1) reductionStorage.add(pair.getValue());
+                    else {
+                        Instruction fmul = new Instruction.FMul(block, pair.getValue().getType(),
+                                pair.getValue(), new Constant.ConstantFloat(((float) pair.getKey())));
+                        fmul.remove();
+                        block.getInstructions().insertBefore(fmul, inst);
+                        reductionStorage.add(fmul);
+                    }
+                }
+                break;
+            }
+            case FMUL: {
+                for (Pair<Integer, Value> pair : args) {
+                    reductionStorage.add(pair.getValue());
+                }
+                break;
+            }
+            default: {
+                throw new RuntimeException("Unsupported instruction type");
+            }
+        }
+        Value reducedStorage = null;
+        for (Value v : reductionStorage) {
+            if (reducedStorage == null) {
+                reducedStorage = v;
+            }
+            else {
+                if (inst instanceof Instruction.Add) {
+                    Instruction add = new Instruction.Add(block, v.getType(), reducedStorage, v);
+                    add.remove();
+                    block.getInstructions().insertBefore(add, inst);
+                    reducedStorage = add;
+                }
+                else if (inst instanceof Instruction.Mul) {
+                    Instruction mul = new Instruction.Mul(block, v.getType(), reducedStorage, v);
+                    mul.remove();
+                    block.getInstructions().insertBefore(mul, inst);
+                    reducedStorage = mul;
+                }
+                else if (inst instanceof Instruction.FAdd) {
+                    Instruction fadd = new Instruction.FAdd(block, v.getType(), reducedStorage, v);
+                    fadd.remove();
+                    block.getInstructions().insertBefore(fadd, inst);
+                    reducedStorage = fadd;
+                }
+                else if (inst instanceof Instruction.FMul) {
+                    Instruction fmul = new Instruction.FMul(block, v.getType(), reducedStorage, v);
+                    fmul.remove();
+                    block.getInstructions().insertBefore(fmul, inst);
+                    reducedStorage = fmul;
+                }
+                else {
+                    throw new RuntimeException("Unsupported instruction type");
+                }
+            }
+        }
+        if (reducedStorage instanceof Instruction && !map.containsKey(reducedStorage)) {
+            Instruction reductionInst = (Instruction) reducedStorage;
+            if (reductionInst.getInstType() == inst.getInstType()) {
+                map.put(reducedStorage, map.remove(inst));
+                inst.replaceAllUsesWith(reducedStorage);
+                inst.remove();
+            }
+        }
+    }
+
+
+    private static boolean canbeReassociate(Instruction inst) {
+        switch (inst.getInstType()) {
+            case ADD:
+            case MUL:
+//            case FAdd:
+//            case FMUL:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static int getNumber(Value v) {
+        if (v instanceof Constant) return Integer.MAX_VALUE;
+        if (number.containsKey(v)) return number.get(v);
+        return 0;
+    }
+}

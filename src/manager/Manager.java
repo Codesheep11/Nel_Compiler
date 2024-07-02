@@ -41,6 +41,7 @@ public class Manager {
             Module module = visitor.module;
             if (arg.opt) {
                 Mem2Reg.run(module);
+                Reassociate.run(module);
                 FunctionInline.run(module);
                 FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
