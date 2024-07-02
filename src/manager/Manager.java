@@ -24,6 +24,8 @@ public class Manager {
 
     private final ArrayList<String> outputList = new ArrayList<>();
 
+    public static boolean afterRegAssign = false;
+
     public Manager(Arg arg) {
         this.arg = arg;
     }
@@ -65,6 +67,7 @@ public class Manager {
                 RiscvModule riscvmodule = codeGen.genCode(module);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
+                afterRegAssign = true;
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {
@@ -73,10 +76,10 @@ public class Manager {
         }
     }
 
-    public void LoopTest(Module module){
+    public void LoopTest(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            for(Loop loop : function.loopInfo.TopLevelLoops)
+            for (Loop loop : function.loopInfo.TopLevelLoops)
                 loop.LoopInfoPrint();
         }
     }

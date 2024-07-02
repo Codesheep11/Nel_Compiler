@@ -1,6 +1,7 @@
 package backend.operand;
 
 import backend.riscv.RiscvInstruction.RiscvInstruction;
+import manager.Manager;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -136,14 +137,19 @@ public class Reg extends Operand {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Reg) {
-            return ((Reg) obj).regCnt == regCnt;
+            return obj.hashCode() == hashCode();
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return regCnt;
+        if (preColored) return phyReg.ordinal();
+        if (Manager.afterRegAssign) {
+            assert phyReg != null;
+            return phyReg.ordinal();
+        }
+        return regCnt + 64;
     }
 
     @Override
