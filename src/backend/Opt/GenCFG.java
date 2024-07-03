@@ -19,7 +19,6 @@ class BackCFGNode {
 
 public class GenCFG {
 
-    private static final int MAX_SUPPORTED_BLOCK_SIZE = 1000;
     private static final double EPS = 1e-8;
 
     // 该方法是生成控制流图，图中包含转移的概率
@@ -153,10 +152,6 @@ public class GenCFG {
         HashMap<RiscvBlock, Double> res = new HashMap<>();
 
         int n = func.blocks.size();
-        if (n > MAX_SUPPORTED_BLOCK_SIZE) {
-            return res;
-        }
-
         int allocateID = 0;
         HashMap<RiscvBlock, Integer> nodeMap = new HashMap<>();
         for (RiscvBlock block : func.blocks) {

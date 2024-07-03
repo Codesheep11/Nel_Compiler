@@ -25,24 +25,16 @@ public class B extends RiscvInstruction {
 
         @Override
         public String toString() {
-            switch (this) {
-                case beq:
-                    return "beq";
-                case bge:
-                    return "bge";
-                case bgt:
-                    return "bgt";
-                case ble:
-                    return "ble";
-                case bleu:
-                    return "bleu";
-                case blt:
-                    return "blt";
-                case bne:
-                    return "bne";
-                default:
-                    throw new AssertionError();
-            }
+            return switch (this) {
+                case beq -> "beq";
+                case bge -> "bge";
+                case bgt -> "bgt";
+                case ble -> "ble";
+                case bleu -> "bleu";
+                case blt -> "blt";
+                case bne -> "bne";
+                default -> throw new AssertionError();
+            };
         }
     }
 
@@ -84,5 +76,32 @@ public class B extends RiscvInstruction {
             use.remove(oldReg);
             use.add(newReg);
         }
+    }
+
+    @Override
+    public int getOperandNum() {
+        return 2;
+    }
+
+    @Override
+    public boolean isDef(int idx) {
+        return false;
+    }
+
+    @Override
+    public boolean isUse(int idx) {
+        return true;
+    }
+
+    @Override
+    public Reg getRegByIdx(int idx) {
+        return idx == 0 ? (Reg) rs1 : (Reg) rs2;
+    }
+
+    @Override
+    public int getInstFlag() {
+        return InstFlag.None.value |
+                InstFlag.Terminator.value |
+                InstFlag.Branch.value;
     }
 }

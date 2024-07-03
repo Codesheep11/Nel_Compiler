@@ -8,6 +8,7 @@ import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.*;
 import backend.riscv.RiscvModule;
+import manager.Manager;
 
 import static backend.operand.Reg.PhyReg.*;
 
@@ -35,8 +36,7 @@ public class Allocater {
                     String funcName = call.funcName;
                     RiscvFunction callee = module.getFunction(funcName);
                     RegSaveForCall(func, call, callee);
-                }
-                else {
+                } else {
                     throw new RuntimeException("call type error");
                 }
             }
@@ -70,8 +70,7 @@ public class Allocater {
                         R3 afterCall2 = new R3(call.block, sp, sp, tmp, R3.R3Type.add);
                         call.block.riscvInstructions.insertAfter(afterCall2, call);
                         call.block.riscvInstructions.insertAfter(afterCall1, call);
-                    }
-                    else {
+                    } else {
                         Imm offset1 = new Imm(-1 * funcSize);
                         Imm offset2 = new Imm(funcSize);
                         R3 beforeCall = new R3(call.block, Reg.getPreColoredReg(sp, 64), Reg.getPreColoredReg(sp, 64), offset1, R3.R3Type.addi);
@@ -79,12 +78,12 @@ public class Allocater {
                         R3 afterCall = new R3(call.block, Reg.getPreColoredReg(sp, 64), Reg.getPreColoredReg(sp, 64), offset2, R3.R3Type.addi);
                         call.block.riscvInstructions.insertAfter(afterCall, call);
                     }
-                }
-                else {
+                } else {
                     throw new RuntimeException("call type error");
                 }
             }
         }
+        Manager.afterRegAssign = true;
     }
 
     /**
