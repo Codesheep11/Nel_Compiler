@@ -47,7 +47,7 @@ public class Mem2Reg {
             //System.out.println("phiInserting carried ");
             renameDfs(function.getEntry());
             //System.out.println("renameDfs carried ");
-            var.remove();
+            var.delete();
             removeDefUse();
             //System.out.println("removeDefUse carried ");
         }
@@ -86,12 +86,12 @@ public class Mem2Reg {
         for (Instruction defInst : defInsts) {
             if (!(defInst instanceof Instruction.Phi)) {
                 //System.out.println("removeDefUse: " + defInst.toString() + " in " + defInst.getParentBlock().getLabel());
-                defInst.remove();
+                defInst.delete();
             }
         }
         for (Instruction useInst : useInsts) {
             if (!(useInst instanceof Instruction.Phi)) {
-                useInst.remove();
+                useInst.delete();
             }
         }
     }
