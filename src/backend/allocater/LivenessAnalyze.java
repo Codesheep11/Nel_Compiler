@@ -2,8 +2,8 @@ package backend.allocater;
 
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
-import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvFunction;
+import backend.riscv.RiscvInstruction.RiscvInstruction;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -53,6 +53,7 @@ public class LivenessAnalyze {
             }
         }
         for (RiscvBlock block : topoSort) {
+            if (block.riscvInstructions.getSize() == 0) continue;
             block.getFirst().in = block.in;
             block.getLast().out = block.out;
             int size = block.riscvInstructions.getSize();

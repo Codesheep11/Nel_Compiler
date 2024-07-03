@@ -1,12 +1,11 @@
 package backend.riscv;
 
 import backend.operand.Reg;
-import backend.riscv.RiscvInstruction.B;
+import backend.riscv.RiscvInstruction.Explain;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import mir.BasicBlock;
 import utils.SyncLinkedList;
 
-import java.util.HashMap;
 import java.util.HashSet;
 
 public class RiscvBlock {
@@ -55,30 +54,11 @@ public class RiscvBlock {
     public String toString() {
         StringBuilder sb = new StringBuilder(name + ":\n");
         for (RiscvInstruction ri : riscvInstructions) {
+            if(ri instanceof Explain)continue;
             sb.append(ri + "\n");
         }
         return sb.toString();
     }
 
 
-    /**
-    注意，该跳转表不考虑
-     **/
-
-    public HashMap<RiscvBlock, Double> jumpTable() {
-        boolean hasBranch = false;
-        HashMap<RiscvBlock, Double> result = new HashMap<>();
-        double prob = 1.0;
-        for (RiscvInstruction instruction : riscvInstructions) {
-            if (instruction instanceof B) {
-                hasBranch = true;
-                result.put(((B) instruction).targetBlock, ((B) instruction).getYesProb()*prob);
-                prob*=(1-((B) instruction).getYesProb());
-            }
-        }
-        if (!hasBranch) {
-            return null;
-        }
-        return result;
-    }
 }

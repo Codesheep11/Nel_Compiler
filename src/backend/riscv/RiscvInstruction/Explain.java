@@ -20,4 +20,8 @@ public class Explain extends RiscvInstruction {
 //        return "";
         return "#   LLVM: " + content;
     }
+
+    public boolean isParamPassing() {
+        return content.equals("param passing");
+    }
 }

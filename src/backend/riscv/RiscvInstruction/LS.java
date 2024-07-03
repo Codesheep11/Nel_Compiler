@@ -4,6 +4,7 @@ import backend.operand.Address;
 import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
+import manager.Manager;
 
 public class LS extends RiscvInstruction {
     public LSType type;
@@ -32,9 +33,7 @@ public class LS extends RiscvInstruction {
                 case fsw -> {
                     return "fsw";
                 }
-                default -> {
-                    throw new AssertionError();
-                }
+                default -> throw new AssertionError();
             }
         }
     }
@@ -56,8 +55,7 @@ public class LS extends RiscvInstruction {
         if (type == LSType.lw || type == LSType.ld || type == LSType.flw) {
             if (rs1 instanceof Reg)
                 def.add((Reg) rs1);
-        }
-        else {
+        } else {
             if (rs1 instanceof Reg)
                 use.add((Reg) rs1);
         }
@@ -77,8 +75,7 @@ public class LS extends RiscvInstruction {
         if (type == LSType.lw || type == LSType.ld || type == LSType.flw) {
             if (rs1 instanceof Reg)
                 def.add((Reg) rs1);
-        }
-        else {
+        } else {
             if (rs1 instanceof Reg)
                 use.add((Reg) rs1);
         }
@@ -120,8 +117,7 @@ public class LS extends RiscvInstruction {
                 def.remove(oldReg);
                 def.add(newReg);
             }
-        }
-        else {
+        } else {
             if (use.contains(oldReg)) {
                 if (rs1 == oldReg) {
                     rs1 = newReg;
@@ -132,6 +128,61 @@ public class LS extends RiscvInstruction {
                 use.remove(oldReg);
                 use.add(newReg);
             }
+        }
+    }
+
+    private boolean defT0() {
+        if (Manager.afterRegAssign && imm instanceof Address) {
+            return ((Address) imm).getOffset() >= 2048 || ((Address) imm).getOffset() <= -2048;
+        }
+        return false;
+    }
+
+    // 如果是整完之后如果满足条件的话就是3个
+    @Override
+    public int getOperandNum() {
+        return defT0() ? 3 : 2;
+    }
+
+    @Override
+    public boolean isDef(int idx) {
+        if (defT0() && idx == 2) {
+            return true;
+        }
+        if (type == LSType.sd || type == LSType.sw || type == LSType.fsw) {
+            return false;
+        }
+        return idx == 0;
+    }
+
+    @Override
+    public boolean isUse(int idx) {
+        if (type == LSType.sd || type == LSType.sw || type == LSType.fsw) {
+            return true;
+        }
+        return idx == 1;
+    }
+
+    @Override
+    public Reg getRegByIdx(int idx) {
+        if (defT0() && idx == 2) {
+            return Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+        }
+        return idx == 0 ? (Reg) rs1 : (Reg) rs2;
+    }
+
+    @Override
+    public int getInstFlag() {
+        switch (type) {
+            case ld, lw, flw -> {
+                return InstFlag.None.value |
+                        InstFlag.Load.value;
+            }
+            case sd, sw, fsw -> {
+                return InstFlag.None.value |
+                        InstFlag.Store.value;
+            }
+            default -> throw new RuntimeException("wrong type");
         }
     }
 }

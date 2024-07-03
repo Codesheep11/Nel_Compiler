@@ -5,28 +5,23 @@ import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 
 public class J extends RiscvInstruction {
+    /**
+     * todo:jal def 了 ra寄存器？
+     **/
 
     public JType type;
 
     public enum JType {
-        JAL, JALR, j, ret, call;
+        JAL, j, ret, call;
 
         @Override
         public String toString() {
-            switch (this) {
-                case JAL:
-                    return "jal";
-                case JALR:
-                    return "jalr";
-                case j:
-                    return "j";
-                case ret:
-                    return "ret";
-                case call:
-                    return "call";
-                default:
-                    throw new AssertionError();
-            }
+            return switch (this) {
+                case JAL -> "jal";
+                case j -> "j";
+                case ret -> "ret";
+                case call -> "call";
+            };
         }
     }
 
@@ -60,12 +55,10 @@ public class J extends RiscvInstruction {
     @Override
     public String toString() {
         if (type == JType.ret) {
-            return "\t" + type.toString();
-        }
-        else if (type == JType.call) {
+            return "\t" + type;
+        } else if (type == JType.call) {
             return "\t" + type + "\t" + RiscvFunction.funcNameWrap(funcName);
-        }
-        else {
+        } else {
             return "\t" + type + "\t\t" + targetBlock.name;
         }
     }
@@ -74,5 +67,41 @@ public class J extends RiscvInstruction {
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
         throw new RuntimeException("J instruction should not be replaced");
+    }
+
+    @Override
+    public int getInstFlag() {
+        switch (type) {
+            case JAL, j, call -> {
+                return InstFlag.Call.value | InstFlag.None.value;
+            }
+            case ret -> {
+                return InstFlag.None.value |
+                        InstFlag.Return.value |
+                        InstFlag.NoFallthrough.value |
+                        InstFlag.Terminator.value;
+            }
+            default -> throw new RuntimeException("wrong type");
+        }
+    }
+
+    @Override
+    public int getOperandNum() {
+        return type == JType.JAL || type == JType.call ? 1 : 0;
+    }
+
+    @Override
+    public boolean isUse(int idx) {
+        return false;
+    }
+
+    @Override
+    public boolean isDef(int idx) {
+        return true;
+    }
+
+    @Override
+    public Reg getRegByIdx(int idx) {
+        return Reg.getPreColoredReg(Reg.PhyReg.ra, 32);
     }
 }

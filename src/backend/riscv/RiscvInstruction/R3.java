@@ -9,7 +9,8 @@ public class R3 extends RiscvInstruction {
 
     public enum R3Type {
         add, addi, addw, addiw, subw, divw, mulw, remw, andw, andiw, orw, oriw, xorw, xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti,
-        fadd, fsub, fmul, fdiv, fmin, fmax, fsqrt, feq, fle, flt;
+        fadd, fsub, fmul, fdiv, fmin, fmax, feq, fle, flt,
+        sh1add, sh2add, sh3add;// 这三个的最后一个参数才是需要位移的
 
         @Override
         public String toString() {
@@ -116,9 +117,6 @@ public class R3 extends RiscvInstruction {
                 case fmax -> {
                     return "fmax.s";
                 }
-                case fsqrt -> {
-                    return "fsqrt.s";
-                }
                 case feq -> {
                     return "feq.s";
                 }
@@ -127,6 +125,15 @@ public class R3 extends RiscvInstruction {
                 }
                 case flt -> {
                     return "flt.s";
+                }
+                case sh1add -> {
+                    return "sh1add";
+                }
+                case sh2add -> {
+                    return "sh2add";
+                }
+                case sh3add -> {
+                    return "sh3add";
                 }
                 default -> {
                     throw new AssertionError();
@@ -183,5 +190,30 @@ public class R3 extends RiscvInstruction {
             def.remove(oldReg);
             def.add(newReg);
         }
+    }
+
+    @Override
+    public int getOperandNum() {
+        return rs2 instanceof Reg ? 3 : 2;
+    }
+
+    @Override
+    public boolean isDef(int idx) {
+        return idx == 0;
+    }
+
+    @Override
+    public boolean isUse(int idx) {
+        return idx != 0;
+    }
+
+    @Override
+    public Reg getRegByIdx(int idx) {
+        return idx == 0 ? (Reg) rd : (idx == 1 ? (Reg) rs1 : (Reg) rs2);
+    }
+
+    @Override
+    public int getInstFlag() {
+        return InstFlag.None.value;
     }
 }
