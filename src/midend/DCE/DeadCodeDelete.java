@@ -1,14 +1,12 @@
-package midend;
+package midend.DCE;
 
 import mir.Function;
 import mir.Module;
 import mir.*;
 
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 
 import static manager.CentralControl._DCD_OPEN;
 

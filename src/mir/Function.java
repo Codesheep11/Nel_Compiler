@@ -153,13 +153,13 @@ public class Function extends Value {
 
     public String RArgsToString() {
         StringBuilder str = new StringBuilder();
-        Iterator<Type> iter = getArgumentsTP().iterator();
-        int idx = 0;
+        Iterator<Argument> iter = getFuncRArguments().iterator();
         while (iter.hasNext()) {
-            str.append(iter.next().toString());
-            str.append(String.format(" %%arg_%d", idx++));
+            Argument arg = iter.next();
+            str.append(arg.getType().toString() + " ");
+            str.append(arg.getDescriptor());
             if (iter.hasNext()) {
-                str.append(',');
+                str.append(", ");
             }
         }
         return str.toString();
@@ -168,8 +168,7 @@ public class Function extends Value {
     public ArrayList<String> output() {
         ArrayList<String> outputList = new ArrayList<>();
         outputList.add(String.format("define %s @%s(%s) {", getRetType().toString(), name, RArgsToString()));
-        for (BasicBlock block :
-                blocks) {
+        for (BasicBlock block : blocks) {
             outputList.addAll(block.output());
             outputList.add("\n");
         }
@@ -187,8 +186,7 @@ public class Function extends Value {
 
     public ArrayList<Type> getArgumentsTP() {
         ArrayList<Type> types = new ArrayList<>();
-        for (Argument arg :
-                myArguments) {
+        for (Argument arg : myArguments) {
             types.add(arg.getType());
         }
         return types;
@@ -243,7 +241,7 @@ public class Function extends Value {
         }
 
         ArrayList<Value> callParams = call.getParams();
-        ArrayList<Argument> funcParams = getMyArguments();
+//        ArrayList<Argument> funcParams = getMyArguments();
 
         for (int i = 0; i < callParams.size(); i++) {
             CloneInfo.addValueReflect(funcRArguments.get(i), callParams.get(i));

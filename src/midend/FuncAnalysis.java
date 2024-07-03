@@ -1,5 +1,6 @@
 package midend;
 
+import midend.DCE.DeadArgEliminate;
 import mir.*;
 import mir.Module;
 
@@ -13,6 +14,8 @@ import static manager.Manager.ExternFunc.*;
 public class FuncAnalysis {
 
     public static HashMap<Function, HashSet<Function>> callGraph = new HashMap<>();
+
+    public static LinkedList<Function> workList = new LinkedList<>();
 
     public static void run(Module module) {
         for (Function func : module.getFuncSet()) {
@@ -33,6 +36,11 @@ public class FuncAnalysis {
             BuildAttribute(func);
         }
         TransAttribute(module);
+        for (int i = workList.size() - 1; i >= 0; i--) {
+            Function func = workList.get(i);
+//            System.out.println("Function: " + func.getName());
+            DeadArgEliminate.run(func);
+        }
     }
 
     public static void ExternFuncInit() {
@@ -116,7 +124,6 @@ public class FuncAnalysis {
      * @param module
      */
     public static void TransAttribute(Module module) {
-        LinkedList<Function> workList = new LinkedList<>();
         Function main = module.getFunctions().get("main");
         workList.add(main);
         int idx = 0;
