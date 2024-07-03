@@ -91,9 +91,9 @@ public class Instruction extends User {
         return new Instruction(newBlock, type, instType);
     }
 
-    public Instruction cloneToBBAndAddInfo(BasicBlock newBlock) {
-        CloneInfo.addValueReflect(this, cloneToBB(newBlock));
-        return (Instruction) CloneInfo.getReflectedValue(this);
+    public Instruction cloneToBBAndAddInfo(CloneInfo cloneInfo, BasicBlock newBlock) {
+        cloneInfo.addValueReflect(this, cloneToBB(newBlock));
+        return (Instruction) cloneInfo.getReflectedValue(this);
     }
 
     public boolean gvnable() {
@@ -108,11 +108,11 @@ public class Instruction extends User {
     }
 
     //public Instruction
-    public void fix() {
+    public void fix(CloneInfo cloneInfo) {
         ArrayList<Value> toReplace = new ArrayList<>();
         for (Value operand : getOperands()) {
             //getOperands().set(getOperands().indexOf(operand), CloneInfo.getReflectedValue(operand));
-            if (operand != CloneInfo.getReflectedValue(operand)) {
+            if (operand != cloneInfo.getReflectedValue(operand)) {
                 toReplace.add(operand);
             }
             //replaceUseOfWith(operand, CloneInfo.getReflectedValue(operand));
@@ -120,7 +120,7 @@ public class Instruction extends User {
         //setParentBlock((BasicBlock) CloneInfo.getReflectedValue(parentBlock));
         for (Value operand : toReplace) {
             //assert operand.getType().isPointerTy() == CloneInfo.getReflectedValue(operand).getType().isPointerTy();
-            replaceUseOfWith(operand, CloneInfo.getReflectedValue(operand));
+            replaceUseOfWith(operand, cloneInfo.getReflectedValue(operand));
         }
     }
 

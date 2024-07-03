@@ -147,9 +147,9 @@ public class FunctionInline {
      */
     private static void transCallToFunc(Function function, Instruction.Call call, int idx, ArrayList<Instruction.Call> callers) {
 //        System.out.println("transCallToFunc: " + call);
-        CloneInfo.clear();
+        CloneInfo cloneInfo = new CloneInfo();
         // 所在的函数
-        Function inFunction = ((Instruction.Call) CloneInfo.getReflectedValue(call)).getParentBlock().getParentFunction();
+        Function inFunction = ((Instruction.Call) cloneInfo.getReflectedValue(call)).getParentBlock().getParentFunction();
         // 拆分前的 call Block
         BasicBlock beforeCallBB = call.getParentBlock();
 //        CallbbCut.add(beforeCallBB);
@@ -164,7 +164,7 @@ public class FunctionInline {
         // 命名上 retBB 为 call 的下一条指令所在的基本块
         BasicBlock retBB = new BasicBlock(function.getName() + "_ret_" + idx, inFunction);
 
-        Value ret = function.inlineToFunc(inFunction, retBB, call, idx);
+        Value ret = function.inlineToFunc(cloneInfo, inFunction, retBB, call, idx);
 
         BasicBlock afterCallBB = new BasicBlock(inFunction.getName() + "_after_call_" + function.getName() + "_" + idx, inFunction);
 //        CallbbCut.add(afterCallBB);
@@ -185,8 +185,8 @@ public class FunctionInline {
         }
 
         for (Instruction instr1 : instrs) {
-            Instruction newInst = instr1.cloneToBBAndAddInfo(afterCallBB);
-            newInst.fix();
+            Instruction newInst = instr1.cloneToBBAndAddInfo(cloneInfo, afterCallBB);
+            newInst.fix(cloneInfo);
             if (instr1 instanceof Instruction.Call && callers.contains(instr1)) {
                 callers.set(callers.indexOf(instr1), (Instruction.Call) newInst);
             }
@@ -196,12 +196,12 @@ public class FunctionInline {
             }
             ArrayList<Use> toFix = new ArrayList<>(instr1.getUses());
             for (Use use : toFix) {
-                ((Instruction) use.getUser()).fix();
+                ((Instruction) use.getUser()).fix(cloneInfo);
             }
         }
 
 
-        Instruction jumpToCallBB = new Instruction.Jump(beforeCallBB, (BasicBlock) CloneInfo.getReflectedValue(function.getFirstBlock()));
+        Instruction jumpToCallBB = new Instruction.Jump(beforeCallBB, (BasicBlock) cloneInfo.getReflectedValue(function.getFirstBlock()));
         jumpToCallBB.remove();
         beforeCallBB.getInstructions().insertBefore(jumpToCallBB, inst);
         Instruction jumpToAfterCallBB = new Instruction.Jump(retBB, afterCallBB);

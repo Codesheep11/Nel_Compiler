@@ -234,11 +234,11 @@ public class BasicBlock extends Value {
 
 
     //函数内联的时候,维护循环信息,方便GCM
-    public BasicBlock cloneToFunc(Function function, int idx) {
+    public BasicBlock cloneToFunc(CloneInfo cloneInfo, Function function, int idx) {
         BasicBlock ret = new BasicBlock(function.getName() + "_" + getLabel() + "_" + idx, function);
-        CloneInfo.addValueReflect(this, ret);
+        cloneInfo.addValueReflect(this, ret);
         for (Instruction inst : getInstructions()) {
-            Instruction tmp = inst.cloneToBBAndAddInfo(ret);
+            Instruction tmp = inst.cloneToBBAndAddInfo(cloneInfo, ret);
         }
         return ret;
     }
