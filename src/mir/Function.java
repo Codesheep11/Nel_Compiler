@@ -221,14 +221,14 @@ public class Function extends Value {
     }
 
 
-    public Value inlineToFunc(Function tagFunc, BasicBlock retBB, Instruction.Call call, int idx) {
+    public Value inlineToFunc(CloneInfo cloneInfo, Function tagFunc, BasicBlock retBB, Instruction.Call call, int idx) {
         //Instruction.Phi retPhi = null;
 
         //维护phi函数
 //        CloneInfo.fixLoopReflect();
         HashMap<BasicBlock, BasicBlock> bbMap = new HashMap<>();
         for (BasicBlock block : getBlocks()) {
-            bbMap.put(block, block.cloneToFunc(tagFunc, idx));
+            bbMap.put(block, block.cloneToFunc(cloneInfo, tagFunc, idx));
         }
         for (BasicBlock block : bbMap.values()) {
             for (Instruction instr : block.getInstructions()) {
@@ -244,7 +244,7 @@ public class Function extends Value {
 //        ArrayList<Argument> funcParams = getMyArguments();
 
         for (int i = 0; i < callParams.size(); i++) {
-            CloneInfo.addValueReflect(funcRArguments.get(i), callParams.get(i));
+            cloneInfo.addValueReflect(funcRArguments.get(i), callParams.get(i));
 //            for (Use use:
 //                 funcRArguments.get(i).getUses()) {
 //                use.getUser().replaceUseOfWith(use.get(), callParams.get(i));
@@ -256,10 +256,10 @@ public class Function extends Value {
         LinkedHashMap<BasicBlock, Value> phiOptional = new LinkedHashMap<>();
         for (BasicBlock block : getBlocks()) {
             //((BasicBlock) CloneInfoMap.getReflectedValue(bb)).fix();
-            BasicBlock needFixBB = (BasicBlock) CloneInfo.getReflectedValue(block);
+            BasicBlock needFixBB = (BasicBlock) cloneInfo.getReflectedValue(block);
 
             for (Instruction inst : needFixBB.getInstructions()) {
-                inst.fix();
+                inst.fix(cloneInfo);
                 if (inst instanceof Instruction.Return && ((Instruction.Return) inst).hasValue()) {
                     Instruction jumpToRetBB = new Instruction.Jump(needFixBB, retBB);
                     jumpToRetBB.remove();
