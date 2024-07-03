@@ -1,7 +1,8 @@
 package backend.riscv.RiscvInstruction;
 
 import backend.operand.Reg;
-import backend.riscv.*;
+import backend.riscv.RiscvBlock;
+import backend.riscv.RiscvGlobalVar;
 
 public class La extends RiscvInstruction {
 
@@ -32,5 +33,30 @@ public class La extends RiscvInstruction {
         }
         def.remove(oldReg);
         def.add(newReg);
+    }
+
+    @Override
+    public int getOperandNum() {
+        return 1;
+    }
+
+    @Override
+    public boolean isDef(int idx) {
+        return true;
+    }
+
+    @Override
+    public boolean isUse(int idx) {
+        return false;
+    }
+
+    @Override
+    public Reg getRegByIdx(int idx) {
+        return reg;
+    }
+
+    @Override
+    public int getInstFlag() {
+        return InstFlag.None.value|InstFlag.LoadConstant.value|InstFlag.PCRel.value;
     }
 }

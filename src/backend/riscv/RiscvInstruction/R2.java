@@ -104,4 +104,33 @@ public class R2 extends RiscvInstruction {
             def.add(newReg);
         }
     }
+
+    @Override
+    public int getOperandNum() {
+        return 2;
+    }
+
+
+    @Override
+    public boolean isUse(int idx) {
+        return idx == 1;
+    }
+
+    @Override
+    public boolean isDef(int idx) {
+        return idx == 0;
+    }
+
+    @Override
+    public Reg getRegByIdx(int idx) {
+        return idx == 0 ? (Reg) rd : (Reg) rs;
+    }
+
+    @Override
+    public int getInstFlag() {
+        if (type == R2Type.mv || type == R2Type.fmv) {
+            return InstFlag.None.value | InstFlag.RegCopy.value;
+        }
+        return InstFlag.None.value;
+    }
 }
