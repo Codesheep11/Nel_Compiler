@@ -8,6 +8,8 @@ import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.*;
+import midend.DCE.AggressiveDCD;
+import midend.DCE.DeadCodeDelete;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
@@ -157,8 +159,7 @@ public class Manager {
         }
 
         //函数定义
-        for (Map.Entry<String, Function> functionEntry :
-                functions.entrySet()) {
+        for (Map.Entry<String, Function> functionEntry : functions.entrySet()) {
             Function function = functionEntry.getValue();
             if (function.isExternal()) {
                 continue;

@@ -40,14 +40,14 @@ public class User extends Value {
     /**
      * 同时删除双向边关系
      *
-     * @param oldvalue
-     * @param newvalue
+     * @param oldValue
+     * @param newValue
      */
-    public void replaceUseOfWith(Value value, Value v) {
+    public void replaceUseOfWith(Value oldValue, Value newValue) {
         // 在 Value 的 operands 中更新
-        value.use_remove(new Use(this, value));
-        operands.remove(value);
-        addOperand(v);
+        oldValue.use_remove(new Use(this, oldValue));
+        operands.remove(oldValue);
+        addOperand(newValue);
     }
 
     @Override
