@@ -228,7 +228,7 @@ public class Function extends Value {
 //        CloneInfo.fixLoopReflect();
         HashMap<BasicBlock, BasicBlock> bbMap = new HashMap<>();
         for (BasicBlock block : getBlocks()) {
-            bbMap.put(block, block.cloneToFunc(cloneInfo, tagFunc, idx));
+            bbMap.put(block, block.cloneToFunc(cloneInfo, tagFunc));
         }
         for (BasicBlock block : bbMap.values()) {
             for (Instruction instr : block.getInstructions()) {

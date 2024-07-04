@@ -12,5 +12,5 @@ public class CentralControl {
 
     public static boolean _FUNC_INLINE_OPEN = true;
 
-    public static boolean _LUS_OPEN = true;
+    public static boolean _LUS_OPEN = false;
 }

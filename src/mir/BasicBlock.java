@@ -25,6 +25,8 @@ public class BasicBlock extends Value {
     public Loop loop = null;// 循环信息
     public boolean isDeleted = false;
 
+    private int cpcnt = 0;
+
     public BasicBlock(String label, Function parentFunction) {
         super(Type.LabelType.LABEL_TYPE);
         this.parentFunction = parentFunction;
@@ -234,14 +236,26 @@ public class BasicBlock extends Value {
 
 
     //函数内联的时候,维护循环信息,方便GCM
-    public BasicBlock cloneToFunc(CloneInfo cloneInfo, Function function, int idx) {
-        BasicBlock ret = new BasicBlock(function.getName() + "_" + getLabel() + "_" + idx, function);
+    public BasicBlock cloneToFunc(CloneInfo cloneInfo, Function function) {
+        BasicBlock ret = new BasicBlock(function.getName() + "_" + getLabel() + "_" + cpcnt++, function);
         cloneInfo.addValueReflect(this, ret);
         for (Instruction inst : getInstructions()) {
             Instruction tmp = inst.cloneToBBAndAddInfo(cloneInfo, ret);
         }
         return ret;
     }
+
+    public void fixClone(CloneInfo cloneInfo) {
+        instructions.forEach(inst -> inst.fix(cloneInfo));
+    }
+
+//    public BasicBlock defaultClone() {
+//        BasicBlock ret = new BasicBlock(getDescriptor() + "_cp", parentFunction);
+//        for (Instruction inst : getInstructions()) {
+//            Instruction tmp = inst.cloneToBB(ret);
+//        }
+//        return ret;
+//    }
 
     public boolean dominates(BasicBlock block) {
         return block.domSet.contains(this);

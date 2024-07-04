@@ -36,6 +36,7 @@ public class GlobalCodeMotion {
         gcm.currentFunc = function;
         function.buildDominanceGraph();
         gcm.GCM4Block(function.getEntry(), true);
+        gcm.scheduledSet.clear();
         gcm.GCM4Block(function.getEntry(), false);
     }
 
@@ -99,6 +100,10 @@ public class GlobalCodeMotion {
             }
         }
         // instr.latest 现在是最后可被调度到的块
+        if (instr.latest.getDomDepth() < instr.earliest.getDomDepth()) {
+            instr.earliest = instr.latest = instr.getParentBlock();
+            return;
+        }
         BasicBlock best = instr.latest;
 //        int bestDepth = instr.latest.getDomDepth();
         int bestLoopDepth = instr.latest.getLoopDepth();
