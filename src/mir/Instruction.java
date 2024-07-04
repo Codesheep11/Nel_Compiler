@@ -918,6 +918,10 @@ public class Instruction extends User {
             return optionalValues;
         }
 
+        public void setOptionalValues(LinkedHashMap<BasicBlock, Value> optionalValues) {
+            this.optionalValues = optionalValues;
+        }
+
         @Override
         public void replaceUseOfWith(Value value, Value v) {
             if (!(getOperands().contains(value) || optionalValues.containsKey(value))) {
