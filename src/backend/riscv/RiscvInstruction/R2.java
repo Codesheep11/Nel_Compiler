@@ -17,34 +17,42 @@ public class R2 extends RiscvInstruction {
                     return "mv";
                 }
                 // move 一个整数移动到另一个整数
+
                 case fmv -> {
                     return "fmv.s";
                 }
                 // fmove 一个浮点数移动到另一个浮点数
+
                 case fabs -> {
                     return "fabs";
                 }
                 // fabs 浮点数的绝对值,现在看来不需要
+
                 case fneg -> {
                     return "fneg";
                 }
                 // f negative 浮点数取反
+
                 case fmvsx -> {
                     return "fmv.s.x";
                 }
                 // f 单精度移动到整数(单纯的bits移动)
+
                 case fmvxs -> {
                     return "fmv.x.s";
                 }
                 // 整数移动到单精度(单纯的bits移动)
+
                 case fcvtws -> {
                     return "fcvt.w.s";
                 }
-                // 将整数转化为单精度,这个的意义是从数值上转化，例如5->5.0
+                // 将单精度转化为整数,这个的意义是从数值上转化,需要加上rtz才是像0舍入(和c语言一样)
+
                 case fcvtsw -> {
                     return "fcvt.s.w";
                 }
-                // 将单精度转化为整数,这个的意义是从数值上转化
+                // 将整数转化为单精度,这个的意义是从数值上转化，例如5->5.0
+
                 case sgtz -> {
                     return "sgtz";
                 }
@@ -79,10 +87,11 @@ public class R2 extends RiscvInstruction {
 
     @Override
     public String toString() {
+        String app = type == R2Type.fcvtws ? ", rtz " : "";
         if (type.toString().length() > 3) {
-            return "\t" + type + "\t" + rd + ", " + rs;
+            return "\t" + type + "\t" + rd + ", " + rs + app;
         }
-        return "\t" + type + "\t\t" + rd + ", " + rs;
+        return "\t" + type + "\t\t" + rd + ", " + rs + app;
     }
 
 
