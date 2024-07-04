@@ -29,4 +29,8 @@ public class CloneInfo {
         valueMap.clear();
     }
 
+    public boolean containValue(Value value) {
+        return valueMap.containsKey(value);
+    }
+
 }

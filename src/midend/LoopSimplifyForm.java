@@ -127,12 +127,45 @@ public class LoopSimplifyForm {
 
                 new Instruction.Jump(newExit, exit);
                 newExits.add(newExit);
-            }
-            else {
+            } else {
                 newExits.add(exit);
             }
         }
         loop.exits = newExits;
+    }
+
+    /**
+     * 新建一个 exit 块
+     * <p>
+     * @param loop 循环
+     * @param exit 旧 exit 块
+     * @return 新 exit 块
+     */
+    public static BasicBlock newExit(Loop loop, BasicBlock exit) {
+        Function parentFunction = loop.header.getParentFunction();
+        // TODO: 可能需要修改 新建块的loop归属
+        BasicBlock newExit = BasicBlock.getNewCleanBlock(getNewLabel(loop.header.getParentFunction(), "exit"), loop.header.getParentFunction(),exit.loop);
+        loop.exitings.forEach(exiting -> exiting.replaceSucc(exit, newExit));
+        // 将需要维护 phi 信息提前
+        for (Instruction.Phi phi : exit.getPhiInstructions()) {
+            LinkedHashMap<BasicBlock, Value> newMap = new LinkedHashMap<>();
+            for (BasicBlock exiting : loop.exitings) {
+                if (phi.containsBlock(exiting)) {
+                    newMap.put(exiting, phi.getOptionalValue(exiting));
+                    phi.removeOptionalValue(exiting);
+                }
+            }
+            Instruction.Phi val = new Instruction.Phi(newExit, phi.getType(), newMap);
+            phi.addOptionalValue(newExit, val);
+        }
+
+        parentFunction.getBlocks().insertBefore(newExit, exit);
+
+        new Instruction.Jump(newExit, exit);
+        loop.exits.remove(exit);
+        loop.exits.add(newExit);
+
+        return newExit;
     }
 
     private static String getNewLabel(Function function, String infix) {

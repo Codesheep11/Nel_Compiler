@@ -52,14 +52,15 @@ public class Manager {
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
                 GlobalCodeMotion.run(module);
-                LoopInfo.build(module);
+//                LoopInfo.build(module);
 //                LoopInVarLift.run(module);
 //                LCSSA.run(module);
 //                LoopTest(module);
                 LoopSimplifyForm.test(module);
+//                LoopUnSwitching.run(module);
 //                LCSSA.remove(module);
-                AggressiveDCD.run(module);
-                DeadCodeDelete.run(module);
+//                AggressiveDCD.run(module);
+//                DeadCodeDelete.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);

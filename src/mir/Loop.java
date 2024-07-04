@@ -1,6 +1,7 @@
 package mir;
 
 import midend.CloneInfo;
+import midend.LoopCloneInfo;
 import midend.LoopInfo;
 
 import java.util.HashSet;
@@ -35,6 +36,10 @@ public class Loop {
 
     public Loop(BasicBlock header) {
         this.header = header;
+        this.hash = loopCounter++;
+    }
+
+    public Loop() {
         this.hash = loopCounter++;
     }
 
@@ -103,6 +108,50 @@ public class Loop {
     public void addNowLevelBB(BasicBlock bb) {
         nowLevelBB.add(bb);
         bb.loop = this;
+    }
+
+    public BasicBlock getExit() {
+        if (exits.size() != 1) {
+            throw new RuntimeException("getExit: exits.size() != 1\n");
+        }
+        return exits.iterator().next();
+    }
+
+    public BasicBlock getPreHeader() {
+        if (enterings.size() != 1) {
+            throw new RuntimeException("getPreHeader: enterings.size() != 1\n");
+        }
+        return enterings.iterator().next();
+    }
+
+    public LoopCloneInfo cloneAndInfo() {
+        LoopCloneInfo info = new LoopCloneInfo();
+        info.src = this;
+        info.cpy = new Loop();
+
+        nowLevelBB.forEach(bb -> info.cpy.addNowLevelBB(bb.cloneToFunc(info, bb.getParentFunction())));
+        info.cpy.nowLevelBB.forEach(bb -> bb.fixClone(info));
+
+        info.cpy.header = (BasicBlock) info.getReflectedValue(header);
+        info.cpy.enterings = new HashSet<>(enterings);
+        info.cpy.exitings = new HashSet<>(exitings);
+        latchs.forEach(bb -> info.cpy.latchs.add((BasicBlock) info.getReflectedValue(bb)));
+        exits.forEach(bb -> info.cpy.exits.add((BasicBlock) info.getReflectedValue(bb)));
+
+        Loop cpLoop = info.cpy;
+        cpLoop.parent = parent;
+        cpLoop.isRoot = isRoot;
+        cpLoop.idcSet = idcSet;
+        cpLoop.idcAlu = idcAlu;
+        cpLoop.idcPhi = idcPhi;
+        cpLoop.idcCmp = idcCmp;
+        cpLoop.idcInit = idcInit;
+        cpLoop.idcEnd = idcEnd;
+        cpLoop.idcStep = idcStep;
+        cpLoop.idcTimeSet = idcTimeSet;
+        cpLoop.idcTime = idcTime;
+
+        return info;
     }
 
 //
