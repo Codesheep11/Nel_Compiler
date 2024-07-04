@@ -36,7 +36,7 @@ public class GlobalCodeMotion {
         gcm.currentFunc = function;
         function.buildDominanceGraph();
         gcm.GCM4Block(function.getEntry(), true);
-        gcm.scheduledSet.clear();
+//        gcm.scheduledSet.clear();
         gcm.GCM4Block(function.getEntry(), false);
     }
 
