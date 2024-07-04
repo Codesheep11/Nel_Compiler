@@ -52,7 +52,7 @@ public class Manager {
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
                 GlobalCodeMotion.run(module);
-//                LoopInfo.build(module);
+                LoopInfo.build(module);
 //                LoopInVarLift.run(module);
 //                LCSSA.run(module);
 //                LoopTest(module);
