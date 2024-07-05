@@ -47,7 +47,7 @@ public class Loop {
      * 得到循环的深度
      */
     public int getDepth() {
-        int ret = 0;
+        int ret = 1;
         Loop par = parent;
         while (par != null) {
             par = par.parent;

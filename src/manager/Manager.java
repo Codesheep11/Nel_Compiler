@@ -46,21 +46,22 @@ public class Manager {
             Module module = visitor.module;
             if (arg.opt) {
                 Mem2Reg.run(module);
-                Reassociate.run(module);
+//                Reassociate.run(module);
                 FunctionInline.run(module);
                 FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
+                LoopInfo.build(module);
                 GlobalValueNumbering.run(module);
                 GlobalCodeMotion.run(module);
 //                LoopInfo.build(module);
 //                LoopInVarLift.run(module);
 //                LCSSA.run(module);
 //                LoopTest(module);
-                LoopSimplifyForm.test(module);
+//                LoopSimplifyForm.test(module);
 //                LoopUnSwitching.run(module);
 //                LCSSA.remove(module);
-//                AggressiveDCD.run(module);
-//                DeadCodeDelete.run(module);
+                AggressiveDCD.run(module);
+                DeadCodeDelete.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
