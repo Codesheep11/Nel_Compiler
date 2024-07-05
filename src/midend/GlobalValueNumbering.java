@@ -4,6 +4,7 @@ import mir.*;
 import manager.CentralControl;
 import mir.Module;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -44,24 +45,25 @@ public class GlobalValueNumbering {
      */
     private static void GVN4Block(BasicBlock block, HashSet<String> records, HashMap<String, Instruction> recordInstructions) {
         Iterator<Instruction> iter = block.getInstructions().iterator();
-        while (iter.hasNext()) {
-            Instruction inst = iter.next();
+        ArrayList<Instruction> delList = new ArrayList<>();
+        for (Instruction inst : block.getInstructions()){
             // 尝试常量折叠
             if (tryConstantFolding(inst)) {
-                iter.remove();
+                delList.add(inst);
                 continue;
             }
             if (inst.gvnable()) {
                 String key = generateExpressionKey(inst);
                 if (records.contains(key)) {
                     inst.replaceAllUsesWith(recordInstructions.get(key));
-                    iter.remove();
+                    delList.add(inst);
                 } else {
                     records.add(key);
                     recordInstructions.put(key, inst);
                 }
             }
         }
+        delList.forEach(Value::delete);
         for (BasicBlock child : block.getDomTreeChildren()) {
             GVN4Block(child, new HashSet<>(records), new HashMap<>(recordInstructions));
         }
@@ -115,6 +117,7 @@ public class GlobalValueNumbering {
                 }
                 yield inst.getInstType() + "," + call.getDestFunction().getDescriptor() + "," + args;
             }
+            case LOAD -> inst.getInstType().name() + "," + inst.getOperands().get(0).getDescriptor();
             default -> {
                 System.out.println("Warning: GVN 未处理类型: " + inst.getInstType() + "!");
                 yield inst.toString();
