@@ -6,6 +6,5 @@ out/
 
 compiler2024-nel.iml
 /src/META-INF/MANIFEST.MF
-compiler2024-nel.jar
 SimplifyCFG.java
-newnewcc.jar
+*.jar
