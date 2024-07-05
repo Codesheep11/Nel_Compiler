@@ -165,7 +165,8 @@ public class GlobalValueNumbering {
                     return true;
                 }
             }
-        } else if (instruction instanceof Instruction.Condition condition) {
+        }
+        else if (instruction instanceof Instruction.Condition condition) {
             Value operand1 = condition.getSrc1();
             Value operand2 = condition.getSrc2();
             if (operand1 instanceof Constant op1 && operand2 instanceof Constant op2) {

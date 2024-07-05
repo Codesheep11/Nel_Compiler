@@ -60,8 +60,8 @@ public class Manager {
 //                LoopSimplifyForm.test(module);
 //                LoopUnSwitching.run(module);
 //                LCSSA.remove(module);
-//                AggressiveDCD.run(module);
-//                DeadCodeDelete.run(module);
+                AggressiveDCD.run(module);
+                DeadCodeDelete.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
