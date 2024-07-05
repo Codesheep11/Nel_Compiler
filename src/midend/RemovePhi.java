@@ -96,7 +96,7 @@ public class RemovePhi {
                         Instruction.Move move = new Instruction.Move(bb, phi.getType(), RHS.get(i), phi);
                         move.remove();
                         seq.add(move);
-                        phiCopy.delete(LHS.get(i), RHS.get(i));
+                        phiCopy.Delete(LHS.get(i), RHS.get(i));
                     }
                     if (!phiCopy.getLHS().isEmpty()) {
                         Value src = phiCopy.getRHS().get(0);
