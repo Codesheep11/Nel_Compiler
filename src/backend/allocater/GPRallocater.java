@@ -32,7 +32,7 @@ public class GPRallocater {
     public int K = 26;
     //t0作为临时寄存器，不参与图着色寄存器分配
 
-    private final HashSet<Reg.PhyReg> Regs = new HashSet<>(
+    private final LinkedHashSet<Reg.PhyReg> Regs = new LinkedHashSet<>(
             Arrays.asList(Reg.PhyReg.t1, Reg.PhyReg.t2, Reg.PhyReg.t3,
                     Reg.PhyReg.t4, Reg.PhyReg.t5, Reg.PhyReg.t6, Reg.PhyReg.s0, Reg.PhyReg.s1,
                     Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4, Reg.PhyReg.s5, Reg.PhyReg.s6,
@@ -168,7 +168,7 @@ public class GPRallocater {
         if (v.preColored) {
             return true;
         }
-        HashSet<Reg.PhyReg> regs2Assign = new HashSet<>(Regs);
+        LinkedHashSet<Reg.PhyReg> regs2Assign = new LinkedHashSet<>(Regs);
         for (Reg u : curCG.get(v)) {
             regs2Assign.remove(u.phyReg);
         }

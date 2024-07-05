@@ -57,10 +57,10 @@ public class Manager {
 //                LCSSA.run(module);
 //                LoopTest(module);
                 LoopSimplifyForm.test(module);
-//                LoopUnSwitching.run(module);
+                LoopUnSwitching.run(module);
 //                LCSSA.remove(module);
-//                AggressiveDCD.run(module);
-//                DeadCodeDelete.run(module);
+                AggressiveDCD.run(module);
+                DeadCodeDelete.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);

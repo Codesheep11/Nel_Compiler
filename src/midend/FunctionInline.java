@@ -224,13 +224,7 @@ public class FunctionInline {
             inst.getNext().remove();
         }
         //beforeCallBB.getInstructions().setEnd(inst);
-        inst.remove();
-        Iterator<Value> iterator = inst.getOperands().iterator();
-        while (iterator.hasNext()) {
-            Value value = iterator.next();
-            value.use_remove(new Use(inst, value));
-            inst.use_remove(new Use(inst, value));
-        }
+        inst.delete();
     }
 
 

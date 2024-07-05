@@ -5,6 +5,7 @@ import mir.Module;
 import mir.*;
 
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -169,14 +170,17 @@ public class DeadCodeDelete {
     }
 
     private static void uselessInstDelete(BasicBlock block) {
+        ArrayList<Instruction> delList = new ArrayList<>();
         Iterator<Instruction> iterator = block.getInstructions().iterator();
         while (iterator.hasNext()) {
             Instruction inst = iterator.next();
             if (!usefulVar.contains(inst)) {
 //                System.out.println("uselessInstDelete: " + inst.getDescriptor());
-                iterator.remove();
+//                iterator.remove();
+                delList.add(inst);
             }
         }
+        delList.forEach(Value::delete);
     }
 
 }

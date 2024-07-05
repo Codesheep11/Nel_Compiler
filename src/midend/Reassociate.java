@@ -32,7 +32,7 @@ public class Reassociate {
     }
 
     private static void runOnInst(Instruction inst) {
-        if (!canbeReassociate(inst)) return;
+        if (!inst.isAssociative()) return;
         BasicBlock block = inst.getParentBlock();
         ArrayList<Pair<Integer, Value>> args = map.get(inst);
         if (args == null) args = new ArrayList<>();
@@ -180,19 +180,6 @@ public class Reassociate {
                 inst.replaceAllUsesWith(reducedStorage);
                 inst.remove();
             }
-        }
-    }
-
-
-    private static boolean canbeReassociate(Instruction inst) {
-        switch (inst.getInstType()) {
-            case ADD:
-            case MUL:
-//            case FAdd:
-//            case FMUL:
-                return true;
-            default:
-                return false;
         }
     }
 
