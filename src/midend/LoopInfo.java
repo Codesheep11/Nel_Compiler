@@ -14,8 +14,6 @@ public class LoopInfo {
 
     public LoopInfo(Function function) {
         this.function = function;
-        function.buildControlFlowGraph();
-        function.buildDominanceGraph();
         runLoopAnalysis();
     }
 
@@ -30,11 +28,18 @@ public class LoopInfo {
     public void runLoopAnalysis() {
         function.buildControlFlowGraph();
         function.buildDominanceGraph();
+        clearBlocksLoopInfo();
         LoopInfo4Func();
         for (Loop loop : TopLevelLoops) {
             genInfo4Loop(loop);
         }
 //        printLoopInfo();
+    }
+
+    private void clearBlocksLoopInfo() {
+        for (BasicBlock bb : function.getBlocks()) {
+            bb.loop = null;
+        }
     }
 
     private void genInfo4Loop(Loop loop) {
