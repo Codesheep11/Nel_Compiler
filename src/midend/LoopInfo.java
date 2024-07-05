@@ -14,6 +14,8 @@ public class LoopInfo {
 
     public LoopInfo(Function function) {
         this.function = function;
+        function.buildControlFlowGraph();
+        function.buildDominanceGraph();
         runLoopAnalysis();
     }
 

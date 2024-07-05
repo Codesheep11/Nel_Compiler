@@ -56,9 +56,9 @@ public class Manager {
                 GlobalCodeMotion.run(module);
 //                LoopInfo.build(module);
 //                LoopInVarLift.run(module);
-//                LCSSA.run(module);
-//                LoopTest(module);
-//                LoopSimplifyForm.test(module);
+                LCSSA.run(module);
+                LoopTest(module);
+                LoopSimplifyForm.test(module);
 //                LoopUnSwitching.run(module);
 //                LCSSA.remove(module);
                 AggressiveDCD.run(module);
