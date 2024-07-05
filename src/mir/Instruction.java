@@ -140,7 +140,7 @@ public class Instruction extends User {
 
     public boolean isAssociative() {
         return switch (instType) {
-            case ADD, MUL, FAdd, FMUL -> true;
+            case ADD, MUL -> true;
             default -> false;
         };
     }
@@ -1316,7 +1316,7 @@ public class Instruction extends User {
             }
         }
 
-        public void delete(Value lhs, Value rhs) {
+        public void Delete(Value lhs, Value rhs) {
             LHS.remove(lhs);
             RHS.remove(rhs);
         }
