@@ -148,22 +148,23 @@ public class GlobalValueNumbering {
                     }
                     instruction.replaceAllUsesWith(new Constant.ConstantInt(result));
                     return true;
-                } else if (instruction.getType().isFloatTy()) {
-                    float val1 = (float) op1.getConstValue();
-                    float val2 = (float) op2.getConstValue();
-                    float result = 0;
-                    switch (instruction.getInstType()) {
-                        case FAdd -> result = val1 + val2;
-                        case FSUB -> result = val1 - val2;
-                        case FMUL -> result = val1 * val2;
-                        case FDIV -> result = val1 / val2;
-                        case FREM -> result = val1 % val2;
-                        default -> {
-                        }
-                    }
-                    instruction.replaceAllUsesWith(new Constant.ConstantFloat(result));
-                    return true;
                 }
+//                else if (instruction.getType().isFloatTy()) {
+//                    float val1 = (float) op1.getConstValue();
+//                    float val2 = (float) op2.getConstValue();
+//                    float result = 0;
+//                    switch (instruction.getInstType()) {
+//                        case FAdd -> result = val1 + val2;
+//                        case FSUB -> result = val1 - val2;
+//                        case FMUL -> result = val1 * val2;
+//                        case FDIV -> result = val1 / val2;
+//                        case FREM -> result = val1 % val2;
+//                        default -> {
+//                        }
+//                    }
+//                    instruction.replaceAllUsesWith(new Constant.ConstantFloat(result));
+//                    return true;
+//                }
             }
         }
         else if (instruction instanceof Instruction.Condition condition) {

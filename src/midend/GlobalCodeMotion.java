@@ -54,7 +54,7 @@ public class GlobalCodeMotion {
     private void GCMLate4Block(BasicBlock block) {
         ArrayList<BasicBlock> visitList = currentFunc.getDomTreePostOrder();
         Collections.reverse(visitList);
-        for (BasicBlock basicblock : currentFunc.getDomTreePostOrder()){
+        for (BasicBlock basicblock : currentFunc.getDomTreePostOrder()) {
             ArrayList<Instruction> instructions = basicblock.getInstructionsSnap();
             Collections.reverse(instructions);
             for (Instruction instr : instructions) {

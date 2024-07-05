@@ -61,6 +61,8 @@ public class Reassociate {
             if (rv instanceof Constant) return 1;
             return Integer.compare(getNumber(lv), getNumber(rv));
         });
+//        args.forEach(System.out::println);
+//        System.out.println();
         // 对 args 向量中的元素进行去重和合并
         for (int i = 0; i < args.size(); i++) {
             Pair<Integer, Value> cur = args.get(i);
@@ -115,25 +117,41 @@ public class Reassociate {
                 }
                 break;
             }
-            case FAdd: {
-                for (Pair<Integer, Value> pair : args) {
-                    if (pair.getKey() == 1) reductionStorage.add(pair.getValue());
-                    else {
-                        Instruction fmul = new Instruction.FMul(block, pair.getValue().getType(),
-                                pair.getValue(), new Constant.ConstantFloat(((float) pair.getKey())));
-                        fmul.remove();
-                        block.getInstructions().insertBefore(fmul, inst);
-                        reductionStorage.add(fmul);
-                    }
-                }
-                break;
-            }
-            case FMUL: {
-                for (Pair<Integer, Value> pair : args) {
-                    reductionStorage.add(pair.getValue());
-                }
-                break;
-            }
+//            case FAdd: {
+//                for (Pair<Integer, Value> pair : args) {
+//                    if (pair.getKey() == 1) reductionStorage.add(pair.getValue());
+//                    else {
+//                        Instruction fmul = new Instruction.FMul(block, pair.getValue().getType(),
+//                                pair.getValue(), new Constant.ConstantFloat(((float) pair.getKey())));
+//                        fmul.remove();
+//                        block.getInstructions().insertBefore(fmul, inst);
+//                        reductionStorage.add(fmul);
+//                    }
+//                }
+//                break;
+//            }
+//            case FMUL: {
+//                for (Pair<Integer, Value> pair : args) {
+//                    if (pair.getKey() == 1) reductionStorage.add(pair.getValue());
+//                    else {
+//                        //多次乘法转换为幂运算
+//                        int c = pair.getKey();
+//                        Value v = pair.getValue();
+//                        while (c != 0) {
+//                            if ((c & 1) != 0) reductionStorage.add(v);
+//                            c >>= 1;
+//                            if (c != 0) {
+//                                Instruction fmul = new Instruction.FMul(block, v.getType(), v, v);
+//                                fmul.remove();
+//                                block.getInstructions().insertBefore(fmul, inst);
+//                                v = fmul;
+//                            }
+//                            else break;
+//                        }
+//                    }
+//                }
+//                break;
+//            }
             default: {
                 throw new RuntimeException("Unsupported instruction type");
             }
@@ -156,18 +174,18 @@ public class Reassociate {
                     block.getInstructions().insertBefore(mul, inst);
                     reducedStorage = mul;
                 }
-                else if (inst instanceof Instruction.FAdd) {
-                    Instruction fadd = new Instruction.FAdd(block, v.getType(), reducedStorage, v);
-                    fadd.remove();
-                    block.getInstructions().insertBefore(fadd, inst);
-                    reducedStorage = fadd;
-                }
-                else if (inst instanceof Instruction.FMul) {
-                    Instruction fmul = new Instruction.FMul(block, v.getType(), reducedStorage, v);
-                    fmul.remove();
-                    block.getInstructions().insertBefore(fmul, inst);
-                    reducedStorage = fmul;
-                }
+//                else if (inst instanceof Instruction.FAdd) {
+//                    Instruction fadd = new Instruction.FAdd(block, v.getType(), reducedStorage, v);
+//                    fadd.remove();
+//                    block.getInstructions().insertBefore(fadd, inst);
+//                    reducedStorage = fadd;
+//                }
+//                else if (inst instanceof Instruction.FMul) {
+//                    Instruction fmul = new Instruction.FMul(block, v.getType(), reducedStorage, v);
+//                    fmul.remove();
+//                    block.getInstructions().insertBefore(fmul, inst);
+//                    reducedStorage = fmul;
+//                }
                 else {
                     throw new RuntimeException("Unsupported instruction type");
                 }
@@ -178,7 +196,7 @@ public class Reassociate {
             if (reductionInst.getInstType() == inst.getInstType()) {
                 map.put(reducedStorage, map.remove(inst));
                 inst.replaceAllUsesWith(reducedStorage);
-                inst.remove();
+                inst.delete();
             }
         }
     }
