@@ -50,14 +50,15 @@ public class Manager {
                 FunctionInline.run(module);
                 FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
+                LoopInfo.build(module);
                 GlobalValueNumbering.run(module);
                 GlobalCodeMotion.run(module);
-                LoopInfo.build(module);
+//                LoopInfo.build(module);
 //                LoopInVarLift.run(module);
 //                LCSSA.run(module);
 //                LoopTest(module);
-                LoopSimplifyForm.test(module);
-                LoopUnSwitching.run(module);
+//                LoopSimplifyForm.test(module);
+//                LoopUnSwitching.run(module);
 //                LCSSA.remove(module);
                 AggressiveDCD.run(module);
                 DeadCodeDelete.run(module);

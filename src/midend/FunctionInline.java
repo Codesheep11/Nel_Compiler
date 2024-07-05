@@ -173,8 +173,7 @@ public class FunctionInline {
                 if (instr instanceof Instruction.Phi) {
                     Instruction.Phi phi = (Instruction.Phi) instr;
                     phi.changePreBlock(beforeCallBB, afterCallBB);
-                }
-                else break;
+                } else break;
             }
         }
         LinkedList<Instruction> instrs = new LinkedList<>();
@@ -189,8 +188,7 @@ public class FunctionInline {
             newInst.fix(cloneInfo);
             if (instr1 instanceof Instruction.Call && callers.contains(instr1)) {
                 callers.set(callers.indexOf(instr1), (Instruction.Call) newInst);
-            }
-            else if (instr1 instanceof Instruction.Call) {
+            } else if (instr1 instanceof Instruction.Call) {
                 Function callee = ((Instruction.Call) instr1).getDestFunction();
                 callee.use_remove(new Use(instr1, callee));
             }
@@ -199,7 +197,7 @@ public class FunctionInline {
                 ((Instruction) use.getUser()).fix(cloneInfo);
             }
         }
-
+        instrs.forEach(Value::delete);
 
         Instruction jumpToCallBB = new Instruction.Jump(beforeCallBB, (BasicBlock) cloneInfo.getReflectedValue(function.getFirstBlock()));
         jumpToCallBB.remove();

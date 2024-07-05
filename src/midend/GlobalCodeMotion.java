@@ -4,6 +4,8 @@ import mir.*;
 import manager.CentralControl;
 import mir.Module;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 
 /**
@@ -35,21 +37,31 @@ public class GlobalCodeMotion {
         gcm.entry = function.getEntry();
         gcm.currentFunc = function;
         function.buildDominanceGraph();
-        gcm.GCM4Block(function.getEntry(), true);
-//        gcm.scheduledSet.clear();
-        gcm.GCM4Block(function.getEntry(), false);
+        gcm.GCMEarly4Block(function.getEntry());
+        gcm.scheduledSet.clear();
+        gcm.GCMLate4Block(function.getEntry());
     }
 
-    private void GCM4Block(BasicBlock block, boolean isScheduleEarly) {
-        for (Instruction instr : block.getInstructions()) {
-            if (isScheduleEarly)
-                scheduleEarly(instr);
-            else
-                scheduleLateAndBest(instr);
+    private void GCMEarly4Block(BasicBlock block) {
+        for (Instruction instr : block.getInstructionsSnap()) {
+            scheduleEarly(instr);
         }
         for (BasicBlock child : block.getDomTreeChildren()) {
-            GCM4Block(child, isScheduleEarly);
+            GCMEarly4Block(child);
         }
+    }
+
+    private void GCMLate4Block(BasicBlock block) {
+        ArrayList<BasicBlock> visitList = currentFunc.getDomTreePostOrder();
+        Collections.reverse(visitList);
+        for (BasicBlock basicblock : currentFunc.getDomTreePostOrder()){
+            ArrayList<Instruction> instructions = basicblock.getInstructionsSnap();
+            Collections.reverse(instructions);
+            for (Instruction instr : instructions) {
+                scheduleLateAndBest(instr);
+            }
+        }
+
     }
 
     private void scheduleEarly(Instruction instr) {
@@ -88,10 +100,12 @@ public class GlobalCodeMotion {
         if (scheduledSet.contains(instr)) {
             return;
         }
+        scheduledSet.add(instr);
         instr.latest = null;
         for (Use use : instr.getUses()) {
             User user = use.getUser();
             if (user instanceof Instruction instrUser) {
+//                System.out.println(instrUser);
                 scheduleLateAndBest(instrUser);
                 BasicBlock userBlock = instrUser.latest;
                 if (instrUser instanceof Instruction.Phi)
@@ -99,13 +113,18 @@ public class GlobalCodeMotion {
                 instr.latest = getDomLCA(instr.latest, userBlock);
             }
         }
+        if (instr.latest == null) {
+            // Dead Instruction
+            // instr.earliest = instr.latest = instr.getParentBlock();
+            return;
+        }
         // instr.latest 现在是最后可被调度到的块
         if (instr.latest.getDomDepth() < instr.earliest.getDomDepth()) {
             instr.earliest = instr.latest = instr.getParentBlock();
             return;
         }
         BasicBlock best = instr.latest;
-//        int bestDepth = instr.latest.getDomDepth();
+        // int bestDepth = instr.latest.getDomDepth();
         int bestLoopDepth = instr.latest.getLoopDepth();
         while (instr.latest != instr.earliest) {
             instr.latest = instr.latest.getIdom();
@@ -118,8 +137,11 @@ public class GlobalCodeMotion {
         instr.latest = best;
         // 开始调度
         if (!instr.latest.equals(instr.getParentBlock())) {
+            // ConcurrentModification!
             instr.remove();
             instr.latest.getInstructions().insertBefore(instr, findPos(instr, instr.latest));
+            if (instr.getNext() == null)
+                System.out.println(instr);
             instr.setParentBlock(instr.latest);
         }
     }
@@ -156,6 +178,9 @@ public class GlobalCodeMotion {
     private BasicBlock getDomLCA(BasicBlock a, BasicBlock b) {
         if (a == null) {
             return b;
+        }
+        if (b == null) {
+            return a;
         }
         while (a.getDomDepth() > b.getDomDepth())
             a = a.getIdom();
