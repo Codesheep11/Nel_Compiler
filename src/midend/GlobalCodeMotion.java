@@ -115,7 +115,7 @@ public class GlobalCodeMotion {
         }
         if (instr.latest == null) {
             // Dead Instruction
-            instr.earliest = instr.latest = instr.getParentBlock();
+            // instr.earliest = instr.latest = instr.getParentBlock();
             return;
         }
         // instr.latest 现在是最后可被调度到的块
