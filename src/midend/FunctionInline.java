@@ -197,10 +197,7 @@ public class FunctionInline {
                 ((Instruction) use.getUser()).fix(cloneInfo);
             }
         }
-        for (Instruction delete : instrs) {
-            delete.delete();
-        }
-
+        instrs.forEach(Value::delete);
 
         Instruction jumpToCallBB = new Instruction.Jump(beforeCallBB, (BasicBlock) cloneInfo.getReflectedValue(function.getFirstBlock()));
         jumpToCallBB.remove();
