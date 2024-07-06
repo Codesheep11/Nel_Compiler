@@ -48,9 +48,8 @@ public class LoopSimplifyForm {
         if (loop.enterings.size() <= 1)
             return;
         // TODO: 可能需要修改 新建块的loop归属
-        Loop loop1 = loop.enterings.iterator().next().loop;
         Function parentFunction = loop.header.getParentFunction();
-        BasicBlock newPreHeader = BasicBlock.getNewCleanBlock(getNewLabel(parentFunction, "preHeader"), parentFunction, loop1);
+        BasicBlock newPreHeader = new BasicBlock(getNewLabel(parentFunction, "preHeader"), parentFunction);
         for (BasicBlock entering : loop.enterings) {
             entering.replaceSucc(loop.header, newPreHeader);
         }
@@ -66,8 +65,6 @@ public class LoopSimplifyForm {
         }
         new Instruction.Jump(newPreHeader, loop.header);
 
-        parentFunction.getBlocks().insertBefore(newPreHeader, loop.header);
-
         loop.enterings.clear();
         loop.enterings.add(newPreHeader);
     }
@@ -76,7 +73,7 @@ public class LoopSimplifyForm {
         if (loop.latchs.size() <= 1)
             return;
         Function parentFunction = loop.header.getParentFunction();
-        BasicBlock newLatch = BasicBlock.getNewCleanBlock(getNewLabel(parentFunction, "latch"), parentFunction, loop);
+        BasicBlock newLatch = new BasicBlock(getNewLabel(parentFunction, "latch"), parentFunction);
         // 更新所有 latch 的后继 跳转指令
         for (BasicBlock latch : loop.latchs) {
             latch.replaceSucc(loop.header, newLatch);
@@ -94,9 +91,6 @@ public class LoopSimplifyForm {
         // 在末尾插入跳转指令
         new Instruction.Jump(newLatch, loop.header);
 
-        // 启发式插入
-        parentFunction.getBlocks().insertAfter(newLatch, loop.latchs.iterator().next());
-
         loop.latchs.clear();
         loop.latchs.add(newLatch);
     }
@@ -108,7 +102,7 @@ public class LoopSimplifyForm {
             if (!exit.getDomSet().contains(loop.header)) {
                 // TODO: 可能需要修改 新建块的loop归属
                 Loop loop1 = exit.loop;
-                BasicBlock newExit = BasicBlock.getNewCleanBlock(getNewLabel(loop.header.getParentFunction(), "exit"), loop.header.getParentFunction(), loop1);
+                BasicBlock newExit = new BasicBlock(getNewLabel(parentFunction, "exit"), parentFunction);
                 loop.exitings.forEach(exiting -> exiting.replaceSucc(exit, newExit));
                 // 将需要维护 phi 信息提前
                 for (Instruction.Phi phi : exit.getPhiInstructions()) {
@@ -122,8 +116,6 @@ public class LoopSimplifyForm {
                     Instruction.Phi val = new Instruction.Phi(newExit, phi.getType(), newMap);
                     phi.addOptionalValue(newExit, val);
                 }
-
-                parentFunction.getBlocks().insertBefore(newExit, exit);
 
                 new Instruction.Jump(newExit, exit);
                 newExits.add(newExit);
@@ -144,7 +136,7 @@ public class LoopSimplifyForm {
     public static BasicBlock newExit(Loop loop, BasicBlock exit) {
         Function parentFunction = loop.header.getParentFunction();
         // TODO: 可能需要修改 新建块的loop归属
-        BasicBlock newExit = BasicBlock.getNewCleanBlock(getNewLabel(loop.header.getParentFunction(), "exit"), loop.header.getParentFunction(),exit.loop);
+        BasicBlock newExit = new BasicBlock(getNewLabel(loop.header.getParentFunction(), "exit"), loop.header.getParentFunction());
         loop.exitings.forEach(exiting -> exiting.replaceSucc(exit, newExit));
         // 将需要维护 phi 信息提前
         for (Instruction.Phi phi : exit.getPhiInstructions()) {
@@ -158,8 +150,6 @@ public class LoopSimplifyForm {
             Instruction.Phi val = new Instruction.Phi(newExit, phi.getType(), newMap);
             phi.addOptionalValue(newExit, val);
         }
-
-        parentFunction.getBlocks().insertBefore(newExit, exit);
 
         new Instruction.Jump(newExit, exit);
         loop.exits.remove(exit);

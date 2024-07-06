@@ -904,6 +904,14 @@ public class Instruction extends User {
             return new LinkedList<>(optionalValues.keySet());
         }
 
+        public LinkedList<Value> getIncomingValues() {
+            return new LinkedList<>(optionalValues.values());
+        }
+
+        public int getIncomingValueSize() {
+            return optionalValues.size();
+        }
+
         public boolean canBeReplaced() {
             if (isLCSSA) return false;
             HashSet<Value> values = new HashSet<>(optionalValues.values());

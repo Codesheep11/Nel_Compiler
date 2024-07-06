@@ -38,18 +38,6 @@ public class BasicBlock extends Value {
     }
 
     /**
-     * 供循环优化使用
-     * 得到一个关系干净的基本块
-     */
-    public static BasicBlock getNewCleanBlock(String label, Function parentFunction, Loop loop) {
-        BasicBlock newBlock = new BasicBlock(label, parentFunction);
-        newBlock.remove();
-        newBlock.loop = loop;
-        loop.nowLevelBB.add(newBlock);
-        return newBlock;
-    }
-
-    /**
      * 获得该基本块的phi指令列表 <br>
      * 事实上 phi 指令被认为发生在前驱块到后继块的边上 <br>
      * 也许应该独立出来存储 <br>
