@@ -119,6 +119,9 @@ public class GlobalCodeMotion {
             return;
         }
         // instr.latest 现在是最后可被调度到的块
+        if (instr.earliest == null) {
+            System.out.println(instr);
+        }
         if (instr.latest.getDomDepth() < instr.earliest.getDomDepth()) {
             instr.earliest = instr.latest = instr.getParentBlock();
             return;

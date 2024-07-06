@@ -26,13 +26,16 @@ public class LoopInfo {
 
 
     public void runLoopAnalysis() {
+        clearBlocksLoopInfo();
         function.buildControlFlowGraph();
         function.buildDominanceGraph();
-        clearBlocksLoopInfo();
         LoopInfo4Func();
         for (Loop loop : TopLevelLoops) {
-            genInfo4Loop(loop);
+            genEnterExit4Loop(loop);
+            LoopSimplifyForm.run(loop);
+            LCSSA.run(loop);
         }
+        function.buildControlFlowGraph();
 //        printLoopInfo();
     }
 
@@ -42,9 +45,9 @@ public class LoopInfo {
         }
     }
 
-    private void genInfo4Loop(Loop loop) {
+    private void genEnterExit4Loop(Loop loop) {
         for (Loop child : loop.children) {
-            genInfo4Loop(child);
+            genEnterExit4Loop(child);
         }
         //生成loop的entering exiting exit
         HashSet<BasicBlock> allBB = loop.getAllBlocks();
@@ -61,8 +64,6 @@ public class LoopInfo {
                 }
             }
         }
-        //寻找循环中的cond
-
     }
 
     private void printLoopInfo() {
