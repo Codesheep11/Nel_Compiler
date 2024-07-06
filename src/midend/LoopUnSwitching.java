@@ -1,6 +1,7 @@
 package midend;
 
 import manager.CentralControl;
+import manager.Manager;
 import mir.*;
 import mir.Module;
 
@@ -35,7 +36,7 @@ public class LoopUnSwitching {
                 if (branch.getCond() instanceof Constant)
                     continue;
                 // 循环内依赖条件 不能提出循环
-
+                // 前置条件为执行过 GCM 优化
                 if (loop.defValue(branch.getCond()))
                     continue;
                 branches.add(branch);
@@ -56,14 +57,14 @@ public class LoopUnSwitching {
         Loop trueLoop = trueinfo.cpy;
         Instruction condTrueCopy = ((Instruction) trueinfo.getReflectedValue(branch));
         BasicBlock condTrueCopyBlock = condTrueCopy.getParentBlock();
-        condTrueCopy.remove();
+        condTrueCopy.delete();
         new Instruction.Jump(condTrueCopyBlock, (BasicBlock) trueinfo.getReflectedValue(trueBlock));
         //Note: 改造phi 以及删除不可达块 交给BuildCFG和SimplifyCFG实现
         LoopCloneInfo falseinfo = loop.cloneAndInfo();
         Loop falseLoop = falseinfo.cpy;
         Instruction condFalseCopy = ((Instruction) falseinfo.getReflectedValue(branch));
         BasicBlock condFalseCopyBlock = condFalseCopy.getParentBlock();
-        condFalseCopy.remove();
+        condFalseCopy.delete();
         new Instruction.Jump(condFalseCopyBlock, (BasicBlock) falseinfo.getReflectedValue(falseBlock));
 
         BasicBlock condBlock = new BasicBlock(getNewLabel(parentFunction, "cond"), branch.getParentBlock().getParentFunction());
@@ -76,8 +77,13 @@ public class LoopUnSwitching {
             LinkedHashMap<BasicBlock, Value> newMap = new LinkedHashMap<>();
             for (Map.Entry<BasicBlock, Value> entry : phi.getOptionalValues().entrySet()) {
                 if (trueinfo.containValue(entry.getKey())) {
-                    newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), trueinfo.getReflectedValue(entry.getValue()));
-                    newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), falseinfo.getReflectedValue(entry.getValue()));
+                    if (trueinfo.containValue(entry.getValue())) {
+                        newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), trueinfo.getReflectedValue(entry.getValue()));
+                        newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), falseinfo.getReflectedValue(entry.getValue()));
+                    } else {
+                        newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), entry.getValue());
+                        newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), entry.getValue());
+                    }
                 } else {
                     newMap.put(entry.getKey(), entry.getValue());
                 }
