@@ -55,14 +55,9 @@ public class Manager {
                 DeadCodeDelete.run(module);
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
-                LoopInfo.build(module);
-//                LoopInVarLift.run(module);
-//                LCSSA.run(module);
-//                LoopTest(module);
                 LoopSimplifyForm.test(module);
-//                LoopInfo.build(module);
 //                LoopUnSwitching.run(module);
-//                LCSSA.remove(module);
+                LCSSA.remove(module);
                 AggressiveDCD.run(module);
                 DeadCodeDelete.run(module);
             }

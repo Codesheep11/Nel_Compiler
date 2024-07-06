@@ -260,4 +260,12 @@ public class BasicBlock extends Value {
         return block.domSet.contains(this);
     }
 
+    @Override
+    public void delete() {
+        super.delete();
+        ArrayList<Instruction> delList = new ArrayList<>();
+        instructions.forEach(delList::add);
+        delList.forEach(Value::delete);
+    }
+
 }
