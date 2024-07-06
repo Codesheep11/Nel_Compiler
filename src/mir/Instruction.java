@@ -1110,6 +1110,12 @@ public class Instruction extends User {
             }
         }
 
+        public void swap() {
+            Value tmp = operand_1;
+            operand_1 = operand_2;
+            operand_2 = tmp;
+        }
+
     }
 
     public static class Add extends BinaryOperation {

@@ -16,10 +16,10 @@ public class Loop {
     public HashSet<Loop> children = new HashSet<>();
     public HashSet<BasicBlock> nowLevelBB = new HashSet<>();
     public BasicBlock header = null;
-    public HashSet<BasicBlock> enterings = new HashSet<>();
+    public HashSet<BasicBlock> enterings = new HashSet<>(); //1 prehearder
     public HashSet<BasicBlock> exitings = new HashSet<>();
     public HashSet<BasicBlock> exits = new HashSet<>();
-    public HashSet<BasicBlock> latchs = new HashSet<>();
+    public HashSet<BasicBlock> latchs = new HashSet<>();// 1 latch
     //todo: cond
     public boolean canAggressiveParallel = false;
     public boolean isRoot = false;

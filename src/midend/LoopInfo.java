@@ -26,9 +26,9 @@ public class LoopInfo {
 
 
     public void runLoopAnalysis() {
+        clearBlocksLoopInfo();
         function.buildControlFlowGraph();
         function.buildDominanceGraph();
-        clearBlocksLoopInfo();
         LoopInfo4Func();
         for (Loop loop : TopLevelLoops) {
             genInfo4Loop(loop);
