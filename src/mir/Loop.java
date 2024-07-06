@@ -124,6 +124,13 @@ public class Loop {
         return enterings.iterator().next();
     }
 
+    public BasicBlock getLatch() {
+        if (latchs.size() != 1) {
+            throw new RuntimeException("getLatch: latchs.size() != 1\n");
+        }
+        return latchs.iterator().next();
+    }
+
     public LoopCloneInfo cloneAndInfo() {
         LoopCloneInfo info = new LoopCloneInfo();
         info.src = this;
