@@ -45,11 +45,20 @@ public class LoopSimplifyForm {
     }
 
     private static void simplifyPreHeader(Loop loop) {
-        if (loop.enterings.size() <= 1)
+        if (loop.enterings.size() <= 1) {
+            if (loop.enterings.size() == 1) loop.preHeader = loop.enterings.iterator().next();
+            else if (loop.enterings.size() == 0) {
+                Function parentFunction = loop.header.getParentFunction();
+                loop.preHeader = new BasicBlock(getNewLabel(parentFunction, "preHeader"), parentFunction);
+                new Instruction.Jump(loop.preHeader, loop.header);
+            }
             return;
+        }
+
         // TODO: 可能需要修改 新建块的loop归属
         Function parentFunction = loop.header.getParentFunction();
         BasicBlock newPreHeader = new BasicBlock(getNewLabel(parentFunction, "preHeader"), parentFunction);
+        if (loop.parent != null) loop.parent.addNowLevelBB(newPreHeader);
         for (BasicBlock entering : loop.enterings) {
             entering.replaceSucc(loop.header, newPreHeader);
         }
@@ -64,9 +73,6 @@ public class LoopSimplifyForm {
             phi.addOptionalValue(newPreHeader, val);
         }
         new Instruction.Jump(newPreHeader, loop.header);
-
-        loop.enterings.clear();
-        loop.enterings.add(newPreHeader);
     }
 
     private static void simplifyLatch(Loop loop) {
@@ -93,6 +99,7 @@ public class LoopSimplifyForm {
 
         loop.latchs.clear();
         loop.latchs.add(newLatch);
+        loop.nowLevelBB.add(newLatch);
     }
 
     private static void CanonicalizeExits(Loop loop) {
@@ -101,7 +108,6 @@ public class LoopSimplifyForm {
         for (BasicBlock exit : loop.exits) {
             if (!exit.getDomSet().contains(loop.header)) {
                 // TODO: 可能需要修改 新建块的loop归属
-                Loop loop1 = exit.loop;
                 BasicBlock newExit = new BasicBlock(getNewLabel(parentFunction, "exit"), parentFunction);
                 loop.exitings.forEach(exiting -> exiting.replaceSucc(exit, newExit));
                 // 将需要维护 phi 信息提前
@@ -116,10 +122,12 @@ public class LoopSimplifyForm {
                     Instruction.Phi val = new Instruction.Phi(newExit, phi.getType(), newMap);
                     phi.addOptionalValue(newExit, val);
                 }
-
                 new Instruction.Jump(newExit, exit);
                 newExits.add(newExit);
-            } else {
+                Loop loop1 = exit.loop;
+                if (loop1 != null) loop1.nowLevelBB.add(newExit);
+            }
+            else {
                 newExits.add(exit);
             }
         }
@@ -129,6 +137,7 @@ public class LoopSimplifyForm {
     /**
      * 新建一个 exit 块
      * <p>
+     *
      * @param loop 循环
      * @param exit 旧 exit 块
      * @return 新 exit 块

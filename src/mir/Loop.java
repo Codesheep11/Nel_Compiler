@@ -16,10 +16,11 @@ public class Loop {
     public HashSet<Loop> children = new HashSet<>();
     public HashSet<BasicBlock> nowLevelBB = new HashSet<>();
     public BasicBlock header = null;
-    public HashSet<BasicBlock> enterings = new HashSet<>();
+    public BasicBlock preHeader = null;
+    public HashSet<BasicBlock> enterings = new HashSet<>(); //enterings -> preheader
     public HashSet<BasicBlock> exitings = new HashSet<>();
     public HashSet<BasicBlock> exits = new HashSet<>();
-    public HashSet<BasicBlock> latchs = new HashSet<>();
+    public HashSet<BasicBlock> latchs = new HashSet<>();// 1 latch
     //todo: cond
     public boolean canAggressiveParallel = false;
     public boolean isRoot = false;
@@ -161,44 +162,6 @@ public class Loop {
         return info;
     }
 
-//
-//    //判断是否为循环不变量
-
-    //
-//    /**
-//     * 合并两个循环
-//     *
-//     * @param loop
-//     */
-//    public void mergeLoop(Loop loop) {
-//        if (!this.header.equals(loop.header)) {
-//            throw new RuntimeException("mergeLoop: header not equal\n");
-//        }
-//        for (BasicBlock block : loop.blocks) {
-//            if (this.blocks.contains(block) || loop.LoopContains(block)) {
-//                continue;
-//            }
-//            this.blocks.add(block);
-//        }
-//        for (Loop child : loop.children) {
-//            this.children.add(child);
-//            child.parent = this;
-//        }
-//
-//        this.exitings.clear();
-//        this.exits.clear();
-//        for (BasicBlock bb : this.blocks) {
-//            //这里仍然认为通向内层循环不算exiting
-//            if (LoopContainsAll(bb.getSucBlocks())) continue;
-//            loop.exitings.add(bb);
-//            HashSet<BasicBlock> outs = new HashSet<>(bb.getSucBlocks());
-//            outs.removeAll(loop.blocks);
-//            loop.exits.addAll(outs);
-//        }
-//        //header相同的循环不可能存在不同的parent todo
-//        this.parent = loop.parent;
-//        this.isNatural = false;
-//    }
 
     public void LoopInfoPrint() {
         String LoopName = "Loop_" + hash;

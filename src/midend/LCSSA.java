@@ -12,20 +12,12 @@ import java.util.LinkedList;
  */
 public class LCSSA {
     //循环出口构建LCSSA
-    public static void run(Module module) {
-        for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) continue;
-            function.buildDominanceGraph();
-            for (Loop loop : function.loopInfo.TopLevelLoops)
-                addPhiForLoop(loop);
-        }
-    }
 
 
-    private static void addPhiForLoop(Loop loop) {
+    public static void run(Loop loop) {
         //先对子循环进行处理
         for (Loop child : loop.children) {
-            addPhiForLoop(child);
+            run(child);
         }
         //再对当前循环进行处理
         for (BasicBlock block : loop.nowLevelBB) {
@@ -51,9 +43,6 @@ public class LCSSA {
         exit.addInstFirst(phi);
         LinkedList<Instruction> users = new LinkedList<>();
         for (Use use : instr.getUses()) {
-            if (!(use.getUser() instanceof Instruction)) {
-                throw new RuntimeException("addPhiAtExitBB: " + instr + " use is not an instruction\n");
-            }
             if ((use.getUser() instanceof Instruction.Phi) && (((Instruction.Phi) use.getUser()).getParentBlock().equals(exit)))
                 continue;
             BasicBlock parentBlock = ((Instruction) use.getUser()).getParentBlock();
@@ -68,9 +57,6 @@ public class LCSSA {
         for (Instruction user : users) {
             user.replaceUseOfWith(instr, phi);
         }
-        if (users.isEmpty()) {
-            phi.remove();
-        }
     }
 
     /**
@@ -82,9 +68,6 @@ public class LCSSA {
      */
     public static boolean usedOutLoop(Instruction instr, Loop loop) {
         for (Use use : instr.getUses()) {
-            if (!(use.getUser() instanceof Instruction)) {
-                throw new RuntimeException("usedOutLoop: " + instr + " use is not an instruction\n");
-            }
             if (!loop.LoopContains(((Instruction) use.getUser()).getParentBlock())) {
                 return true;
             }
@@ -113,7 +96,7 @@ public class LCSSA {
                         if (phi.isLCSSA) {
                             Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
                             phi.replaceAllUsesWith(v);
-                            instr.remove();
+                            phi.delete();
                         }
                     }
                     else {
