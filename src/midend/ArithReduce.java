@@ -38,6 +38,12 @@ public class ArithReduce {
 
     private static void runOnInst(Instruction inst) {
         //默认指令参与常量折叠，二元操作数只可能有一个常量
+        if (inst.isAssociative()) {
+            Instruction.BinaryOperation inst1 = (Instruction.BinaryOperation) inst;
+            if (inst1.getOperand_2() instanceof Constant) {
+                inst1.swap();
+            }
+        }
         switch (inst.getInstType()) {
             case ADD -> reduceAdd((Instruction.Add) inst);
             case SUB -> reduceSub((Instruction.Sub) inst);
@@ -55,6 +61,30 @@ public class ArithReduce {
             if (((Constant) inst.getOperand_1()).isZero()) {
                 inst.replaceAllUsesWith(inst.getOperand_2());
                 return;
+            }
+            //c2 + (c1 + x) + -> (c1 + c2) + x
+            if (inst.getOperand_2() instanceof Instruction.Add) {
+                Instruction.Add add = (Instruction.Add) inst.getOperand_2();
+                if (add.getOperand_1() instanceof Constant) {
+                    Instruction.Add newAdd = new Instruction.Add(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantInt(((int) ((Constant) inst.getOperand_1()).getConstValue()) + ((int) (((Constant) add.getOperand_1()).getConstValue()))), add.getOperand_2());
+                    newAdd.remove();
+                    inst.replaceAllUsesWith(newAdd);
+                    reducedList.add(newAdd);
+                    return;
+                }
+            }
+            //c2 + (x - c1) -> (c2 - c1) + x
+            if (inst.getOperand_2() instanceof Instruction.Sub) {
+                Instruction.Sub sub = (Instruction.Sub) inst.getOperand_2();
+                if (sub.getOperand_1() instanceof Constant) {
+                    Instruction.Sub newSub = new Instruction.Sub(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantInt(((int) ((Constant) inst.getOperand_1()).getConstValue()) - ((int) (((Constant) sub.getOperand_1()).getConstValue()))), sub.getOperand_2());
+                    newSub.remove();
+                    inst.replaceAllUsesWith(newSub);
+                    reducedList.add(newSub);
+                    return;
+                }
             }
         }
         // a + (0 - b) -> a - b
@@ -111,6 +141,9 @@ public class ArithReduce {
             }
             reducedList.add(inst);
         }
+
+
+        reducedList.add(inst);
     }
 
     private static void reduceSub(Instruction.Sub inst) {
@@ -118,15 +151,51 @@ public class ArithReduce {
             //a - 0 -> a
             if (((Constant) inst.getOperand_2()).isZero()) {
                 inst.replaceAllUsesWith(inst.getOperand_1());
+                return;
             }
-            //a -c ->  (-c) + a
-            else {
-                Instruction.Add add = new Instruction.Add(inst.getParentBlock(), inst.getType(),
-                        new Constant.ConstantInt(-1 * (int) ((Constant) inst.getOperand_2()).getConstValue()), inst.getOperand_1());
-                add.remove();
-                inst.replaceAllUsesWith(add);
-                reducedList.add(add);
+            //(x - c1) - c2 -> x + -c1 - c2
+            if (inst.getOperand_1() instanceof Instruction.Sub) {
+                Instruction.Sub sub = (Instruction.Sub) inst.getOperand_1();
+                if (sub.getOperand_2() instanceof Constant) {
+                    Instruction.Add add = new Instruction.Add(inst.getParentBlock(), inst.getType(),
+                            sub.getOperand_1(), new Constant.ConstantInt(-1 * (int) ((Constant) sub.getOperand_2()).getConstValue()));
+                    add.remove();
+                    Instruction.Sub newSub = new Instruction.Sub(inst.getParentBlock(), inst.getType(),
+                            add, inst.getOperand_2());
+                    newSub.remove();
+                    inst.replaceAllUsesWith(newSub);
+                    reducedList.add(add);
+                    reducedList.add(newSub);
+                    return;
+                }
             }
+            //(x + c1) - c2 -> x + (c1 - c2)
+            if (inst.getOperand_1() instanceof Instruction.Add) {
+                Instruction.Add add = (Instruction.Add) inst.getOperand_1();
+                if (add.getOperand_2() instanceof Constant) {
+                    Instruction.Sub sub = new Instruction.Sub(inst.getParentBlock(), inst.getType(),
+                            add.getOperand_2(), inst.getOperand_2());
+                    sub.remove();
+                    Instruction.Add newAdd = new Instruction.Add(inst.getParentBlock(), inst.getType(),
+                            add.getOperand_1(), sub);
+                    newAdd.remove();
+                    inst.replaceAllUsesWith(newAdd);
+                    reducedList.add(sub);
+                    reducedList.add(newAdd);
+                    return;
+                }
+            }
+            //a - c ->  (-c) + a
+            Instruction.Add add = new Instruction.Add(inst.getParentBlock(), inst.getType(),
+                    new Constant.ConstantInt(-1 * (int) ((Constant) inst.getOperand_2()).getConstValue()), inst.getOperand_1());
+            add.remove();
+            inst.replaceAllUsesWith(add);
+            reducedList.add(add);
+            return;
+        }
+        //a - a -> 0
+        if (inst.getOperand_1().equals(inst.getOperand_2())) {
+            inst.replaceAllUsesWith(new Constant.ConstantInt(0));
             return;
         }
         //a - (0 - b) -> a + b
