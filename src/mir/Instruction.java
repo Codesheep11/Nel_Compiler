@@ -36,6 +36,13 @@ public class Instruction extends User {
         FDIV,
         REM,
         FREM,
+        SHL,
+        LSHR,
+        ASHR,
+        AND,
+        OR,
+        XOR,
+        NEG,//fixme
         PHICOPY,
         MOVE
     }
@@ -661,6 +668,39 @@ public class Instruction extends User {
         }
     }
 
+    public static class BitCast extends Instruction implements TypeCast {
+        private Value src;
+
+        public BitCast(BasicBlock parentBlock, Value src, Type targetType) {
+            super(parentBlock, targetType, InstType.BitCast);
+            this.src = src;
+
+            addOperand(src);
+        }
+
+        public Value getSrc() {
+            return src;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = bitcast %s %s to %s", getDescriptor(), src.getType().toString(), src.getDescriptor(), getType().toString());
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+//            System.out.println("BitCast replaceUseOfWith");
+            super.replaceUseOfWith(value, v);
+            if (src.equals(value)) {
+                src = v;
+            }
+        }
+
+        @Override
+        public BitCast cloneToBB(BasicBlock block) {
+            return new BitCast(block, src, getType());
+        }
+    }
 
     public interface Condition {
         Value getSrc1();
@@ -669,7 +709,6 @@ public class Instruction extends User {
 
         String getCmpOp();
     }
-
 
     public static class Icmp extends Instruction implements Condition {
         public enum CondCode {
@@ -821,268 +860,6 @@ public class Instruction extends User {
         }
     }
 
-    public static class Phi extends Instruction {
-        // 等同于返回值类型
-        private final Type type;
-        public boolean isLCSSA = false;
-
-        private LinkedHashMap<BasicBlock, Value> optionalValues;
-
-        public Phi(BasicBlock parentBlock, Type type, LinkedHashMap<BasicBlock, Value> optionalValues) {
-            super(parentBlock, type, InstType.PHI);
-            for (BasicBlock preBlock : optionalValues.keySet()) {
-                addOperand(optionalValues.get(preBlock));
-            }
-            this.optionalValues = new LinkedHashMap<>(optionalValues);
-            this.type = type;
-        }
-
-        public Phi(BasicBlock parentBlock, Type type, LinkedHashMap<BasicBlock, Value> optionalValues, boolean isLCSSA) {
-            super(parentBlock, type, InstType.PHI);
-            for (BasicBlock preBlock : optionalValues.keySet()) {
-                addOperand(optionalValues.get(preBlock));
-            }
-            this.isLCSSA = isLCSSA;
-            this.optionalValues = new LinkedHashMap<>(optionalValues);
-            this.type = type;
-        }
-
-        public void changePreBlocks(HashMap<BasicBlock, BasicBlock> bbMap) {
-            LinkedHashMap<BasicBlock, Value> newOptionalValues = new LinkedHashMap<>();
-            for (BasicBlock preBlock : optionalValues.keySet()) {
-                if (!bbMap.containsKey(preBlock)) {
-                    throw new RuntimeException("Phi changePreBlocks");
-                }
-                newOptionalValues.put(bbMap.get(preBlock), optionalValues.get(preBlock));
-            }
-            optionalValues = newOptionalValues;
-        }
-
-        public void changePreBlock(BasicBlock oldBlock, BasicBlock newBlock) {
-            if (!optionalValues.containsKey(oldBlock)) {
-                throw new RuntimeException("Phi changePreBlock");
-            }
-            Value value = optionalValues.get(oldBlock);
-            optionalValues.remove(oldBlock);
-            optionalValues.put(newBlock, value);
-        }
-
-        public void replaceOptionalValueAtWith(BasicBlock src, Value value) {
-            if (!optionalValues.containsKey(src)) {
-                throw new RuntimeException("Phi replaceOptionalValueAtWith");
-            }
-            Value oldValue = optionalValues.get(src);
-            optionalValues.put(src, value);
-            replaceUseOfWith(oldValue, value);
-        }
-
-        public int getSize() {
-            return optionalValues.size();
-        }
-
-        public Value getOptionalValue(BasicBlock block) {
-            return optionalValues.get(block);
-        }
-
-        public void removeOptionalValue(BasicBlock block) {
-            if (!optionalValues.containsKey(block)) {
-                System.out.println(this.parentBlock.output());
-                throw new RuntimeException("Phi removeOptionalValue: " + block.getDescriptor());
-            }
-            Value value = optionalValues.get(block);
-            value.use_remove(new Use(this, value));
-            getOperands().remove(value);
-            optionalValues.remove(block);
-        }
-
-        public void addOptionalValue(BasicBlock block, Value value) {
-            addOperand(value);
-            optionalValues.put(block, value);
-        }
-
-        public LinkedList<BasicBlock> getPreBlocks() {
-            return new LinkedList<>(optionalValues.keySet());
-        }
-
-        public LinkedList<Value> getIncomingValues() {
-            return new LinkedList<>(optionalValues.values());
-        }
-
-        public int getIncomingValueSize() {
-            return optionalValues.size();
-        }
-
-        public boolean canBeReplaced() {
-            if (isLCSSA) return false;
-            HashSet<Value> values = new HashSet<>(optionalValues.values());
-            return values.size() == 1;
-        }
-
-        public boolean containsBlock(BasicBlock block) {
-            return optionalValues.containsKey(block);
-        }
-
-        public LinkedHashMap<BasicBlock, Value> getOptionalValues() {
-            return optionalValues;
-        }
-
-        public void setOptionalValues(LinkedHashMap<BasicBlock, Value> optionalValues) {
-            this.optionalValues = optionalValues;
-        }
-
-        @Override
-        public void replaceUseOfWith(Value value, Value v) {
-            if (!(getOperands().contains(value) || optionalValues.containsKey(value))) {
-                throw new RuntimeException("Phi replaceUseOfWith");
-            }
-            super.replaceUseOfWith(value, v);
-            if (value instanceof BasicBlock) {
-                Value val = optionalValues.get(value);
-                optionalValues.remove(value);
-                optionalValues.put((BasicBlock) v, val);
-            }
-            else {
-                for (BasicBlock block : optionalValues.keySet()) {
-                    if (optionalValues.get(block).equals(value)) {
-                        optionalValues.put(block, v);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder str = new StringBuilder(resName + " = phi " + type.toString() + " ");
-            int len = optionalValues.size();
-            int i = 0;
-            for (BasicBlock pre : optionalValues.keySet()) {
-                Value value = optionalValues.get(pre);
-                str.append("[ ");
-                str.append(value.getDescriptor());
-                str.append(", %");
-                str.append(pre.getLabel());
-                str.append(" ]");
-                if (i + 1 != len) {
-                    str.append(", ");
-                }
-                i++;
-            }
-            return str.toString();
-        }
-
-        @Override
-        public Phi cloneToBB(BasicBlock block) {
-            return new Phi(block, type, optionalValues);
-        }
-    }
-
-
-    /**
-     * 寻址指令，我们规定每次仅能寻址一维，即只支持base[offset]，对于高维数组的寻址可通过多个该指令完成
-     */
-    public static class GetElementPtr extends Instruction {
-        private Value base;
-        private final Type eleType;
-        private final ArrayList<Value> offsets;
-
-        public GetElementPtr(BasicBlock parentBlock, Value base, Type eleType, ArrayList<Value> offsets) {
-            super(parentBlock, new Type.PointerType(eleType), InstType.GEP);
-            this.base = base;
-            this.eleType = eleType;
-            this.offsets = offsets;
-
-            addOperand(base);
-            for (Value offset :
-                    offsets) {
-                addOperand(offset);
-            }
-        }
-
-        public Value getBase() {
-            return base;
-        }
-
-        public ArrayList<Value> getOffsets() {
-            return offsets;
-        }
-
-        public Type getEleType() {
-            return eleType;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder str;
-            str = new StringBuilder(String.format("%s = getelementptr %s, %s %s, ",
-                    getDescriptor(),
-                    ((Type.PointerType) base.getType()).getInnerType().toString(),
-                    base.getType().toString(),
-                    base.getDescriptor())
-            );
-            Iterator<Value> iter = offsets.iterator();
-            while (iter.hasNext()) {
-                str.append("i32 ").append(iter.next().getDescriptor());
-                if (iter.hasNext()) {
-                    str.append(", ");
-                }
-            }
-            return str.toString();
-        }
-
-        @Override
-        public void replaceUseOfWith(Value value, Value v) {
-            super.replaceUseOfWith(value, v);
-            if (base.equals(value)) {
-                base = v;
-            }
-            for (int i = 0; i < offsets.size(); i++) {
-                if (offsets.get(i).equals(value)) {
-                    offsets.set(i, v);
-                }
-            }
-        }
-
-        @Override
-        public GetElementPtr cloneToBB(BasicBlock newBlock) {
-            ArrayList<Value> offsets = new ArrayList<>(this.offsets);
-            return new GetElementPtr(newBlock, base, eleType, offsets);
-        }
-    }
-
-    public static class BitCast extends Instruction implements TypeCast {
-        private Value src;
-
-        public BitCast(BasicBlock parentBlock, Value src, Type targetType) {
-            super(parentBlock, targetType, InstType.BitCast);
-            this.src = src;
-
-            addOperand(src);
-        }
-
-        public Value getSrc() {
-            return src;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s = bitcast %s %s to %s", getDescriptor(), src.getType().toString(), src.getDescriptor(), getType().toString());
-        }
-
-        @Override
-        public void replaceUseOfWith(Value value, Value v) {
-//            System.out.println("BitCast replaceUseOfWith");
-            super.replaceUseOfWith(value, v);
-            if (src.equals(value)) {
-                src = v;
-            }
-        }
-
-        @Override
-        public BitCast cloneToBB(BasicBlock block) {
-            return new BitCast(block, src, getType());
-        }
-    }
-
     public static abstract class BinaryOperation extends Instruction {
         protected Value operand_1;
         protected Value operand_2;
@@ -1119,6 +896,9 @@ public class Instruction extends User {
         }
 
         public void swap() {
+            if (!this.isAssociative()) {
+                throw new RuntimeException("Not associative operation");
+            }
             Value tmp = operand_1;
             operand_1 = operand_2;
             operand_2 = tmp;
@@ -1302,6 +1082,114 @@ public class Instruction extends User {
 
     }
 
+    public static class Shl extends BinaryOperation {
+
+        public Shl(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.SHL, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = shl %s %s, %s", getDescriptor(), resType.toString(), operand_1.getDescriptor(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public Shl cloneToBB(BasicBlock block) {
+            return new Shl(block, resType, operand_1, operand_2);
+        }
+
+    }
+
+    public static class LShr extends BinaryOperation {
+
+        public LShr(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.LSHR, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = lshr %s %s, %s", getDescriptor(), resType.toString(), operand_1.getDescriptor(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public LShr cloneToBB(BasicBlock block) {
+            return new LShr(block, resType, operand_1, operand_2);
+        }
+
+    }
+
+    public static class AShr extends BinaryOperation {
+
+        public AShr(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.ASHR, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = ashr %s %s, %s", getDescriptor(), resType.toString(), operand_1.getDescriptor(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public AShr cloneToBB(BasicBlock block) {
+            return new AShr(block, resType, operand_1, operand_2);
+        }
+
+    }
+
+    public static class And extends BinaryOperation {
+
+        public And(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.AND, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = and %s %s, %s", getDescriptor(), resType.toString(), operand_1.getDescriptor(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public And cloneToBB(BasicBlock block) {
+            return new And(block, resType, operand_1, operand_2);
+        }
+
+    }
+
+    public static class Or extends BinaryOperation {
+
+        public Or(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.OR, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = or %s %s, %s", getDescriptor(), resType.toString(), operand_1.getDescriptor(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public Or cloneToBB(BasicBlock block) {
+            return new Or(block, resType, operand_1, operand_2);
+        }
+
+    }
+
+    public static class Xor extends BinaryOperation {
+
+        public Xor(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.XOR, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = xor %s %s, %s", getDescriptor(), resType.toString(), operand_1.getDescriptor(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public Xor cloneToBB(BasicBlock block) {
+            return new Xor(block, resType, operand_1, operand_2);
+        }
+
+    }
+
     public static class PhiCopy extends Instruction {
 
         private ArrayList<Value> LHS;
@@ -1354,7 +1242,6 @@ public class Instruction extends User {
 
     }
 
-
     public static class Move extends Instruction {
         private Value src;
         private Value target;
@@ -1378,6 +1265,233 @@ public class Instruction extends User {
             return target;
         }
 
+    }
+
+    public static class Phi extends Instruction {
+        // 等同于返回值类型
+        private final Type type;
+        public boolean isLCSSA = false;
+
+        private LinkedHashMap<BasicBlock, Value> optionalValues;
+
+        public Phi(BasicBlock parentBlock, Type type, LinkedHashMap<BasicBlock, Value> optionalValues) {
+            super(parentBlock, type, InstType.PHI);
+            for (BasicBlock preBlock : optionalValues.keySet()) {
+                addOperand(optionalValues.get(preBlock));
+            }
+            this.optionalValues = new LinkedHashMap<>(optionalValues);
+            this.type = type;
+        }
+
+        public Phi(BasicBlock parentBlock, Type type, LinkedHashMap<BasicBlock, Value> optionalValues, boolean isLCSSA) {
+            super(parentBlock, type, InstType.PHI);
+            for (BasicBlock preBlock : optionalValues.keySet()) {
+                addOperand(optionalValues.get(preBlock));
+            }
+            this.isLCSSA = isLCSSA;
+            this.optionalValues = new LinkedHashMap<>(optionalValues);
+            this.type = type;
+        }
+
+        public void changePreBlocks(HashMap<BasicBlock, BasicBlock> bbMap) {
+            LinkedHashMap<BasicBlock, Value> newOptionalValues = new LinkedHashMap<>();
+            for (BasicBlock preBlock : optionalValues.keySet()) {
+                if (!bbMap.containsKey(preBlock)) {
+                    throw new RuntimeException("Phi changePreBlocks");
+                }
+                newOptionalValues.put(bbMap.get(preBlock), optionalValues.get(preBlock));
+            }
+            optionalValues = newOptionalValues;
+        }
+
+        public void changePreBlock(BasicBlock oldBlock, BasicBlock newBlock) {
+            if (!optionalValues.containsKey(oldBlock)) {
+                throw new RuntimeException("Phi changePreBlock");
+            }
+            Value value = optionalValues.get(oldBlock);
+            optionalValues.remove(oldBlock);
+            optionalValues.put(newBlock, value);
+        }
+
+        public void replaceOptionalValueAtWith(BasicBlock src, Value value) {
+            if (!optionalValues.containsKey(src)) {
+                throw new RuntimeException("Phi replaceOptionalValueAtWith");
+            }
+            Value oldValue = optionalValues.get(src);
+            optionalValues.put(src, value);
+            replaceUseOfWith(oldValue, value);
+        }
+
+        public int getSize() {
+            return optionalValues.size();
+        }
+
+        public Value getOptionalValue(BasicBlock block) {
+            return optionalValues.get(block);
+        }
+
+        public void removeOptionalValue(BasicBlock block) {
+            if (!optionalValues.containsKey(block)) {
+                System.out.println(this.parentBlock.output());
+                throw new RuntimeException("Phi removeOptionalValue: " + block.getDescriptor());
+            }
+            Value value = optionalValues.get(block);
+            value.use_remove(new Use(this, value));
+            getOperands().remove(value);
+            optionalValues.remove(block);
+        }
+
+        public void addOptionalValue(BasicBlock block, Value value) {
+            addOperand(value);
+            optionalValues.put(block, value);
+        }
+
+        public LinkedList<BasicBlock> getPreBlocks() {
+            return new LinkedList<>(optionalValues.keySet());
+        }
+
+        public LinkedList<Value> getIncomingValues() {
+            return new LinkedList<>(optionalValues.values());
+        }
+
+        public int getIncomingValueSize() {
+            return optionalValues.size();
+        }
+
+        public boolean canBeReplaced() {
+            if (isLCSSA) return false;
+            HashSet<Value> values = new HashSet<>(optionalValues.values());
+            return values.size() == 1;
+        }
+
+        public boolean containsBlock(BasicBlock block) {
+            return optionalValues.containsKey(block);
+        }
+
+        public LinkedHashMap<BasicBlock, Value> getOptionalValues() {
+            return optionalValues;
+        }
+
+        public void setOptionalValues(LinkedHashMap<BasicBlock, Value> optionalValues) {
+            this.optionalValues = optionalValues;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            if (!(getOperands().contains(value) || optionalValues.containsKey(value))) {
+                throw new RuntimeException("Phi replaceUseOfWith");
+            }
+            super.replaceUseOfWith(value, v);
+            if (value instanceof BasicBlock) {
+                Value val = optionalValues.get(value);
+                optionalValues.remove(value);
+                optionalValues.put((BasicBlock) v, val);
+            }
+            else {
+                for (BasicBlock block : optionalValues.keySet()) {
+                    if (optionalValues.get(block).equals(value)) {
+                        optionalValues.put(block, v);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder str = new StringBuilder(resName + " = phi " + type.toString() + " ");
+            int len = optionalValues.size();
+            int i = 0;
+            for (BasicBlock pre : optionalValues.keySet()) {
+                Value value = optionalValues.get(pre);
+                str.append("[ ");
+                str.append(value.getDescriptor());
+                str.append(", %");
+                str.append(pre.getLabel());
+                str.append(" ]");
+                if (i + 1 != len) {
+                    str.append(", ");
+                }
+                i++;
+            }
+            return str.toString();
+        }
+
+        @Override
+        public Phi cloneToBB(BasicBlock block) {
+            return new Phi(block, type, optionalValues);
+        }
+    }
+
+    /**
+     * 寻址指令，我们规定每次仅能寻址一维，即只支持base[offset]，对于高维数组的寻址可通过多个该指令完成
+     */
+    public static class GetElementPtr extends Instruction {
+        private Value base;
+        private final Type eleType;
+        private final ArrayList<Value> offsets;
+
+        public GetElementPtr(BasicBlock parentBlock, Value base, Type eleType, ArrayList<Value> offsets) {
+            super(parentBlock, new Type.PointerType(eleType), InstType.GEP);
+            this.base = base;
+            this.eleType = eleType;
+            this.offsets = offsets;
+
+            addOperand(base);
+            for (Value offset :
+                    offsets) {
+                addOperand(offset);
+            }
+        }
+
+        public Value getBase() {
+            return base;
+        }
+
+        public ArrayList<Value> getOffsets() {
+            return offsets;
+        }
+
+        public Type getEleType() {
+            return eleType;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder str;
+            str = new StringBuilder(String.format("%s = getelementptr %s, %s %s, ",
+                    getDescriptor(),
+                    ((Type.PointerType) base.getType()).getInnerType().toString(),
+                    base.getType().toString(),
+                    base.getDescriptor())
+            );
+            Iterator<Value> iter = offsets.iterator();
+            while (iter.hasNext()) {
+                str.append("i32 ").append(iter.next().getDescriptor());
+                if (iter.hasNext()) {
+                    str.append(", ");
+                }
+            }
+            return str.toString();
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (base.equals(value)) {
+                base = v;
+            }
+            for (int i = 0; i < offsets.size(); i++) {
+                if (offsets.get(i).equals(value)) {
+                    offsets.set(i, v);
+                }
+            }
+        }
+
+        @Override
+        public GetElementPtr cloneToBB(BasicBlock newBlock) {
+            ArrayList<Value> offsets = new ArrayList<>(this.offsets);
+            return new GetElementPtr(newBlock, base, eleType, offsets);
+        }
     }
 
 
