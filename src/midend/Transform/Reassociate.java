@@ -1,4 +1,4 @@
-package midend;
+package midend.Transform;
 
 import mir.Function;
 import mir.Module;

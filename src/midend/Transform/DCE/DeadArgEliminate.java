@@ -1,7 +1,6 @@
-package midend.DCE;
+package midend.Transform.DCE;
 
 import mir.*;
-import mir.Module;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -52,6 +51,9 @@ public class DeadArgEliminate {
             function.getFuncRArguments().remove(idx);
             function.getArgumentsTP().remove(idx);
             function.getMyArguments().remove(idx);
+        }
+        for (int i = 0; i < function.getFuncRArguments().size(); i++) {
+            function.getFuncRArguments().get(i).idx = i;
         }
     }
 

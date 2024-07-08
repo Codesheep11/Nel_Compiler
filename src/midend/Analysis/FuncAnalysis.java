@@ -1,6 +1,6 @@
-package midend;
+package midend.Analysis;
 
-import midend.DCE.DeadArgEliminate;
+import midend.Transform.DCE.DeadArgEliminate;
 import mir.*;
 import mir.Module;
 

@@ -1,11 +1,11 @@
-package midend;
+package midend.Analysis;
 
+import midend.Transform.ArithReduce;
 import mir.*;
 import mir.Module;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 
 /**
@@ -84,7 +84,7 @@ public class GlobalVarAnalysis {
                 FuncReplace(useFunctions.iterator().next(), gv);
             }
         }
-        if (GlobalReplace.size() > 0) Mem2Reg.run(module);
+        if (GlobalReplace.size() > 0) ArithReduce.Mem2Reg.run(module);
         for (GlobalVariable gv : GlobalReplace) {
             module.getGlobalValues().remove(gv);
         }

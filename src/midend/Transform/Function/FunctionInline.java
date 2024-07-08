@@ -1,5 +1,6 @@
-package midend;
+package midend.Transform.Function;
 
+import midend.Util.CloneInfo;
 import mir.*;
 import mir.Module;
 import utils.SyncLinkedList;

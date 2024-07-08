@@ -1,4 +1,4 @@
-package midend.DCE;
+package midend.Transform.DCE;
 
 import mir.*;
 import mir.Module;
