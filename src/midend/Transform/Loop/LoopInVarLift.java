@@ -1,4 +1,4 @@
-package midend;
+package midend.Transform.Loop;
 
 import mir.*;
 import mir.Module;
@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 
-import static midend.LCSSA.isDomable;
+import static midend.Transform.Loop.LCSSA.isDomable;
 
 public class LoopInVarLift {
     public static LinkedList<Instruction> invariants = new LinkedList<>();

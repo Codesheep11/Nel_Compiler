@@ -1,8 +1,7 @@
-package midend;
+package midend.Transform.Loop;
 
+import midend.Util.CloneInfo;
 import mir.*;
-
-import java.util.HashMap;
 
 public class LoopCloneInfo extends CloneInfo {
 

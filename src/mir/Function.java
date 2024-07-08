@@ -1,7 +1,11 @@
 package mir;
 
 import backend.operand.Address;
-import midend.*;
+import midend.Transform.ArithReduce;
+import midend.Transform.Loop.LoopInfo;
+import midend.Util.CloneInfo;
+import midend.Util.ControlFlowGraph;
+import midend.Util.DominanceGraph;
 import utils.SyncLinkedList;
 
 import java.util.*;
@@ -217,7 +221,7 @@ public class Function extends Value {
     }
 
     public void runMem2Reg() {
-        Mem2Reg.run(this);
+        ArithReduce.Mem2Reg.run(this);
     }
 
 
