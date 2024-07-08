@@ -18,11 +18,11 @@ public class GPRallocater {
     public HashMap<Reg, HashSet<Reg>> curCG;
 
     public ArrayList<Reg> outNodes = new ArrayList<>();
-    public HashSet<Reg> spillNodes = new HashSet<>();
+    public LinkedHashSet<Reg> spillNodes = new LinkedHashSet<>();
 
-    public HashSet<R2> moveList = new HashSet<>();
+    public LinkedHashSet<R2> moveList = new LinkedHashSet<>();
 
-    public HashSet<Reg> moveNodes = new HashSet<>();
+    public LinkedHashSet<Reg> moveNodes = new LinkedHashSet<>();
 
     public int pass;
 
@@ -66,8 +66,8 @@ public class GPRallocater {
 //                System.out.println(func.name + " GPR round: " + pass++);
 //                System.out.println(func);
                 //建立冲突图
-                moveList = new HashSet<>();
-                moveNodes = new HashSet<>();
+                moveList = new LinkedHashSet<>();
+                moveNodes = new LinkedHashSet<>();
                 buildConflictGraph();
                 init();
                 while (!curCG.isEmpty()) {
@@ -149,7 +149,7 @@ public class GPRallocater {
      **/
     public void init() {
         outNodes = new ArrayList<>();
-        spillNodes = new HashSet<>();
+        spillNodes = new LinkedHashSet<>();
         for (Reg reg : conflictGraph.keySet()) {
             if (reg.preColored) continue;
             reg.phyReg = null;
