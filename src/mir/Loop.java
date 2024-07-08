@@ -1,13 +1,10 @@
 package mir;
 
-import midend.CloneInfo;
-import midend.LoopCloneInfo;
-import midend.LoopInfo;
+import midend.Transform.Loop.LoopCloneInfo;
 
 import java.util.HashSet;
-import java.util.LinkedList;
 
-//import static midend.CloneInfo.bbMap;
+//import static midend.Util.CloneInfo.bbMap;
 
 public class Loop {
     private static int loopCounter = 0;

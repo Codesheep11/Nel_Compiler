@@ -8,9 +8,16 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
-import midend.*;
-import midend.DCE.AggressiveDCD;
-import midend.DCE.DeadCodeDelete;
+import midend.Analysis.FuncAnalysis;
+import midend.Analysis.GlobalVarAnalysis;
+import midend.Transform.*;
+import midend.Transform.DCE.AggressiveDCD;
+import midend.Transform.DCE.DeadCodeDelete;
+import midend.Transform.Function.FunctionInline;
+import midend.Transform.Function.TailCall2Loop;
+import midend.Transform.Loop.LCSSA;
+import midend.Transform.Loop.LoopInfo;
+import midend.Transform.Loop.LoopSimplifyForm;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
@@ -45,10 +52,11 @@ public class Manager {
             visitor.visitAst(ast);
             Module module = visitor.module;
             if (arg.opt) {
-                Mem2Reg.run(module);
+                ArithReduce.Mem2Reg.run(module);
                 Reassociate.run(module);
                 FunctionInline.run(module);
                 FuncAnalysis.run(module);
+                TailCall2Loop.run(module);
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
                 AggressiveDCD.run(module);
@@ -66,6 +74,7 @@ public class Manager {
             }
             else {
                 RemovePhi.run(module);
+                outputLLVM("test.txt", module);
                 CodeGen codeGen = new CodeGen();
                 RiscvModule riscvmodule = codeGen.genCode(module);
                 Scheduler.preRASchedule(riscvmodule);
