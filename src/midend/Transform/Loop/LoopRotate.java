@@ -1,10 +1,6 @@
-package midend;
+package midend.Transform.Loop;
 
 import mir.*;
-import mir.Module;
-
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 
 /**
  * 循环反转

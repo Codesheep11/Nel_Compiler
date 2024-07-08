@@ -2,7 +2,7 @@ package mir;
 
 import frontend.Recorder;
 import manager.Manager;
-import midend.CloneInfo;
+import midend.Util.CloneInfo;
 
 import java.util.*;
 

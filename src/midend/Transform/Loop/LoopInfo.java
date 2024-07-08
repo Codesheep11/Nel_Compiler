@@ -1,4 +1,4 @@
-package midend;
+package midend.Transform.Loop;
 
 import mir.BasicBlock;
 import mir.Function;

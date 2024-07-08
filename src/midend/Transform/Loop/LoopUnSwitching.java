@@ -1,14 +1,12 @@
-package midend;
+package midend.Transform.Loop;
 
 import manager.CentralControl;
-import manager.Manager;
 import mir.*;
 import mir.Module;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * 循环分支取消

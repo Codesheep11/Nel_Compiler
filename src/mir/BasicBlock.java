@@ -1,6 +1,6 @@
 package mir;
 
-import midend.CloneInfo;
+import midend.Util.CloneInfo;
 import utils.SyncLinkedList;
 
 import java.util.ArrayList;

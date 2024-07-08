@@ -1,4 +1,4 @@
-package midend;
+package midend.Util;
 
 import mir.BasicBlock;
 import mir.Function;
