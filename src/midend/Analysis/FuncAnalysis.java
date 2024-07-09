@@ -1,7 +1,5 @@
 package midend.Analysis;
 
-import backend.operand.Address;
-import midend.Transform.DCE.DeadArgEliminate;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;

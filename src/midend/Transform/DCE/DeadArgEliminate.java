@@ -8,7 +8,7 @@ import java.util.LinkedList;
 
 public class DeadArgEliminate {
 
-    public static void run(Module module) {
+    public static void run() {
         ArrayList<Function> funcs = FuncInfo.getFuncTopoSort();
         for (Function function : funcs) {
             if (function.isExternal()) continue;

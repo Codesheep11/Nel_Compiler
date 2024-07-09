@@ -58,7 +58,7 @@ public class Manager {
                 Reassociate.run(module);
 //                FunctionInline.run(module);
                 FuncAnalysis.run(module);
-                DeadArgEliminate.run(module);
+                DeadArgEliminate.run();
                 TailCall2Loop.run(module);
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
