@@ -100,6 +100,15 @@ public class BasicBlock extends Value {
         return snap;
     }
 
+    public boolean hasCall() {
+        for (Instruction inst : instructions) {
+            if (inst instanceof Instruction.Call) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void addPreBlock(BasicBlock preBlock) {
         if (!preBlocks.contains(preBlock)) {
             preBlocks.add(preBlock);
