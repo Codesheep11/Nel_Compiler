@@ -1,19 +1,29 @@
 package midend.Transform.DCE;
 
+import midend.Util.FuncInfo;
 import mir.*;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class DeadArgEliminate {
-    public static void run(Function function) {
+
+    public static void run() {
+        ArrayList<Function> funcs = FuncInfo.getFuncTopoSort();
+        for (Function function : funcs) {
+            if (function.isExternal()) continue;
+            run(function);
+        }
+    }
+
+    private static void run(Function function) {
         if (function.getFuncRArguments().isEmpty()) return;
 //        System.out.println("DeadArgEliminate: " + function.getDescriptor());
         LinkedList<Function.Argument> removeList = new LinkedList<>();
         for (int i = 0; i < function.getFuncRArguments().size(); i++) {
             Function.Argument arg = function.getFuncRArguments().get(i);
             if (arg.use_empty()) removeList.add(arg);
-            else if (function.isRecurse) {
+            else if (FuncInfo.isRecurse.get(function)) {
                 boolean hasUse = false;
                 for (Use use : arg.getUses()) {
                     User user = use.getUser();

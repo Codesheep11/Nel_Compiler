@@ -3,6 +3,7 @@ package mir;
 import backend.operand.Address;
 import midend.Transform.ArithReduce;
 import midend.Transform.Loop.LoopInfo;
+import midend.Transform.Mem2Reg;
 import midend.Util.CloneInfo;
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
@@ -50,31 +51,6 @@ public class Function extends Value {
     private final SyncLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
-    //GVN
-    public boolean isLeaf = true;
-    /**
-     * 对内存进行了读写，这里的内存只包括全局变量
-     */
-    public boolean hasMemoryRead = false;
-    public boolean hasMemoryWrite = false;
-    public boolean hasMemoryAlloc = false;
-    /**
-     * IO操作
-     */
-    public boolean hasReadIn = false;
-    public boolean hasPutOut = false;
-    public boolean hasReturn = false;
-    /**
-     * 表示该函数有副作用，对传入的数组参数进行了写操作
-     */
-    public boolean hasSideEffect = false;
-    /**
-     * 表示该函数是无状态的,不使用/修改全局变量，传入的数组
-     */
-    public boolean isStateless = false;
-    public boolean isRecurse = false;
-
-    private final ControlFlowGraph CG = new ControlFlowGraph(this);
     private final DominanceGraph DG = new DominanceGraph(this);
 
     private int countOfBB = 0;
@@ -209,19 +185,15 @@ public class Function extends Value {
     }
 
     public void buildControlFlowGraph() {
-        CG.build();
+        ControlFlowGraph.buildCFG(this);
     }
 
     public void buildDominanceGraph() {
         DG.build();
     }
 
-    public void checkCFG() {
-        CG.printGraph();
-    }
-
     public void runMem2Reg() {
-        ArithReduce.Mem2Reg.run(this);
+        Mem2Reg.run(this);
     }
 
 
