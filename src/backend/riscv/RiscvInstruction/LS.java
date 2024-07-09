@@ -1,10 +1,10 @@
 package backend.riscv.RiscvInstruction;
 
 import backend.operand.Address;
+import backend.operand.Imm;
 import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
-import manager.Manager;
 
 public class LS extends RiscvInstruction {
     public LSType type;
@@ -87,15 +87,21 @@ public class LS extends RiscvInstruction {
 
     @Override
     public String toString() {
+        return "\t" + type + "\t\t" + rs1 + ", " + imm + "(" + rs2 + ")";
+    }
+
+    public void replaceMe(RiscvBlock nowBlock) {
         if (imm instanceof Address) {
             if (((Address) imm).getOffset() >= 2048 || ((Address) imm).getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-                return "\tli" + "\t\t" + tmp + ", " + -1 * ((Address) imm).getOffset() + "\n" +
-                        "\tadd\t\t" + tmp + ", " + tmp + ", " + rs2 + "\n" +
-                        "\t" + type + "\t\t" + rs1 + ", 0(" + tmp + ")";
+                Li li = new Li(nowBlock, tmp, -1*((Address) imm).getOffset());
+                nowBlock.riscvInstructions.insertBefore(li, this);
+                R3 add = new R3(nowBlock, tmp, tmp, rs2, R3.R3Type.add);
+                nowBlock.riscvInstructions.insertBefore(add, this);
+                this.imm = new Imm(0);
+                this.rs2 = tmp;
             }
         }
-        return "\t" + type + "\t\t" + rs1 + ", " + imm + "(" + rs2 + ")";
     }
 
 
@@ -131,24 +137,14 @@ public class LS extends RiscvInstruction {
         }
     }
 
-    private boolean defT0() {
-        if (Manager.afterRegAssign && imm instanceof Address) {
-            return ((Address) imm).getOffset() >= 2048 || ((Address) imm).getOffset() <= -2048;
-        }
-        return false;
-    }
 
-    // 如果是整完之后如果满足条件的话就是3个
     @Override
     public int getOperandNum() {
-        return defT0() ? 3 : 2;
+        return 2;
     }
 
     @Override
     public boolean isDef(int idx) {
-        if (defT0() && idx == 2) {
-            return true;
-        }
         if (type == LSType.sd || type == LSType.sw || type == LSType.fsw) {
             return false;
         }
@@ -165,9 +161,6 @@ public class LS extends RiscvInstruction {
 
     @Override
     public Reg getRegByIdx(int idx) {
-        if (defT0() && idx == 2) {
-            return Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-        }
         return idx == 0 ? (Reg) rs1 : (Reg) rs2;
     }
 

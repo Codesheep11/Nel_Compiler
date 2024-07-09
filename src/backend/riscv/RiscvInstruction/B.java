@@ -9,7 +9,7 @@ public class B extends RiscvInstruction {
     public BType type;
 
     // 默认概率对半开
-    private double yesProb = 0.5;
+    private double yesProb = 0.8;
 
     public double getYesProb() {
         return yesProb;

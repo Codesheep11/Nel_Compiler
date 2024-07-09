@@ -63,7 +63,7 @@ public class GPRallocater {
             pass = 0;
             while (true) {
                 //标记第几轮循环
-//                System.out.println(func.name + " GPR round: " + pass++);
+                System.out.println(func.name + " GPR round: " + pass++);
 //                System.out.println(func);
                 //建立冲突图
                 moveList = new LinkedHashSet<>();
