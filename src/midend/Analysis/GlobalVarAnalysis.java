@@ -1,6 +1,8 @@
 package midend.Analysis;
 
 import midend.Transform.ArithReduce;
+import midend.Transform.Mem2Reg;
+import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
 
@@ -84,7 +86,7 @@ public class GlobalVarAnalysis {
                 FuncReplace(useFunctions.iterator().next(), gv);
             }
         }
-        if (GlobalReplace.size() > 0) ArithReduce.Mem2Reg.run(module);
+        if (GlobalReplace.size() > 0) Mem2Reg.run(module);
         for (GlobalVariable gv : GlobalReplace) {
             module.getGlobalValues().remove(gv);
         }
@@ -92,7 +94,7 @@ public class GlobalVarAnalysis {
 
     private static void FuncReplace(Function func, GlobalVariable gv) {
 //        System.out.println("FuncReplace " + gv);
-        if (func.isRecurse) return;
+        if (FuncInfo.isRecurse.get(func)) return;
         //将全局变量转换成局部变量再mem2reg
         BasicBlock entry = func.getEntry();
         Instruction alloca = new Instruction.Alloc(entry, ((Type.PointerType) gv.getType()).getInnerType());
