@@ -33,7 +33,6 @@ public class RiscvInstruction extends SyncLinkedList.SyncLinkNode {
 
     public RiscvInstruction(RiscvBlock block) {
         this.block = block;
-//        block.addInstrucion(this);
     }
 
     public void addUse(Reg reg) {
