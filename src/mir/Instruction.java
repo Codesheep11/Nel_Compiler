@@ -3,6 +3,7 @@ package mir;
 import frontend.Recorder;
 import manager.Manager;
 import midend.Util.CloneInfo;
+import midend.Util.FuncInfo;
 
 import java.util.*;
 
@@ -108,7 +109,8 @@ public class Instruction extends User {
             case ALLOC, LOAD, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
             case CALL -> {
                 Function func = ((Call) this).getDestFunction();
-                yield func.hasReturn && !func.isExternal() && func.isStateless && !func.hasReadIn && !func.hasPutOut;
+                yield FuncInfo.hasReturn.get(func) && !func.isExternal() &&
+                        FuncInfo.isStateless.get(func) && !FuncInfo.hasReadIn.get(func) && !FuncInfo.hasPutOut.get(func);
             }
             default -> true;
         };
@@ -222,7 +224,7 @@ public class Instruction extends User {
             super(parentBlock, destFunction.getRetType(), InstType.CALL);
             this.destFunction = destFunction;
             this.params = params;
-            parentBlock.getParentFunction().isLeaf = false;
+            FuncInfo.isLeaf.put(parentBlock.getParentFunction(), false);
 
             addOperand(destFunction);
             for (Value param : params) {
@@ -235,7 +237,7 @@ public class Instruction extends User {
             this.destFunction = destFunction;
             this.params = params;
             this.strIdx = strIdx;
-            parentBlock.getParentFunction().isLeaf = false;
+            FuncInfo.isLeaf.put(parentBlock.getParentFunction(), false);
 
             addOperand(destFunction);
             for (Value param : params) {

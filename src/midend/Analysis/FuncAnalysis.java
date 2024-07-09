@@ -1,9 +1,10 @@
 package midend.Analysis;
 
-import midend.Transform.DCE.DeadArgEliminate;
+import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -13,50 +14,52 @@ import static manager.Manager.ExternFunc.*;
 
 public class FuncAnalysis {
 
-    public static HashMap<Function, HashSet<Function>> callGraph = new HashMap<>();
-
-    public static LinkedList<Function> workList = new LinkedList<>();
 
     public static void run(Module module) {
         for (Function func : module.getFuncSet()) {
-            if (func.isExternal()) continue;
-            callGraph.put(func, new HashSet<>());
+            FuncInfo.callGraph.put(func, new HashSet<>());
+            if (func.getName().equals("main")) FuncInfo.main = func;
+            FuncInfo.hasMemoryRead.put(func, false);
+            FuncInfo.hasMemoryWrite.put(func, false);
+            FuncInfo.hasMemoryAlloc.put(func, false);
+            FuncInfo.hasReadIn.put(func, false);
+            FuncInfo.hasPutOut.put(func, false);
+            FuncInfo.hasReturn.put(func, false);
+            FuncInfo.hasSideEffect.put(func, false);
+            FuncInfo.isStateless.put(func, true);
+            FuncInfo.isRecurse.put(func, false);
         }
         for (Function callee : module.getFuncSet()) {
             for (Use use : callee.getUses()) {
                 Instruction.Call call = (Instruction.Call) use.getUser();
                 Function caller = call.getParentBlock().getParentFunction();
 //                System.out.println(caller.getName() + " -> " + callee.getName());
-                callGraph.get(caller).add(callee);
+                FuncInfo.addCall(caller, callee);
             }
         }
+
         ExternFuncInit();
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
             BuildAttribute(func);
         }
-        TransAttribute(module);
-        for (int i = workList.size() - 1; i >= 0; i--) {
-            Function func = workList.get(i);
-//            System.out.println("Function: " + func.getName());
-            DeadArgEliminate.run(func);
-        }
+        TransAttribute();
     }
 
     public static void ExternFuncInit() {
-        GETINT.hasReadIn = true;
-        PUTINT.hasPutOut = true;
-        GETCH.hasReadIn = true;
-        GETFLOAT.hasReadIn = true;
-        PUTCH.hasPutOut = true;
-        PUTFLOAT.hasPutOut = true;
-        STARTTIME.hasPutOut = true;
-        STOPTIME.hasPutOut = true;
-        GETARRAY.hasReadIn = true;
-        GETFARRAY.hasReadIn = true;
-        PUTARRAY.hasPutOut = true;
-        PUTFARRAY.hasPutOut = true;
-        PUTF.hasPutOut = true;
+        if (FuncInfo.callGraph.keySet().contains(GETINT)) FuncInfo.hasReadIn.put(GETINT, true);
+        if (FuncInfo.callGraph.keySet().contains(PUTINT)) FuncInfo.hasPutOut.put(PUTINT, true);
+        if (FuncInfo.callGraph.keySet().contains(GETCH)) FuncInfo.hasReadIn.put(GETCH, true);
+        if (FuncInfo.callGraph.keySet().contains(GETFLOAT)) FuncInfo.hasReadIn.put(GETFLOAT, true);
+        if (FuncInfo.callGraph.keySet().contains(PUTCH)) FuncInfo.hasPutOut.put(PUTCH, true);
+        if (FuncInfo.callGraph.keySet().contains(PUTFLOAT)) FuncInfo.hasPutOut.put(PUTFLOAT, true);
+        if (FuncInfo.callGraph.keySet().contains(STARTTIME)) FuncInfo.hasPutOut.put(STARTTIME, true);
+        if (FuncInfo.callGraph.keySet().contains(STOPTIME)) FuncInfo.hasPutOut.put(STOPTIME, true);
+        if (FuncInfo.callGraph.keySet().contains(GETARRAY)) FuncInfo.hasReadIn.put(GETARRAY, true);
+        if (FuncInfo.callGraph.keySet().contains(GETFARRAY)) FuncInfo.hasReadIn.put(GETFARRAY, true);
+        if (FuncInfo.callGraph.keySet().contains(PUTARRAY)) FuncInfo.hasPutOut.put(PUTARRAY, true);
+        if (FuncInfo.callGraph.keySet().contains(PUTFARRAY)) FuncInfo.hasPutOut.put(PUTFARRAY, true);
+        if (FuncInfo.callGraph.keySet().contains(PUTF)) FuncInfo.hasPutOut.put(PUTF, true);
     }
 
     private static void BuildAttribute(Function function) {
@@ -90,12 +93,12 @@ public class FuncAnalysis {
                 if (hasMemoryRead && hasMemoryWrite && isRecurse && hasSideEffect && hasMemoryAlloc) break;
             }
         }
-        function.hasMemoryRead = hasMemoryRead;
-        function.hasMemoryWrite = hasMemoryWrite;
-        function.hasMemoryAlloc = hasMemoryAlloc;
-        function.hasReturn = hasReturn;
-        function.isRecurse = isRecurse;
-        function.hasSideEffect = hasSideEffect;
+        FuncInfo.hasMemoryRead.put(function, hasMemoryRead);
+        FuncInfo.hasMemoryWrite.put(function, hasMemoryWrite);
+        FuncInfo.hasMemoryAlloc.put(function, hasMemoryAlloc);
+        FuncInfo.hasReturn.put(function, hasReturn);
+        FuncInfo.isRecurse.put(function, isRecurse);
+        FuncInfo.hasSideEffect.put(function, hasSideEffect);
     }
 
     /**
@@ -120,43 +123,29 @@ public class FuncAnalysis {
 
     /**
      * 属性传播
-     *
-     * @param module
      */
-    public static void TransAttribute(Module module) {
-        Function main = module.getFunctions().get("main");
-        workList.add(main);
-        int idx = 0;
-        while (workList.size() != idx) {
-            Function func = workList.get(idx);
-            idx++;
-            for (Function callee : callGraph.get(func)) {
-                if (callee.isExternal()) continue;
-                if (!workList.contains(callee)) workList.add(callee);
+    public static void TransAttribute() {
+        ArrayList<Function> funcTopoSort = FuncInfo.getFuncTopoSort();
+        for (Function func : funcTopoSort) {
+            boolean hasMemoryRead = FuncInfo.hasMemoryRead.get(func);
+            boolean hasMemoryWrite = FuncInfo.hasMemoryWrite.get(func);
+            boolean hasMemoryAlloc = FuncInfo.hasMemoryAlloc.get(func);
+            boolean hasReadIn = FuncInfo.hasReadIn.get(func);
+            boolean hasPutOut = FuncInfo.hasPutOut.get(func);
+            boolean hasSideEffect = FuncInfo.hasSideEffect.get(func);
+            for (Function callee : FuncInfo.callGraph.get(func)) {
+                hasMemoryRead |= FuncInfo.hasMemoryRead.get(callee);
+                hasMemoryWrite |= FuncInfo.hasMemoryWrite.get(callee);
+                hasMemoryAlloc |= FuncInfo.hasMemoryAlloc.get(callee);
+                hasReadIn |= FuncInfo.hasReadIn.get(callee);
+                hasPutOut |= FuncInfo.hasPutOut.get(callee);
             }
-        }
-        //倒序遍历worklist 属性传播
-        for (int i = workList.size() - 1; i >= 0; i--) {
-            Function func = workList.get(i);
-            boolean hasMemoryRead = func.hasMemoryRead;
-            boolean hasMemoryWrite = func.hasMemoryWrite;
-            boolean hasMemoryAlloc = func.hasMemoryAlloc;
-            boolean hasReadIn = func.hasReadIn;
-            boolean hasPutOut = func.hasPutOut;
-            boolean hasSideEffect = func.hasSideEffect;
-            for (Function callee : callGraph.get(func)) {
-                hasMemoryRead |= callee.hasMemoryRead;
-                hasMemoryWrite |= callee.hasMemoryWrite;
-                hasMemoryAlloc |= callee.hasMemoryAlloc;
-                hasReadIn |= callee.hasReadIn;
-                hasPutOut |= callee.hasPutOut;
-            }
-            func.hasMemoryRead = hasMemoryRead;
-            func.hasMemoryWrite = hasMemoryWrite;
-            func.hasMemoryAlloc = hasMemoryAlloc;
-            func.hasReadIn = hasReadIn;
-            func.hasPutOut = hasPutOut;
-            func.isStateless = (!hasMemoryRead) && (!hasMemoryWrite) && (!hasSideEffect);
+            FuncInfo.hasMemoryRead.put(func, hasMemoryRead);
+            FuncInfo.hasMemoryWrite.put(func, hasMemoryWrite);
+            FuncInfo.hasMemoryAlloc.put(func, hasMemoryAlloc);
+            FuncInfo.hasReadIn.put(func, hasReadIn);
+            FuncInfo.hasPutOut.put(func, hasPutOut);
+            FuncInfo.isStateless.put(func, (!hasMemoryRead) && (!hasMemoryWrite) && (!hasSideEffect));
         }
 //        System.out.println("Function Analysis Done");
     }
