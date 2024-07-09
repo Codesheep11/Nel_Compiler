@@ -1,6 +1,7 @@
 package midend.Transform.Function;
 
 
+import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
 
@@ -18,7 +19,8 @@ public class TailCall2Loop {
     public static void run(Module module) {
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            if (func.isStateless && !func.hasMemoryAlloc && func.isRecurse) RunOnFunc(func);
+            if (FuncInfo.isStateless.get(func) && !FuncInfo.hasMemoryAlloc.get(func)
+                    && FuncInfo.isRecurse.get(func)) RunOnFunc(func);
         }
     }
 

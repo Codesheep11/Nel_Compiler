@@ -1,5 +1,6 @@
 package midend.Util;
 
+import midend.Transform.DCE.RemoveDeadBlock;
 import mir.BasicBlock;
 import mir.Function;
 
@@ -8,6 +9,7 @@ import java.util.HashSet;
 
 /**
  * 支配图
+ *
  * @author ReActor, Srchycz
  * TODO: 优化支配图的构建, GVN、GCM 均需要构建支配图，考虑记录是否构建过的标志变量，减少重复 build 的代价
  */
@@ -24,6 +26,7 @@ public class DominanceGraph {
     public void build() {
         clear();
         this.entry = parentFunction.getEntry();
+        RemoveDeadBlock.runOnFunc(parentFunction);
         buildDominatorSet();
         buildImmDominateTree();
         buildDomDepth();

@@ -1,5 +1,6 @@
 package midend.Transform.Loop;
 
+import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
 
@@ -161,7 +162,8 @@ public class LoopInVarLift {
         else if (instr instanceof Instruction.Call) {
             Function callee = ((Instruction.Call) instr).getDestFunction();
             if (callee.isExternal()) return false;
-            if (callee.hasSideEffect || !callee.isStateless || callee.hasReadIn || callee.hasPutOut) return false;
+            if (FuncInfo.hasSideEffect.get(callee) || FuncInfo.isStateless.get(callee)
+                    || FuncInfo.hasReadIn.get(callee) || FuncInfo.hasPutOut.get(callee)) return false;
         }
         else if (instr instanceof Instruction.Store) {
             return false;

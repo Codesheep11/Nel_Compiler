@@ -5,46 +5,28 @@ import mir.Function;
 import mir.Instruction;
 import mir.Value;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 
 public class ControlFlowGraph {
 
-    private final Function parentFunction;
-    private final HashSet<BasicBlock> vis = new HashSet<>();
-    private final HashSet<BasicBlock> blocks = new HashSet<>();
+    private static Function parentFunction;
 
-    public ControlFlowGraph(Function parentFunction) {
-        this.parentFunction = parentFunction;
-    }
 
-    public void build() {
+    public static void buildCFG(Function function) {
+        parentFunction = function;
         clearGraph();
         buildGraph();
-        removeDeadBlocks();
-        clearGraph();
-        buildGraph();
-        updatePhi();
-        //checkGraph();
     }
 
-    // 顺序枚举blocks 下的 inst 由 分支命令 维护相应block 的前驱后继
-    private void buildGraph() {
-        // reset
-        blocks.clear();
+    // 顺序枚举blocks 下的 Terminator 由 分支命令 维护相应block 的前驱后继
+    private static void buildGraph() {
         for (BasicBlock block : parentFunction.getBlocks()) {
             // 加入全集
-            if (block.getInstructions().isEmpty())
-                continue;
-            blocks.add(block);
-
-            // 删除多余的终结指令
-//            Instruction lastInst = block.getLastInst();
-//            while (lastInst.getPrev() instanceof Instruction.Terminator) {
-//                lastInst.remove();
-//                lastInst = block.getLastInst();
-//            }
-
+            if (block.getInstructions().isEmpty()) {
+                throw new RuntimeException("empty block");
+            }
             // 找到第一条终结指令
             Instruction findFirstTerminator = block.getFirstInst();
             while (!(findFirstTerminator instanceof Instruction.Terminator)) {
@@ -78,39 +60,18 @@ public class ControlFlowGraph {
         }
     }
 
-    private void clearGraph() {
-        for (BasicBlock block : vis) {
+    //清理前驱后继
+    private static void clearGraph() {
+        for (BasicBlock block : parentFunction.getBlocks()) {
             block.getSucBlocks().clear();
             block.getPreBlocks().clear();
         }
     }
 
-    private void removeDeadBlocks() {
-        // reset
-        vis.clear();
-        if (parentFunction.getBlocks().getSize() == 0) {
-            return;
-        }
-        depthFirstSearch(parentFunction.getEntry());
-        for (BasicBlock block : blocks) {
-            if (vis.contains(block)) continue;
-            block.delete();
-//            block.remove();
-        }
-    }
-
-    private void depthFirstSearch(BasicBlock cur) {
-        vis.add(cur);
-        for (BasicBlock sucBlock : cur.getSucBlocks()) {
-            if (!vis.contains(sucBlock)) {
-                depthFirstSearch(sucBlock);
-            }
-        }
-    }
 
     public void printGraph() {
         // print suc and pre blocks for each block
-        for (BasicBlock block : blocks) {
+        for (BasicBlock block : parentFunction.getBlocks()) {
             System.out.println(" block: " + block.getLabel());
             System.out.println("pre blocks: ");
             for (BasicBlock preBlock : block.getPreBlocks()) {
@@ -123,33 +84,5 @@ public class ControlFlowGraph {
         }
     }
 
-    private void updatePhi() {
-        //phi指令更新
-        for (BasicBlock block : parentFunction.getBlocks()) {
-            for (Instruction instr : block.getInstructions()) {
-                if (instr instanceof Instruction.Phi) {
-                    Instruction.Phi phi = (Instruction.Phi) instr;
-                    LinkedList<BasicBlock> rms = new LinkedList<>();
-                    for (BasicBlock preBlock : phi.getPreBlocks()) {
-                        if (!block.getPreBlocks().contains(preBlock)) {
-                            rms.add(preBlock);
-                        }
-                    }
-                    for (BasicBlock rm : rms) {
-                        phi.removeOptionalValue(rm);
-                    }
-                    if (phi.getPreBlocks().size() != block.getPreBlocks().size()) {
-                        throw new RuntimeException("phi error");
-                    }
-                    if (phi.canBeReplaced()) {
-                        Value value = phi.getOptionalValue(phi.getPreBlocks().get(0));
-                        phi.replaceAllUsesWith(value);
-                        phi.remove();
-                    }
-                }
-                else break;
-            }
-        }
-    }
 
 }

@@ -12,7 +12,9 @@ import midend.Analysis.FuncAnalysis;
 import midend.Analysis.GlobalVarAnalysis;
 import midend.Transform.*;
 import midend.Transform.DCE.AggressiveDCD;
+import midend.Transform.DCE.DeadArgEliminate;
 import midend.Transform.DCE.DeadCodeDelete;
+import midend.Transform.DCE.RemoveDeadBlock;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.LCSSA;
@@ -52,10 +54,11 @@ public class Manager {
             visitor.visitAst(ast);
             Module module = visitor.module;
             if (arg.opt) {
-                ArithReduce.Mem2Reg.run(module);
+                Mem2Reg.run(module);
                 Reassociate.run(module);
-                FunctionInline.run(module);
+//                FunctionInline.run(module);
                 FuncAnalysis.run(module);
+                DeadArgEliminate.run(module);
                 TailCall2Loop.run(module);
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
@@ -68,6 +71,7 @@ public class Manager {
                 LCSSA.remove(module);
                 AggressiveDCD.run(module);
                 DeadCodeDelete.run(module);
+                RemoveDeadBlock.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);

@@ -1,5 +1,6 @@
 package midend.Transform.DCE;
 
+import midend.Util.FuncInfo;
 import mir.Function;
 import mir.Module;
 import mir.*;
@@ -132,8 +133,7 @@ public class DeadCodeDelete {
     public static boolean isUsefulCall(Function callee) {
         return usefulVar.contains(callee)
                 || (callee.isExternal() && !callee.getName().equals("memset"))
-                || callee.hasReadIn
-                || callee.hasPutOut;
+                || FuncInfo.hasReadIn.get(callee) || FuncInfo.hasPutOut.get(callee);
     }
 
     private static void DeleteUselessVar(Module module) {
