@@ -84,6 +84,20 @@ public class Allocater {
             }
         }
         Manager.afterRegAssign = true;
+        LS2LiAddLS(riscvModule);
+    }
+
+    public static void LS2LiAddLS(RiscvModule riscvModule) {
+        for (RiscvFunction function : riscvModule.funcList) {
+            if (function.isExternal) continue;
+            for (RiscvBlock riscvBlock : function.blocks) {
+                for (RiscvInstruction ri : riscvBlock.riscvInstructions) {
+                    if (ri instanceof LS ls) {
+                        ls.replaceMe(riscvBlock);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -123,7 +137,7 @@ public class Allocater {
                     continue;
                 }
             }
-            if (reg.phyReg == zero) {
+            if (reg.phyReg == zero || reg.phyReg == sp) {
                 continue;
             }
             RiscvInstruction store, load;
