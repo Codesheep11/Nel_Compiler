@@ -110,6 +110,8 @@ public class GlobalCodeMotion {
                 BasicBlock userBlock = instrUser.latest;
                 if (instrUser instanceof Instruction.Phi)
                     userBlock = instrUser.latest.getIdom();
+                if (userBlock == null || instr.earliest.getDomDepth() > userBlock.getDomDepth())
+                    continue;
                 instr.latest = getDomLCA(instr.latest, userBlock);
             }
         }
@@ -155,6 +157,7 @@ public class GlobalCodeMotion {
             users.add(use.getUser());
         }
         for (Instruction inst : block.getInstructions()) {
+
             if (inst instanceof Instruction.Phi) {
                 // just for test
                 if (users.contains(inst))

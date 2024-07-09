@@ -135,7 +135,7 @@ public class Instruction extends User {
 
     public boolean canbeOperand() {
         if (this instanceof Call) {
-            return this.getType() instanceof Type.VoidType;
+            return !(this.getType() instanceof Type.VoidType);
         }
         return !(this instanceof Terminator) && !(this instanceof Store);
     }
@@ -147,6 +147,23 @@ public class Instruction extends User {
         return false;
     }
 
+//    public boolean isNoSideEffect() {
+//        if (!canbeOperand()) {
+//            return false;
+//        }
+//        if (isTerminator()) {
+//            return false;
+//        }
+//        return switch (instType) {
+//            case CALL -> {
+//                Function callee = ((Call) this).getDestFunction();
+//                yield !callee.hasSideEffect && callee.isStateless && callee.hasReturn;
+//            }
+//            case STORE -> false;
+//            default -> true;
+//        };
+//    }
+
     public boolean isAssociative() {
         return switch (instType) {
             case ADD, MUL -> true;
@@ -156,6 +173,10 @@ public class Instruction extends User {
 
     public boolean isSelfReferencing() {
         return getOperands().contains(this);
+    }
+
+    public boolean isTerminator() {
+        return this instanceof Terminator;
     }
 
     /**
@@ -185,6 +206,7 @@ public class Instruction extends User {
 
         @Override
         public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+            System.out.println("Warning: Return replaceSucc");
         }
 
         @Override
@@ -363,6 +385,7 @@ public class Instruction extends User {
         }
 
         public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+            super.replaceUseOfWith(oldBlock, newBlock);
             if (thenBlock.equals(oldBlock)) {
                 thenBlock = newBlock;
             }
@@ -423,6 +446,7 @@ public class Instruction extends User {
         }
 
         public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+            super.replaceUseOfWith(oldBlock, newBlock);
             if (targetBlock.equals(oldBlock)) {
                 targetBlock = newBlock;
             }
@@ -721,6 +745,17 @@ public class Instruction extends User {
             SLT("slt"),
             SLE("sle");
             private final String str;
+
+            public CondCode inverse() {
+                return switch (this) {
+                    case EQ -> NE;
+                    case NE -> EQ;
+                    case SGT -> SLE;
+                    case SGE -> SLT;
+                    case SLT -> SGE;
+                    case SLE -> SGT;
+                };
+            }
 
             CondCode(final String str) {
                 this.str = str;
