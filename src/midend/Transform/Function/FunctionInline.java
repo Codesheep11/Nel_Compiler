@@ -219,9 +219,10 @@ public class FunctionInline {
 
         assert inst.getParentBlock().equals(beforeCallBB);
 
-        while (inst.hasNext()) {
-            inst.getNext().remove();
-        }
+//        while (inst.hasNext()) {
+////            System.out.println("1");
+//            inst.getNext().remove();
+//        }
         //beforeCallBB.getInstructions().setEnd(inst);
         inst.delete();
     }
