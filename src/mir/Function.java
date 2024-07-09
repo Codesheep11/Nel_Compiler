@@ -423,4 +423,12 @@ public class Function extends Value {
         Collections.reverse(rpot);
         return rpot;
     }
+
+    @Override
+    public void delete() {
+        super.delete();
+        ArrayList<BasicBlock> delList = new ArrayList<>();
+        blocks.forEach(delList::add);
+        delList.forEach(Value::delete);
+    }
 }

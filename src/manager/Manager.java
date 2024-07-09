@@ -56,7 +56,7 @@ public class Manager {
             if (arg.opt) {
                 Mem2Reg.run(module);
                 Reassociate.run(module);
-//                FunctionInline.run(module);
+                FunctionInline.run(module);
                 FuncAnalysis.run(module);
                 DeadArgEliminate.run();
                 TailCall2Loop.run(module);
