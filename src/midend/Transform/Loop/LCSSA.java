@@ -93,7 +93,10 @@ public class LCSSA {
             for (BasicBlock block : function.getBlocks()) {
                 for (Instruction instr : block.getInstructions()) {
                     if (instr instanceof Instruction.Phi phi) {
-                        if (phi.isLCSSA && phi.getPreBlocks().size() == 1) {
+                        if (phi.isLCSSA) {
+                            if (phi.getPreBlocks().size() != 1) {
+                                if (!phi.canBeReplaced()) throw new RuntimeException("what can i say?");
+                            }
                             Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
                             phi.replaceAllUsesWith(v);
                             phi.delete();

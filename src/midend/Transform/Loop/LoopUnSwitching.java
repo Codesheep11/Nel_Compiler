@@ -1,8 +1,7 @@
 package midend.Transform.Loop;
 
 import manager.CentralControl;
-import midend.Transform.DCE.RemoveDeadBlock;
-import midend.Util.Print;
+import midend.Transform.DCE.RemoveBlocks;
 import mir.*;
 import mir.Module;
 
@@ -102,7 +101,7 @@ public class LoopUnSwitching {
                 phi.setOptionalValues(newMap);
             }
         }
-        RemoveDeadBlock.runOnFunc(parentFunction);
+        RemoveBlocks.runOnFunc(parentFunction);
     }
 
     private static String getNewLabel(Function function, String infix) {

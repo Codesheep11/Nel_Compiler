@@ -1397,7 +1397,6 @@ public class Instruction extends User {
         }
 
         public boolean canBeReplaced() {
-            if (isLCSSA) return false;
             HashSet<Value> values = new HashSet<>(optionalValues.values());
             return values.size() == 1;
         }

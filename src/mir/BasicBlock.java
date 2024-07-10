@@ -272,8 +272,11 @@ public class BasicBlock extends Value {
     @Override
     public void delete() {
         super.delete();
+        if (instructions.isEmpty()) return;
         ArrayList<Instruction> delList = new ArrayList<>();
-        instructions.forEach(delList::add);
+        for (Instruction instr : instructions) {
+            delList.add(instr);
+        }
         delList.forEach(Instruction::delete);
     }
 
