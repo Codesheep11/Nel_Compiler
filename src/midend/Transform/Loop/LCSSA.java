@@ -93,7 +93,7 @@ public class LCSSA {
             for (BasicBlock block : function.getBlocks()) {
                 for (Instruction instr : block.getInstructions()) {
                     if (instr instanceof Instruction.Phi phi) {
-                        if (phi.isLCSSA) {
+                        if (phi.isLCSSA && phi.getPreBlocks().size() == 1) {
                             Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
                             phi.replaceAllUsesWith(v);
                             phi.delete();

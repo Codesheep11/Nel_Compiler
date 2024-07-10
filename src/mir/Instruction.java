@@ -129,7 +129,7 @@ public class Instruction extends User {
         //setParentBlock((BasicBlock) CloneInfo.getReflectedValue(parentBlock));
         for (Value operand : toReplace) {
             //assert operand.getType().isPointerTy() == CloneInfo.getReflectedValue(operand).getType().isPointerTy();
-            replaceUseOfWith(operand, cloneInfo.getReflectedValue(operand));
+            this.replaceUseOfWith(operand, cloneInfo.getReflectedValue(operand));
         }
     }
 
@@ -214,8 +214,7 @@ public class Instruction extends User {
             Value retValue = getRetValue();
             if (retValue != null) {
                 return String.format("ret %s %s", retValue.getType().toString(), retValue.getDescriptor());
-            }
-            else {
+            } else {
                 return "ret void";
             }
         }
@@ -299,8 +298,7 @@ public class Instruction extends User {
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());
-            }
-            else {
+            } else {
                 return String.format("%s = call %s @%s(%s)", getDescriptor(), destFunction.getRetType().toString(), destFunction.name, paramsToString());
             }
         }
@@ -357,8 +355,7 @@ public class Instruction extends User {
         private BasicBlock elseBlock;
 
         public Branch(BasicBlock parentBlock,
-                      Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
-        {
+                      Value cond, BasicBlock thenBlock, BasicBlock elseBlock) {
             super(parentBlock, Type.VoidType.VOID_TYPE, InstType.BRANCH);
             this.cond = cond;
             this.thenBlock = thenBlock;
@@ -1354,9 +1351,11 @@ public class Instruction extends User {
             if (!optionalValues.containsKey(src)) {
                 throw new RuntimeException("Phi replaceOptionalValueAtWith");
             }
-            Value oldValue = optionalValues.get(src);
-            optionalValues.put(src, value);
-            replaceUseOfWith(oldValue, value);
+            removeOptionalValue(src);
+            addOptionalValue(src, value);
+//            Value oldValue = optionalValues.get(src);
+//            optionalValues.put(src, value);
+//            replaceUseOfWith(oldValue, value);
         }
 
         public int getSize() {
@@ -1373,9 +1372,11 @@ public class Instruction extends User {
                 throw new RuntimeException("Phi removeOptionalValue: " + block.getDescriptor());
             }
             Value value = optionalValues.get(block);
-            value.use_remove(new Use(this, value));
-            getOperands().remove(value);
             optionalValues.remove(block);
+            if (!optionalValues.containsValue(value)) {
+                value.use_remove(new Use(this, value));
+                getOperands().remove(value);
+            }
         }
 
         public void addOptionalValue(BasicBlock block, Value value) {
@@ -1411,6 +1412,22 @@ public class Instruction extends User {
 
         public void setOptionalValues(LinkedHashMap<BasicBlock, Value> optionalValues) {
             this.optionalValues = optionalValues;
+            getOperands().clear();
+            optionalValues.forEach((key, value) -> addOperand(value));
+        }
+
+        @Override
+        public void fix(CloneInfo cloneInfo) {
+            super.fix(cloneInfo);
+            HashSet<BasicBlock> toReplace = new HashSet<>();
+            for (BasicBlock block : optionalValues.keySet()) {
+                if (cloneInfo.containValue(block)) {
+                    toReplace.add(block);
+                }
+            }
+            toReplace.forEach(block ->
+                    changePreBlock(block, (BasicBlock) cloneInfo.getReflectedValue(block))
+            );
         }
 
         @Override
@@ -1423,8 +1440,7 @@ public class Instruction extends User {
                 Value val = optionalValues.get(value);
                 optionalValues.remove(value);
                 optionalValues.put((BasicBlock) v, val);
-            }
-            else {
+            } else {
                 for (BasicBlock block : optionalValues.keySet()) {
                     if (optionalValues.get(block).equals(value)) {
                         optionalValues.put(block, v);

@@ -245,10 +245,10 @@ public class BasicBlock extends Value {
 
     //函数内联的时候,维护循环信息,方便GCM
     public BasicBlock cloneToFunc(CloneInfo cloneInfo, Function function) {
-        BasicBlock ret = new BasicBlock(function.getName() + "_" + getLabel() + "_" + cpcnt++, function);
+        BasicBlock ret = new BasicBlock(getLabel() + "_cp" + cpcnt++, function);
         cloneInfo.addValueReflect(this, ret);
         for (Instruction inst : getInstructions()) {
-            Instruction tmp = inst.cloneToBBAndAddInfo(cloneInfo, ret);
+            inst.cloneToBBAndAddInfo(cloneInfo, ret);
         }
         return ret;
     }
@@ -274,7 +274,7 @@ public class BasicBlock extends Value {
         super.delete();
         ArrayList<Instruction> delList = new ArrayList<>();
         instructions.forEach(delList::add);
-        delList.forEach(Value::delete);
+        delList.forEach(Instruction::delete);
     }
 
 }

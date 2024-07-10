@@ -1,4 +1,4 @@
-package midend.Transform.Loop;
+package midend.Analysis;
 
 import mir.*;
 import mir.result.SCEVAnalysisResult;

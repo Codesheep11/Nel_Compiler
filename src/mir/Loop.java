@@ -139,9 +139,9 @@ public class Loop {
 
         info.cpy.header = (BasicBlock) info.getReflectedValue(header);
         info.cpy.enterings = new HashSet<>(enterings);
-        info.cpy.exitings = new HashSet<>(exitings);
+        info.cpy.exits = new HashSet<>(exits);
         latchs.forEach(bb -> info.cpy.latchs.add((BasicBlock) info.getReflectedValue(bb)));
-        exits.forEach(bb -> info.cpy.exits.add((BasicBlock) info.getReflectedValue(bb)));
+        exitings.forEach(bb -> info.cpy.exitings.add((BasicBlock) info.getReflectedValue(bb)));
 
         Loop cpLoop = info.cpy;
         cpLoop.parent = parent;

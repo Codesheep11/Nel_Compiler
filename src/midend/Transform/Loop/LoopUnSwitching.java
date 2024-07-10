@@ -1,6 +1,8 @@
 package midend.Transform.Loop;
 
 import manager.CentralControl;
+import midend.Transform.DCE.RemoveDeadBlock;
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 
@@ -12,17 +14,21 @@ import java.util.Map;
  * 循环分支取消
  * <p>
  * 请在执行该优化前先执行 LIVL 优化
+ * </p>
+ * Note: 该优化会改变循环的结构，执行后需要重建loop <br>
+ * 现在只会处理一个分支的情况
  */
 public class LoopUnSwitching {
 
     private static int count = 0;
+
 
     public static void run(Module module) {
         if (!CentralControl._LUS_OPEN) return;
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             for (Loop loop : function.loopInfo.TopLevelLoops)
-               collectBranch(loop);
+                collectBranch(loop);
         }
     }
 
@@ -51,6 +57,7 @@ public class LoopUnSwitching {
         BasicBlock trueBlock = branch.getThenBlock();
         BasicBlock falseBlock = branch.getElseBlock();
 
+        // copy true loop
         LoopCloneInfo trueinfo = loop.cloneAndInfo();
         Loop trueLoop = trueinfo.cpy;
         Instruction condTrueCopy = ((Instruction) trueinfo.getReflectedValue(branch));
@@ -58,6 +65,7 @@ public class LoopUnSwitching {
         condTrueCopy.delete();
         new Instruction.Jump(condTrueCopyBlock, (BasicBlock) trueinfo.getReflectedValue(trueBlock));
         //Note: 改造phi 以及删除不可达块 交给BuildCFG和SimplifyCFG实现
+        // copy false loop
         LoopCloneInfo falseinfo = loop.cloneAndInfo();
         Loop falseLoop = falseinfo.cpy;
         Instruction condFalseCopy = ((Instruction) falseinfo.getReflectedValue(branch));
@@ -65,31 +73,36 @@ public class LoopUnSwitching {
         condFalseCopy.delete();
         new Instruction.Jump(condFalseCopyBlock, (BasicBlock) falseinfo.getReflectedValue(falseBlock));
 
-        BasicBlock condBlock = new BasicBlock(getNewLabel(parentFunction, "cond"), branch.getParentBlock().getParentFunction());
+        // create cond block
+        BasicBlock condBlock = new BasicBlock(getNewLabel(parentFunction, "cond"), parentFunction);
         new Instruction.Branch(condBlock, branch.getCond(), trueLoop.header, falseLoop.header);
         BasicBlock preHeader = loop.getPreHeader();
         trueLoop.header.getPhiInstructions().forEach(phi -> phi.changePreBlock(preHeader, condBlock));
         falseLoop.header.getPhiInstructions().forEach(phi -> phi.changePreBlock(preHeader, condBlock));
-        BasicBlock exit = loop.getExit();
-        for (Instruction.Phi phi : exit.getPhiInstructions()) {
-            LinkedHashMap<BasicBlock, Value> newMap = new LinkedHashMap<>();
-            for (Map.Entry<BasicBlock, Value> entry : phi.getOptionalValues().entrySet()) {
-                if (trueinfo.containValue(entry.getKey())) {
-                    if (trueinfo.containValue(entry.getValue())) {
-                        newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), trueinfo.getReflectedValue(entry.getValue()));
-                        newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), falseinfo.getReflectedValue(entry.getValue()));
+
+        // modify preheader
+        preHeader.getTerminator().replaceSucc(loop.header, condBlock);
+
+        for (BasicBlock exit : loop.exits) {
+            for (Instruction.Phi phi : exit.getPhiInstructions()) {
+                LinkedHashMap<BasicBlock, Value> newMap = new LinkedHashMap<>();
+                for (Map.Entry<BasicBlock, Value> entry : phi.getOptionalValues().entrySet()) {
+                    if (trueinfo.containValue(entry.getKey())) {
+                        if (trueinfo.containValue(entry.getValue())) {
+                            newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), trueinfo.getReflectedValue(entry.getValue()));
+                            newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), falseinfo.getReflectedValue(entry.getValue()));
+                        } else {
+                            newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), entry.getValue());
+                            newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), entry.getValue());
+                        }
                     } else {
-                        newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), entry.getValue());
-                        newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), entry.getValue());
+                        newMap.put(entry.getKey(), entry.getValue());
                     }
-                } else {
-                    newMap.put(entry.getKey(), entry.getValue());
                 }
+                phi.setOptionalValues(newMap);
             }
-            phi.setOptionalValues(newMap);
         }
-        LoopSimplifyForm.run(loop);
-        parentFunction.buildControlFlowGraph();
+        RemoveDeadBlock.runOnFunc(parentFunction);
     }
 
     private static String getNewLabel(Function function, String infix) {

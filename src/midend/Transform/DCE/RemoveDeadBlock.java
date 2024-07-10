@@ -1,5 +1,6 @@
 package midend.Transform.DCE;
 
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 
@@ -62,8 +63,7 @@ public class RemoveDeadBlock {
                         phi.replaceAllUsesWith(value);
                         phi.remove();
                     }
-                }
-                else break;
+                } else break;
             }
         }
     }
