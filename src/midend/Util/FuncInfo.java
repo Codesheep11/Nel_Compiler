@@ -68,6 +68,7 @@ public class FuncInfo {
             // 拓扑排序
             HashSet<Function> vis = new HashSet<>();
             dfs(main, vis, funcTopoSort);
+            topoSortFlag = true;
         }
         return funcTopoSort;
     }

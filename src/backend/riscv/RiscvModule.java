@@ -7,9 +7,12 @@ public class RiscvModule {
     public ArrayList<RiscvGlobalVar> globList = new ArrayList<>();
     public RiscvFunction mainFunc;
 
+    public ArrayList<RiscvFunction> TopoSort = new ArrayList<>();
+
     public RiscvModule() {
 
     }
+
 
     public RiscvFunction getFunction(String name) {
         for (RiscvFunction func : funcList) {

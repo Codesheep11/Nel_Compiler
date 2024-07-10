@@ -382,9 +382,9 @@ public abstract class ScheduleClass {
             }
         } else {
             System.out.println(instr);
-            if (instr.getClass() != Explain.class) {
-                throw new RuntimeException("未知指令!"+instr);
-            }
+//            if (instr.getClass() != Explain.class) {
+//                throw new RuntimeException("未知指令!"+instr);
+//            }
             return null;
         }
     }
