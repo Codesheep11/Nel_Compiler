@@ -1,15 +1,15 @@
 package midend.Transform.DCE;
 
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.*;
 
 /**
- * 删除没有前驱的基本块。
- * 如果一个基本块只有一个前驱，并且该前驱只有一个后继，则将该基本块合并到其前驱中。
- * 对于只有一个前驱的基本块，删除其PHI节点。
+ * 删除没有前驱的基本块。 1
+ * 如果一个基本块只有一个前驱，并且该前驱只有一个后继，则将该基本块合并到其前驱中。 1
+ * 对于只有一个前驱的基本块，删除其PHI节点。1
  * 删除仅包含无条件分支的基本块。
  */
 public class SimplfyCFG {
@@ -23,309 +23,115 @@ public class SimplfyCFG {
 
     private static void RunOnFunc(Function function) {
 //        System.out.println("br2Jump");
+        Br2Jump(function);
+        RemoveBlocks.runOnFunc(function);
+        function.buildDominanceGraph();
+//        Print.outputLLVM(function, "debug2.txt");
+        MergeBlocks(function);
+//        Print.outputLLVM(function, "debug2.txt");
+        RemoveBlocks.runOnFunc(function);
+        ChangeTarget(function);
+        RemoveBlocks.runOnFunc(function);
+
+        Print.outputLLVM(function, "debug2.txt");
+    }
+
+    private static void MergeBlocks(Function function) {
+        HashMap<BasicBlock, ArrayList<BasicBlock>> mergeMap = new HashMap<>();
+        HashSet<BasicBlock> mergeBlocks = new HashSet<>();
+        ArrayList<BasicBlock> domSort = function.getDomTreeLayerSort();
+        //支配树层次遍历保证了首先一定访问到头部
+        for (BasicBlock block : domSort) {
+            if (mergeBlocks.contains(block)) continue;
+            if (block.getSucBlocks().size() == 1) {
+                BasicBlock cur = block.getSucBlocks().get(0);
+                ArrayList<BasicBlock> merges = new ArrayList<>();
+                while (cur.getPreBlocks().size() == 1) {
+                    mergeBlocks.add(cur);
+                    merges.add(cur);
+                    if (cur.getSucBlocks().size() == 1) cur = cur.getSucBlocks().get(0);
+                    else break;
+                }
+                if (!merges.isEmpty()) mergeMap.put(block, merges);
+            }
+        }
+//        Print.outputLLVM(function, "debug.txt");
+        for (BasicBlock first : mergeMap.keySet()) {
+            first.getLastInst().delete();
+            for (BasicBlock block : mergeMap.get(first)) {
+                Iterator<Instruction> iterator = block.getInstructions().iterator();
+                while (iterator.hasNext()) {
+                    Instruction instr = iterator.next();
+                    if (instr instanceof Instruction.Phi){
+                        throw new RuntimeException("LCSSA should not be here");
+                    }
+                    if (instr instanceof Instruction.Terminator) break;
+                    iterator.remove();
+                    first.addInstLast(instr);
+                    instr.setParentBlock(first);
+                }
+            }
+            for (int i = 0; i < mergeMap.get(first).size(); i++) {
+                BasicBlock block = mergeMap.get(first).get(i);
+                if (i == mergeMap.get(first).size() - 1) {
+                    Instruction term = block.getLastInst();
+                    term.remove();
+                    first.addInstLast(term);
+                    term.setParentBlock(first);
+                    for (BasicBlock suc : block.getSucBlocks()) {
+                        for (Instruction phi : suc.getInstructions()) {
+                            if (phi instanceof Instruction.Phi) ((Instruction.Phi) phi).changePreBlock(block, first);
+                            else break;
+                        }
+                    }
+                }
+                else block.getLastInst().delete();
+            }
+        }
+    }
+
+    private static void Br2Jump(Function function) {
         for (BasicBlock block : function.getBlocks()) {
             Instruction.Terminator term = (Instruction.Terminator) block.getLastInst();
-            if (term instanceof Instruction.Branch) br2Jump((Instruction.Branch) term);
+            if (term instanceof Instruction.Branch) {
+                Instruction.Branch br = (Instruction.Branch) term;
+                if (br.getElseBlock().equals(br.getThenBlock())) {
+                    new Instruction.Jump(block, br.getElseBlock());
+                    br.delete();
+                    return;
+                }
+                if (br.getCond() instanceof Constant.ConstantBool) {
+                    if (((Constant.ConstantBool) br.getCond()).isZero()) {
+                        new Instruction.Jump(block, br.getElseBlock());
+                        br.delete();
+                    }
+                    else {
+                        new Instruction.Jump(block, br.getThenBlock());
+                        br.delete();
+                    }
+                }
+            }
         }
+    }
+
+    private static void ChangeTarget(Function function) {
         HashSet<BasicBlock> onlyJumpBlocks = new HashSet<>();
         for (BasicBlock block : function.getBlocks()) {
-            Instruction firstInst = block.getFirstInst();
-            if (firstInst instanceof Instruction.Jump) onlyJumpBlocks.add(block);
-        }
-
-
-////        System.out.println("TryChangeTarget");
-//        while (!queue.isEmpty()) {
-//            BasicBlock cur = queue.poll();
-//            if (visited.contains(cur)) continue;
-//            visited.add(cur);
-//            Instruction term = cur.getLastInst();
-//            if (term instanceof Instruction.Return) continue;
-//            else {
-//                TryChangeTarget(term);
-//                if (cur.getLastInst() instanceof Instruction.Jump)
-//                    queue.add(((Instruction.Jump) cur.getLastInst()).getTargetBlock());
-//                else {
-//                    queue.add(((Instruction.Branch) cur.getLastInst()).getThenBlock());
-//                    queue.add(((Instruction.Branch) cur.getLastInst()).getElseBlock());
-//                }
-//            }
-//        }
-//        function.buildControlFlowGraph();
-////        System.out.println("mergeBlock");
-//        flag = true;
-//        while (flag) {
-//            flag = false;
-//            for (BasicBlock block : function.getBlocks()) {
-//                if (block.getInstructions().getSize() == 0 || block.isDeleted) {
-//                    continue;
-//                }
-//                if (mergeBlock(block)) {
-//                    ret = true;
-//                    flag = true;
-//                    break;
-//                }
-//            }
-//            function.buildControlFlowGraph();
-//        }
-//        for (BasicBlock block : function.getBlocks()) {
-//            if (block.getInstructions().isEmpty()) {
-//                continue;
-//            }
-//            Instruction inst = block.getLastInst();
-//            if (inst instanceof Instruction.Jump) {
-//                if (replaceJump((Instruction.Jump) inst))
-//                    ret = true;
-//            }
-//        }
-//        function.buildControlFlowGraph();
-////            buildControlFlowGraph(function);
-    }
-
-    private static void br2Jump(Instruction.Branch br) {
-//        System.out.println("cond " + br.getCond() + " else " + br.getElseBlock().getLabel() + " then " + br.getThenBlock().getLabel());
-        if (br.getElseBlock().equals(br.getThenBlock())) {
-            BasicBlock block = br.getParentBlock();
-            new Instruction.Jump(block, br.getElseBlock());
-            br.delete();
-            return;
-        }
-        if (br.getCond() instanceof Constant.ConstantBool) {
-            if (((Constant.ConstantBool) br.getCond()).isZero()) {
-                BasicBlock block = br.getParentBlock();
-                new Instruction.Jump(block, br.getElseBlock());
-                br.delete();
+            if (block.getFirstInst() instanceof Instruction.Jump) {
+                BasicBlock suc = block.getSucBlocks().get(0);
+                if (!(suc.getFirstInst() instanceof Instruction.Phi)) {
+                    onlyJumpBlocks.add(block);
+                }
             }
-            else {
-                BasicBlock block = br.getParentBlock();
-                new Instruction.Jump(block, br.getThenBlock());
-                br.delete();
+        }
+        for (BasicBlock onlyJumpBlock : onlyJumpBlocks) {
+            BasicBlock suc = onlyJumpBlock.getSucBlocks().get(0);
+            for (BasicBlock pre : onlyJumpBlock.getPreBlocks()) {
+                Instruction.Terminator term = (Instruction.Terminator) pre.getLastInst();
+                term.replaceSucc(onlyJumpBlock, suc);
             }
         }
     }
-
-//    private static boolean TryChangeTarget(Instruction inst) {
-//        assert inst instanceof Instruction.Jump || inst instanceof Instruction.Branch;
-//        if (inst instanceof Instruction.Jump) {
-//            Instruction nxtFirst = ((Instruction.Jump) inst).getTargetBlock().getFirstInst();
-//            if (IsEdgeSimplfy(nxtFirst, inst)) {
-//                boolean rm = true;
-//                do {
-//                    if (nxtFirst.getParentBlock().getPreBlocks().size() != 1) {
-//                        rm = false;
-//                    }
-//                    Instruction next = ((Instruction.Jump) nxtFirst).getTargetBlock().getFirstInst();
-//                    if (IsEdgeSimplfy(next, inst)) {
-//                        nxtFirst = next;
-//                    }
-//                    else {
-//                        break;
-//                    }
-//                } while (true);
-//                BasicBlock newTarget = ((Instruction.Jump) nxtFirst).getTargetBlock();
-//                inst.replaceUseOfWith(((Instruction.Jump) inst).getTargetBlock(), newTarget);
-//                //维护phi指令
-//                if (rm)
-//                    for (Instruction instr : newTarget.getInstructions()) {
-//                        if (instr instanceof Instruction.Phi) {
-//                            Instruction.Phi phi = (Instruction.Phi) instr;
-//                            phi.changePreBlock(nxtFirst.getParentBlock(), inst.getParentBlock());
-//                        }
-//                        else break;
-//                    }
-//                else {
-//                    for (Instruction instr : newTarget.getInstructions()) {
-//                        if (instr instanceof Instruction.Phi) {
-//                            Instruction.Phi phi = (Instruction.Phi) instr;
-//                            phi.addOptionalValue(inst.getParentBlock(), phi.getOptionalValue(nxtFirst.getParentBlock()));
-//                        }
-//                        else break;
-//                    }
-//                }
-//                return true;
-//            }
-//            else if (nxtFirst instanceof Instruction.Return) {
-//                Instruction.Return that = (Instruction.Return) ((Instruction.Jump) inst).getTargetBlock().getFirstInst();
-//                that.cloneToBB(inst.getParentBlock());
-//                inst.remove();
-//                return true;
-//            }
-//            return false;
-//        }
-//        else {
-//            boolean ret = false;
-//            Instruction thenFirst = ((Instruction.Branch) inst).getThenBlock().getFirstInst();
-//            Instruction elseFirst = ((Instruction.Branch) inst).getElseBlock().getFirstInst();
-//            if (IsEdgeSimplfy(thenFirst, inst)) {
-//                boolean rm = true;
-//                do {
-//                    if (thenFirst.getParentBlock().getPreBlocks().size() != 1) {
-//                        rm = false;
-//                    }
-//                    Instruction next = ((Instruction.Jump) thenFirst).getTargetBlock().getFirstInst();
-//                    if (IsEdgeSimplfy(next, inst)) {
-//                        thenFirst = next;
-//                    }
-//                    else {
-//                        break;
-//                    }
-//                } while (true);
-//                BasicBlock newTarget = ((Instruction.Jump) thenFirst).getTargetBlock();
-//                inst.replaceUseOfWith(((Instruction.Branch) inst).getThenBlock(), newTarget);
-//                //维护phi指令
-//                if (rm) {
-//                    for (Instruction instr : newTarget.getInstructions()) {
-//                        if (instr instanceof Instruction.Phi) {
-//                            Instruction.Phi phi = (Instruction.Phi) instr;
-//                            if (phi.getPreBlocks().contains(inst.getParentBlock())) break;
-//                            phi.changePreBlock(thenFirst.getParentBlock(), inst.getParentBlock());
-//                        }
-//                        else break;
-//                    }
-//                }
-//                else {
-//                    for (Instruction instr : newTarget.getInstructions()) {
-//                        if (instr instanceof Instruction.Phi) {
-//                            Instruction.Phi phi = (Instruction.Phi) instr;
-//                            if (phi.getPreBlocks().contains(inst.getParentBlock())) break;
-//                            phi.addOptionalValue(inst.getParentBlock(), phi.getOptionalValue(thenFirst.getParentBlock()));
-//                        }
-//                        else break;
-//                    }
-//                }
-//                ret = true;
-//            }
-//            if (IsEdgeSimplfy(elseFirst, inst)) {
-//                boolean rm = true;
-//                do {
-//                    if (elseFirst.getParentBlock().getPreBlocks().size() != 1) {
-//                        rm = false;
-//                    }
-//                    Instruction next = ((Instruction.Jump) elseFirst).getTargetBlock().getFirstInst();
-//                    if (IsEdgeSimplfy(next, inst)) {
-//                        elseFirst = next;
-//                    }
-//                    else {
-//                        break;
-//                    }
-//                } while (true);
-//                BasicBlock newTarget = ((Instruction.Jump) elseFirst).getTargetBlock();
-//                inst.replaceUseOfWith(((Instruction.Branch) inst).getElseBlock(), newTarget);
-//                //维护phi指令
-//                if (rm) {
-//                    for (Instruction instr : newTarget.getInstructions()) {
-//                        if (instr instanceof Instruction.Phi) {
-//                            Instruction.Phi phi = (Instruction.Phi) instr;
-//                            if (phi.getPreBlocks().contains(inst.getParentBlock())) break;
-//                            phi.changePreBlock(elseFirst.getParentBlock(), inst.getParentBlock());
-//                        }
-//                        else break;
-//                    }
-//                }
-//                else {
-//                    for (Instruction instr : newTarget.getInstructions()) {
-//                        if (instr instanceof Instruction.Phi) {
-//                            Instruction.Phi phi = (Instruction.Phi) instr;
-//                            if (phi.getPreBlocks().contains(inst.getParentBlock())) break;
-//                            phi.addOptionalValue(inst.getParentBlock(), phi.getOptionalValue(elseFirst.getParentBlock()));
-//                        }
-//                        else break;
-//                    }
-//                }
-//                ret = true;
-//            }
-//            return ret;
-//        }
-//    }
-//
-//    private static boolean IsEdgeSimplfy(Instruction jump, Instruction terminate) {
-//        if (!(jump instanceof Instruction.Jump)) return false;
-//        BasicBlock target = ((Instruction.Jump) jump).getTargetBlock();
-//        //如果terminate已有边连接jump，可能存在phi函数冲突
-//        Instruction targetFirst = target.getFirstInst();
-//        if (targetFirst instanceof Instruction.Phi && ((Instruction.Phi) targetFirst).getPreBlocks().contains(terminate.getParentBlock())) {
-//            for (Instruction instr : target.getInstructions()) {
-//                if (instr instanceof Instruction.Phi) {
-//                    Instruction.Phi phi = (Instruction.Phi) instr;
-//                    if (phi.getPreBlocks().contains(terminate.getParentBlock())) {
-//                        if (phi.getOptionalValue(terminate.getParentBlock()) != phi.getOptionalValue(jump.getParentBlock())) {
-//                            return false;
-//                        }
-//                    }
-//                }
-//                else break;
-//            }
-//        }
-//        return true;
-//    }
-//
-//    /**
-//     * 尝试对block的后继块合并
-//     *
-//     * @param block
-//     */
-//    private static boolean mergeBlock(BasicBlock block) {
-//        boolean ret = false;
-//        BasicBlock curBlock = block;
-//        Instruction inst = curBlock.getLastInst();
-//        if (inst instanceof Instruction.Jump) {
-//            BasicBlock that = ((Instruction.Jump) inst).getTargetBlock();
-//            if (that.getPreBlocks().size() == 1 && !(that.getInstructions().getFirst() instanceof Instruction.Phi)) {
-////                System.out.println("Merge Block: " + curBlock.getLabel() + " " + that.getLabel());
-//                inst.remove();
-//                for (Instruction instruction : that.getInstructions()) {
-////                    if (instruction instanceof Instruction.Phi)
-////                        throw new RuntimeException("Phi should not in the block to be merged");
-//                    instruction.setParentBlock(curBlock);
-//                }
-//                curBlock.getInstructions().concat(that.getInstructions());
-//                that.isDeleted = true;
-////                    that.remove();
-//                that.getInstructions().setEmpty();
-//                //重写phi指令
-//                for (BasicBlock suc : that.getSucBlocks()) {
-//                    for (Instruction instr : suc.getInstructions()) {
-//                        if (instr instanceof Instruction.Phi) {
-//                            Instruction.Phi phi = (Instruction.Phi) instr;
-//                            phi.changePreBlock(that, curBlock);
-//                        }
-//                        else break;
-//                    }
-//                }
-//                ret = true;
-//            }
-//        }
-//        return ret;
-//    }
-//
-//
-//    private static boolean replaceJump(Instruction.Jump jump) {
-//        BasicBlock that = jump.getTargetBlock();
-//        if (that.getFirstInst() instanceof Instruction.Branch) {
-//            Instruction.Branch br = (Instruction.Branch) that.getFirstInst();
-//            br.cloneToBB(jump.getParentBlock());
-//            jump.remove();
-//            //维护phi指令
-//            for (Instruction instr : br.getThenBlock().getInstructions()) {
-//                if (instr instanceof Instruction.Phi) {
-//                    Instruction.Phi phi = (Instruction.Phi) instr;
-//                    if (phi.getPreBlocks().contains(jump.getParentBlock())) break;
-//                    phi.changePreBlock(that, jump.getParentBlock());
-//                }
-//                else break;
-//            }
-//            for (Instruction instr : br.getElseBlock().getInstructions()) {
-//                if (instr instanceof Instruction.Phi) {
-//                    Instruction.Phi phi = (Instruction.Phi) instr;
-//                    if (phi.getPreBlocks().contains(jump.getParentBlock())) break;
-//                    phi.changePreBlock(that, jump.getParentBlock());
-//                }
-//                else break;
-//            }
-//            return true;
-//        }
-//        return false;
-//    }
 
 
 }

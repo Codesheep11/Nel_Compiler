@@ -13,7 +13,6 @@ import midend.Transform.*;
 import midend.Transform.DCE.SimplfyCFG;
 import midend.Transform.DCE.DeadArgEliminate;
 import midend.Transform.DCE.DeadCodeDelete;
-import midend.Transform.DCE.RemoveDeadBlock;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.LCSSA;
@@ -62,7 +61,6 @@ public class Manager {
                 FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
-                SimplfyCFG.run(module);
                 DeadCodeDelete.run(module);
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
@@ -71,7 +69,6 @@ public class Manager {
                 LCSSA.remove(module);
                 SimplfyCFG.run(module);
                 DeadCodeDelete.run(module);
-                RemoveDeadBlock.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);

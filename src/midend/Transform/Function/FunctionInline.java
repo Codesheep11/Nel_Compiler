@@ -39,10 +39,9 @@ public class FunctionInline {
             inlineFunc(function);
             module.removeFunction(function);
         }
+        for (Function function : funcCanInline) function.delete();
         for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) {
-                continue;
-            }
+            if (function.isExternal()) continue;
             function.buildControlFlowGraph();
         }
     }
@@ -174,7 +173,8 @@ public class FunctionInline {
                 if (instr instanceof Instruction.Phi) {
                     Instruction.Phi phi = (Instruction.Phi) instr;
                     phi.changePreBlock(beforeCallBB, afterCallBB);
-                } else break;
+                }
+                else break;
             }
         }
         LinkedList<Instruction> instrs = new LinkedList<>();
@@ -189,14 +189,13 @@ public class FunctionInline {
             newInst.fix(cloneInfo);
             if (instr1 instanceof Instruction.Call && callers.contains(instr1)) {
                 callers.set(callers.indexOf(instr1), (Instruction.Call) newInst);
-            } else if (instr1 instanceof Instruction.Call) {
+            }
+            else if (instr1 instanceof Instruction.Call) {
                 Function callee = ((Instruction.Call) instr1).getDestFunction();
                 callee.use_remove(new Use(instr1, callee));
             }
             ArrayList<Use> toFix = new ArrayList<>(instr1.getUses());
-            for (Use use : toFix) {
-                ((Instruction) use.getUser()).fix(cloneInfo);
-            }
+            for (Use use : toFix) ((Instruction) use.getUser()).fix(cloneInfo);
         }
         instrs.forEach(Value::delete);
 
