@@ -7,6 +7,7 @@ import mir.Module;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * 全局代码移动
@@ -108,8 +109,14 @@ public class GlobalCodeMotion {
 //                System.out.println(instrUser);
                 scheduleLateAndBest(instrUser);
                 BasicBlock userBlock = instrUser.latest;
-                if (instrUser instanceof Instruction.Phi)
-                    userBlock = instrUser.latest.getIdom();
+                if (instrUser instanceof Instruction.Phi phi) {
+                    userBlock = null;
+                    for(Map.Entry<BasicBlock, Value> entry : phi.getOptionalValues().entrySet()) {
+                        if (entry.getValue() == instr) {
+                            userBlock = getDomLCA(userBlock, entry.getKey());
+                        }
+                    }
+                }
                 if (userBlock == null || instr.earliest.getDomDepth() > userBlock.getDomDepth())
                     continue;
                 instr.latest = getDomLCA(instr.latest, userBlock);
@@ -159,9 +166,12 @@ public class GlobalCodeMotion {
         for (Instruction inst : block.getInstructions()) {
 
             if (inst instanceof Instruction.Phi) {
-                // just for test
-                if (users.contains(inst))
-                    System.out.println("Error: GCM 尝试调度在PHI指令之前!");
+                // region test
+                if (users.contains(inst)) {
+                        // just for test
+//                    System.out.println("Error: GCM 尝试调度在PHI指令之前!");
+                }
+                // endregion
                 continue;
             }
             if (users.contains(inst)) {

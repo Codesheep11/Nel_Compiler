@@ -20,6 +20,7 @@ import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.LCSSA;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Loop.LoopSimplifyForm;
+import midend.Transform.Loop.LoopUnSwitching;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
@@ -66,8 +67,8 @@ public class Manager {
                 DeadCodeDelete.run(module);
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
-                LoopSimplifyForm.test(module);
-//                LoopUnSwitching.run(module);
+                LoopUnSwitching.run(module);
+                LoopInfo.build(module);
                 LCSSA.remove(module);
                 AggressiveDCD.run(module);
                 DeadCodeDelete.run(module);
@@ -81,11 +82,11 @@ public class Manager {
                 outputLLVM("test.txt", module);
                 CodeGen codeGen = new CodeGen();
                 RiscvModule riscvmodule = codeGen.genCode(module);
-                Scheduler.preRASchedule(riscvmodule);
+//                Scheduler.preRASchedule(riscvmodule);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;
-                Scheduler.postRASchedule(riscvmodule);
+//                Scheduler.postRASchedule(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {
