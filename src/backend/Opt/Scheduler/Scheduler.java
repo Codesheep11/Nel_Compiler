@@ -11,12 +11,41 @@ import java.util.function.BiConsumer;
 
 public class Scheduler {
 
-
+    public static void chainNear(RiscvBlock block,
+                                 HashMap<RiscvInstruction, Integer> degrees,
+                                 HashMap<RiscvInstruction, HashSet<RiscvInstruction>> antiDeps) {
+        ArrayList<RiscvInstruction> newlist = new ArrayList<>();
+        LinkedList<RiscvInstruction> canExe = new LinkedList<>();// 方便取最外层
+        for (RiscvInstruction instr : block.riscvInstructions) {
+            if (degrees.getOrDefault(instr, 0) == 0) {
+                canExe.add(instr);
+                // 筛选出可以执行的指令
+            }
+        }
+        while (canExe.size() != 0) {
+            RiscvInstruction instr = canExe.removeFirst();
+            System.out.println(instr);
+            newlist.add(instr);
+            for (RiscvInstruction depinstr : antiDeps.getOrDefault(instr, new HashSet<>())) {
+                int newdegree = degrees.get(depinstr) - 1;
+                degrees.put(depinstr, newdegree);
+                if (newdegree == 0) {
+                    canExe.addFirst(depinstr);
+                }
+            }
+        }
+        if (newlist.size() != block.riscvInstructions.getSize()) {
+            throw new RuntimeException("fail!");
+        }
+        block.riscvInstructions.setEmpty();
+        for (RiscvInstruction ri : newlist) {
+            block.riscvInstructions.addLast(ri);
+        }
+    }
 
     public static void preRAScheduleBlock(RiscvBlock block) {
         // 先定义好这个deps是什么东西:antiDeps[u]是谁依赖u
         HashMap<RiscvInstruction, HashSet<RiscvInstruction>> antiDeps = new HashMap<>();
-        HashMap<RiscvInstruction, HashMap<Integer, Reg>> renameMap = new HashMap<>();
         // degree[u]是u依赖了几个
         HashMap<RiscvInstruction, Integer> degrees = new HashMap<>();
         //最后一次使用reg的指令
@@ -39,9 +68,7 @@ public class Scheduler {
 
         for (RiscvInstruction inst : block.riscvInstructions) {
             for (int idx = 0; idx < inst.getOperandNum(); idx++) {
-                // TODO: regRenaming
                 Reg reg = inst.getRegByIdx(idx);
-                renameMap.computeIfAbsent(inst, k -> new HashMap<>()).put(idx, reg);
                 if (inst.isUse(idx)) {
                     if (lastDef.containsKey(reg)) {
                         addDep.accept(inst, lastDef.get(reg));
@@ -80,26 +107,15 @@ public class Scheduler {
                 }
             }
         }
-        HashMap<RiscvInstruction, Integer> rank = new HashMap<>();
-        int idx = 0;
-        for (RiscvInstruction inst : block.riscvInstructions) {
-            rank.put(inst, --idx);
-        }
-        topDownScheduling(block, degrees, antiDeps, renameMap, rank, 2);
+        chainNear(block, degrees, antiDeps);
     }
+
     public static void preRASchedule(RiscvModule riscvModule) {
         for (RiscvFunction function : riscvModule.funcList) {
             if (function.isExternal) continue;
-            RiscvInstruction pass = function.blocks.get(0).riscvInstructions.getFirst();
             for (RiscvBlock block : function.blocks) {
-//                for (RiscvInstruction riscvInstruction : block.riscvInstructions) {
-//                    if (riscvInstruction instanceof Explain) {
-//                        riscvInstruction.remove();
-//                    }
-//                }
                 preRAScheduleBlock(block);
             }
-            function.blocks.get(0).riscvInstructions.addFirst(pass);
         }
     }
 
@@ -107,7 +123,7 @@ public class Scheduler {
                                          HashMap<RiscvInstruction, Integer> degrees,//某个指令依赖其他指令的度数
                                          HashMap<RiscvInstruction, HashSet<RiscvInstruction>> antiDeps,
                                          HashMap<RiscvInstruction, HashMap<Integer, Reg>> renameMap,
-                                         HashMap<RiscvInstruction, Integer> rank, int waitPenalty) {
+                                         HashMap<RiscvInstruction, Integer> rank) {
         ScheduleState state = new ScheduleState(renameMap);
         List<RiscvInstruction> newList = new ArrayList<>();
         LinkedList<RiscvInstruction> schedulePlane = new LinkedList<>();
@@ -117,23 +133,20 @@ public class Scheduler {
             }
         }
         int maxBusyCycles = 200;
-        int busyCycle = 0, cycle = 0;
-        HashMap<RiscvInstruction, Integer> readyTime = new HashMap<>();
+        int busyCycle = 0;
         while (newList.size() != block.riscvInstructions.getSize()) {
             List<RiscvInstruction> newReadyInsts = new ArrayList<>();
             for (int idx = 0; idx < ScheduleModel.issueWidth; ++idx) {
                 int cnt = 0;
                 boolean success = false;
-                int finalCycle = cycle;
                 schedulePlane.sort((lhs, rhs) -> {
-                    int lhsRank = rank.getOrDefault(lhs, 0) + (finalCycle - readyTime.getOrDefault(lhs, 0)) * waitPenalty;
-                    int rhsRank = rank.getOrDefault(rhs, 0) + (finalCycle - readyTime.getOrDefault(rhs, 0)) * waitPenalty;
+                    int lhsRank = rank.getOrDefault(lhs, 0);
+                    int rhsRank = rank.getOrDefault(rhs, 0);
                     return Integer.compare(rhsRank, lhsRank);
                 });
                 while (cnt < schedulePlane.size()) {
                     RiscvInstruction inst = schedulePlane.poll();
                     ScheduleClass scheduleClass = ScheduleClass.getInstScheduleClass(inst);
-                    assert scheduleClass != null;
                     if (scheduleClass.schedule(state, inst)) {
                         newList.add(inst);
                         busyCycle = 0;
@@ -155,15 +168,12 @@ public class Scheduler {
                     break;
                 }
             }
-            cycle = state.nextCycle();
+            state.nextCycle();
             busyCycle++;
             if (busyCycle > maxBusyCycles) {
                 throw new RuntimeException("Failed to schedule instructions");
             }
-            for (RiscvInstruction inst : newReadyInsts) {
-                readyTime.put(inst, cycle);
-                schedulePlane.add(inst);
-            }
+            schedulePlane.addAll(newReadyInsts);
         }
         block.riscvInstructions.setEmpty();
         for (RiscvInstruction instr : newList) {
@@ -266,20 +276,12 @@ public class Scheduler {
                 }
             }
         }
-        topDownScheduling(block, degrees, antiDeps, renameMap, rank, 0);
+        topDownScheduling(block, degrees, antiDeps, renameMap, rank);
     }
 
     public static void postRASchedule(RiscvModule module) {
         for (RiscvFunction function : module.funcList) {
             if (function.isExternal) continue;
-//            for (RiscvBlock block : function.blocks) {
-//                for (RiscvInstruction instr : block.riscvInstructions) {
-//                    if (instr instanceof Explain) {
-//                        instr.remove();
-//                    }
-//                }
-//            }
-            //这个就直接把那个注释删了就行,不用考虑存储
             for (RiscvBlock block : function.blocks) {
                 postRAScheduleBlock(block);
             }
