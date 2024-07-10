@@ -7,6 +7,7 @@ import mir.Value;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 public class ControlFlowGraph {

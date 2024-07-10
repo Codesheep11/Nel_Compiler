@@ -137,36 +137,39 @@ public class DeadCodeDelete {
     }
 
     private static void DeleteUselessVar(Module module) {
-        Iterator<Function> functionIterator = module.getFuncSet().iterator();
-        while (functionIterator.hasNext()) {
-            Function function = functionIterator.next();
-            if (function.isExternal()) {
-                continue;
-            }
-            uselessBBDelete(function);
-            if (function.getBlocks().isEmpty()) {
-                functionIterator.remove();
-            }
+        ArrayList<Function> delList = new ArrayList<>();
+        for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) continue;
+            if (!usefulVar.contains(function)) delList.add(function);
+            else uselessBBDelete(function);
         }
-        Iterator<GlobalVariable> iterator = module.getGlobalValues().iterator();
-        while (iterator.hasNext()) {
-            GlobalVariable globalVar = iterator.next();
-            if (!usefulVar.contains(globalVar)) {
-                iterator.remove();
-            }
+        for (Function func : delList) {
+            func.delete();
+            module.removeFunction(func);
+        }
+        ArrayList<GlobalVariable> delGlobals = new ArrayList<>();
+        for (GlobalVariable gv : module.getGlobalValues()) {
+            if (!usefulVar.contains(gv)) delGlobals.add(gv);
+        }
+        for (GlobalVariable gv : delGlobals) {
+            module.getGlobalValues().remove(gv);
+            gv.delete();
         }
     }
 
     private static void uselessBBDelete(Function function) {
+        ArrayList<BasicBlock> delList = new ArrayList<>();
         Iterator<BasicBlock> iterator = function.getBlocks().iterator();
         while (iterator.hasNext()) {
             BasicBlock block = iterator.next();
-            uselessInstDelete(block);
-            if (block.getInstructions().isEmpty()) {
-//                System.out.println("uselessBBDelete: " + block.getName());
-                iterator.remove();
+            if (!usefulVar.contains(block)) {
+//                System.out.println("uselessInstDelete: " + inst.getDescriptor());
+//                iterator.remove();
+                delList.add(block);
             }
+            else uselessInstDelete(block);
         }
+        delList.forEach(BasicBlock::delete);
     }
 
     private static void uselessInstDelete(BasicBlock block) {
@@ -176,7 +179,6 @@ public class DeadCodeDelete {
             Instruction inst = iterator.next();
             if (!usefulVar.contains(inst)) {
 //                System.out.println("uselessInstDelete: " + inst.getDescriptor());
-//                iterator.remove();
                 delList.add(inst);
             }
         }
