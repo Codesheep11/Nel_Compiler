@@ -1,6 +1,7 @@
 package manager;
 
 import backend.Opt.Scheduler.Scheduler;
+import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -87,6 +88,7 @@ public class Manager {
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;
+                SimplifyCFG.run(riscvmodule);
                 //Scheduler.postRASchedule(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
