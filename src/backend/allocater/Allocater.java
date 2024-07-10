@@ -32,6 +32,7 @@ public class Allocater {
         module = riscvModule;
         for (RiscvFunction func : module.TopoSort) {
             if (func.isExternal) continue;
+//            System.out.println(func.name);
             UsedRegs.put(func.name, new HashSet<>());
             GPRallocater.runOnFunc(func);
             FPRallocater.runOnFunc(func);

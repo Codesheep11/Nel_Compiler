@@ -9,6 +9,7 @@ import backend.riscv.RiscvInstruction.*;
 import java.util.*;
 
 import static backend.allocater.LivenessAnalyze.Out;
+import static backend.operand.Reg.PhyReg.a7;
 
 public class GPRallocater {
 
@@ -38,7 +39,7 @@ public class GPRallocater {
                     Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4, Reg.PhyReg.s5, Reg.PhyReg.s6,
                     Reg.PhyReg.s7, Reg.PhyReg.s8, Reg.PhyReg.s9, Reg.PhyReg.s10, Reg.PhyReg.s11,
                     Reg.PhyReg.a0, Reg.PhyReg.a1, Reg.PhyReg.a2, Reg.PhyReg.a3, Reg.PhyReg.a4,
-                    Reg.PhyReg.a5, Reg.PhyReg.a6, Reg.PhyReg.a7
+                    Reg.PhyReg.a5, Reg.PhyReg.a6, a7
             )
     );
 
@@ -57,11 +58,11 @@ public class GPRallocater {
         spillNodes.clear();
         moveList.clear();
         moveNodes.clear();
-        pass = 0;
     }
 
     public static void runOnFunc(RiscvFunction func) {
         curFunc = func;
+        pass = 0;
         while (true) {
             clear();
             //标记第几轮循环
@@ -293,13 +294,16 @@ public class GPRallocater {
     }
 
     private static void FreezeMoveNode(Reg node) {
+//        System.out.println("freeze: " + node);
         HashSet<R2> freezeMoves = new HashSet<>();
         HashSet<Reg> TryFreezeReg = new HashSet<>();
-        for (RiscvInstruction ri : node.use) {
-            if (ri instanceof R2 && ((R2) ri).type == R2.R2Type.mv) {
-                freezeMoves.add((R2) ri);
-                TryFreezeReg.add((Reg) ((R2) ri).rd);
-                TryFreezeReg.add((Reg) ((R2) ri).rs);
+        for (R2 mv : moveList) {
+            Reg rd = (Reg) mv.rd;
+            Reg rs = (Reg) mv.rs;
+            if (rs.equals(node) || rd.equals(node)) {
+                freezeMoves.add(mv);
+                TryFreezeReg.add(rd);
+                TryFreezeReg.add(rs);
             }
         }
         moveList.removeAll(freezeMoves);
@@ -351,7 +355,6 @@ public class GPRallocater {
                     Reg r1 = (Reg) move.rs;
                     Reg r2 = (Reg) move.rd;
                     if (CanBeMerged(r1, r2)) {
-//                        System.out.println("merge: " + r1 + " " + r2);
                         Reg newReg;
                         if (!r1.equals(r2)) {
                             Reg oldReg;
@@ -401,8 +404,10 @@ public class GPRallocater {
 
     private static void TryThrowMoveNode(Reg node) {
         moveNodes.remove(node);
-        for (RiscvInstruction ri : node.use) {
-            if (moveList.contains(ri)) {
+        for (R2 mv : moveList) {
+            Reg rd = (Reg) mv.rd;
+            Reg rs = (Reg) mv.rs;
+            if (rd.equals(node) || rs.equals(node)) {
                 moveNodes.add(node);
                 return;
             }
@@ -496,7 +501,7 @@ public class GPRallocater {
         //检查conflictGraph是否有自环
         for (Reg reg : conflictGraph.keySet()) {
             if (conflictGraph.get(reg).contains(reg)) {
-                System.out.println("self conflict: " + reg);
+//                System.out.println("self conflict: " + reg);
                 conflictGraph.get(reg).remove(reg);
             }
         }

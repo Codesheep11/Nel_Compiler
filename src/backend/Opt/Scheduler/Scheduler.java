@@ -24,7 +24,7 @@ public class Scheduler {
         }
         while (canExe.size() != 0) {
             RiscvInstruction instr = canExe.removeFirst();
-            System.out.println(instr);
+//            System.out.println(instr);
             newlist.add(instr);
             for (RiscvInstruction depinstr : antiDeps.getOrDefault(instr, new HashSet<>())) {
                 int newdegree = degrees.get(depinstr) - 1;
