@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 public class SimplifyCFG {
 
 
-    // 此方法删除所有一个仅有一个跳转指令的块
+    // 此方法屏蔽所有一个仅有一个跳转指令的块
     public static boolean redirectGoto(RiscvFunction func) {
         HashMap<RiscvBlock, RiscvBlock> redirect = new HashMap<>();
         for (RiscvBlock block : func.blocks) {
@@ -42,7 +42,7 @@ public class SimplifyCFG {
         return modified;
     }
 
-
+    // 理论上经过前面的优化，不会出现不会访问到的块，因此不用写这个
     public static boolean removeUnusedLabels(RiscvFunction func) {
         Set<RiscvBlock> usedLabels = new HashSet<>();
         usedLabels.add(func.blocks.get(0));
@@ -56,21 +56,12 @@ public class SimplifyCFG {
         if (usedLabels.size() == func.blocks.size()) {
             return false;
         }
-        RiscvBlock lastAvailable = null;
-        for (RiscvBlock block : func.blocks) {
-            if (usedLabels.contains(block)) {
-                lastAvailable = block;
-            } else {
-                for (RiscvInstruction inst : block.riscvInstructions) {
-                    if (inst instanceof J && ((J) inst).type == J.JType.j) {
-                        usedLabels.add(((J) inst).targetBlock);
-                    }
-                }
-                assert lastAvailable != null;
-                for (RiscvInstruction ri : block.riscvInstructions) {
-                    lastAvailable.riscvInstructions.addLast(ri);
-                }
-            }
+        LinkedList<RiscvBlock>q = new LinkedList<>();
+        q.add(func.blocks.get(0));
+        while (q.size()!=0)
+        {
+            RiscvBlock block=q.poll();
+
         }
         func.blocks.removeIf(block -> !usedLabels.contains(block));
         return true;
@@ -80,7 +71,6 @@ public class SimplifyCFG {
     public static boolean removeEmptyBlocks(RiscvFunction func) {
         HashMap<RiscvBlock, RiscvBlock> redirects = new HashMap<>();
         List<RiscvBlock> currentEmptySet = new ArrayList<>();
-
         // Lambda function equivalent in Java
         Consumer<RiscvBlock> commit = (target) -> {
             for (RiscvBlock block : currentEmptySet) {
@@ -169,12 +159,11 @@ public class SimplifyCFG {
             boolean modified = false;
             modified |= redirectGoto(func);
             modified |= removeEmptyBlocks(func);
-            modified |= removeUnusedLabels(func);
-            //modified |= reorderBranch(func);
-            //modified |= Peephole.genericPeepholeOpt(func);
-            //modified |= conditional2Unconditional(func);
-            //modified |= redirectGoto(func);
-            //modified |= Peephole.genericPeepholeOpt(func);
+            modified |= reorderBranch(func);
+            modified |= Peephole.genericPeepholeOpt(func);
+            modified |= conditional2Unconditional(func);
+            modified |= redirectGoto(func);
+            modified |= Peephole.genericPeepholeOpt(func);
             if (!modified) {
                 return;
             }

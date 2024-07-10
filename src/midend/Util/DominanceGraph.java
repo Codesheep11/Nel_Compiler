@@ -1,6 +1,6 @@
 package midend.Util;
 
-import midend.Transform.DCE.RemoveDeadBlock;
+import midend.Transform.DCE.RemoveBlocks;
 import mir.BasicBlock;
 import mir.Function;
 
@@ -26,7 +26,7 @@ public class DominanceGraph {
     public void build() {
         clear();
         this.entry = parentFunction.getEntry();
-        RemoveDeadBlock.runOnFunc(parentFunction);
+        RemoveBlocks.runOnFunc(parentFunction);
         buildDominatorSet();
         buildImmDominateTree();
         buildDomDepth();

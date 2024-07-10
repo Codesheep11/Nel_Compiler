@@ -30,9 +30,16 @@ public class Allocater {
 
     public static void run(RiscvModule riscvModule) {
         module = riscvModule;
+        HashSet<Reg.PhyReg> allRegs = new HashSet<Reg.PhyReg>() {{
+            for (int i = 32; i < 64; i++) add(getPhyRegByOrder(i));
+        }};
         for (RiscvFunction func : module.TopoSort) {
-            if (func.isExternal) continue;
-//            System.out.println(func.name);
+            if (func.isExternal) {
+                HashSet<Reg.PhyReg> used = new HashSet<>();
+                used.addAll(allRegs);
+                UsedRegs.put(func.name, used);
+                continue;
+            }
             UsedRegs.put(func.name, new HashSet<>());
             GPRallocater.runOnFunc(func);
             FPRallocater.runOnFunc(func);
@@ -64,7 +71,7 @@ public class Allocater {
                     }
                 }
                 if (reg.phyReg == zero || reg.phyReg == sp) continue;
-                if (UsedRegs.get(call.funcName) != null && !UsedRegs.get(call.funcName).contains(reg.phyReg)) continue;
+                if (!UsedRegs.get(call.funcName).contains(reg.phyReg)) continue;
                 RiscvInstruction store, load;
                 Address offset = StackManager.getInstance().getRegOffset(func.name, reg.toString(), reg.bits / 8);
                 store = new LS(call.block, reg, Reg.getPreColoredReg(sp, 64), offset,
