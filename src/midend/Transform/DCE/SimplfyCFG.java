@@ -7,45 +7,31 @@ import java.util.HashSet;
 import java.util.LinkedList;
 
 /**
- * 激进的死代码删除，负责删除冗余的分支，维护循环信息，精简控制结构
+ * 删除没有前驱的基本块。
+ * 如果一个基本块只有一个前驱，并且该前驱只有一个后继，则将该基本块合并到其前驱中。
+ * 对于只有一个前驱的基本块，删除其PHI节点。
+ * 删除仅包含无条件分支的基本块。
  */
-public class AggressiveDCD {
+public class SimplfyCFG {
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             RunOnFunc(function);
-            function.buildControlFlowGraph();
         }
     }
 
 
     private static void RunOnFunc(Function function) {
 //        System.out.println("br2Jump");
-        HashSet<BasicBlock> visited = new HashSet<>();
-        BasicBlock entry = function.getEntry();
-        LinkedList<BasicBlock> queue = new LinkedList<>();
-        queue.add(entry);
-        while (!queue.isEmpty()) {
-            BasicBlock cur = queue.poll();
-            if (visited.contains(cur)) continue;
-            visited.add(cur);
-            Instruction term = cur.getLastInst();
-            if (term instanceof Instruction.Return) continue;
-            else if (term instanceof Instruction.Branch) {
-                br2Jump((Instruction.Branch) term);
-                if (cur.getLastInst() instanceof Instruction.Jump)
-                    queue.add(((Instruction.Jump) cur.getLastInst()).getTargetBlock());
-                else {
-                    queue.add(((Instruction.Branch) cur.getLastInst()).getThenBlock());
-                    queue.add(((Instruction.Branch) cur.getLastInst()).getElseBlock());
-                }
-            }
-            else if (term instanceof Instruction.Jump) {
-                queue.add(((Instruction.Jump) term).getTargetBlock());
-            }
+        for (BasicBlock block : function.getBlocks()) {
+            Instruction.Terminator term = (Instruction.Terminator) block.getLastInst();
+            if (term instanceof Instruction.Branch) br2Jump((Instruction.Branch) term);
         }
-        function.buildControlFlowGraph();
-        visited.clear();
+        HashSet<BasicBlock> onlyJumpBlocks = new HashSet<>();
+        for (BasicBlock block : function.getBlocks()) {
+            Instruction firstInst = block.getFirstInst();
+            if (firstInst instanceof Instruction.Jump) onlyJumpBlocks.add(block);
+        }
 
 
 ////        System.out.println("TryChangeTarget");

@@ -1,6 +1,5 @@
 package manager;
 
-import backend.Opt.Scheduler.Scheduler;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -11,7 +10,7 @@ import frontend.syntaxChecker.Parser;
 import midend.Analysis.FuncAnalysis;
 import midend.Analysis.GlobalVarAnalysis;
 import midend.Transform.*;
-import midend.Transform.DCE.AggressiveDCD;
+import midend.Transform.DCE.SimplfyCFG;
 import midend.Transform.DCE.DeadArgEliminate;
 import midend.Transform.DCE.DeadCodeDelete;
 import midend.Transform.DCE.RemoveDeadBlock;
@@ -19,7 +18,6 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.LCSSA;
 import midend.Transform.Loop.LoopInfo;
-import midend.Transform.Loop.LoopSimplifyForm;
 import midend.Transform.Loop.LoopUnSwitching;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
@@ -64,14 +62,14 @@ public class Manager {
                 FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
-                AggressiveDCD.run(module);
+                SimplfyCFG.run(module);
                 DeadCodeDelete.run(module);
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
                 LoopUnSwitching.run(module);
                 LoopInfo.build(module);
                 LCSSA.remove(module);
-                AggressiveDCD.run(module);
+                SimplfyCFG.run(module);
                 DeadCodeDelete.run(module);
                 RemoveDeadBlock.run(module);
             }
