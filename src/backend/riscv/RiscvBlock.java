@@ -1,7 +1,5 @@
 package backend.riscv;
 
-import backend.operand.Reg;
-import backend.riscv.RiscvInstruction.Explain;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import mir.BasicBlock;
 import utils.SyncLinkedList;
@@ -17,12 +15,6 @@ public class RiscvBlock {
 
     public HashSet<RiscvBlock> preBlock = new HashSet<>();
     public HashSet<RiscvBlock> succBlock = new HashSet<>();
-
-    //数据流分析中使用
-    public HashSet<Reg> use = new HashSet<>();
-    public HashSet<Reg> def = new HashSet<>();
-    public HashSet<Reg> in = new HashSet<>();
-    public HashSet<Reg> out = new HashSet<>();
 
     public RiscvBlock(BasicBlock irBlock) {
         this.name = irBlock.getLabel();
@@ -40,21 +32,11 @@ public class RiscvBlock {
         return riscvInstructions.getLast();
     }
 
-    public void clean() {
-        use.clear();
-        def.clear();
-        in.clear();
-        out.clear();
-        for (RiscvInstruction ins : riscvInstructions) {
-            ins.clean();
-        }
-    }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(name + ":\n");
         for (RiscvInstruction ri : riscvInstructions) {
-            if(ri instanceof Explain)continue;
             sb.append(ri + "\n");
         }
         return sb.toString();
