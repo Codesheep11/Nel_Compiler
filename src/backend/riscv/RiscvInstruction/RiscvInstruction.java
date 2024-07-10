@@ -21,16 +21,6 @@ public class RiscvInstruction extends SyncLinkedList.SyncLinkNode {
     public HashSet<Reg> use = new HashSet<>();
     public HashSet<Reg> def = new HashSet<>();
 
-    //出入寄存器：活跃变量分析时维护
-    public HashSet<Reg> in = new HashSet<>();
-
-    public HashSet<Reg> out = new HashSet<>();
-
-    public void clean() {
-        in = new HashSet<>();
-        out = new HashSet<>();
-    }
-
     public RiscvInstruction(RiscvBlock block) {
         this.block = block;
     }

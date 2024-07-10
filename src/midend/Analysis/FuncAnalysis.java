@@ -16,8 +16,41 @@ public class FuncAnalysis {
 
 
     public static void run(Module module) {
+        Function main = module.getFunctions().get("main");
+        for (Function callee : module.getFuncSet()) {
+            for (Use use : callee.getUses()) {
+                Instruction.Call call = (Instruction.Call) use.getUser();
+                Function caller = call.getParentBlock().getParentFunction();
+//                System.out.println(caller.getName() + " -> " + callee.getName());
+                FuncInfo.addCall(caller, callee);
+            }
+        }
+        HashSet visited = new HashSet();
+        LinkedList<Function> queue = new LinkedList<>();
+        queue.add(main);
+        visited.add(main);
+        while (!queue.isEmpty()) {
+            Function func = queue.poll();
+            if (!FuncInfo.callGraph.containsKey(func)) FuncInfo.callGraph.put(func, new HashSet<>());
+            for (Function callee : FuncInfo.callGraph.get(func)) {
+                if (!visited.contains(callee)) {
+                    queue.add(callee);
+                    visited.add(callee);
+                }
+            }
+        }
+        ArrayList<Function> deleteList = new ArrayList<>();
         for (Function func : module.getFuncSet()) {
-            FuncInfo.callGraph.put(func, new HashSet<>());
+            if (!visited.contains(func)) {
+                deleteList.add(func);
+            }
+        }
+        for (Function func : deleteList) {
+            func.delete();
+            module.removeFunction(func);
+        }
+
+        for (Function func : module.getFuncSet()) {
             if (func.getName().equals("main")) FuncInfo.main = func;
             FuncInfo.hasMemoryRead.put(func, false);
             FuncInfo.hasMemoryWrite.put(func, false);
@@ -29,14 +62,7 @@ public class FuncAnalysis {
             FuncInfo.isStateless.put(func, true);
             FuncInfo.isRecurse.put(func, false);
         }
-        for (Function callee : module.getFuncSet()) {
-            for (Use use : callee.getUses()) {
-                Instruction.Call call = (Instruction.Call) use.getUser();
-                Function caller = call.getParentBlock().getParentFunction();
-//                System.out.println(caller.getName() + " -> " + callee.getName());
-                FuncInfo.addCall(caller, callee);
-            }
-        }
+
 
         ExternFuncInit();
         for (Function func : module.getFuncSet()) {

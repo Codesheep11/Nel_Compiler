@@ -8,16 +8,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
+import static mir.Type.VoidType.VOID_TYPE;
+
 public class RiscvFunction {
     public String name;
 
     public boolean isMain;
 
     public boolean isExternal;
+    /**
+     * 0 表示没有返回值<br/>
+     * 1 表示返回int<br/>
+     * -1 表示返回float
+     */
+    public final int retTypeCode;
+
 
     public ArrayList<RiscvBlock> blocks = new ArrayList<>();
 
-    public HashSet<Reg.PhyReg> usedRegs = new HashSet<>();
+    public HashSet<Reg> defs = new HashSet<>();
 
     public HashSet<J> calls = new HashSet<>();
 
@@ -27,8 +36,21 @@ public class RiscvFunction {
         this.name = irFunction.getName();
         if (irFunction.isExternal()) {
             isExternal = true;
-        } else {
+        }
+        else {
             isExternal = false;
+        }
+        if (irFunction.getRetType().equals(VOID_TYPE)) {
+            retTypeCode = 0;
+        }
+        else if (irFunction.getRetType().isInt32Ty()) {
+            retTypeCode = 1;
+        }
+        else if (irFunction.getRetType().isFloatTy()) {
+            retTypeCode = -1;
+        }
+        else {
+            throw new RuntimeException("wrong ret type");
         }
     }
 
@@ -44,8 +66,6 @@ public class RiscvFunction {
     public void addBB(RiscvBlock rb) {
         blocks.add(rb);
     }
-
-//    private ArrayList<RiscvBlock> topoSort = new ArrayList<>();
 
     public ArrayList<RiscvBlock> getTopoSort() {
         ArrayList<RiscvBlock> res = new ArrayList<>();
@@ -70,8 +90,8 @@ public class RiscvFunction {
     public static String funcNameWrap(String str) {
         return switch (str) {
             case "memset", "getint", "putint", "getch",
-                    "getfloat", "putch", "putfloat", "_sysy_starttime","getfarray",
-                    "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf","main" -> str;
+                 "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
+                 "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main" -> str;
             default -> "f_" + str;
         };
     }

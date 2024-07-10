@@ -61,6 +61,7 @@ public class Manager {
                 FuncAnalysis.run(module);
                 DeadArgEliminate.run();
                 TailCall2Loop.run(module);
+                FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
                 AggressiveDCD.run(module);
