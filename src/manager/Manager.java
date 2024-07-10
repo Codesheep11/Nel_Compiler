@@ -60,6 +60,7 @@ public class Manager {
                 FuncAnalysis.run(module);
                 DeadArgEliminate.run();
                 TailCall2Loop.run(module);
+                FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
                 GlobalValueNumbering.run(module);
                 AggressiveDCD.run(module);
@@ -81,11 +82,11 @@ public class Manager {
                 outputLLVM("test.txt", module);
                 CodeGen codeGen = new CodeGen();
                 RiscvModule riscvmodule = codeGen.genCode(module);
-                Scheduler.preRASchedule(riscvmodule);
+//                Scheduler.preRASchedule(riscvmodule);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;
-                Scheduler.postRASchedule(riscvmodule);
+//                Scheduler.postRASchedule(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {

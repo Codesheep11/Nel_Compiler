@@ -3,7 +3,6 @@ package backend.Opt.Scheduler;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
-import backend.riscv.RiscvInstruction.Explain;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
 
@@ -93,11 +92,11 @@ public class Scheduler {
             if (function.isExternal) continue;
             RiscvInstruction pass = function.blocks.get(0).riscvInstructions.getFirst();
             for (RiscvBlock block : function.blocks) {
-                for (RiscvInstruction riscvInstruction : block.riscvInstructions) {
-                    if (riscvInstruction instanceof Explain) {
-                        riscvInstruction.remove();
-                    }
-                }
+//                for (RiscvInstruction riscvInstruction : block.riscvInstructions) {
+//                    if (riscvInstruction instanceof Explain) {
+//                        riscvInstruction.remove();
+//                    }
+//                }
                 preRAScheduleBlock(block);
             }
             function.blocks.get(0).riscvInstructions.addFirst(pass);
@@ -273,13 +272,13 @@ public class Scheduler {
     public static void postRASchedule(RiscvModule module) {
         for (RiscvFunction function : module.funcList) {
             if (function.isExternal) continue;
-            for (RiscvBlock block : function.blocks) {
-                for (RiscvInstruction instr : block.riscvInstructions) {
-                    if (instr instanceof Explain) {
-                        instr.remove();
-                    }
-                }
-            }
+//            for (RiscvBlock block : function.blocks) {
+//                for (RiscvInstruction instr : block.riscvInstructions) {
+//                    if (instr instanceof Explain) {
+//                        instr.remove();
+//                    }
+//                }
+//            }
             //这个就直接把那个注释删了就行,不用考虑存储
             for (RiscvBlock block : function.blocks) {
                 postRAScheduleBlock(block);
