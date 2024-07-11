@@ -1,5 +1,6 @@
 package backend.operand;
 
+import backend.allocater.LivenessAnalyze;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import manager.Manager;
 
@@ -21,35 +22,50 @@ public class Reg extends Operand {
         public String toString() {
             if (this.ordinal() == 0) {
                 return "zero";
-            } else if (this.ordinal() == 1) {
+            }
+            else if (this.ordinal() == 1) {
                 return "ra";
-            } else if (this.ordinal() == 2) {
+            }
+            else if (this.ordinal() == 2) {
                 return "sp";
-            } else if (this.ordinal() == 3) {
+            }
+            else if (this.ordinal() == 3) {
                 return "gp";
-            } else if (this.ordinal() == 4) {
+            }
+            else if (this.ordinal() == 4) {
                 return "tp";
-            } else if (this.ordinal() >= 5 && this.ordinal() <= 7) {
+            }
+            else if (this.ordinal() >= 5 && this.ordinal() <= 7) {
                 return "t" + (this.ordinal() - 5);
-            } else if (this.ordinal() >= 8 && this.ordinal() <= 9) {
+            }
+            else if (this.ordinal() >= 8 && this.ordinal() <= 9) {
                 return "s" + (this.ordinal() - 8);
-            } else if (this.ordinal() >= 10 && this.ordinal() <= 17) {
+            }
+            else if (this.ordinal() >= 10 && this.ordinal() <= 17) {
                 return "a" + (this.ordinal() - 10);
-            } else if (this.ordinal() >= 18 && this.ordinal() <= 27) {
+            }
+            else if (this.ordinal() >= 18 && this.ordinal() <= 27) {
                 return "s" + (this.ordinal() - 16);
-            } else if (this.ordinal() >= 28 && this.ordinal() <= 31) {
+            }
+            else if (this.ordinal() >= 28 && this.ordinal() <= 31) {
                 return "t" + (this.ordinal() - 28 + 3);
-            } else if (this.ordinal() >= 32 && this.ordinal() <= 39) {
+            }
+            else if (this.ordinal() >= 32 && this.ordinal() <= 39) {
                 return "ft" + (this.ordinal() - 32);
-            } else if (this.ordinal() >= 40 && this.ordinal() <= 41) {
+            }
+            else if (this.ordinal() >= 40 && this.ordinal() <= 41) {
                 return "fs" + (this.ordinal() - 40);
-            } else if (this.ordinal() >= 42 && this.ordinal() <= 49) {
+            }
+            else if (this.ordinal() >= 42 && this.ordinal() <= 49) {
                 return "fa" + (this.ordinal() - 42);
-            } else if (this.ordinal() >= 50 && this.ordinal() <= 59) {
+            }
+            else if (this.ordinal() >= 50 && this.ordinal() <= 59) {
                 return "fs" + (this.ordinal() - 48);
-            } else if (this.ordinal() >= 60 && this.ordinal() <= 63) {
+            }
+            else if (this.ordinal() >= 60 && this.ordinal() <= 63) {
                 return "ft" + (this.ordinal() - 60 + 8);
-            } else {
+            }
+            else {
                 return "error";
             }
         }
@@ -88,7 +104,8 @@ public class Reg extends Operand {
         this.bits = bits;
         if (phyReg.ordinal() >= 0 && phyReg.ordinal() <= 31) {
             this.regType = RegType.GPR;
-        } else {
+        }
+        else {
             this.regType = RegType.FPR;
         }
     }
@@ -141,9 +158,11 @@ public class Reg extends Operand {
         if (phyReg != null) {
             //已经映射了对应的物理寄存器
             return phyReg.toString();
-        } else if (regType == RegType.GPR) {
+        }
+        else if (regType == RegType.GPR) {
             return "gvr" + regCnt;
-        } else {
+        }
+        else {
             return "fvr" + regCnt;
         }
     }
@@ -151,10 +170,10 @@ public class Reg extends Operand {
     public void mergeReg(Reg reg) {
         //对于所有使用reg的riscv指令，将其换成this
 //        System.out.println(this+" "+ reg);
-        HashSet<RiscvInstruction> tmp = new HashSet<>(reg.use);
+        HashSet<RiscvInstruction> tmp = new HashSet<>(LivenessAnalyze.RegUse.get(reg));
         for (RiscvInstruction ins : tmp) {
             ins.replaceUseReg(reg, this);
         }
-        reg.use.clear();
+        LivenessAnalyze.RegUse.remove(reg);
     }
 }

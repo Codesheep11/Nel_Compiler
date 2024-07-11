@@ -6,6 +6,8 @@ import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 
+import java.util.HashSet;
+
 public class LS extends RiscvInstruction {
     public LSType type;
 
@@ -50,18 +52,6 @@ public class LS extends RiscvInstruction {
         this.rs2 = rs2;
         this.imm = imm;
         this.type = type;
-        if (rs2 instanceof Reg)
-            use.add((Reg) rs2);
-        if (type == LSType.lw || type == LSType.ld || type == LSType.flw) {
-            if (rs1 instanceof Reg)
-                def.add((Reg) rs1);
-        } else {
-            if (rs1 instanceof Reg)
-                use.add((Reg) rs1);
-        }
-        rs1.use.add(this);
-        rs2.use.add(this);
-        imm.use.add(this);
     }
 
     public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand imm, LSType type, boolean isSpilled) {
@@ -70,19 +60,26 @@ public class LS extends RiscvInstruction {
         this.rs2 = rs2;
         this.imm = imm;
         this.type = type;
-        if (rs2 instanceof Reg)
-            use.add((Reg) rs2);
-        if (type == LSType.lw || type == LSType.ld || type == LSType.flw) {
-            if (rs1 instanceof Reg)
-                def.add((Reg) rs1);
-        } else {
-            if (rs1 instanceof Reg)
-                use.add((Reg) rs1);
-        }
-        rs1.use.add(this);
-        rs2.use.add(this);
-        imm.use.add(this);
         this.isSpilled = isSpilled;
+    }
+
+    @Override
+    public HashSet<Reg> getUse() {
+        HashSet<Reg> use = new HashSet<>();
+        if (rs2 instanceof Reg) use.add((Reg) rs2);
+        if (type == LSType.sw || type == LSType.sd || type == LSType.fsw) {
+            if (rs1 instanceof Reg) use.add((Reg) rs1);
+        }
+        return use;
+    }
+
+    @Override
+    public HashSet<Reg> getDef() {
+        HashSet<Reg> def = new HashSet<>();
+        if (type == LSType.lw || type == LSType.ld || type == LSType.flw) {
+            if (rs1 instanceof Reg) def.add((Reg) rs1);
+        }
+        return def;
     }
 
     @Override
@@ -94,7 +91,7 @@ public class LS extends RiscvInstruction {
         if (imm instanceof Address) {
             if (((Address) imm).getOffset() >= 2048 || ((Address) imm).getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-                Li li = new Li(nowBlock, tmp, -1*((Address) imm).getOffset());
+                Li li = new Li(nowBlock, tmp, -1 * ((Address) imm).getOffset());
                 nowBlock.riscvInstructions.insertBefore(li, this);
                 R3 add = new R3(nowBlock, tmp, tmp, rs2, R3.R3Type.add);
                 nowBlock.riscvInstructions.insertBefore(add, this);
@@ -108,33 +105,10 @@ public class LS extends RiscvInstruction {
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-        if (this.type == LSType.lw || this.type == LSType.ld || this.type == LSType.flw) {
-            if (use.contains(oldReg)) {
-                if (rs2 == oldReg) {
-                    rs2 = newReg;
-                }
-                use.remove(oldReg);
-                use.add(newReg);
-            }
-            if (def.contains(oldReg)) {
-                if (rs1 == oldReg) {
-                    rs1 = newReg;
-                }
-                def.remove(oldReg);
-                def.add(newReg);
-            }
-        } else {
-            if (use.contains(oldReg)) {
-                if (rs1 == oldReg) {
-                    rs1 = newReg;
-                }
-                if (rs2 == oldReg) {
-                    rs2 = newReg;
-                }
-                use.remove(oldReg);
-                use.add(newReg);
-            }
-        }
+        if (rs2 == oldReg) rs2 = newReg;
+        if (rs1 == oldReg) rs1 = newReg;
+
+        super.updateUseDef();
     }
 
 

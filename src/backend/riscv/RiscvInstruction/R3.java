@@ -4,6 +4,8 @@ import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 
+import java.util.HashSet;
+
 public class R3 extends RiscvInstruction {
     public R3Type type;
 
@@ -150,15 +152,6 @@ public class R3 extends RiscvInstruction {
         this.rs1 = rs1;
         this.rs2 = rs2;
         this.type = type;
-        if (rd instanceof Reg)
-            def.add((Reg) rd);
-        if (rs1 instanceof Reg)
-            use.add((Reg) rs1);
-        if (rs2 instanceof Reg)
-            use.add((Reg) rs2);
-        rd.use.add(this);
-        rs1.use.add(this);
-        rs2.use.add(this);
     }
 
     @Override
@@ -169,27 +162,29 @@ public class R3 extends RiscvInstruction {
         return "\t" + type + "\t\t" + rd + ", " + rs1 + ", " + rs2;
     }
 
+    @Override
+    public HashSet<Reg> getDef() {
+        HashSet<Reg> def = new HashSet<>();
+        if (rd instanceof Reg) def.add((Reg) rd);
+        return def;
+    }
+
+    @Override
+    public HashSet<Reg> getUse() {
+        HashSet<Reg> use = new HashSet<>();
+        if (rs1 instanceof Reg) use.add((Reg) rs1);
+        if (rs2 instanceof Reg) use.add((Reg) rs2);
+        return use;
+    }
 
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-        if (use.contains(oldReg)) {
-            if (rs1 == oldReg) {
-                rs1 = newReg;
-            }
-            if (rs2 == oldReg) {
-                rs2 = newReg;
-            }
-            use.remove(oldReg);
-            use.add(newReg);
-        }
-        if (def.contains(oldReg)) {
-            if (rd == oldReg) {
-                rd = newReg;
-            }
-            def.remove(oldReg);
-            def.add(newReg);
-        }
+        if (rs1 == oldReg) rs1 = newReg;
+        if (rs2 == oldReg) rs2 = newReg;
+        if (rd == oldReg) rd = newReg;
+
+        super.updateUseDef();
     }
 
     @Override
