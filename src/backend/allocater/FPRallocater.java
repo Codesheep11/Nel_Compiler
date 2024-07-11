@@ -64,7 +64,7 @@ public class FPRallocater {
             clear();
             //标记第几轮循环
 //            System.out.println(func.name + " FPR round: " + pass++);
-//            System.out.println(func);
+////            System.out.println(func);
             //建立冲突图
             buildConflictGraph();
             MoveInit();
@@ -291,13 +291,16 @@ public class FPRallocater {
     }
 
     private static void FreezeMoveNode(Reg node) {
+//        System.out.println("freeze: " + node);
         HashSet<R2> freezeMoves = new HashSet<>();
         HashSet<Reg> TryFreezeReg = new HashSet<>();
-        for (RiscvInstruction ri : node.use) {
-            if (ri instanceof R2 && ((R2) ri).type == R2.R2Type.fmv) {
-                freezeMoves.add((R2) ri);
-                TryFreezeReg.add((Reg) ((R2) ri).rd);
-                TryFreezeReg.add((Reg) ((R2) ri).rs);
+        for (R2 mv : moveList) {
+            Reg rd = (Reg) mv.rd;
+            Reg rs = (Reg) mv.rs;
+            if (rs.equals(node) || rd.equals(node)) {
+                freezeMoves.add(mv);
+                TryFreezeReg.add(rd);
+                TryFreezeReg.add(rs);
             }
         }
         moveList.removeAll(freezeMoves);
@@ -399,8 +402,10 @@ public class FPRallocater {
 
     private static void TryThrowMoveNode(Reg node) {
         moveNodes.remove(node);
-        for (RiscvInstruction ri : node.use) {
-            if (moveList.contains(ri)) {
+        for (R2 mv : moveList) {
+            Reg rd = (Reg) mv.rd;
+            Reg rs = (Reg) mv.rs;
+            if (rd.equals(node) || rs.equals(node)) {
                 moveNodes.add(node);
                 return;
             }

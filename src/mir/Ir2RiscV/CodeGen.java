@@ -438,8 +438,7 @@ public class CodeGen {
             base = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
             RiscvGlobalVar globalVar = gloMap.get(((GlobalVariable) getElementPtr.getBase()).ident.toString());
             nowBlock.riscvInstructions.addLast(new La(nowBlock, base, globalVar));
-        }
-        else {
+        } else {
             // 不是全局的那就说明是一个局部变量指针,已经被存起来了
             base = VirRegMap.VRM.ensureRegForValue(getElementPtr.getBase());
         }
@@ -451,25 +450,22 @@ public class CodeGen {
             if (byteoff < 2048) {
                 // addi 装得下
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, new Imm(byteoff), R3.R3Type.addi));
-            }
-            else {
+            } else {
                 // addi装不下,那么需要装到li中再去加
-                Reg imm = Reg.getPreColoredReg(Reg.PhyReg.t1, 32);
+                Reg imm = new Reg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, imm, byteoff));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, imm, base, R3.R3Type.add));
             }
-        }
-        else {
+        } else {
             // 给偏移找一个寄存器,方便计算
             Reg reg_for_useable = VirRegMap.VRM.ensureRegForValue(useable);
-            Reg offreg = Reg.getPreColoredReg(Reg.PhyReg.t1, 32);
+            Reg offreg = new Reg(Reg.RegType.GPR,32);
             // 这个式子是判断size是否是2的幂次,如果是的化直接将size移位即可,不需要用乘法计算
             if ((size & (size - 1)) == 0) {
                 int shift = Integer.toBinaryString(size).length() - 1;
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, offreg, reg_for_useable, new Imm(shift), R3.R3Type.slliw));
-            }
-            else {
-                Reg reg_for_size = Reg.getPreColoredReg(Reg.PhyReg.t1, 32);
+            } else {
+                Reg reg_for_size = new Reg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, reg_for_size, size));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, offreg, reg_for_size, reg_for_useable, R3.R3Type.mulw));
             }
