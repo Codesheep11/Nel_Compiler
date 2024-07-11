@@ -4,6 +4,11 @@ import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 
+import java.util.HashSet;
+
+import static backend.allocater.LivenessAnalyze.Def;
+import static backend.allocater.LivenessAnalyze.Use;
+
 public class B extends RiscvInstruction {
 
     public BType type;
@@ -61,12 +66,6 @@ public class B extends RiscvInstruction {
         this.targetBlock = targetBlock;
         block.succBlock.add(targetBlock);
         targetBlock.preBlock.add(block);
-        if (rs1 instanceof Reg)
-            use.add((Reg) rs1);
-        if (rs2 instanceof Reg)
-            use.add((Reg) rs2);
-        rs1.use.add(this);
-        rs2.use.add(this);
     }
 
     @Override
@@ -77,16 +76,22 @@ public class B extends RiscvInstruction {
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-        if (use.contains(oldReg)) {
-            if (rs1 == oldReg) {
-                rs1 = newReg;
-            }
-            if (rs2 == oldReg) {
-                rs2 = newReg;
-            }
-            use.remove(oldReg);
-            use.add(newReg);
-        }
+        if (rs1 == oldReg) rs1 = newReg;
+        if (rs2 == oldReg) rs2 = newReg;
+        super.updateUseDef();
+    }
+
+    @Override
+    public HashSet<Reg> getUse() {
+        HashSet<Reg> use = new HashSet<>();
+        if (rs1 instanceof Reg) use.add((Reg) rs1);
+        if (rs2 instanceof Reg) use.add((Reg) rs2);
+        return use;
+    }
+
+    @Override
+    public HashSet<Reg> getDef() {
+        return new HashSet<>();
     }
 
     @Override

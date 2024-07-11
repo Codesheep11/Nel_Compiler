@@ -8,7 +8,7 @@ import backend.riscv.RiscvInstruction.*;
 
 import java.util.*;
 
-import static backend.allocater.LivenessAnalyze.Out;
+import static backend.allocater.LivenessAnalyze.*;
 
 public class FPRallocater {
 
@@ -86,15 +86,15 @@ public class FPRallocater {
     private static void ReWrite() {
         for (Reg reg : spillNodes) {
 //            System.out.println("spill: " + reg);
-            ArrayList<RiscvInstruction> contains = new ArrayList<>(reg.use);
+            ArrayList<RiscvInstruction> contains = new ArrayList<>(RegUse.get(reg));
             HashSet<RiscvInstruction> uses = new HashSet<>();
             HashSet<RiscvInstruction> defs = new HashSet<>();
             HashSet<RiscvInstruction> uds = new HashSet<>();
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
             for (RiscvInstruction ins : contains) {
-                if (ins.def.contains(reg) && ins.use.contains(reg)) uds.add(ins);
-                else if (ins.def.contains(reg)) defs.add(ins);
-                else if (ins.use.contains(reg)) uses.add(ins);
+                if (Def.get(ins).contains(reg) && Use.get(ins).contains(reg)) uds.add(ins);
+                else if (Def.get(ins).contains(reg)) defs.add(ins);
+                else if (Use.get(ins).contains(reg)) uses.add(ins);
             }
             for (RiscvInstruction ud : uds) {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
@@ -414,11 +414,8 @@ public class FPRallocater {
 
     private static void deleteMove(R2 move) {
         moveList.remove(move);
-        for (Reg reg : move.use) {
-            reg.use.remove(move);
-        }
-        for (Reg reg : move.def) {
-            reg.use.remove(move);
+        for (Reg reg : move.getReg()) {
+            RegUse.get(reg).remove(move);
         }
         move.remove();
     }
@@ -479,12 +476,11 @@ public class FPRallocater {
         LivenessAnalyze.RunOnFunc(curFunc);
         for (RiscvBlock block : curFunc.blocks) {
             for (RiscvInstruction ins : block.riscvInstructions) {
-                for (Reg use : ins.use) {
-                    if (use.regType == Reg.RegType.FPR) conflictGraph.putIfAbsent(use, new HashSet<>());
+                for (Reg reg : ins.getReg()) {
+                    if (reg.regType == Reg.RegType.FPR) conflictGraph.putIfAbsent(reg, new HashSet<>());
                 }
-                for (Reg def : ins.def) {
+                for (Reg def : Def.get(ins)) {
                     if (def.regType == Reg.RegType.FPR) {
-                        conflictGraph.putIfAbsent(def, new HashSet<>());
                         for (Reg out : Out.get(ins)) {
                             if (out.regType == Reg.RegType.FPR) addConflict(def, out);
                         }

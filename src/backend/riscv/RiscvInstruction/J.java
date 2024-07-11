@@ -3,6 +3,9 @@ package backend.riscv.RiscvInstruction;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
+import mir.Ir2RiscV.CodeGen;
+
+import java.util.HashSet;
 
 public class J extends RiscvInstruction {
 
@@ -10,7 +13,7 @@ public class J extends RiscvInstruction {
     public JType type;
 
     public enum JType {
-         j, ret, call;
+        j, ret, call;
 
         @Override
         public String toString() {
@@ -53,9 +56,11 @@ public class J extends RiscvInstruction {
     public String toString() {
         if (type == JType.ret) {
             return "\t" + type;
-        } else if (type == JType.call) {
+        }
+        else if (type == JType.call) {
             return "\t" + type + "\t" + RiscvFunction.funcNameWrap(funcName);
-        } else {
+        }
+        else {
             return "\t" + type + "\t\t" + targetBlock.name;
         }
     }
@@ -63,13 +68,44 @@ public class J extends RiscvInstruction {
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
+
+        super.updateUseDef();
         throw new RuntimeException("J instruction should not be replaced");
+
+    }
+
+    @Override
+    public HashSet<Reg> getUse() {
+        HashSet<Reg> use = new HashSet<>();
+        if (type == JType.call) {
+            RiscvFunction rf = CodeGen.ansRis.getFunction(funcName);
+            use.addAll(rf.defs);
+        }
+        if (type == JType.ret) {
+            RiscvFunction rf = block.function;
+            if (rf.retTypeCode == 1) use.add(Reg.getPreColoredReg(Reg.PhyReg.a0, 32));
+            if (rf.retTypeCode == -1) use.add(Reg.getPreColoredReg(Reg.PhyReg.fa0, 32));
+            use.add(Reg.getPreColoredReg(Reg.PhyReg.ra, 64));
+        }
+        return use;
+    }
+
+    @Override
+    public HashSet<Reg> getDef() {
+        HashSet<Reg> def = new HashSet<>();
+        if (type == JType.call) {
+            RiscvFunction rf = block.function;
+            if (rf.retTypeCode == 1) def.add(Reg.getPreColoredReg(Reg.PhyReg.a0, 32));
+            if (rf.retTypeCode == -1) def.add(Reg.getPreColoredReg(Reg.PhyReg.fa0, 32));
+            def.addAll(rf.defs);
+        }
+        return def;
     }
 
     @Override
     public int getInstFlag() {
         switch (type) {
-            case  j, call -> {
+            case j, call -> {
                 return InstFlag.Call.value | InstFlag.None.value;
             }
             case ret -> {

@@ -4,6 +4,8 @@ import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
+import mir.Instruction;
+import mir.Use;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +20,10 @@ public class LivenessAnalyze {
 
     public static HashMap<RiscvInstruction, HashSet<Reg>> In = new HashMap<>();
     public static HashMap<RiscvInstruction, HashSet<Reg>> Out = new HashMap<>();
+    public static HashMap<RiscvInstruction, HashSet<Reg>> Use = new HashMap<>();
+    public static HashMap<RiscvInstruction, HashSet<Reg>> Def = new HashMap<>();
+
+    public static HashMap<Reg, HashSet<RiscvInstruction>> RegUse = new HashMap<>();
 
 
     private static void clear() {
@@ -27,10 +33,24 @@ public class LivenessAnalyze {
         BlockDef.clear();
         In.clear();
         Out.clear();
+        Use.clear();
+        Def.clear();
     }
 
     public static void RunOnFunc(RiscvFunction function) {
         clear();
+        for (RiscvBlock block : function.blocks) {
+            for (RiscvInstruction ins : block.riscvInstructions) {
+                In.put(ins, new HashSet<>());
+                Out.put(ins, new HashSet<>());
+                Use.put(ins, ins.getUse());
+                Def.put(ins, ins.getDef());
+                for (Reg reg : ins.getReg()) {
+                    RegUse.putIfAbsent(reg, new HashSet<>());
+                    RegUse.get(reg).add(ins);
+                }
+            }
+        }
         for (RiscvBlock block : function.blocks) {
             BlockIn.put(block, new HashSet<>());
             BlockOut.put(block, new HashSet<>());
@@ -40,10 +60,10 @@ public class LivenessAnalyze {
         BlockDef.get(function.getEntry()).addAll(function.defs);
         for (RiscvBlock block : function.blocks) {
             for (RiscvInstruction ins : block.riscvInstructions) {
-                HashSet<Reg> tmp = new HashSet<>(ins.use);
+                HashSet<Reg> tmp = new HashSet<>(Use.get(ins));
                 tmp.removeAll(BlockDef.get(block));
                 BlockUse.get(block).addAll(tmp);
-                BlockDef.get(block).addAll(ins.def);
+                BlockDef.get(block).addAll(Def.get(ins));
             }
         }
         ArrayList<RiscvBlock> topoSort = function.getTopoSort();
@@ -75,8 +95,6 @@ public class LivenessAnalyze {
         }
         for (RiscvBlock block : topoSort) {
             if (block.riscvInstructions.getSize() == 0) continue;
-            In.put(block.getLast(), new HashSet<>());
-            Out.put(block.getFirst(), new HashSet<>());
             In.put(block.getFirst(), BlockIn.get(block));
             Out.put(block.getLast(), BlockOut.get(block));
             int size = block.riscvInstructions.getSize();
@@ -90,8 +108,8 @@ public class LivenessAnalyze {
                 if (i != 0) {
                     //in[i] = use[i] U (out[i] - def[i])
                     HashSet<Reg> inSet = new HashSet(Out.get(ins));
-                    inSet.removeAll(ins.def);
-                    inSet.addAll(ins.use);
+                    inSet.removeAll(Def.get(ins));
+                    inSet.addAll(Use.get(ins));
                     In.put(ins, inSet);
                 }
             }
