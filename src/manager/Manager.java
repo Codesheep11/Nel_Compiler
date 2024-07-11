@@ -1,5 +1,7 @@
 package manager;
 
+import backend.Opt.Scheduler.Scheduler;
+import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -75,14 +77,15 @@ public class Manager {
             }
             else {
                 RemovePhi.run(module);
-                outputLLVM("test.txt", module);
+                //outputLLVM("test.txt", module);
                 CodeGen codeGen = new CodeGen();
                 RiscvModule riscvmodule = codeGen.genCode(module);
-//                Scheduler.preRASchedule(riscvmodule);
+                //Scheduler.preRASchedule(riscvmodule);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;
-//                Scheduler.postRASchedule(riscvmodule);
+                SimplifyCFG.run(riscvmodule);
+                //Scheduler.postRASchedule(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {

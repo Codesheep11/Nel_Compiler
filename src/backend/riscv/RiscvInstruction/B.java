@@ -21,7 +21,7 @@ public class B extends RiscvInstruction {
      */
 
     public enum BType {
-        beq, bge, bgt, ble, bleu, blt, bne;
+        beq, bge, bgt, ble, blt, bne;
 
         @Override
         public String toString() {
@@ -30,12 +30,23 @@ public class B extends RiscvInstruction {
                 case bge -> "bge";
                 case bgt -> "bgt";
                 case ble -> "ble";
-                case bleu -> "bleu";
                 case blt -> "blt";
                 case bne -> "bne";
                 default -> throw new AssertionError();
             };
         }
+    }
+
+    public void inverse() {
+        type = switch (type) {
+            case beq -> BType.bne;
+            case bne -> BType.beq;
+            case bge -> BType.blt;
+            case blt -> BType.bge;
+            case ble -> BType.bgt;
+            case bgt -> BType.ble;
+            default -> throw new RuntimeException("wrong type");
+        };
     }
 
     public Operand rs1, rs2;
