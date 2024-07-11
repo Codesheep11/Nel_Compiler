@@ -80,7 +80,7 @@ public class Manager {
                 //outputLLVM("test.txt", module);
                 CodeGen codeGen = new CodeGen();
                 RiscvModule riscvmodule = codeGen.genCode(module);
-                Scheduler.preRASchedule(riscvmodule);
+                //Scheduler.preRASchedule(riscvmodule);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;

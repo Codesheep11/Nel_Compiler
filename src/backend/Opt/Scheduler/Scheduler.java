@@ -3,6 +3,7 @@ package backend.Opt.Scheduler;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
+import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
 
@@ -30,7 +31,11 @@ public class Scheduler {
                 int newdegree = degrees.get(depinstr) - 1;
                 degrees.put(depinstr, newdegree);
                 if (newdegree == 0) {
-                    canExe.addFirst(depinstr);
+                    if (depinstr instanceof LS && depinstr.isUse(0)) {
+                        canExe.addFirst(depinstr);
+                    } else {
+                        canExe.add(depinstr);
+                    }
                 }
             }
         }
