@@ -5,19 +5,16 @@ import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 
 public class J extends RiscvInstruction {
-    /**
-     * todo:jal def 了 ra寄存器？
-     **/
+
 
     public JType type;
 
     public enum JType {
-        JAL, j, ret, call;
+         j, ret, call;
 
         @Override
         public String toString() {
             return switch (this) {
-                case JAL -> "jal";
                 case j -> "j";
                 case ret -> "ret";
                 case call -> "call";
@@ -72,7 +69,7 @@ public class J extends RiscvInstruction {
     @Override
     public int getInstFlag() {
         switch (type) {
-            case JAL, j, call -> {
+            case  j, call -> {
                 return InstFlag.Call.value | InstFlag.None.value;
             }
             case ret -> {
@@ -87,7 +84,7 @@ public class J extends RiscvInstruction {
 
     @Override
     public int getOperandNum() {
-        return type == JType.JAL || type == JType.call ? 1 : 0;
+        return type == JType.call ? 1 : 0;
     }
 
     @Override

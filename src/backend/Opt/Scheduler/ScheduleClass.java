@@ -90,30 +90,6 @@ public abstract class ScheduleClass {
             super(RISCVIssueMask.RISCVPipelineAB, true, true);
         }
     }
-/*
-    public static class RISCVScheduleClassIntegerArithmeticLateB extends RISCVScheduleClassIntegerArithmeticGeneric {
-        public RISCVScheduleClassIntegerArithmeticLateB() {
-            super(RISCVIssueMask.RISCVPipelineB, false, true);
-        }
-    }
-
-    public static class RISCVScheduleClassIntegerArithmeticEarlyB extends RISCVScheduleClassIntegerArithmeticGeneric {
-        public RISCVScheduleClassIntegerArithmeticEarlyB() {
-            super(RISCVIssueMask.RISCVPipelineB, true, false);
-        }
-    }
-
-    public static class RISCVScheduleClassIntegerArithmeticLateAB extends RISCVScheduleClassIntegerArithmeticGeneric {
-        public RISCVScheduleClassIntegerArithmeticLateAB() {
-            super(RISCVIssueMask.RISCVPipelineAB, false, true);
-        }
-    }
-
-    public static class RISCVScheduleClassIntegerArithmeticEarlyLateB extends RISCVScheduleClassIntegerArithmeticGeneric {
-        public RISCVScheduleClassIntegerArithmeticEarlyLateB() {
-            super(RISCVIssueMask.RISCVPipelineB, true, true);
-        }
-    }*/
 
     static class RISCVScheduleClassBranch extends ScheduleClass {
         public boolean schedule(ScheduleState state, RiscvInstruction inst) {
@@ -382,10 +358,7 @@ public abstract class ScheduleClass {
             }
         } else {
             System.out.println(instr);
-//            if (instr.getClass() != Explain.class) {
-//                throw new RuntimeException("未知指令!"+instr);
-//            }
-            return null;
+            throw new RuntimeException("未知指令!" + instr);
         }
     }
 }
