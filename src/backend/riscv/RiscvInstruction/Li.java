@@ -3,6 +3,8 @@ package backend.riscv.RiscvInstruction;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 
+import java.util.HashSet;
+
 public class Li extends RiscvInstruction {
 
     public Integer imm;
@@ -14,23 +16,31 @@ public class Li extends RiscvInstruction {
         super(block);
         this.imm = value;
         this.reg = reg;
-        def.add(reg);
-        reg.use.add(this);
     }
 
     @Override
     public String toString() {
-            return "\tli" + "\t\t" + reg + ", " + imm;
+        return "\tli" + "\t\t" + reg + ", " + imm;
     }
 
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-        if (reg == oldReg) {
-            reg = newReg;
-        }
-        def.remove(oldReg);
-        def.add(newReg);
+        if (reg == oldReg) reg = newReg;
+
+        super.updateUseDef();
+    }
+
+    @Override
+    public HashSet<Reg> getUse() {
+        return new HashSet<>();
+    }
+
+    @Override
+    public HashSet<Reg> getDef() {
+        HashSet def = new HashSet<>();
+        def.add(reg);
+        return def;
     }
 
     @Override
@@ -55,6 +65,6 @@ public class Li extends RiscvInstruction {
 
     @Override
     public int getInstFlag() {
-        return InstFlag.None.value|InstFlag.LoadConstant.value;
+        return InstFlag.None.value | InstFlag.LoadConstant.value;
     }
 }

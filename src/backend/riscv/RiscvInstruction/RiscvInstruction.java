@@ -1,10 +1,14 @@
 package backend.riscv.RiscvInstruction;
 
+import backend.allocater.LivenessAnalyze;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import utils.SyncLinkedList;
 
 import java.util.HashSet;
+
+import static backend.allocater.LivenessAnalyze.Def;
+import static backend.allocater.LivenessAnalyze.Use;
 
 public class RiscvInstruction extends SyncLinkedList.SyncLinkNode {
 
@@ -16,35 +20,26 @@ public class RiscvInstruction extends SyncLinkedList.SyncLinkNode {
         return 0;
     }
 
-
-    //使用，定义寄存器:构造时维护
-    public HashSet<Reg> use = new HashSet<>();
-    public HashSet<Reg> def = new HashSet<>();
-
     public RiscvInstruction(RiscvBlock block) {
         this.block = block;
     }
 
-    public void addUse(Reg reg) {
-        use.add(reg);
-    }
-
-    public void addDef(Reg reg) {
-        def.add(reg);
-    }
-
     /**
-     * 当前指令中替换使用的寄存器
+     * 当前指令中替换使用的寄存器,并维护LivenessAnalyze
      *
      * @param oldReg 被替换的寄存器
      * @param newReg 替换的寄存器
      */
     public void replaceUseReg(Reg oldReg, Reg newReg) {
-        if (!(use.contains(oldReg) || def.contains(oldReg))) {
-            throw new RuntimeException("replace error");
-        }
-        oldReg.use.remove(this);
-        newReg.use.add(this);
+        LivenessAnalyze.RegUse.putIfAbsent(oldReg, new HashSet<>());
+        LivenessAnalyze.RegUse.get(oldReg).remove(this);
+        LivenessAnalyze.RegUse.putIfAbsent(newReg, new HashSet<>());
+        LivenessAnalyze.RegUse.get(newReg).add(this);
+    }
+
+    public void updateUseDef() {
+        Def.put(this, getDef());
+        Use.put(this, getUse());
     }
 
     @Override
@@ -99,5 +94,20 @@ public class RiscvInstruction extends SyncLinkedList.SyncLinkNode {
         InstFlag(int value) {
             this.value = value;
         }
+    }
+
+    public HashSet<Reg> getUse() {
+        return new HashSet<>();
+    }
+
+    public HashSet<Reg> getDef() {
+        return new HashSet<>();
+    }
+
+    public HashSet<Reg> getReg() {
+        HashSet<Reg> regs = new HashSet<>();
+        regs.addAll(getUse());
+        regs.addAll(getDef());
+        return regs;
     }
 }

@@ -4,6 +4,8 @@ import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 
+import java.util.HashSet;
+
 public class R2 extends RiscvInstruction {
     public R2Type type;
 
@@ -77,12 +79,20 @@ public class R2 extends RiscvInstruction {
         this.rd = rd;
         this.rs = rs;
         this.type = type;
-        if (rd instanceof backend.operand.Reg)
-            def.add((Reg) rd);
-        if (rs instanceof backend.operand.Reg)
-            use.add((Reg) rs);
-        rd.use.add(this);
-        rs.use.add(this);
+    }
+
+    @Override
+    public HashSet<Reg> getUse() {
+        HashSet<Reg> use = new HashSet<>();
+        if (rs instanceof Reg) use.add((Reg) rs);
+        return use;
+    }
+
+    @Override
+    public HashSet<Reg> getDef() {
+        HashSet<Reg> def = new HashSet<>();
+        if (rd instanceof Reg) def.add((Reg) rd);
+        return def;
     }
 
     @Override
@@ -98,20 +108,10 @@ public class R2 extends RiscvInstruction {
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-        if (use.contains(oldReg)) {
-            if (rs == oldReg) {
-                rs = newReg;
-            }
-            use.remove(oldReg);
-            use.add(newReg);
-        }
-        if (def.contains(oldReg)) {
-            if (rd == oldReg) {
-                rd = newReg;
-            }
-            def.remove(oldReg);
-            def.add(newReg);
-        }
+        if (rs == oldReg) rs = newReg;
+        if (rd == oldReg) rd = newReg;
+
+        super.updateUseDef();
     }
 
     @Override

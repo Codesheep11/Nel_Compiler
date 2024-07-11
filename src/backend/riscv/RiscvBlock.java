@@ -9,6 +9,8 @@ import java.util.HashSet;
 public class RiscvBlock {
     public String name;
 
+    public RiscvFunction function;
+
     public SyncLinkedList<RiscvInstruction> riscvInstructions = new SyncLinkedList<>();//便于插入指令
 
     //riscvBlock的前驱和后继,在codegen时维护
@@ -16,7 +18,8 @@ public class RiscvBlock {
     public HashSet<RiscvBlock> preBlock = new HashSet<>();
     public HashSet<RiscvBlock> succBlock = new HashSet<>();
 
-    public RiscvBlock(BasicBlock irBlock) {
+    public RiscvBlock(RiscvFunction rf, BasicBlock irBlock) {
+        this.function = rf;
         this.name = irBlock.getLabel();
     }
 

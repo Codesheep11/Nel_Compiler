@@ -1,5 +1,6 @@
 package backend.allocater;
 
+import backend.Opt.LivelessDCE;
 import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Imm;
@@ -41,6 +42,7 @@ public class Allocater {
                 continue;
             }
             UsedRegs.put(func.name, new HashSet<>());
+            LivelessDCE.runOnFunc(func);
             GPRallocater.runOnFunc(func);
             FPRallocater.runOnFunc(func);
             LivenessAnalyze.RunOnFunc(func);

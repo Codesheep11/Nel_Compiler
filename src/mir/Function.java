@@ -46,7 +46,6 @@ public class Function extends Value {
     }
 
     private final Type retType; // 返回值类型
-    private final ArrayList<Argument> myArguments; // 参数表
     private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
     private final SyncLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
@@ -61,16 +60,13 @@ public class Function extends Value {
         setName(name);
         retType = type;
         blocks = new SyncLinkedList<>();
-
         ArrayList<Argument> arguments = new ArrayList<>();
-
         for (int i = 0; i < argumentTypes.length; i++) {
             Argument arg = new Argument(argumentTypes[i], this);
             arguments.add(arg);
             arg.idx = i;
         }
-
-        myArguments = arguments;
+        funcRArguments = arguments;
     }
 
     public Function(Type type, String name, ArrayList<Type> argumentTypes) {
@@ -88,7 +84,7 @@ public class Function extends Value {
             arg.idx = i;
         }
 
-        myArguments = arguments;
+        funcRArguments = arguments;
     }
 
     public boolean isExternal() {
@@ -166,7 +162,7 @@ public class Function extends Value {
 
     public ArrayList<Type> getArgumentsTP() {
         ArrayList<Type> types = new ArrayList<>();
-        for (Argument arg : myArguments) {
+        for (Argument arg : funcRArguments) {
             types.add(arg.getType());
         }
         return types;
@@ -180,9 +176,6 @@ public class Function extends Value {
         return funcRArguments;
     }
 
-    public ArrayList<Argument> getMyArguments() {
-        return myArguments;
-    }
 
     public void buildControlFlowGraph() {
         ControlFlowGraph.buildCFG(this);
