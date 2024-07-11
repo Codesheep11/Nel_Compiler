@@ -33,7 +33,7 @@ public class SimplfyCFG {
         ChangeTarget(function);
         RemoveBlocks.runOnFunc(function);
 
-        Print.outputLLVM(function, "debug2.txt");
+//        Print.outputLLVM(function, "debug2.txt");
     }
 
     private static void MergeBlocks(Function function) {

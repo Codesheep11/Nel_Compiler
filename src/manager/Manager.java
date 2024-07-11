@@ -60,6 +60,7 @@ public class Manager {
                 TailCall2Loop.run(module);
                 FuncAnalysis.run(module);
                 GlobalVarAnalysis.run(module);
+//                ConstArray2Value.run(module);
                 GlobalValueNumbering.run(module);
                 DeadCodeDelete.run(module);
                 LoopInfo.build(module);

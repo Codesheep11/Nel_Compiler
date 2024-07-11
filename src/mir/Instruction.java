@@ -214,7 +214,8 @@ public class Instruction extends User {
             Value retValue = getRetValue();
             if (retValue != null) {
                 return String.format("ret %s %s", retValue.getType().toString(), retValue.getDescriptor());
-            } else {
+            }
+            else {
                 return "ret void";
             }
         }
@@ -298,7 +299,8 @@ public class Instruction extends User {
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());
-            } else {
+            }
+            else {
                 return String.format("%s = call %s @%s(%s)", getDescriptor(), destFunction.getRetType().toString(), destFunction.name, paramsToString());
             }
         }
@@ -355,7 +357,8 @@ public class Instruction extends User {
         private BasicBlock elseBlock;
 
         public Branch(BasicBlock parentBlock,
-                      Value cond, BasicBlock thenBlock, BasicBlock elseBlock) {
+                      Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
+        {
             super(parentBlock, Type.VoidType.VOID_TYPE, InstType.BRANCH);
             this.cond = cond;
             this.thenBlock = thenBlock;
@@ -1439,7 +1442,8 @@ public class Instruction extends User {
                 Value val = optionalValues.get(value);
                 optionalValues.remove(value);
                 optionalValues.put((BasicBlock) v, val);
-            } else {
+            }
+            else {
                 for (BasicBlock block : optionalValues.keySet()) {
                     if (optionalValues.get(block).equals(value)) {
                         optionalValues.put(block, v);
@@ -1505,6 +1509,15 @@ public class Instruction extends User {
 
         public Type getEleType() {
             return eleType;
+        }
+
+        public boolean isConstOffset() {
+            for (Value offset : offsets) {
+                if (!(offset instanceof Constant.ConstantInt)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         @Override

@@ -183,17 +183,21 @@ public class CodeGen {
      */
     private void solveReturn(Instruction.Return rtInstr) {
         Type type = rtInstr.getType();
+        J ret = new J(nowBlock, J.JType.ret);
         if (type.isFloatTy()) {
             Reg fa0 = Reg.getPreColoredReg(Reg.PhyReg.fa0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
             nowBlock.riscvInstructions.addLast(new R2(nowBlock, fa0, src, R2.R2Type.fmv));
+            ret.use.add(fa0);
         }
         else if (type.isInt32Ty()) {
             Reg a0 = Reg.getPreColoredReg(Reg.PhyReg.a0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
             nowBlock.riscvInstructions.addLast(new R2(nowBlock, a0, src, R2.R2Type.mv));
+            ret.use.add(a0);
         }
-        nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.ret));
+        ret.use.add(Reg.getPreColoredReg(Reg.PhyReg.ra, 64));
+        nowBlock.riscvInstructions.addLast(ret);
         nowFunc.exits.add(nowBlock);
     }
 

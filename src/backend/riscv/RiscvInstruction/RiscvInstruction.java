@@ -100,4 +100,14 @@ public class RiscvInstruction extends SyncLinkedList.SyncLinkNode {
             this.value = value;
         }
     }
+
+    public void delete() {
+        remove();
+        for (Reg reg : use) {
+            reg.use.remove(this);
+        }
+        for (Reg reg : def) {
+            reg.use.remove(this);
+        }
+    }
 }
