@@ -4,6 +4,8 @@ import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvGlobalVar;
 
+import java.util.HashSet;
+
 public class La extends RiscvInstruction {
 
     // 所取的全局变量的地址
@@ -15,9 +17,6 @@ public class La extends RiscvInstruction {
         super(block);
         this.content = rb;
         this.reg = reg;
-        def.add(reg);
-        content.use.add(this);
-        reg.use.add(this);
     }
 
     @Override
@@ -28,11 +27,22 @@ public class La extends RiscvInstruction {
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-        if (reg == oldReg) {
-            reg = newReg;
-        }
-        def.remove(oldReg);
-        def.add(newReg);
+        if (reg == oldReg) reg = newReg;
+
+        super.updateUseDef();
+
+    }
+
+    @Override
+    public HashSet<Reg> getUse() {
+        return new HashSet<>();
+    }
+
+    @Override
+    public HashSet<Reg> getDef() {
+        HashSet def = new HashSet<>();
+        def.add(reg);
+        return def;
     }
 
     @Override
@@ -57,6 +67,6 @@ public class La extends RiscvInstruction {
 
     @Override
     public int getInstFlag() {
-        return InstFlag.None.value|InstFlag.LoadConstant.value|InstFlag.PCRel.value;
+        return InstFlag.None.value | InstFlag.LoadConstant.value | InstFlag.PCRel.value;
     }
 }

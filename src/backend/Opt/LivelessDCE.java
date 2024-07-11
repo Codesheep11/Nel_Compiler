@@ -6,9 +6,11 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
+import utils.SyncLinkedList;
 
 import java.util.ArrayList;
 
+import static backend.allocater.LivenessAnalyze.Def;
 import static backend.allocater.LivenessAnalyze.Out;
 
 public class LivelessDCE {
@@ -27,18 +29,12 @@ public class LivelessDCE {
                 if (canbeDelete(inst)) delList.add(inst);
             }
         }
-        if (!delList.isEmpty()) {
-            System.out.println("delete");
-            for (RiscvInstruction inst : delList) {
-                System.out.println(inst);
-            }
-        }
-//        delList.forEach(inst -> inst.delete());
+        delList.forEach(SyncLinkedList.SyncLinkNode::remove);
     }
 
     private static boolean canbeDelete(RiscvInstruction inst) {
         if (inst instanceof J) return false;
-        if (inst.def.isEmpty()) return false;
-        return !Out.get(inst).contains(inst.def.iterator().next());
+        if (Def.get(inst).isEmpty()) return false;
+        return !Out.get(inst).contains(Def.get(inst).iterator().next());
     }
 }

@@ -32,7 +32,7 @@ public class Allocater {
     public static void run(RiscvModule riscvModule) {
         module = riscvModule;
         HashSet<Reg.PhyReg> allRegs = new HashSet<Reg.PhyReg>() {{
-            for (int i = 32; i < 64; i++) add(getPhyRegByOrder(i));
+            for (int i = 0; i < 64; i++) add(getPhyRegByOrder(i));
         }};
         for (RiscvFunction func : module.TopoSort) {
             if (func.isExternal) {

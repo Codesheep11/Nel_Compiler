@@ -1,5 +1,6 @@
 package manager;
 
+import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -53,7 +54,7 @@ public class Manager {
             Module module = visitor.module;
             if (arg.opt) {
                 Mem2Reg.run(module);
-                Reassociate.run(module);
+//                Reassociate.run(module);
                 FunctionInline.run(module);
                 FuncAnalysis.run(module);
                 DeadArgEliminate.run();
@@ -84,6 +85,7 @@ public class Manager {
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;
 //                Scheduler.postRASchedule(riscvmodule);
+//                SimplifyCFG.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {

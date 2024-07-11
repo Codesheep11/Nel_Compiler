@@ -65,11 +65,6 @@ public class CodeGen {
             ansRis.addGlobalVar(rs);
         }
         for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) {
-                RiscvFunction rf = new RiscvFunction(function);
-                ansRis.addFunction(rf);
-                continue;
-            }
             VirRegMap.VRM.clean(function);
             visitFunction(function);
         }
@@ -100,12 +95,12 @@ public class CodeGen {
         nowFunc = new RiscvFunction(function);
         ansRis.addFunction(nowFunc);
         for (BasicBlock block : function.getBlocks()) {
-            RiscvBlock riscvBlock = new RiscvBlock(block);
+            RiscvBlock riscvBlock = new RiscvBlock(nowFunc, block);
             nowFunc.addBB(riscvBlock);
             blockMap.put(block, riscvBlock);
         }
         Address offset = null;
-        if (FuncInfo.callGraph.get(function).size() != 0) {
+        if (!function.isExternal() && FuncInfo.callGraph.get(function).size() != 0) {
             offset = StackManager.getInstance().getRegOffset(nowFunc.name, "ra", 8);
             blockMap.get(function.getEntry()).addInstrucion(new LS(blockMap.get(function.getEntry()),
                     Reg.getPreColoredReg(Reg.PhyReg.ra, 64),
@@ -113,11 +108,12 @@ public class CodeGen {
                     offset,
                     LS.LSType.sd));
         }
-        nowBlock = blockMap.get(function.getFirstBlock());
+        nowBlock = function.isExternal() ? null : blockMap.get(function.getEntry());
         // 非浮点参数的个数
         int count_int = 0;
         // 浮点参数的个数
         int count_flot = 0;
+        ArrayList<RiscvInstruction> paramPassing = new ArrayList<>();
         for (Function.Argument argument : function.getFuncRArguments()) {
             // 获取该参数对应的虚拟寄存器
             // 如果参数是浮点数
@@ -127,7 +123,7 @@ public class CodeGen {
                     Reg reg = VirRegMap.VRM.ensureRegForValue(argument);
                     int fa0order = Reg.PhyReg.getOrder(Reg.PhyReg.fa0);
                     // 从浮点参数寄存器到目标虚拟寄存器
-                    nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg,
+                    paramPassing.add(new R2(nowBlock, reg,
                             Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(fa0order + count_flot), 32),
                             R2.R2Type.fmv));
                     nowFunc.defs.add(Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(fa0order + count_flot), 32));
@@ -139,7 +135,7 @@ public class CodeGen {
                     if (count_int < 8) {
                         Reg reg = VirRegMap.VRM.ensureRegForValue(argument);
                         int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
-                        nowBlock.riscvInstructions.addLast(new R2(nowBlock,
+                        paramPassing.add(new R2(nowBlock,
                                 reg,
                                 Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(a0order + count_int), 64),
                                 R2.R2Type.mv
@@ -152,7 +148,7 @@ public class CodeGen {
                     if (count_int < 8) {
                         Reg reg = VirRegMap.VRM.ensureRegForValue(argument);
                         int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
-                        nowBlock.riscvInstructions.addLast(new R2(nowBlock,
+                        paramPassing.add(new R2(nowBlock,
                                 reg,
                                 Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(a0order + count_int), 32),
                                 R2.R2Type.mv
@@ -162,6 +158,10 @@ public class CodeGen {
                     }
                 }
             }
+        }
+        if (function.isExternal()) return;
+        for (RiscvInstruction riscvInstruction : paramPassing) {
+            nowBlock.riscvInstructions.addLast(riscvInstruction);
         }
         for (BasicBlock block : function.getBlocks()) {
             visitBlock(block);
@@ -188,15 +188,12 @@ public class CodeGen {
             Reg fa0 = Reg.getPreColoredReg(Reg.PhyReg.fa0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
             nowBlock.riscvInstructions.addLast(new R2(nowBlock, fa0, src, R2.R2Type.fmv));
-            ret.use.add(fa0);
         }
         else if (type.isInt32Ty()) {
             Reg a0 = Reg.getPreColoredReg(Reg.PhyReg.a0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
             nowBlock.riscvInstructions.addLast(new R2(nowBlock, a0, src, R2.R2Type.mv));
-            ret.use.add(a0);
         }
-        ret.use.add(Reg.getPreColoredReg(Reg.PhyReg.ra, 64));
         nowBlock.riscvInstructions.addLast(ret);
         nowFunc.exits.add(nowBlock);
     }
@@ -211,12 +208,6 @@ public class CodeGen {
         Reg reg = null;
         if (!(type instanceof Type.VoidType)) {
             reg = VirRegMap.VRM.ensureRegForValue(callInstr);
-            if (type.isFloatTy())
-                call.addDef(Reg.getPreColoredReg(Reg.PhyReg.fa0, 32));
-            else if (type.isInt32Ty())
-                call.addDef(Reg.getPreColoredReg(Reg.PhyReg.a0, 32));
-            else
-                call.addDef(Reg.getPreColoredReg(Reg.PhyReg.a0, 64));
         }
 
         ArrayList<Value> paras = callInstr.getParams();
@@ -237,7 +228,6 @@ public class CodeGen {
                             Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(fa0order + count_float), 32),
                             paraReg,
                             R2.R2Type.fmv));
-                    call.addUse(Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(fa0order + count_float), 32));
                     count_float++;
                 }
                 else {
@@ -259,7 +249,6 @@ public class CodeGen {
                             paraReg,
                             R2.R2Type.mv
                     ));
-                    call.addUse(Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(a0order + count_int), 64));
                     count_int++;
                 }
                 else {
@@ -280,7 +269,6 @@ public class CodeGen {
                             paraReg,
                             R2.R2Type.mv
                     ));
-                    call.addUse(Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(a0order + count_int), 32));
                     count_int++;
                 }
                 else {
@@ -438,7 +426,8 @@ public class CodeGen {
             base = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
             RiscvGlobalVar globalVar = gloMap.get(((GlobalVariable) getElementPtr.getBase()).ident.toString());
             nowBlock.riscvInstructions.addLast(new La(nowBlock, base, globalVar));
-        } else {
+        }
+        else {
             // 不是全局的那就说明是一个局部变量指针,已经被存起来了
             base = VirRegMap.VRM.ensureRegForValue(getElementPtr.getBase());
         }
@@ -450,21 +439,24 @@ public class CodeGen {
             if (byteoff < 2048) {
                 // addi 装得下
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, new Imm(byteoff), R3.R3Type.addi));
-            } else {
+            }
+            else {
                 // addi装不下,那么需要装到li中再去加
                 Reg imm = new Reg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, imm, byteoff));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, imm, base, R3.R3Type.add));
             }
-        } else {
+        }
+        else {
             // 给偏移找一个寄存器,方便计算
             Reg reg_for_useable = VirRegMap.VRM.ensureRegForValue(useable);
-            Reg offreg = new Reg(Reg.RegType.GPR,32);
+            Reg offreg = new Reg(Reg.RegType.GPR, 32);
             // 这个式子是判断size是否是2的幂次,如果是的化直接将size移位即可,不需要用乘法计算
             if ((size & (size - 1)) == 0) {
                 int shift = Integer.toBinaryString(size).length() - 1;
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, offreg, reg_for_useable, new Imm(shift), R3.R3Type.slliw));
-            } else {
+            }
+            else {
                 Reg reg_for_size = new Reg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, reg_for_size, size));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, offreg, reg_for_size, reg_for_useable, R3.R3Type.mulw));
