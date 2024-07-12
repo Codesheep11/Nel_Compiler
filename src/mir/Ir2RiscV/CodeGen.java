@@ -79,7 +79,6 @@ public class CodeGen {
                 rf.isMain = true;
                 ansRis.mainFunc = rf;
             }
-            BlockReSort.optimizeBlockLayout(rf);
         }
     }
 

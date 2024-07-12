@@ -3,12 +3,16 @@ package backend.allocater;
 import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Reg;
-import backend.riscv.*;
-import backend.riscv.RiscvInstruction.*;
+import backend.riscv.RiscvBlock;
+import backend.riscv.RiscvFunction;
+import backend.riscv.RiscvInstruction.LS;
+import backend.riscv.RiscvInstruction.R2;
+import backend.riscv.RiscvInstruction.RiscvInstruction;
 
 import java.util.*;
 
 import static backend.allocater.LivenessAnalyze.*;
+import static backend.operand.Reg.PhyReg.zero;
 
 public class FPRallocater {
 
@@ -161,8 +165,7 @@ public class FPRallocater {
             R2 move = it.next();
             if (conflictGraph.get(move.rd).contains(move.rs)) {
                 it.remove();
-            }
-            else {
+            } else {
                 moveNodes.add((Reg) move.rd);
                 moveNodes.add((Reg) move.rs);
             }
@@ -221,8 +224,7 @@ public class FPRallocater {
                     spillNodes.remove(node);
                 }
                 curUsedRegs.add(node.phyReg);
-            }
-            else {
+            } else {
                 spillNodes.add(node);
                 DeleteNode(node);
             }
@@ -315,8 +317,7 @@ public class FPRallocater {
         for (Reg reg : nodes) {
             if (reg.preColored) {
                 regs.add(reg.phyReg);
-            }
-            else size++;
+            } else size++;
         }
         regs.removeAll(unAllocateRegs);
         return regs.size() + size;
@@ -359,8 +360,7 @@ public class FPRallocater {
                             if (r1.preColored) {
                                 newReg = r1;
                                 oldReg = r2;
-                            }
-                            else {
+                            } else {
                                 newReg = r2;
                                 oldReg = r1;
                             }
@@ -368,8 +368,7 @@ public class FPRallocater {
                             //合并节点
                             newReg.mergeReg(oldReg);
                             moveNodes.remove(oldReg);
-                        }
-                        else {
+                        } else {
                             newReg = r1;
                         }
                         //删除move指令
@@ -431,9 +430,8 @@ public class FPRallocater {
         if (r1.equals(r2)) return true;
         if (r1.preColored && r2.preColored)
             if (r1.phyReg == r2.phyReg) return true;
-            else {
-                return false;
-            }
+            else return false;
+        if (r1.phyReg == zero || r2.phyReg == zero) return false;
         if (curCG.get(r1).contains(r2)) return false;
         //合并策略1：如果两个节点的合并节点度数小于K，则可以合并
         HashSet<Reg> neighbors = new HashSet<>();

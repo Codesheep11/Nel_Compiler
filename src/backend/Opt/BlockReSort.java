@@ -5,6 +5,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.B;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
+import backend.riscv.RiscvModule;
 import utils.Pair;
 
 import java.util.*;
@@ -309,7 +310,14 @@ public class BlockReSort {
         seq.addAll(pop.get(0).getKey());
     }
 
-    public static void optimizeBlockLayout(RiscvFunction func) {
+    public static void blockSort(RiscvModule module) {
+        for (RiscvFunction function : module.funcList) {
+            if (function.isExternal) continue;
+            optimizeBlockLayout(function);
+        }
+    }
+
+    private static void optimizeBlockLayout(RiscvFunction func) {
         if (func.blocks.size() <= 2) return;
         HashMap<RiscvBlock, BackCFGNode> cfg = GenCFG.calcCFG(func);
         List<Integer> weights = new ArrayList<>(func.blocks.size());

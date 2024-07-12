@@ -35,6 +35,17 @@ public class RiscvModule {
         globList.add(gv);
     }
 
+    public RiscvFloat getSameFloat(Float floatx) {
+        for (RiscvGlobalVar rg : globList) {
+            if (rg instanceof RiscvFloat && ((RiscvFloat) rg).equalFloat(floatx)) {
+                return (RiscvFloat) rg;
+            }
+        }
+        RiscvFloat riscvFloat = new RiscvFloat(floatx);
+        globList.add(riscvFloat);
+        return riscvFloat;
+    }
+
     @Override
     public String toString() {
         StringBuilder head = new StringBuilder(".global main\n");

@@ -1,5 +1,7 @@
 package manager;
 
+import backend.Opt.BlockReSort;
+import backend.Opt.CalculateOpt;
 import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
@@ -80,12 +82,14 @@ public class Manager {
                 outputLLVM("test.txt", module);
                 CodeGen codeGen = new CodeGen();
                 RiscvModule riscvmodule = codeGen.genCode(module);
+                BlockReSort.blockSort(riscvmodule);
+                CalculateOpt.run(riscvmodule);
 //                Scheduler.preRASchedule(riscvmodule);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;
 //                Scheduler.postRASchedule(riscvmodule);
-//                SimplifyCFG.run(riscvmodule);
+                SimplifyCFG.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {
