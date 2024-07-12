@@ -29,7 +29,10 @@ public class LivelessDCE {
                 if (canbeDelete(inst)) delList.add(inst);
             }
         }
-        delList.forEach(SyncLinkedList.SyncLinkNode::remove);
+        if (!delList.isEmpty()) {
+            delList.forEach(SyncLinkedList.SyncLinkNode::remove);
+            LivenessAnalyze.RunOnFunc(function);
+        }
     }
 
     private static boolean canbeDelete(RiscvInstruction inst) {
