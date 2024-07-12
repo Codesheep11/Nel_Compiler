@@ -100,8 +100,8 @@ public class CalculateOpt {
                     map.get(((Li) instr).imm).second = range;// 刷新生存周期
                     continue;
                 } else {
-                    map.put(((Li) instr).imm, new Pair<>(((Li) instr).reg, range));
                     map.keySet().removeIf(key -> map.get(key).first.equals(((Li) instr).reg));
+                    map.put(((Li) instr).imm, new Pair<>(((Li) instr).reg, range));
                 }
             }
             newList.add(instr);
@@ -126,8 +126,19 @@ public class CalculateOpt {
 
     }
 
+    // 将icmp和branch合并
     public static void icmpBranchToBranch(RiscvBlock block) {
+        ArrayList<RiscvInstruction> newList = new ArrayList<>();
+        for (int i = 0; i < block.riscvInstructions.getSize(); i++) {
+            RiscvInstruction now = block.riscvInstructions.get(i);
+            if (i == block.riscvInstructions.getSize() - 2) {
+                newList.add(now);
+                break;
+            }
+            RiscvInstruction next = block.riscvInstructions.get(i + 1);
+            RiscvInstruction farNext = block.riscvInstructions.get(i + 2);
 
+        }
     }
 
     public static void ConstPointerReUse(RiscvBlock riscvBlock) {
@@ -155,8 +166,8 @@ public class CalculateOpt {
                     map.get(((La) instr).content).second = range;// 刷新生存周期
                     continue;
                 } else {
-                    map.put(((La) instr).content, new Pair<>(((La) instr).reg, range));
                     map.keySet().removeIf(key -> map.get(key).first.equals(((La) instr).reg));
+                    map.put(((La) instr).content, new Pair<>(((La) instr).reg, range));
                 }
             }
             newList.add(instr);
