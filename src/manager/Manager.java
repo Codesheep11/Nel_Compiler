@@ -11,9 +11,10 @@ import frontend.syntaxChecker.Parser;
 import midend.Analysis.FuncAnalysis;
 import midend.Analysis.GlobalVarAnalysis;
 import midend.Transform.*;
-import midend.Transform.DCE.SimplfyCFG;
+import midend.Transform.Array.GepFold;
 import midend.Transform.DCE.DeadArgEliminate;
 import midend.Transform.DCE.DeadCodeDelete;
+import midend.Transform.DCE.SimplfyCFG;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.LCSSA;
@@ -54,7 +55,6 @@ public class Manager {
             Module module = visitor.module;
             if (arg.opt) {
                 Mem2Reg.run(module);
-//                Reassociate.run(module);
                 FunctionInline.run(module);
                 FuncAnalysis.run(module);
                 DeadArgEliminate.run();
@@ -69,6 +69,7 @@ public class Manager {
                 LoopUnSwitching.run(module);
                 LoopInfo.build(module);
                 LCSSA.remove(module);
+                GepFold.run(module);
                 SimplfyCFG.run(module);
                 DeadCodeDelete.run(module);
             }
@@ -85,7 +86,7 @@ public class Manager {
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;
 //                Scheduler.postRASchedule(riscvmodule);
-//                SimplifyCFG.run(riscvmodule);
+                SimplifyCFG.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {
