@@ -1493,8 +1493,7 @@ public class Instruction extends User {
             this.offsets = offsets;
 
             addOperand(base);
-            for (Value offset :
-                    offsets) {
+            for (Value offset : offsets) {
                 addOperand(offset);
             }
         }

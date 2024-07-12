@@ -7,27 +7,28 @@ public class Type {
      * llvm 类型系统
      */
 
-    public static class BasicType extends Type{
+    public static class BasicType extends Type {
         public static final BasicType I32_TYPE = new BasicType();
         public static final BasicType F64_TYPE = new BasicType();
         public static final BasicType I64_TYPE = new BasicType();
         public static final BasicType I1_TYPE = new BasicType();
         public static final BasicType F32_TYPE = new BasicType();
+
         @Override
         public String toString() {
-            if(this.equals(I1_TYPE)) {
+            if (this.equals(I1_TYPE)) {
                 return "i1";
             }
-            if(this.equals(I32_TYPE)) {
+            if (this.equals(I32_TYPE)) {
                 return "i32";
             }
-            if(this.equals(F32_TYPE)) {
+            if (this.equals(F32_TYPE)) {
                 return "float";
             }
-            if(this.equals(I64_TYPE)) {
+            if (this.equals(I64_TYPE)) {
                 return "i64";
             }
-            if(this.equals(F64_TYPE)) {
+            if (this.equals(F64_TYPE)) {
                 return "double";
             }
             return "WRONG_TYPE";
@@ -42,9 +43,11 @@ public class Type {
     public int queryBytesSizeOfType() {
         if (isArrayTy()) {
             return ((ArrayType) this).getSize() * ((ArrayType) this).eleType.queryBytesSizeOfType();
-        } else if (isPointerTy() || isInt64Ty()) {
+        }
+        else if (isPointerTy() || isInt64Ty()) {
             return 8;
-        } else {
+        }
+        else {
             return 4;
         }
     }
@@ -65,8 +68,13 @@ public class Type {
         return this == BasicType.F32_TYPE || this == BasicType.F64_TYPE;
     }
 
+    public boolean isValueType() {
+        return this.isInt32Ty() || this.isFloatTy();
+    }
+
     public static class VoidType extends Type {
         public static final VoidType VOID_TYPE = new VoidType();
+
         @Override
         public String toString() {
             return "void";
@@ -75,6 +83,7 @@ public class Type {
 
     public static class LabelType extends Type {
         public static final LabelType LABEL_TYPE = new LabelType();
+
         @Override
         public String toString() {
             return "LABEL_TYPE";
@@ -132,12 +141,14 @@ public class Type {
 
         /**
          * 获取数组的基本元素类型
+         *
          * @return 数组的基本元素类型
          */
         public BasicType getBasicEleType() {
             if (getEleType() instanceof BasicType) {
                 return (BasicType) getEleType();
-            } else {
+            }
+            else {
                 assert getEleType().isArrayTy();
                 ArrayType arrayType = (ArrayType) getEleType();
                 return arrayType.getBasicEleType();
@@ -146,12 +157,14 @@ public class Type {
 
         /**
          * 获取数组的维度
+         *
          * @return 数组的维度
          */
-        public int getDimensions(){
-            if(eleType.isArrayTy()){
+        public int getDimensions() {
+            if (eleType.isArrayTy()) {
                 return ((ArrayType) eleType).getDimensions() + 1;
-            } else {
+            }
+            else {
                 return 1;
             }
         }
@@ -163,6 +176,7 @@ public class Type {
 
     public static class PointerType extends Type {
         private final Type innerType;
+
         public PointerType(Type type) {
             innerType = type;
         }
@@ -173,7 +187,7 @@ public class Type {
 
         @Override
         public String toString() {
-            return innerType.toString()+"*";
+            return innerType.toString() + "*";
         }
 
         @Override
@@ -189,10 +203,13 @@ public class Type {
 
     }
 
-    public boolean isPointerTy() {return this instanceof PointerType;}
+    public boolean isPointerTy() {
+        return this instanceof PointerType;
+    }
 
     public static class FunctionType extends Type {
         public static final FunctionType FUNC_TYPE = new FunctionType();
+
         @Override
         public String toString() {
             return "FUNC_TYPE";
