@@ -30,7 +30,7 @@ public class LivelessDCE {
             }
         }
         if (!delList.isEmpty()) {
-            System.err.println(delList);
+            // System.err.println(delList);
             delList.forEach(SyncLinkedList.SyncLinkNode::remove);
             LivenessAnalyze.RunOnFunc(function);
         }
