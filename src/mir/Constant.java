@@ -69,6 +69,10 @@ public abstract class Constant extends User {
             this.intValue = intValue;
         }
 
+        public int getIntValue() {
+            return intValue;
+        }
+
         @Override
         public Object getConstValue() {
             return intValue;

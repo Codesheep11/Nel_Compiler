@@ -1,12 +1,14 @@
 package mir;
 
 import backend.operand.Address;
+import midend.Analysis.ScalarEvolution;
 import midend.Transform.ArithReduce;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Mem2Reg;
 import midend.Util.CloneInfo;
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
+import mir.result.SCEVInfo;
 import utils.SyncLinkedList;
 
 import java.util.*;
@@ -53,6 +55,8 @@ public class Function extends Value {
     private final DominanceGraph DG = new DominanceGraph(this);
 
     private int countOfBB = 0;
+
+    public SCEVInfo scevInfo = new SCEVInfo();
 
     public Function(Type type, String name, Type... argumentTypes) {
         super(Type.FunctionType.FUNC_TYPE);
@@ -183,6 +187,10 @@ public class Function extends Value {
 
     public void buildDominanceGraph() {
         DG.build();
+    }
+
+    public void buildSCEVInfo() {
+        scevInfo = ScalarEvolution.run(this);
     }
 
     public void runMem2Reg() {
