@@ -34,28 +34,16 @@
 //                Instruction indVar;
 //                Value x = icmp.getSrc1(), y = icmp.getSrc2();
 //
-//                //        auto matchCmp = [&](Value* v1, Value* v2) {
-////            // if(!v1->is<PhiInst>())
-////            //     return false;
-////                const auto header = v1->getBlock();
-////            if(header != trueTarget)
-////                return false;
-////            // handled by loop elimination
-////            if(header == block)
-////                return false;
-////            if(!dom.dominate(header, block))
-////                return false;
-////            if(!isInvariant(v2, header, dom))
-////                return false;
-////            return true;
-////        };
+//                // 用于判断 (v1, v2) 是否符合 (indvar, n)
 //                Match matchCmp = (v1, v2) -> {
 //                    if (v1 instanceof Instruction inst1) {
+//                        // 必须经过loopRotate?
 //                        if (inst1.getParentBlock() != trueTarget)
 //                            return false;
 //                        if (inst1.getParentBlock() == block)
 //                            return false;
-//                        if (!block.getDomSet().contains(inst1.getParentBlock()))
+//                        // FIXME: 似乎冗余？
+//                        if (!inst1.getParentBlock().dominates(block))
 //                            return false;
 //                        return isInvariant(v2, inst1.getParentBlock());
 //                    }
@@ -71,22 +59,22 @@
 //                    continue;
 //                }
 //
-//                BasicBlock header = indVar.getParentBlock();
+//                BasicBlock indvarBlock = indVar.getParentBlock();
 //                final int depth = 1;
 //                if (cmp == Instruction.Icmp.CondCode.SGT || cmp == Instruction.Icmp.CondCode.SGE) {
-//                    if (!isIndVarMonotonic(indVar, header, true, depth))
+//                    if (!isIndVarMonotonic(indVar, indvarBlock, true, depth))
 //                        continue;
 //                } else if (cmp == Instruction.Icmp.CondCode.SLT || cmp == Instruction.Icmp.CondCode.SLE) {
-//                    if (!isIndVarMonotonic(indVar, header, false, depth))
+//                    if (!isIndVarMonotonic(indVar, indvarBlock, false, depth))
 //                        continue;
 //                } else {
 //                    continue;
 //                }
 //
-//                if (!(isNonSideEffect(header) && isNonSideEffect(block)))
+//                if (!(isNonSideEffect(indvarBlock) && isNonSideEffect(block)))
 //                    continue;
 //
-//                Instruction headerTerminator = header.getLastInst();
+//                Instruction headerTerminator = indvarBlock.getLastInst();
 //                if (headerTerminator.getInstType() != Instruction.InstType.BRANCH)
 //                    continue;
 //
@@ -95,15 +83,15 @@
 //                    continue;
 //
 //                BasicBlock exit = (headerBranch.getThenBlock() != block) ? headerBranch.getThenBlock() : headerBranch.getElseBlock();
-//                if (exit == block || exit == header || exit == branch.getElseBlock())
+//                if (exit == block || exit == indvarBlock || exit == branch.getElseBlock())
 //                    continue;
 //
-//                if (isUsedByOuter(header, exit) || isUsedByOuter(block, exit))
+//                if (isUsedByOuter(indvarBlock, exit) || isUsedByOuter(block, exit))
 //                    continue;
 //
-////                resetTarget(branch, header, exit);
-//                copyTarget(exit, header, block);
-//                removePhi(block, header);
+////                resetTarget(branch, indvarBlock, exit);
+//                copyTarget(exit, indvarBlock, block);
+//                removePhi(block, indvarBlock);
 //
 ////                final double earlyExitProb = 0.1;
 ////                branch.swapTargets();
@@ -118,25 +106,38 @@
 //        return modified;
 //    }
 //
-//    public static boolean isInvariant(Value val, BasicBlock header) {
+//    public static boolean isInvariant(Value val, BasicBlock block) {
 //        if (val instanceof Instruction inst) {
-//            // inst 不在header中 并且被header支配
-//            return inst.getParentBlock() != header && header.getDomSet().contains(inst.getParentBlock());
+//            // inst 被 block 严格支配
+//            return inst.getParentBlock() != block && block.getDomSet().contains(inst.getParentBlock());
 //        }
 //        return true;
 //    }
 //
-//    public static boolean isIndVarMonotonic(Value indVar, BasicBlock header, boolean dir, int depth) {
+//    /**
+//     * 判断归纳变量是否单调
+//     * 目前只能判断加法
+//     */
+//    private static boolean isIndVarMonotonic(Value indVar, BasicBlock block, boolean isIncrease, int depth) {
 //        if (indVar instanceof Instruction.Phi phi) {
 //            final int maxInc = 1;
 //            for (Map.Entry<BasicBlock, Value> entry : phi.getOptionalValues().entrySet()) {
-//                if (isInvariant(entry.getValue(), header)) {
+//                if (isInvariant(entry.getValue(), block)) {
 //                    continue;
 //                }
 //                int step = 0;
-//                if (!matchAdd(entry.getValue(), indVar, step))
-//                    return false;
-//                if (dir) {
+//                if (entry.getValue() instanceof Instruction.Add add) {
+//                    Value op1 = add.getOperand_1(), op2 = add.getOperand_2();
+//                    if (op1 instanceof Constant.ConstantInt constant) {
+//                        step = constant.getIntValue();
+//                        indVar = op2;
+//                    } else if (op2 instanceof Constant.ConstantInt constant) {
+//                        step = constant.getIntValue();
+//                        indVar = op1;
+//                    }
+//                } else continue;
+//
+//                if (isIncrease) {
 //                    if (step <= 0)
 //                        return false;
 //                    if (step <= maxInc)
@@ -156,7 +157,7 @@
 //        Value base;
 //        int step;
 //        if (matchAdd(indVar, base, step)) {
-//            return isIndVarMonotonic(base, header, dir, depth - 1);
+//            return isIndVarMonotonic(base, block, isIncrease, depth - 1);
 //        }
 //        return false;
 //    }
@@ -195,9 +196,19 @@
 //
 //    // Utility methods for matching, pattern recognition, and transformations
 //    private static boolean matchAdd(Value value, Value base, int step) {
-//        // TODO: Implement logic to match addition pattern
-//        System.out.println("matchAdd to be implemented");
-//        return false;  // Example implementation
+//        if (value instanceof Instruction.Add add) {
+//            Value op1 = add.getOperand_1(), op2 = add.getOperand_2();
+//            if (op1 instanceof Constant.ConstantInt constant) {
+//                step = constant.getIntValue();
+//                base = op2;
+//                return true;
+//            } else if (op2 instanceof Constant.ConstantInt constant) {
+//                step = constant.getIntValue();
+//                base = op1;
+//                return true;
+//            }
+//        }
+//        return false;
 //    }
 //
 //    private static void copyTarget(BasicBlock exit, BasicBlock header, BasicBlock block) {

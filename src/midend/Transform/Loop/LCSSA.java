@@ -101,8 +101,7 @@ public class LCSSA {
                             phi.replaceAllUsesWith(v);
                             phi.delete();
                         }
-                    }
-                    else {
+                    } else {
                         break;
                     }
                 }
