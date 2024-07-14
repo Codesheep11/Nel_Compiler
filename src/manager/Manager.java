@@ -4,6 +4,8 @@ import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
+import frontend.exception.SemanticError;
+import frontend.exception.SyntaxError;
 import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
@@ -13,7 +15,8 @@ import midend.Analysis.GlobalVarAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.GepFold;
 import midend.Transform.DCE.DeadArgEliminate;
-import midend.Transform.DCE.DeadCodeDelete;
+import midend.Transform.DCE.DeadCodeEliminate;
+import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplfyCFG;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
@@ -21,6 +24,7 @@ import midend.Transform.Loop.IndVars;
 import midend.Transform.Loop.LCSSA;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Loop.LoopUnSwitching;
+import midend.Util.FuncInfo;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
@@ -43,58 +47,74 @@ public class Manager {
         this.arg = arg;
     }
 
+    public static Module module;
+
     public void run() {
         try {
-            BufferedInputStream src = new BufferedInputStream(arg.srcStream);
-            TokenArray tokenArray = new TokenArray();
-            Lexer lexer = new Lexer(src, tokenArray);
-            lexer.lex();
-            Parser parser = new Parser(tokenArray);
-            Ast ast = parser.parseAst();
-            Visitor visitor = new Visitor();
-            visitor.visitAst(ast);
-            Module module = visitor.module;
+            FrontEnd();
             if (arg.opt) {
                 Mem2Reg.run(module);
-                FunctionInline.run(module);
-                FuncAnalysis.run(module);
-                DeadArgEliminate.run();
-                TailCall2Loop.run(module);
-                FuncAnalysis.run(module);
+                DeadCodeEliminate();
+                FuncPasses();
                 GlobalVarAnalysis.run(module);
 //                ConstArray2Value.run(module);
                 GlobalValueNumbering.run(module);
-                DeadCodeDelete.run(module);
+                DeadCodeEliminate.run(module);
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
+                LCSSA.Run(module);
                 LoopUnSwitching.run(module);
                 LoopInfo.build(module);
                 IndVars.run(module);
                 LCSSA.remove(module);
                 GepFold.run(module);
-                SimplfyCFG.run(module);
-                DeadCodeDelete.run(module);
+                DeadCodeEliminate();
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
+                return;
             }
-            else {
-                RemovePhi.run(module);
-                outputLLVM("test.txt", module);
-                CodeGen codeGen = new CodeGen();
-                RiscvModule riscvmodule = codeGen.genCode(module);
-//                Scheduler.preRASchedule(riscvmodule);
-                outputRiscv("debug.txt", riscvmodule);
-                Allocater.run(riscvmodule);
-                afterRegAssign = true;
-//                Scheduler.postRASchedule(riscvmodule);
-                SimplifyCFG.run(riscvmodule);
-                outputRiscv(arg.outPath, riscvmodule);
-            }
+            RemovePhi.run(module);
+//            outputLLVM("test.txt", module);
+            CodeGen codeGen = new CodeGen();
+            RiscvModule riscvmodule = codeGen.genCode(module);
+//            Scheduler.preRASchedule(riscvmodule);
+            outputRiscv("debug.txt", riscvmodule);
+            Allocater.run(riscvmodule);
+            afterRegAssign = true;
+//            Scheduler.postRASchedule(riscvmodule);
+            SimplifyCFG.run(riscvmodule);
+            outputRiscv(arg.outPath, riscvmodule);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
         }
+    }
+
+    private void FrontEnd() throws IOException, SyntaxError, SemanticError {
+        BufferedInputStream src = new BufferedInputStream(arg.srcStream);
+        TokenArray tokenArray = new TokenArray();
+        Lexer lexer = new Lexer(src, tokenArray);
+        lexer.lex();
+        Parser parser = new Parser(tokenArray);
+        Ast ast = parser.parseAst();
+        Visitor visitor = new Visitor();
+        visitor.visitAst(ast);
+        module = visitor.module;
+    }
+
+    private void DeadCodeEliminate() {
+        DeadLoopEliminate.run(module);
+        SimplfyCFG.run(module);
+        DeadCodeEliminate.run(module);
+    }
+
+    private void FuncPasses() {
+        FunctionInline.run(module);
+        FuncAnalysis.run(module);
+        DeadArgEliminate.run();
+        TailCall2Loop.run(module);
+        FuncAnalysis.run(module);
     }
 
     public void LoopTest(Module module) {
@@ -103,42 +123,6 @@ public class Manager {
             for (Loop loop : function.loopInfo.TopLevelLoops)
                 loop.LoopInfoPrint();
         }
-    }
-
-    public static class ExternFunc {
-        public static final Function MEMSET = new Function(Type.VoidType.VOID_TYPE, "memset",
-                new Type.PointerType(Type.BasicType.I32_TYPE), Type.BasicType.I32_TYPE, Type.BasicType.I32_TYPE);
-        public static final Function GETINT = new Function(Type.BasicType.I32_TYPE, "getint");
-        public static final Function PUTINT = new Function(Type.VoidType.VOID_TYPE, "putint", Type.BasicType.I32_TYPE);
-        public static final Function GETCH = new Function(Type.BasicType.I32_TYPE, "getch");
-        public static final Function GETFLOAT = new Function(Type.BasicType.F32_TYPE, "getfloat");
-        public static final Function PUTCH = new Function(Type.VoidType.VOID_TYPE, "putch", Type.BasicType.I32_TYPE);
-        public static final Function PUTFLOAT = new Function(Type.VoidType.VOID_TYPE, "putfloat", Type.BasicType.F32_TYPE);
-        public static final Function STARTTIME = new Function(Type.VoidType.VOID_TYPE, "_sysy_starttime");
-        public static final Function STOPTIME = new Function(Type.VoidType.VOID_TYPE, "_sysy_stoptime");
-        public static final Function GETARRAY = new Function(Type.BasicType.I32_TYPE, "getarray", new Type.PointerType(Type.BasicType.I32_TYPE));
-        public static final Function GETFARRAY = new Function(Type.BasicType.I32_TYPE, "getfarray", new Type.PointerType(Type.BasicType.F32_TYPE));
-        public static final Function PUTARRAY = new Function(Type.VoidType.VOID_TYPE, "putarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.I32_TYPE));
-        public static final Function PUTFARRAY = new Function(Type.VoidType.VOID_TYPE, "putfarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.F32_TYPE));
-        public static final Function PUTF = new Function(Type.VoidType.VOID_TYPE, "putf");
-
-        public static final HashMap<String, Function> externFunctions = new HashMap<>() {{
-            put(MEMSET.getName(), MEMSET);
-            put(GETINT.getName(), GETINT);
-            put(PUTINT.getName(), PUTINT);
-            put(GETCH.getName(), GETCH);
-            put(GETFLOAT.getName(), GETFLOAT);
-            put(PUTCH.getName(), PUTCH);
-            put(PUTFLOAT.getName(), PUTFLOAT);
-            put("starttime", STARTTIME);
-            put("stoptime", STOPTIME);
-            put(GETARRAY.getName(), GETARRAY);
-            put(GETFARRAY.getName(), GETFARRAY);
-            put(PUTARRAY.getName(), PUTARRAY);
-            put(PUTFARRAY.getName(), PUTFARRAY);
-            put(PUTF.getName(), PUTF);
-        }};
-
     }
 
 
@@ -168,8 +152,8 @@ public class Manager {
         for (Map.Entry<String, Function> functionEntry : functions.entrySet()) {
             if (functionEntry.getValue().isExternal()) {
                 Function function = functionEntry.getValue();
-                if (functionEntry.getKey().equals(ExternFunc.PUTF.getName())) {
-                    outputList.add("declare void @" + ExternFunc.PUTF.getName() + "(ptr, ...)");
+                if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
+                    outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
                 }
                 else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));

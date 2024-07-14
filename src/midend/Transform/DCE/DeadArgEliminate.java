@@ -59,8 +59,6 @@ public class DeadArgEliminate {
                 call.delete();
             }
             function.getFuncRArguments().remove(idx);
-//            function.getArgumentsTP().remove(idx);
-//            function.getMyArguments().remove(idx);
         }
         for (int i = 0; i < function.getFuncRArguments().size(); i++) {
             function.getFuncRArguments().get(i).idx = i;
