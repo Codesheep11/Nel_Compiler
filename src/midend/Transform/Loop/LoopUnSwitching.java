@@ -12,10 +12,9 @@ import java.util.Map;
 /**
  * 循环分支取消
  * <p>
- * 请在执行该优化前先执行 LIVL 优化
+ * 请在执行该优化前先执行 GCM/LICM 优化
  * </p>
  * Note: 该优化会改变循环的结构，执行后需要重建loop <br>
- * 现在只会处理一个分支的情况
  */
 public class LoopUnSwitching {
 
@@ -31,6 +30,9 @@ public class LoopUnSwitching {
         }
     }
 
+    // NOTE: 最好不要超过10
+    private static final int threshold = 5;
+
     private static void collectBranch(Loop loop) {
         ArrayList<Instruction.Branch> branches = new ArrayList<>();
         for (BasicBlock block : loop.nowLevelBB) {
@@ -43,13 +45,88 @@ public class LoopUnSwitching {
                 if (loop.defValue(branch.getCond()))
                     continue;
                 branches.add(branch);
+                if (branches.size() >= threshold)
+                    break;
             }
         }
         if (branches.isEmpty()) return;
         //demo
-        unSwitching(loop, branches.get(0));
+        unSwitching(loop, branches);
     }
 
+    private static void unSwitching(Loop loop, ArrayList<Instruction.Branch> branches) {
+        Instruction.Branch branch = branches.get(0);
+        Function parentFunction = branch.getParentBlock().getParentFunction();
+        BasicBlock oldPreHeader = loop.getPreHeader();
+        parentFunction.buildControlFlowGraph();
+        ArrayList<BasicBlock> trueBlocks = new ArrayList<>();
+        ArrayList<BasicBlock> falseBlocks = new ArrayList<>();
+
+        for (var br : branches) {
+            trueBlocks.add(br.getThenBlock());
+            falseBlocks.add(br.getElseBlock());
+        }
+
+        ArrayList<BasicBlock> condBlocks = new ArrayList<>();
+        for (int i = 1; i < (1 << branches.size()); ++i)
+            condBlocks.add(new BasicBlock(getNewLabel(parentFunction, "cond"), parentFunction));
+
+        ArrayList<LoopCloneInfo> infos = new ArrayList<>();
+        for (int i = (1 << branches.size()); i < (1 << (branches.size() + 1)); ++i) {
+            LoopCloneInfo info = loop.cloneAndInfo();
+            infos.add(info);
+            Loop newLoop = info.cpy;
+            for (int j = 0; j < branches.size(); ++j) {
+                Instruction cond = ((Instruction) info.getReflectedValue(branches.get(j)));
+                BasicBlock condBlock = cond.getParentBlock();
+                cond.delete();
+                if ((i & (1 << (branches.size() - 1 - j))) == 0) {
+                    new Instruction.Jump(condBlock, (BasicBlock) info.getReflectedValue(trueBlocks.get(j)));
+                } else {
+                    new Instruction.Jump(condBlock, (BasicBlock) info.getReflectedValue(falseBlocks.get(j)));
+                }
+            }
+            int finalI = i;
+            newLoop.header.getPhiInstructions().forEach(phi -> phi.changePreBlock(oldPreHeader, condBlocks.get((finalI >> 1) - 1)));
+
+            condBlocks.add(newLoop.header);
+        }
+
+        for (int i = 1; i < (1 << branches.size()); ++i) {
+            var lson = condBlocks.get((i << 1) - 1);
+            var rson = condBlocks.get(i << 1);
+            int k = Integer.toBinaryString(i).length();
+            new Instruction.Branch(condBlocks.get(i - 1), branches.get(k - 1).getCond(), lson, rson);
+        }
+
+        // modify preheader
+        oldPreHeader.getTerminator().replaceSucc(loop.header, condBlocks.get(0));
+
+        // modify exits
+        for (BasicBlock exit : loop.exits) {
+            for (Instruction.Phi phi : exit.getPhiInstructions()) {
+                LinkedHashMap<BasicBlock, Value> newMap = new LinkedHashMap<>();
+                for (Map.Entry<BasicBlock, Value> entry : phi.getOptionalValues().entrySet()) {
+                    if (infos.get(0).containValue(entry.getKey())) {
+                        if (infos.get(0).containValue(entry.getValue())) {
+                            infos.forEach(info ->
+                                    newMap.put((BasicBlock) info.getReflectedValue(entry.getKey()), info.getReflectedValue(entry.getValue())));
+                        } else {
+                            infos.forEach(info ->
+                                    newMap.put((BasicBlock) info.getReflectedValue(entry.getKey()), entry.getValue()));
+                        }
+                    } else {
+                        newMap.put(entry.getKey(), entry.getValue());
+                    }
+                }
+                phi.setOptionalValues(newMap);
+            }
+        }
+
+        RemoveBlocks.runOnFunc(parentFunction);
+    }
+
+    //demo
     private static void unSwitching(Loop loop, Instruction.Branch branch) {
         Function parentFunction = branch.getParentBlock().getParentFunction();
         parentFunction.buildControlFlowGraph();
