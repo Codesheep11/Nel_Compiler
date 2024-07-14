@@ -97,6 +97,9 @@ public class R2 extends RiscvInstruction {
 
     @Override
     public String toString() {
+//        if (type == R2Type.mv) {
+//            return "\tori\t" + rd + ",\t" + rs + ",\t0";
+//        }
         String app = type == R2Type.fcvtws ? ", rtz " : "";
         if (type.toString().length() > 3) {
             return "\t" + type + "\t" + rd + ", " + rs + app;

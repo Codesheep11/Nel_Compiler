@@ -9,6 +9,7 @@ import frontend.semantic.SymTable;
 import frontend.semantic.Symbol;
 import frontend.syntaxChecker.Ast;
 import manager.Manager;
+import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
 
@@ -204,8 +205,8 @@ public class Visitor {
         params.add(ptr);
         params.add(new Constant.ConstantInt(0));
         params.add(new Constant.ConstantInt(size));
-        new Instruction.Call(currentBB, Manager.ExternFunc.MEMSET, params);
-        module.addFunction(Manager.ExternFunc.MEMSET);
+        new Instruction.Call(currentBB, FuncInfo.ExternFunc.MEMSET, params);
+        module.addFunction(FuncInfo.ExternFunc.MEMSET);
     }
 
 
@@ -657,7 +658,7 @@ public class Visitor {
     private Value visitFunctionCall(Ast.Ident ident, Ast.FuncRParams funcRParams, Token str) throws SemanticError {
         Function function = module.getFunctions().get(ident.identifier.content);
         if (function == null) {
-            function = Manager.ExternFunc.externFunctions.get(ident.identifier.content);
+            function = FuncInfo.ExternFunc.externFunctions.get(ident.identifier.content);
             if (function == null) {
                 throw new SemanticError("Undefined Function: " + ident.identifier.content);
             }
@@ -668,7 +669,7 @@ public class Visitor {
         ArrayList<Value> rParams = new ArrayList<>();
 
         if (str != null) {
-            assert ident.identifier.content.equals(Manager.ExternFunc.PUTF.getName());
+            assert ident.identifier.content.equals(FuncInfo.ExternFunc.PUTF.getName());
             for (int i = 0; i < funcRParams.getParams().size(); i++) {
                 rParams.add(visitExp(funcRParams.getParams().get(i)));
             }

@@ -10,9 +10,11 @@ import java.util.*;
 import static manager.CentralControl._FUNC_INLINE_OPEN;
 
 public class FunctionInline {
+    private static final int INLINE_SIZE_THRESHOLD = 150;
     private static Collection<Function> functions;
     private static Module module;
     private static ArrayList<Function> funcCanInline = new ArrayList<>();
+    private static HashMap<Function, Integer> funcSize = new HashMap<>();
     //A调用B则存在B->A
     private static HashMap<Function, HashSet<Function>> reserveMap = new HashMap<>();
     //记录反图的入度
@@ -51,7 +53,18 @@ public class FunctionInline {
      */
     private static void GetFuncCanInline() {
         makeReserveMap();
+        calFuncSize();
         topologySort();
+    }
+
+    private static void calFuncSize() {
+        for (Function function : functions) {
+            int size = 0;
+            for (BasicBlock basicBlock : function.getBlocks()) {
+                size += basicBlock.getInstructions().getSize();
+            }
+            funcSize.put(function, size);
+        }
     }
 
     /***
@@ -88,7 +101,9 @@ public class FunctionInline {
 
     private static void topologySort() {
         for (Function function : inNum.keySet()) {
-            if (inNum.get(function) == 0 && !function.getName().equals("main") && !function.isExternal()) {
+            if (inNum.get(function) == 0 && !function.getName().equals("main")
+                    && !function.isExternal() && funcSize.get(function) <= INLINE_SIZE_THRESHOLD)
+            {
                 queue.add(function);
             }
         }

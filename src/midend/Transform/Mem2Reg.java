@@ -1,5 +1,6 @@
 package midend.Transform;
 
+import midend.Transform.DCE.RemoveBlocks;
 import mir.*;
 import mir.Module;
 
@@ -8,7 +9,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 
-public  class Mem2Reg {
+public class Mem2Reg {
     private static Function function;
     // 描述变量， 及其def, use 侧的指令，基本块
     private static Instruction.Alloc var;
@@ -26,6 +27,7 @@ public  class Mem2Reg {
                 continue;
             }
             function.buildControlFlowGraph();
+            RemoveBlocks.runOnFunc(function);
             //                    function.checkCFG();
             function.buildDominanceGraph();
             function.runMem2Reg();
