@@ -6,5 +6,5 @@ out/
 
 compiler2024-nel.iml
 /src/META-INF/MANIFEST.MF
-*.java
+
 *.jar
