@@ -1,6 +1,5 @@
 package manager;
 
-import backend.Opt.Scheduler.Scheduler;
 import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
@@ -16,13 +15,13 @@ import midend.Analysis.GlobalVarAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.GepFold;
 import midend.Transform.DCE.DeadArgEliminate;
-import midend.Transform.DCE.DeadCodeDelete;
+import midend.Transform.DCE.DeadCodeEliminate;
+import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplfyCFG;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.IndVars;
 import midend.Transform.Loop.LCSSA;
-import midend.Transform.Loop.LoopInVarLift;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Loop.LoopUnSwitching;
 import midend.Util.FuncInfo;
@@ -59,16 +58,16 @@ public class Manager {
                 FuncPasses();
                 GlobalVarAnalysis.run(module);
 //                ConstArray2Value.run(module);
-                GlobalValueNumbering.run(module);
-                DeadCodeDelete.run(module);
-                LoopInfo.build(module);
-                GlobalCodeMotion.run(module);
-                LCSSA.Run(module);
-                LoopUnSwitching.run(module);
-                LoopInfo.build(module);
-                IndVars.run(module);
-                LCSSA.remove(module);
-                GepFold.run(module);
+//                GlobalValueNumbering.run(module);
+//                DeadCodeEliminate.run(module);
+//                LoopInfo.build(module);
+//                GlobalCodeMotion.run(module);
+//                LCSSA.Run(module);
+//                LoopUnSwitching.run(module);
+//                LoopInfo.build(module);
+//                IndVars.run(module);
+//                LCSSA.remove(module);
+//                GepFold.run(module);
                 DeadCodeEliminate();
             }
             if (arg.LLVM) {
@@ -76,14 +75,14 @@ public class Manager {
                 return;
             }
             RemovePhi.run(module);
-            outputLLVM("test.txt", module);
+//            outputLLVM("test.txt", module);
             CodeGen codeGen = new CodeGen();
             RiscvModule riscvmodule = codeGen.genCode(module);
 //            Scheduler.preRASchedule(riscvmodule);
             outputRiscv("debug.txt", riscvmodule);
             Allocater.run(riscvmodule);
             afterRegAssign = true;
-            Scheduler.postRASchedule(riscvmodule);
+//            Scheduler.postRASchedule(riscvmodule);
             SimplifyCFG.run(riscvmodule);
             outputRiscv(arg.outPath, riscvmodule);
         } catch (Exception e) {
@@ -105,15 +104,16 @@ public class Manager {
     }
 
     private void DeadCodeEliminate() {
+        DeadLoopEliminate.run(module);
         SimplfyCFG.run(module);
-        DeadCodeDelete.run(module);
+        DeadCodeEliminate.run(module);
     }
 
     private void FuncPasses() {
         FunctionInline.run(module);
-        FuncAnalysis.run(module);
-        DeadArgEliminate.run();
-        TailCall2Loop.run(module);
+//        FuncAnalysis.run(module);
+//        DeadArgEliminate.run();
+//        TailCall2Loop.run(module);
         FuncAnalysis.run(module);
     }
 

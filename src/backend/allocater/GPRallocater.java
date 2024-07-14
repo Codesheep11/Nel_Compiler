@@ -67,7 +67,7 @@ public class GPRallocater {
         while (true) {
             clear();
             //标记第几轮循环
-//            System.out.println(func.name + " GPR round: " + pass++);
+            System.out.println(func.name + " GPR round: " + pass++);
 //            System.out.println(func);
             //建立冲突图
             buildConflictGraph();
@@ -84,6 +84,7 @@ public class GPRallocater {
 
     /**
      * 重写代码：
+     * todo:perf better
      * 将所有spillNode中虚拟寄存器存入内存
      * 再在变量使用处从内存中取出
      */

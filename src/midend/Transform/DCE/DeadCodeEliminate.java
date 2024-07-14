@@ -12,7 +12,7 @@ import java.util.Iterator;
 
 import static manager.CentralControl._DCD_OPEN;
 
-public class DeadCodeDelete {
+public class DeadCodeEliminate {
     private final static HashSet<Value> usefulVar = new HashSet<>();//所有有用的Value
     private static final HashSet<Value> newUsefulVar = new HashSet<>();//每一轮迭代新加入的有用的Value
 

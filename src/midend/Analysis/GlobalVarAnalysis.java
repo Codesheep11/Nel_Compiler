@@ -103,13 +103,14 @@ public class GlobalVarAnalysis {
         store.remove();
         entry.getInstructions().insertBefore(alloca, entry.getFirstInst());
         entry.getInstructions().insertAfter(store, alloca);
-        LinkedList<Use> uses = new LinkedList<>(gv.getUses());
-        Iterator<Use> useIterator = uses.iterator();
-        while (useIterator.hasNext()) {
-            Use use = useIterator.next();
-            Instruction inst = (Instruction) use.getUser();
-            inst.replaceUseOfWith(gv, alloca);
-        }
+        gv.replaceAllUsesWith(alloca);
+//        LinkedList<Use> uses = new LinkedList<>(gv.getUses());
+//        Iterator<Use> useIterator = uses.iterator();
+//        while (useIterator.hasNext()) {
+//            Use use = useIterator.next();
+//            Instruction inst = (Instruction) use.getUser();
+//            inst.replaceUseOfWith(gv, alloca);
+//        }
     }
 
     /**

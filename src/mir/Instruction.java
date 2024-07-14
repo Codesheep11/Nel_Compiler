@@ -147,22 +147,22 @@ public class Instruction extends User {
         return false;
     }
 
-//    public boolean isNoSideEffect() {
-//        if (!canbeOperand()) {
-//            return false;
-//        }
-//        if (isTerminator()) {
-//            return false;
-//        }
-//        return switch (instType) {
-//            case CALL -> {
-//                Function callee = ((Call) this).getDestFunction();
-//                yield !callee.hasSideEffect && callee.isStateless && callee.hasReturn;
-//            }
-//            case STORE -> false;
-//            default -> true;
-//        };
-//    }
+    public boolean isNoSideEffect() {
+        if (!canbeOperand()) {
+            return false;
+        }
+        if (isTerminator()) {
+            return false;
+        }
+        return switch (instType) {
+            case CALL -> {
+                Function callee = ((Call) this).getDestFunction();
+                yield !FuncInfo.hasSideEffect.get(callee) && FuncInfo.isStateless.get(callee) && FuncInfo.hasReturn.get(callee);
+            }
+            case STORE -> false;
+            default -> true;
+        };
+    }
 
     public boolean isAssociative() {
         return switch (instType) {
