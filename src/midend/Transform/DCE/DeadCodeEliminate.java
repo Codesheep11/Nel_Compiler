@@ -12,7 +12,7 @@ import java.util.Iterator;
 
 import static manager.CentralControl._DCD_OPEN;
 
-public class DeadCodeDelete {
+public class DeadCodeEliminate {
     private final static HashSet<Value> usefulVar = new HashSet<>();//所有有用的Value
     private static final HashSet<Value> newUsefulVar = new HashSet<>();//每一轮迭代新加入的有用的Value
 
@@ -96,6 +96,7 @@ public class DeadCodeDelete {
                     }
                 }
             }
+
             for (Use use : block.getUses()) {
                 newUsefulVar.add(use.getUser());
             }
@@ -131,6 +132,7 @@ public class DeadCodeDelete {
     }
 
     public static boolean isUsefulCall(Function callee) {
+        if (!FuncInfo.FuncAnalysisOpen) return true;
         return usefulVar.contains(callee)
                 || (callee.isExternal() && !callee.getName().equals("memset"))
                 || FuncInfo.hasReadIn.get(callee) || FuncInfo.hasPutOut.get(callee);

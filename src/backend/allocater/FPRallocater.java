@@ -26,11 +26,7 @@ public class FPRallocater {
 
     public static int pass;
 
-    /*
-    x5 - x31均可分配
-     */
-    private static int K = 26;
-    //t0作为临时寄存器，不参与图着色寄存器分配
+    private static int K = 32;
 
     private static final LinkedHashSet<Reg.PhyReg> Regs = new LinkedHashSet<>(
             Arrays.asList(Reg.PhyReg.ft0, Reg.PhyReg.ft1, Reg.PhyReg.ft2, Reg.PhyReg.ft3, Reg.PhyReg.ft4, Reg.PhyReg.ft5, Reg.PhyReg.ft6, Reg.PhyReg.ft7,
