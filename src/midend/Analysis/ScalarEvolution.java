@@ -1,7 +1,7 @@
 package midend.Analysis;
 
 import mir.*;
-import mir.result.SCEVAnalysisResult;
+import mir.result.SCEVInfo;
 
 /**
  * Scalar Evolution Analysis <br>
@@ -10,8 +10,8 @@ import mir.result.SCEVAnalysisResult;
  */
 public class ScalarEvolution {
 
-    public static SCEVAnalysisResult run(Function func) {
-        SCEVAnalysisResult res = new SCEVAnalysisResult();
+    public static SCEVInfo run(Function func) {
+        SCEVInfo res = new SCEVInfo();
 
         for (Loop loop : func.loopInfo.TopLevelLoops) {
             for (Instruction inst : loop.header.getInstructions()) {
@@ -34,11 +34,15 @@ public class ScalarEvolution {
      * @param res 结果
      * @param loop 循环
      */
-    private static void BasicInduceVariableAnalysis(Instruction.Phi phiInst, SCEVAnalysisResult res, Loop loop) {
+    private static void BasicInduceVariableAnalysis(Instruction.Phi phiInst, SCEVInfo res, Loop loop) {
         // TODO: 需要 check
         Value initial = getInitial(phiInst, loop);
         Value next = getNext(phiInst, loop);
 
+        if (next instanceof Constant) {
+//            System.out.println("Invariant");
+            return;
+        }
         Instruction nextInst = (Instruction) next;
         if (nextInst instanceof Instruction.BinaryOperation bo && nextInst.getInstType() == Instruction.InstType.ADD) {
             Value op1 = bo.getOperand_1();
@@ -62,7 +66,7 @@ public class ScalarEvolution {
     /**
      * 通用归纳变量分析
      */
-    private static void GeneralInduceVariableAnalysis(Instruction inst, SCEVAnalysisResult res) {
+    private static void GeneralInduceVariableAnalysis(Instruction inst, SCEVInfo res) {
         switch (inst.getInstType()) {
             case ADD -> {
                 Instruction.Add add = (Instruction.Add) inst;
@@ -90,7 +94,7 @@ public class ScalarEvolution {
         }
     }
 
-    private static SCEVExpr foldAdd(SCEVAnalysisResult res, SCEVExpr lhs, SCEVExpr rhs) {
+    private static SCEVExpr foldAdd(SCEVInfo res, SCEVExpr lhs, SCEVExpr rhs) {
         if (lhs.type == SCEVExpr.SCEVType.Constant && rhs.type == SCEVExpr.SCEVType.Constant) {
             SCEVExpr scev = new SCEVExpr(SCEVExpr.SCEVType.Constant);
             scev.constant = lhs.constant + rhs.constant;
@@ -99,7 +103,7 @@ public class ScalarEvolution {
         return null;
     }
 
-    private static SCEVExpr foldMul(SCEVAnalysisResult res, SCEVExpr lhs, SCEVExpr rhs) {
+    private static SCEVExpr foldMul(SCEVInfo res, SCEVExpr lhs, SCEVExpr rhs) {
         if (lhs.type == SCEVExpr.SCEVType.Constant && rhs.type == SCEVExpr.SCEVType.Constant) {
             SCEVExpr scev = new SCEVExpr(SCEVExpr.SCEVType.Constant);
             scev.constant = lhs.constant * rhs.constant;

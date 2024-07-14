@@ -20,6 +20,7 @@ import midend.Transform.DCE.DeadCodeDelete;
 import midend.Transform.DCE.SimplfyCFG;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
+import midend.Transform.Loop.IndVars;
 import midend.Transform.Loop.LCSSA;
 import midend.Transform.Loop.LoopInVarLift;
 import midend.Transform.Loop.LoopInfo;
@@ -65,6 +66,7 @@ public class Manager {
                 LCSSA.Run(module);
                 LoopUnSwitching.run(module);
                 LoopInfo.build(module);
+                IndVars.run(module);
                 LCSSA.remove(module);
                 GepFold.run(module);
                 DeadCodeEliminate();

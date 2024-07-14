@@ -18,6 +18,8 @@ public class Loop {
     public HashSet<BasicBlock> exitings = new HashSet<>();
     public HashSet<BasicBlock> exits = new HashSet<>();
     public HashSet<BasicBlock> latchs = new HashSet<>();// 1 latch
+
+    public int tripCount = -1;
     //todo: cond
     public boolean canAggressiveParallel = false;
     public boolean isRoot = false;
