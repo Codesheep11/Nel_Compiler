@@ -439,6 +439,10 @@ public class CodeGen {
      */
     private void solveBranch(Instruction.Branch branchInstr) {
         Reg reg = VirRegMap.VRM.ensureRegForValue(branchInstr.getCond());
+        if (!VirRegMap.bUseReg.containsKey(reg)) {
+            VirRegMap.bUseReg.put(reg, 0);
+        }
+        VirRegMap.bUseReg.put(reg, VirRegMap.bUseReg.get(reg) + 1);
         if (!branchInstr.getCond().getType().isInt1Ty()) {
             throw new RuntimeException("cond is not int1");
         }

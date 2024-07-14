@@ -7,6 +7,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvGlobalVar;
 import backend.riscv.RiscvInstruction.*;
 import backend.riscv.RiscvModule;
+import mir.Ir2RiscV.VirRegMap;
 import utils.Pair;
 
 import java.util.ArrayList;
@@ -161,6 +162,10 @@ public class CalculateOpt {
         return false;
     }
 
+    private static boolean matchFarNext(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
+        return matchNE(now, next, farNext) || matchEQ(now, next, farNext) || matchSGEAndSLE(now, next, farNext);
+    }
+
 
     // 将icmp和branch合并
     public static void icmpBranchToBranch(RiscvBlock block) {
@@ -172,27 +177,34 @@ public class CalculateOpt {
                 RiscvInstruction next = block.riscvInstructions.get(i + 1);
                 if (matchSLTAndSGT(now, next)) {
                     //slt ,置1，bne r,zero,不为0则跳转,所以就是小于则跳转
-                    newList.add(new B(block, B.BType.blt, ((R3) now).rs1, (((R3) now).rs2), ((B) next).targetBlock));
-                    i++;
-                    // 将next忽略
-                    modified = true;
+                    Reg reg = (Reg) ((R3) now).rd;
+                    if (VirRegMap.bUseReg.get(reg) <= 1) {
+                        newList.add(new B(block, B.BType.blt, ((R3) now).rs1, (((R3) now).rs2), ((B) next).targetBlock));
+                        i++;
+                        // 将next忽略
+                        modified = true;
+                    }
                 }
-                if (i < block.riscvInstructions.getSize() - 2) {
+                else if (i < block.riscvInstructions.getSize() - 2) {
                     RiscvInstruction farNext = block.riscvInstructions.get(i + 2);
-                    if (matchEQ(now, next, farNext)) {
-                        // subw,seqz,看看是不是0
-                        newList.add(new B(block, B.BType.beq, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
-                        i = i + 2;
-                        modified = true;
-                    } else if (matchNE(now, next, farNext)) {
-                        newList.add(new B(block, B.BType.bne, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
-                        i = i + 2;
-                        modified = true;
-                    } else if (matchSGEAndSLE(now, next, farNext)) {
-                        // 这个存起来就看后面的是不是大于等于前面的
-                        newList.add(new B(block, B.BType.bge, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
-                        i = i + 2;
-                        modified = true;
+                    if (matchFarNext(now, next, farNext)) {
+                        B.BType type;
+                        if (matchEQ(now, next, farNext)) {
+                            // subw,seqz,看看是不是0
+                            type = B.BType.beq;
+                        } else if (matchNE(now, next, farNext)) {
+                            type = B.BType.bne;
+                        } else if (matchSGEAndSLE(now, next, farNext)) {
+                            // 这个存起来就看后面的是不是大于等于前面的
+                            type = B.BType.bge;
+                        } else throw new RuntimeException("wrong match");
+                        assert next instanceof R2;
+                        Reg reg = (Reg) ((R2) next).rd;
+                        if (VirRegMap.bUseReg.get(reg) <= 1) {
+                            newList.add(new B(block, type, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
+                            i = i + 2;
+                            modified = true;
+                        }
                     }
                 }
             }
@@ -200,6 +212,7 @@ public class CalculateOpt {
                 newList.add(now);
             }
         }
+        newList.forEach(System.out::println);
         block.riscvInstructions.setEmpty();
         for (RiscvInstruction ri : newList) {
             block.riscvInstructions.addLast(ri);
