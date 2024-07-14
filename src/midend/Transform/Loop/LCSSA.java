@@ -104,13 +104,15 @@ public class LCSSA {
                     if (instr instanceof Instruction.Phi phi) {
                         if (phi.isLCSSA) {
                             if (phi.getPreBlocks().size() != 1) {
-                                if (!phi.canBeReplaced()) throw new RuntimeException("what can i say?");
+                                phi.isLCSSA = false;
+                                continue;
                             }
                             Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
                             phi.replaceAllUsesWith(v);
                             phi.delete();
                         }
-                    } else {
+                    }
+                    else {
                         break;
                     }
                 }

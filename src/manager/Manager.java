@@ -58,16 +58,16 @@ public class Manager {
                 FuncPasses();
                 GlobalVarAnalysis.run(module);
 //                ConstArray2Value.run(module);
-//                GlobalValueNumbering.run(module);
-//                DeadCodeEliminate.run(module);
-//                LoopInfo.build(module);
-//                GlobalCodeMotion.run(module);
-//                LCSSA.Run(module);
-//                LoopUnSwitching.run(module);
-//                LoopInfo.build(module);
-//                IndVars.run(module);
-//                LCSSA.remove(module);
-//                GepFold.run(module);
+                GlobalValueNumbering.run(module);
+                DeadCodeEliminate.run(module);
+                LoopInfo.build(module);
+                GlobalCodeMotion.run(module);
+                LCSSA.Run(module);
+                LoopUnSwitching.run(module);
+                LoopInfo.build(module);
+                IndVars.run(module);
+                LCSSA.remove(module);
+                GepFold.run(module);
                 DeadCodeEliminate();
             }
             if (arg.LLVM) {
@@ -111,9 +111,9 @@ public class Manager {
 
     private void FuncPasses() {
         FunctionInline.run(module);
-//        FuncAnalysis.run(module);
-//        DeadArgEliminate.run();
-//        TailCall2Loop.run(module);
+        FuncAnalysis.run(module);
+        DeadArgEliminate.run();
+        TailCall2Loop.run(module);
         FuncAnalysis.run(module);
     }
 

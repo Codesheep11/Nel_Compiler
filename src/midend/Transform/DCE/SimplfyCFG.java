@@ -62,7 +62,7 @@ public class SimplfyCFG {
                 Iterator<Instruction> iterator = block.getInstructions().iterator();
                 while (iterator.hasNext()) {
                     Instruction instr = iterator.next();
-                    if (instr instanceof Instruction.Phi){
+                    if (instr instanceof Instruction.Phi) {
                         throw new RuntimeException("LCSSA should not be here");
                     }
                     if (instr instanceof Instruction.Terminator) break;
@@ -115,7 +115,7 @@ public class SimplfyCFG {
     }
 
     private static void ChangeTarget(Function function) {
-        HashSet<BasicBlock> onlyJumpBlocks = new HashSet<>();
+        ArrayList<BasicBlock> onlyJumpBlocks = new ArrayList<>();
         for (BasicBlock block : function.getBlocks()) {
             if (block.getFirstInst() instanceof Instruction.Jump) {
                 BasicBlock suc = block.getSucBlocks().get(0);
@@ -124,11 +124,21 @@ public class SimplfyCFG {
                 }
             }
         }
-        for (BasicBlock onlyJumpBlock : onlyJumpBlocks) {
+        ListIterator<BasicBlock> iterator = onlyJumpBlocks.listIterator();
+        while (iterator.hasNext()) {
+            BasicBlock onlyJumpBlock = iterator.next();
             BasicBlock suc = onlyJumpBlock.getSucBlocks().get(0);
             for (BasicBlock pre : onlyJumpBlock.getPreBlocks()) {
                 Instruction.Terminator term = (Instruction.Terminator) pre.getLastInst();
                 term.replaceSucc(onlyJumpBlock, suc);
+                if (term instanceof Instruction.Branch) {
+                    Instruction.Branch br = (Instruction.Branch) term;
+                    if (br.getElseBlock().equals(br.getThenBlock())) {
+                        new Instruction.Jump(pre, br.getElseBlock());
+                        br.delete();
+                        if (pre.getFirstInst() instanceof Instruction.Jump) iterator.add(pre);
+                    }
+                }
             }
         }
     }
