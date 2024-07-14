@@ -66,6 +66,7 @@ public class Manager {
                 LoopUnSwitching.run(module);
                 LoopInfo.build(module);
                 IndVars.run(module);
+                LoopInfo.build(module);
                 LCSSA.remove(module);
                 GepFold.run(module);
                 DeadCodeEliminate();
