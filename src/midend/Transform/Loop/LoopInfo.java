@@ -33,7 +33,7 @@ public class LoopInfo {
         for (Loop loop : TopLevelLoops) {
             genEnterExit4Loop(loop);
             LoopSimplifyForm.run(loop);
-            LCSSA.run(loop);
+//            LCSSA.run(loop);
         }
         function.buildControlFlowGraph();
 //        printLoopInfo();

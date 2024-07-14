@@ -84,7 +84,7 @@ public class LS extends RiscvInstruction {
 
     @Override
     public String toString() {
-        return "\t" + type + "\t\t" + rs1 + ", " + imm + "(" + rs2 + ")";
+        return "\t" + type + "\t\t" + rs1 + ", " + imm + "(" + rs2 + ")" + (isSpilled ? " #spilled" : "");
     }
 
     public void replaceMe(RiscvBlock nowBlock) {

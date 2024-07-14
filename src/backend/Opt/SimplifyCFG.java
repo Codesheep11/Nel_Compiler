@@ -47,10 +47,8 @@ public class SimplifyCFG {
             }
         }
         for (RiscvBlock block : func.blocks) {
-            System.out.println(block.riscvInstructions.getSize());
             for (RiscvInstruction inst : block.riscvInstructions) {
                 // 如果要修改的目标块里有这个块
-                System.out.println(inst);
                 if (inst instanceof J && ((J) inst).type == J.JType.j) {
                     if (redirect.containsKey(((J) inst).targetBlock)) {
                         ((J) inst).targetBlock = redirect.get(((J) inst).targetBlock);

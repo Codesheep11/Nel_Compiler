@@ -147,22 +147,22 @@ public class Instruction extends User {
         return false;
     }
 
-//    public boolean isNoSideEffect() {
-//        if (!canbeOperand()) {
-//            return false;
-//        }
-//        if (isTerminator()) {
-//            return false;
-//        }
-//        return switch (instType) {
-//            case CALL -> {
-//                Function callee = ((Call) this).getDestFunction();
-//                yield !callee.hasSideEffect && callee.isStateless && callee.hasReturn;
-//            }
-//            case STORE -> false;
-//            default -> true;
-//        };
-//    }
+    public boolean isNoSideEffect() {
+        if (!canbeOperand()) {
+            return false;
+        }
+        if (isTerminator()) {
+            return false;
+        }
+        return switch (instType) {
+            case CALL -> {
+                Function callee = ((Call) this).getDestFunction();
+                yield !FuncInfo.hasSideEffect.get(callee) && FuncInfo.isStateless.get(callee) && FuncInfo.hasReturn.get(callee);
+            }
+            case STORE -> false;
+            default -> true;
+        };
+    }
 
     public boolean isAssociative() {
         return switch (instType) {
@@ -293,9 +293,9 @@ public class Instruction extends User {
             if (strIdx != -1) {
                 //fixme:to putf
                 if (!params.isEmpty())
-                    return "call void @" + Manager.ExternFunc.PUTF.getName() + "(ptr @.str_" + strIdx + ", " + paramsToString() + ")";
+                    return "call void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr @.str_" + strIdx + ", " + paramsToString() + ")";
                 else
-                    return "call void @" + Manager.ExternFunc.PUTF.getName() + "(ptr @.str_" + strIdx + ")";
+                    return "call void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr @.str_" + strIdx + ")";
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());

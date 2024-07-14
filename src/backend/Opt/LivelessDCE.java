@@ -1,6 +1,7 @@
 package backend.Opt;
 
 import backend.allocater.LivenessAnalyze;
+import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
@@ -10,8 +11,7 @@ import utils.SyncLinkedList;
 
 import java.util.ArrayList;
 
-import static backend.allocater.LivenessAnalyze.Def;
-import static backend.allocater.LivenessAnalyze.Out;
+import static backend.allocater.LivenessAnalyze.*;
 
 public class LivelessDCE {
     public static void run(RiscvModule module) {
@@ -38,6 +38,8 @@ public class LivelessDCE {
     private static boolean canbeDelete(RiscvInstruction inst) {
         if (inst instanceof J) return false;
         if (Def.get(inst).isEmpty()) return false;
+        Reg def = Def.get(inst).iterator().next();
+        if (RegUse.get(def).size() == 1) return true;
         return !Out.get(inst).contains(Def.get(inst).iterator().next());
     }
 }

@@ -212,7 +212,6 @@ public class CalculateOpt {
                 newList.add(now);
             }
         }
-        newList.forEach(System.out::println);
         block.riscvInstructions.setEmpty();
         for (RiscvInstruction ri : newList) {
             block.riscvInstructions.addLast(ri);

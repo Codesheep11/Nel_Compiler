@@ -12,8 +12,8 @@ import backend.riscv.RiscvInstruction.RiscvInstruction;
 import java.util.*;
 
 import static backend.allocater.LivenessAnalyze.*;
-import static backend.operand.Reg.PhyReg.a7;
 import static backend.operand.Reg.PhyReg.zero;
+import static backend.operand.Reg.PhyReg.*;
 
 public class GPRallocater {
 
@@ -34,7 +34,7 @@ public class GPRallocater {
     /*
     x5 - x31均可分配
      */
-    private static int K = 26;
+    private static int K = 27;
     //t0作为临时寄存器，不参与图着色寄存器分配
 
     private static final LinkedHashSet<Reg.PhyReg> Regs = new LinkedHashSet<>(
@@ -43,12 +43,13 @@ public class GPRallocater {
                     Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4, Reg.PhyReg.s5, Reg.PhyReg.s6,
                     Reg.PhyReg.s7, Reg.PhyReg.s8, Reg.PhyReg.s9, Reg.PhyReg.s10, Reg.PhyReg.s11,
                     Reg.PhyReg.a0, Reg.PhyReg.a1, Reg.PhyReg.a2, Reg.PhyReg.a3, Reg.PhyReg.a4,
-                    Reg.PhyReg.a5, Reg.PhyReg.a6, a7
+                    Reg.PhyReg.a5, Reg.PhyReg.a6, Reg.PhyReg.a7, Reg.PhyReg.tp
+//                    Reg.PhyReg.gp, Reg.PhyReg.tp
             )
     );
 
     private static final HashSet<Reg.PhyReg> unAllocateRegs = new HashSet<>(
-            Arrays.asList(Reg.PhyReg.zero, Reg.PhyReg.ra, Reg.PhyReg.sp, Reg.PhyReg.gp, Reg.PhyReg.tp, Reg.PhyReg.t0
+            Arrays.asList(Reg.PhyReg.zero, Reg.PhyReg.ra, Reg.PhyReg.sp, Reg.PhyReg.t0
             )
     );
 
@@ -87,12 +88,13 @@ public class GPRallocater {
 
     /**
      * 重写代码：
+     * todo:perf better
      * 将所有spillNode中虚拟寄存器存入内存
      * 再在变量使用处从内存中取出
      */
     private static void ReWrite() {
+//        System.out.println("spill: " + spillNodes.size());
         for (Reg reg : spillNodes) {
-//            System.out.println("spill: " + reg);
             ArrayList<RiscvInstruction> contains = new ArrayList<>(RegUse.get(reg));
             HashSet<RiscvInstruction> uses = new HashSet<>();
             HashSet<RiscvInstruction> defs = new HashSet<>();

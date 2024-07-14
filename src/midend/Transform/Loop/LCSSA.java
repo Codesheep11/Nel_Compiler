@@ -14,6 +14,15 @@ public class LCSSA {
     //循环出口构建LCSSA
 
 
+    public static void Run(Module module) {
+        for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) continue;
+            for (Loop loop : function.loopInfo.TopLevelLoops) {
+                run(loop);
+            }
+        }
+    }
+
     public static void run(Loop loop) {
         //先对子循环进行处理
         for (Loop child : loop.children) {
@@ -95,7 +104,8 @@ public class LCSSA {
                     if (instr instanceof Instruction.Phi phi) {
                         if (phi.isLCSSA) {
                             if (phi.getPreBlocks().size() != 1) {
-                                if (!phi.canBeReplaced()) throw new RuntimeException("what can i say?");
+                                phi.isLCSSA = false;
+                                continue;
                             }
                             Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
                             phi.replaceAllUsesWith(v);
