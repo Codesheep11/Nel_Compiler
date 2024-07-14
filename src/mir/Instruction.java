@@ -293,9 +293,9 @@ public class Instruction extends User {
             if (strIdx != -1) {
                 //fixme:to putf
                 if (!params.isEmpty())
-                    return "call void @" + Manager.ExternFunc.PUTF.getName() + "(ptr @.str_" + strIdx + ", " + paramsToString() + ")";
+                    return "call void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr @.str_" + strIdx + ", " + paramsToString() + ")";
                 else
-                    return "call void @" + Manager.ExternFunc.PUTF.getName() + "(ptr @.str_" + strIdx + ")";
+                    return "call void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr @.str_" + strIdx + ")";
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());

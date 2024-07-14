@@ -9,13 +9,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 
-import static manager.Manager.ExternFunc.*;
+import static midend.Util.FuncInfo.ExternFunc.*;
+import static midend.Util.FuncInfo.FuncAnalysisOpen;
 
 
 public class FuncAnalysis {
 
 
     public static void run(Module module) {
+        if (!FuncAnalysisOpen) FuncAnalysisOpen = true;
         Function main = module.getFunctions().get("main");
         for (Function callee : module.getFuncSet()) {
             for (Use use : callee.getUses()) {

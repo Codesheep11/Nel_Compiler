@@ -1,12 +1,16 @@
 package midend.Util;
 
 import mir.Function;
+import mir.Type;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
 public class FuncInfo {
+
+
+    public static boolean FuncAnalysisOpen = false;
 
     public static Function main;
 
@@ -83,5 +87,41 @@ public class FuncInfo {
             }
         }
         res.add(func);
+    }
+
+    public static class ExternFunc {
+        public static final Function MEMSET = new Function(Type.VoidType.VOID_TYPE, "memset",
+                new Type.PointerType(Type.BasicType.I32_TYPE), Type.BasicType.I32_TYPE, Type.BasicType.I32_TYPE);
+        public static final Function GETINT = new Function(Type.BasicType.I32_TYPE, "getint");
+        public static final Function PUTINT = new Function(Type.VoidType.VOID_TYPE, "putint", Type.BasicType.I32_TYPE);
+        public static final Function GETCH = new Function(Type.BasicType.I32_TYPE, "getch");
+        public static final Function GETFLOAT = new Function(Type.BasicType.F32_TYPE, "getfloat");
+        public static final Function PUTCH = new Function(Type.VoidType.VOID_TYPE, "putch", Type.BasicType.I32_TYPE);
+        public static final Function PUTFLOAT = new Function(Type.VoidType.VOID_TYPE, "putfloat", Type.BasicType.F32_TYPE);
+        public static final Function STARTTIME = new Function(Type.VoidType.VOID_TYPE, "_sysy_starttime");
+        public static final Function STOPTIME = new Function(Type.VoidType.VOID_TYPE, "_sysy_stoptime");
+        public static final Function GETARRAY = new Function(Type.BasicType.I32_TYPE, "getarray", new Type.PointerType(Type.BasicType.I32_TYPE));
+        public static final Function GETFARRAY = new Function(Type.BasicType.I32_TYPE, "getfarray", new Type.PointerType(Type.BasicType.F32_TYPE));
+        public static final Function PUTARRAY = new Function(Type.VoidType.VOID_TYPE, "putarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.I32_TYPE));
+        public static final Function PUTFARRAY = new Function(Type.VoidType.VOID_TYPE, "putfarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.F32_TYPE));
+        public static final Function PUTF = new Function(Type.VoidType.VOID_TYPE, "putf");
+
+        public static final HashMap<String, Function> externFunctions = new HashMap<>() {{
+            put(MEMSET.getName(), MEMSET);
+            put(GETINT.getName(), GETINT);
+            put(PUTINT.getName(), PUTINT);
+            put(GETCH.getName(), GETCH);
+            put(GETFLOAT.getName(), GETFLOAT);
+            put(PUTCH.getName(), PUTCH);
+            put(PUTFLOAT.getName(), PUTFLOAT);
+            put("starttime", STARTTIME);
+            put("stoptime", STOPTIME);
+            put(GETARRAY.getName(), GETARRAY);
+            put(GETFARRAY.getName(), GETFARRAY);
+            put(PUTARRAY.getName(), PUTARRAY);
+            put(PUTFARRAY.getName(), PUTFARRAY);
+            put(PUTF.getName(), PUTF);
+        }};
+
     }
 }

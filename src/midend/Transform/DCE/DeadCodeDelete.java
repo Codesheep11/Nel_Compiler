@@ -96,6 +96,7 @@ public class DeadCodeDelete {
                     }
                 }
             }
+
             for (Use use : block.getUses()) {
                 newUsefulVar.add(use.getUser());
             }
@@ -131,6 +132,7 @@ public class DeadCodeDelete {
     }
 
     public static boolean isUsefulCall(Function callee) {
+        if (!FuncInfo.FuncAnalysisOpen) return true;
         return usefulVar.contains(callee)
                 || (callee.isExternal() && !callee.getName().equals("memset"))
                 || FuncInfo.hasReadIn.get(callee) || FuncInfo.hasPutOut.get(callee);
