@@ -20,6 +20,7 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 ConstValueReUse(block);
                 ConstPointerReUse(block);
+                icmpBranchToBranch(block);
             }
         }
     }
@@ -126,18 +127,82 @@ public class CalculateOpt {
 
     }
 
+    private static boolean matchEQ(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
+        if (now instanceof R3 && ((R3) now).type == R3.R3Type.subw && next instanceof R2 &&
+                ((R2) next).type == R2.R2Type.seqz && farNext instanceof B) {
+            return ((R3) now).rd.equals(((R2) next).rs) &&
+                    (((R2) next).rd.equals(((B) farNext).rs1) || ((R2) next).rd.equals(((B) farNext).rs2));
+        }
+        return false;
+    }
+
+    private static boolean matchNE(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
+        if (now instanceof R3 && ((R3) now).type == R3.R3Type.subw && next instanceof R2 &&
+                ((R2) next).type == R2.R2Type.snez && farNext instanceof B) {
+            return ((R3) now).rd.equals(((R2) next).rs) &&
+                    (((R2) next).rd.equals(((B) farNext).rs1) || ((R2) next).rd.equals(((B) farNext).rs2));
+        }
+        return false;
+    }
+
+    private static boolean matchSGEAndSLE(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
+        if (now instanceof R3 && ((R3) now).type == R3.R3Type.slt && next instanceof R2 &&
+                ((R2) next).type == R2.R2Type.seqz && farNext instanceof B) {
+            return ((R3) now).rd.equals(((R2) next).rs) &&
+                    (((R2) next).rd.equals(((B) farNext).rs1) || ((R2) next).rd.equals(((B) farNext).rs2));
+        }
+        return false;
+    }
+
+    private static boolean matchSLTAndSGT(RiscvInstruction now, RiscvInstruction next) {
+        if (now instanceof R3 && ((R3) now).type == R3.R3Type.slt && next instanceof B) {
+            return ((R3) now).rd.equals(((B) next).rs2) || (((R3) now).rd.equals(((B) next).rs1));
+        }
+        return false;
+    }
+
+
     // 将icmp和branch合并
     public static void icmpBranchToBranch(RiscvBlock block) {
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
         for (int i = 0; i < block.riscvInstructions.getSize(); i++) {
             RiscvInstruction now = block.riscvInstructions.get(i);
-            if (i == block.riscvInstructions.getSize() - 2) {
-                newList.add(now);
-                break;
+            boolean modified = false;
+            if (i < block.riscvInstructions.getSize() - 1) {
+                RiscvInstruction next = block.riscvInstructions.get(i + 1);
+                if (matchSLTAndSGT(now, next)) {
+                    //slt ,置1，bne r,zero,不为0则跳转,所以就是小于则跳转
+                    newList.add(new B(block, B.BType.blt, ((R3) now).rs1, (((R3) now).rs2), ((B) next).targetBlock));
+                    i++;
+                    // 将next忽略
+                    modified = true;
+                }
+                if (i < block.riscvInstructions.getSize() - 2) {
+                    RiscvInstruction farNext = block.riscvInstructions.get(i + 2);
+                    if (matchEQ(now, next, farNext)) {
+                        // subw,seqz,看看是不是0
+                        newList.add(new B(block, B.BType.beq, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
+                        i = i + 2;
+                        modified = true;
+                    } else if (matchNE(now, next, farNext)) {
+                        newList.add(new B(block, B.BType.bne, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
+                        i = i + 2;
+                        modified = true;
+                    } else if (matchSGEAndSLE(now, next, farNext)) {
+                        // 这个存起来就看后面的是不是大于等于前面的
+                        newList.add(new B(block, B.BType.bge, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
+                        i = i + 2;
+                        modified = true;
+                    }
+                }
             }
-            RiscvInstruction next = block.riscvInstructions.get(i + 1);
-            RiscvInstruction farNext = block.riscvInstructions.get(i + 2);
-
+            if (!modified) {
+                newList.add(now);
+            }
+        }
+        block.riscvInstructions.setEmpty();
+        for (RiscvInstruction ri : newList) {
+            block.riscvInstructions.addLast(ri);
         }
     }
 
