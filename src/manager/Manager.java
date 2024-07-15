@@ -95,7 +95,7 @@ public class Manager {
                 afterRegAssign = true;
 //                Scheduler.postRASchedule(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
-                BlockInline.run(riscvmodule);
+                //BlockInline.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {
