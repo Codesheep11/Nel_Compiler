@@ -21,6 +21,9 @@ public class RiscvGlobalVar extends Operand {
         STRING, FLOAT, INT
     }
 
+    public boolean hasInit() {
+        return true;
+    }
 
 
     public RiscvGlobalVar(String name, GlobType type) {
@@ -35,11 +38,11 @@ public class RiscvGlobalVar extends Operand {
         // 实际的全局变量类型
         Type mirType = mirGlobalVar.getInnerType();
         if (mirType.isFloatTy()) {
-                float floatInit = (float) mirGlobalVar.getConstValue().getConstValue();
-                return new RiscvFloat(mirGlobalVar.getRiscGlobalVariableName(), floatInit);
+            float floatInit = (float) mirGlobalVar.getConstValue().getConstValue();
+            return new RiscvFloat(mirGlobalVar.getRiscGlobalVariableName(), floatInit);
         } else if (mirType.isInt32Ty()) {
-                int intInit = (int) mirGlobalVar.getConstValue().getConstValue();
-                return new RiscvInt(mirGlobalVar.getRiscGlobalVariableName(), intInit);
+            int intInit = (int) mirGlobalVar.getConstValue().getConstValue();
+            return new RiscvInt(mirGlobalVar.getRiscGlobalVariableName(), intInit);
         } else if (mirType.isArrayTy()) {
             // 计算字长
             int wordSize = mirType.queryBytesSizeOfType() / 4;

@@ -48,11 +48,22 @@ public class RiscvModule {
 
     @Override
     public String toString() {
-        StringBuilder head = new StringBuilder(".global main\n");
+        StringBuilder head = new StringBuilder(".option nopic\n" +
+                ".attribute arch, \"rv64i2p1_m2p0_a2p1_f2p2_d2p2_c2p0_zicsr2p0_zifencei2p0_zba1p0_zbb1p0\"\n" +
+                ".attribute unaligned_access, 0\n" +
+                ".attribute stack_align, 16\n.global main\n");
         StringBuilder sb = new StringBuilder("");
+        sb.append(".bss\n");
+        for (RiscvGlobalVar glob : globList) {
+            if (!glob.hasInit()) {
+                sb.append(glob.toString());
+            }
+        }
         sb.append(".data\n");
         for (RiscvGlobalVar glob : globList) {
-            sb.append(glob.toString());
+            if (glob.hasInit()) {
+                sb.append(glob.toString());
+            }
         }
         head.append(".type ").append("main").append(", @function\n");
         sb.append("\n");

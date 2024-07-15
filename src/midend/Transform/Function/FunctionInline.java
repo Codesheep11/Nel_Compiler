@@ -3,14 +3,14 @@ package midend.Transform.Function;
 import midend.Util.CloneInfo;
 import mir.*;
 import mir.Module;
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.*;
 
 import static manager.CentralControl._FUNC_INLINE_OPEN;
 
 public class FunctionInline {
-    private static final int INLINE_SIZE_THRESHOLD = 150;
+    private static final int INLINE_SIZE_THRESHOLD = 150000;
     private static Collection<Function> functions;
     private static Module module;
     private static ArrayList<Function> funcCanInline = new ArrayList<>();
@@ -61,7 +61,7 @@ public class FunctionInline {
         for (Function function : functions) {
             int size = 0;
             for (BasicBlock basicBlock : function.getBlocks()) {
-                size += basicBlock.getInstructions().getSize();
+                size += basicBlock.getInstructions().size();
             }
             funcSize.put(function, size);
         }
@@ -193,7 +193,7 @@ public class FunctionInline {
             }
         }
         LinkedList<Instruction> instrs = new LinkedList<>();
-        SyncLinkedList.SyncLinkNode instr = inst.getNext();
+        NelLinkedList.NelLinkNode instr = inst.getNext();
         while (instr instanceof Instruction) {
             instrs.add((Instruction) instr);
             instr = instr.getNext();

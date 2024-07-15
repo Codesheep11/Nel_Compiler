@@ -45,7 +45,7 @@ public class FuncAnalysis {
             }
         }
         for (Function func : deleteList) {
-            func.delete();
+            func.release();
             module.removeFunction(func);
         }
 
@@ -160,12 +160,14 @@ public class FuncAnalysis {
                 hasMemoryAlloc |= FuncInfo.hasMemoryAlloc.get(callee);
                 hasReadIn |= FuncInfo.hasReadIn.get(callee);
                 hasPutOut |= FuncInfo.hasPutOut.get(callee);
+                hasSideEffect |= FuncInfo.hasSideEffect.get(callee);
             }
             FuncInfo.hasMemoryRead.put(func, hasMemoryRead);
             FuncInfo.hasMemoryWrite.put(func, hasMemoryWrite);
             FuncInfo.hasMemoryAlloc.put(func, hasMemoryAlloc);
             FuncInfo.hasReadIn.put(func, hasReadIn);
             FuncInfo.hasPutOut.put(func, hasPutOut);
+            FuncInfo.hasSideEffect.put(func, hasSideEffect);
             FuncInfo.isStateless.put(func, (!hasMemoryRead) && (!hasMemoryWrite) && (!hasSideEffect));
         }
 //        System.out.println("Function Analysis Done");

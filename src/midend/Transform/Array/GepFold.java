@@ -26,8 +26,8 @@ public class GepFold {
             }
             Collections.reverse(geps);
             for (Instruction.GetElementPtr gep : geps) {
-//                System.out.println("GepFold: " + gep);
                 if (gep.getUses().size() == 0) continue;
+//                System.out.println("GepFold: " + gep);
                 BasicBlock block = gep.getParentBlock();
                 ArrayList<Instruction.GetElementPtr> gepChain = new ArrayList<>();
                 Value curGep = gep;
@@ -36,6 +36,7 @@ public class GepFold {
                     curGep = ((Instruction.GetElementPtr) curGep).getBase();
                 }
                 Collections.reverse(gepChain);
+//                gepChain.forEach(System.out::println);
                 ArrayList<Value> offsets = new ArrayList<>();
                 offsets.addAll(gepChain.get(0).getOffsets());
                 for (int i = 1; i < gepChain.size(); i++) {
@@ -82,8 +83,9 @@ public class GepFold {
                     if (baseType.isArrayTy()) baseType = ((Type.ArrayType) baseType).getEleType();
                 }
                 if (sum != null) offsets.set(offsets.size() - 1, sum);
-                Instruction.GetElementPtr newGep = new Instruction.GetElementPtr(block, address, baseType, offsets);
+                Instruction.GetElementPtr newGep = new Instruction.GetElementPtr(block, address, ((Type.PointerType) gep.getType()).getInnerType(), offsets);
                 newGep.remove();
+//                System.out.println("newGep: " + newGep.getType() + newGep);
                 block.getInstructions().insertBefore(newGep, gep);
                 gep.replaceAllUsesWith(newGep);
                 gep.delete();
