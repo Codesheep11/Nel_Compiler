@@ -1,6 +1,7 @@
 package midend.Transform;
 
 import midend.Transform.DCE.RemoveBlocks;
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 
@@ -23,24 +24,23 @@ public class Mem2Reg {
 
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
-            if (function.getBlocks().getSize() == 0) {
-                continue;
-            }
+            if (function.isExternal()) continue;
             function.buildControlFlowGraph();
             RemoveBlocks.runOnFunc(function);
-            //                    function.checkCFG();
+            // function.checkCFG();
             function.buildDominanceGraph();
-            function.runMem2Reg();
+            runOnFunc(function);
         }
     }
 
-    public static void run(Function function) {
+    public static void runOnFunc(Function function) {
         init();
         // System.out.println("Mem2Reg: " + function.getDescriptor());
         Mem2Reg.function = function;
         buildVariableName();
         for (Instruction varName : varNames) {
-            //System.out.println("Mem2Reg: " + varName.getDescriptor());
+//            Print.outputLLVM(function, "debug.txt");
+//            System.out.println("Mem2Reg: " + varName.getDescriptor());
             var = (Instruction.Alloc) varName;
             buildDefUse();
             //defUseCheck();
@@ -87,7 +87,6 @@ public class Mem2Reg {
     private static void removeDefUse() {
         for (Instruction defInst : defInsts) {
             if (!(defInst instanceof Instruction.Phi)) {
-                //System.out.println("removeDefUse: " + defInst.toString() + " in " + defInst.getParentBlock().getLabel());
                 defInst.delete();
             }
         }
@@ -188,8 +187,7 @@ public class Mem2Reg {
         if (stack.isEmpty()) {
             // 尝试用 Value 代替
             return GlobalVariable.getUndef(type);
-        }
-        else {
+        } else {
             return stack.getLast();
         }
     }
@@ -231,8 +229,7 @@ public class Mem2Reg {
                     stack.add(((Instruction.Store) inst).getValue());
                     // print inst, descriptor with its value
                     // System.out.println("renameDfs: " + inst.getDescriptor() + " : " + inst + " " + ((Instruction.Store) inst).getValue().getDescriptor());
-                }
-                else {
+                } else {
                     stack.add(inst);
                 }
                 count++;

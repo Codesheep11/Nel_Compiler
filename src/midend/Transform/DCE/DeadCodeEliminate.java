@@ -40,7 +40,7 @@ public class DeadCodeEliminate {
         //在init中，只认为main的ret是有用的
         Function main = module.getFunctions().get("main");
         //倒序遍历找ret
-        int blockLen = main.getBlocks().getSize();
+        int blockLen = main.getBlocks().size();
         for (int i = blockLen - 1; i >= 0; i--) {
             BasicBlock block = main.getBlocks().get(i);
             Instruction inst = block.getInstructions().getLast();
@@ -77,19 +77,14 @@ public class DeadCodeEliminate {
                 newUsefulVar.add(use.getUser());
             }
         }
-        if (value instanceof Instruction) {
-            Instruction inst = (Instruction) value;
+        if (value instanceof Instruction inst) {
             newUsefulVar.add(inst.getParentBlock());
             newUsefulVar.add(inst.getParentBlock().getParentFunction());
-            for (Value operand : inst.getOperands()) {
-                newUsefulVar.add(operand);
-            }
+            newUsefulVar.addAll(inst.getOperands());
         }
-        else if (value instanceof BasicBlock) {
-            BasicBlock block = (BasicBlock) value;
+        else if (value instanceof BasicBlock block) {
             for (Instruction inst : block.getInstructions()) {
-                if (inst instanceof Instruction.Call) {
-                    Instruction.Call call = (Instruction.Call) inst;
+                if (inst instanceof Instruction.Call call) {
                     Function callee = call.getDestFunction();
                     if (isUsefulCall(callee)) {
                         newUsefulVar.add(inst);
@@ -101,10 +96,9 @@ public class DeadCodeEliminate {
                 newUsefulVar.add(use.getUser());
             }
         }
-        else if (value instanceof Function) {
-            Function func = (Function) value;
+        else if (value instanceof Function func) {
             //倒序遍历找ret
-            int blockLen = func.getBlocks().getSize();
+            int blockLen = func.getBlocks().size();
             for (int i = blockLen - 1; i >= 0; i--) {
                 BasicBlock block = func.getBlocks().get(i);
                 Instruction inst = block.getInstructions().getLast();
@@ -146,7 +140,7 @@ public class DeadCodeEliminate {
             else uselessBBDelete(function);
         }
         for (Function func : delList) {
-            func.delete();
+            func.release();
             module.removeFunction(func);
         }
         ArrayList<GlobalVariable> delGlobals = new ArrayList<>();
@@ -155,21 +149,18 @@ public class DeadCodeEliminate {
         }
         for (GlobalVariable gv : delGlobals) {
             module.getGlobalValues().remove(gv);
-            gv.delete();
+            gv.release();
         }
     }
 
     private static void uselessBBDelete(Function function) {
         ArrayList<BasicBlock> delList = new ArrayList<>();
-        Iterator<BasicBlock> iterator = function.getBlocks().iterator();
-        while (iterator.hasNext()) {
-            BasicBlock block = iterator.next();
+        for (BasicBlock block : function.getBlocks()) {
             if (!usefulVar.contains(block)) {
 //                System.out.println("uselessInstDelete: " + inst.getDescriptor());
 //                iterator.remove();
                 delList.add(block);
-            }
-            else uselessInstDelete(block);
+            } else uselessInstDelete(block);
         }
         delList.forEach(BasicBlock::delete);
     }

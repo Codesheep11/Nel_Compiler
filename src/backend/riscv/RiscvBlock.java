@@ -2,7 +2,7 @@ package backend.riscv;
 
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import mir.BasicBlock;
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.HashSet;
 
@@ -11,7 +11,7 @@ public class RiscvBlock {
 
     public RiscvFunction function;
 
-    public SyncLinkedList<RiscvInstruction> riscvInstructions = new SyncLinkedList<>();//便于插入指令
+    public NelLinkedList<RiscvInstruction> riscvInstructions = new NelLinkedList<>();//便于插入指令
 
     //riscvBlock的前驱和后继,在codegen时维护
 

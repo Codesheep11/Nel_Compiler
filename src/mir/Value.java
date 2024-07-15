@@ -1,12 +1,12 @@
 package mir;
 
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-public class Value extends SyncLinkedList.SyncLinkNode {
+public class Value extends NelLinkedList.NelLinkNode {
 
     protected String name;
     protected final Type type;
@@ -91,7 +91,18 @@ public class Value extends SyncLinkedList.SyncLinkNode {
     }
 
     /**
-     * 删除该Value的所有使用
+     * 释放该Value的所有使用
+     */
+    public void release() {
+        use_clear();
+    }
+
+    /**
+     * 删除该Value的所有使用并移除链表关系<br>
+     * <br>
+     * <p>
+     * Note: 如果仅删除使用请使用release方法！
+     * </p>
      */
     public void delete() {
         use_clear();

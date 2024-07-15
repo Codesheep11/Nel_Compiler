@@ -25,6 +25,7 @@ import midend.Transform.Loop.LCSSA;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Loop.LoopUnSwitching;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;

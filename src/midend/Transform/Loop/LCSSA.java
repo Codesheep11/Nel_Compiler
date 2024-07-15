@@ -71,9 +71,6 @@ public class LCSSA {
     /**
      * 判断指令是否在循环外部被使用
      *
-     * @param instr
-     * @param loop
-     * @return
      */
     public static boolean usedOutLoop(Instruction instr, Loop loop) {
         for (Use use : instr.getUses()) {
@@ -100,20 +97,17 @@ public class LCSSA {
     public static void remove(Module module) {
         for (Function function : module.getFuncSet()) {
             for (BasicBlock block : function.getBlocks()) {
-                for (Instruction instr : block.getInstructions()) {
-                    if (instr instanceof Instruction.Phi phi) {
-                        if (phi.isLCSSA) {
-                            if (phi.getPreBlocks().size() != 1) {
+                for (Instruction.Phi phi : block.getPhiInstructions()) {
+                    if (phi.isLCSSA) {
+                        if (phi.getPreBlocks().size() != 1) {
+                            if (!phi.canBeReplaced()) {
                                 phi.isLCSSA = false;
                                 continue;
                             }
-                            Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
-                            phi.replaceAllUsesWith(v);
-                            phi.delete();
                         }
-                    }
-                    else {
-                        break;
+                        Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
+                        phi.replaceAllUsesWith(v);
+                        phi.delete();
                     }
                 }
             }

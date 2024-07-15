@@ -3,12 +3,8 @@ package midend.Util;
 import mir.BasicBlock;
 import mir.Function;
 import mir.Instruction;
-import mir.Value;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.*;
 
 public class ControlFlowGraph {
 
@@ -29,14 +25,18 @@ public class ControlFlowGraph {
                 throw new RuntimeException("empty block");
             }
             // 找到第一条终结指令
-            Instruction findFirstTerminator = block.getFirstInst();
-            while (!(findFirstTerminator instanceof Instruction.Terminator)) {
-//                System.out.println(findFirstTerminator.getDescriptor());
-                findFirstTerminator = (Instruction) findFirstTerminator.getNext();
+            Iterator<Instruction> iterator = block.getInstructions().iterator();
+            while (iterator.hasNext()) {
+                Instruction findFirstTerminator = iterator.next();
+                if (findFirstTerminator instanceof Instruction.Terminator) {
+                    break;
+                }
             }
             // 如果后续指令存在，删除后续指令
-            while (findFirstTerminator.hasNext()) {
-                findFirstTerminator.getNext().remove();
+            while (iterator.hasNext()) {
+                Instruction del = iterator.next();
+                del.release();
+                iterator.remove();
             }
             // 枚举指令
             Instruction instr = block.getLastInst();

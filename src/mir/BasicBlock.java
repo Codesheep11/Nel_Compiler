@@ -1,7 +1,7 @@
 package mir;
 
 import midend.Util.CloneInfo;
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,7 +10,7 @@ import java.util.Objects;
 public class BasicBlock extends Value {
     private final Function parentFunction; // 父函数
     private final String label;
-    private final SyncLinkedList<Instruction> instructions;
+    private final NelLinkedList<Instruction> instructions;
     // 控制图属性
     private final ArrayList<BasicBlock> preBlocks; // 控制图-前驱块
     private final ArrayList<BasicBlock> sucBlocks; // 控制图-后继块
@@ -34,7 +34,7 @@ public class BasicBlock extends Value {
         this.label = label;
         this.sucBlocks = new ArrayList<>();
         this.preBlocks = new ArrayList<>();
-        this.instructions = new SyncLinkedList<>();
+        this.instructions = new NelLinkedList<>();
     }
 
     /**
@@ -85,7 +85,7 @@ public class BasicBlock extends Value {
         instructions.addLast(inst);
     }
 
-    public SyncLinkedList<Instruction> getInstructions() {
+    public NelLinkedList<Instruction> getInstructions() {
         return instructions;
     }
 
