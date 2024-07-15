@@ -1,6 +1,7 @@
 package midend.Transform;
 
 import midend.Transform.DCE.RemoveBlocks;
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 

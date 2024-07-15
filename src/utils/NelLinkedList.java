@@ -133,8 +133,12 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
      */
     @Deprecated // 仅保留供 Visitor调用
     public void concat(NelLinkedList<Type> that) {
+        if (this == that) {
+            throw new IllegalArgumentException("Cannot concat the same list!");
+        }
         if (that.isEmpty()) {
             that.clear();
+            modCount++;
             return;
         }
         that.forEach(node -> node.parent = this);
@@ -142,7 +146,8 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         that.head.next.setPrev(this.tail.prev);
         that.tail.prev.setNext(this.tail);
         this.tail.prev.setNext(that.head.next);
-        this.tail.setPrev(that.getLast());
+        this.tail.setPrev(that.tail.prev);
+        size += that.size();
         // 销毁
         that.clear();
         modCount++;

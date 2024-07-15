@@ -72,8 +72,7 @@ public abstract class InitValue {
         @SuppressWarnings("deprecation")
         public Flatten flatten() {
             Flatten flatten = new Flatten();
-            for (InitValue initValue :
-                    arrayValues) {
+            for (InitValue initValue : arrayValues) {
                 Flatten initFlattenValue = initValue.flatten();
                 flatten.concat(initFlattenValue);
                 flatten.mergeAll();

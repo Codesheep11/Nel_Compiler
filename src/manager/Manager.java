@@ -25,6 +25,7 @@ import midend.Transform.Loop.LCSSA;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Loop.LoopUnSwitching;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
@@ -54,21 +55,21 @@ public class Manager {
             FrontEnd();
             if (arg.opt) {
                 Mem2Reg.run(module);
-//                DeadCodeEliminate();
-//                FuncPasses();
-//                GlobalVarAnalysis.run(module);
-////                ConstArray2Value.run(module);
-//                GlobalValueNumbering.run(module);
-//                DeadCodeEliminate.run(module);
-//                LoopInfo.build(module);
-//                GlobalCodeMotion.run(module);
-//                LCSSA.Run(module);
-////                LoopUnSwitching.run(module);
-//                LoopInfo.build(module);
-//                IndVars.run(module);
-//                LoopInfo.build(module);
-//                LCSSA.remove(module);
-//                GepFold.run(module);
+                DeadCodeEliminate();
+                FuncPasses();
+                GlobalVarAnalysis.run(module);
+//                ConstArray2Value.run(module);
+                GlobalValueNumbering.run(module);
+                DeadCodeEliminate.run(module);
+                LoopInfo.build(module);
+                GlobalCodeMotion.run(module);
+                LCSSA.Run(module);
+//                LoopUnSwitching.run(module);
+                LoopInfo.build(module);
+                IndVars.run(module);
+                LoopInfo.build(module);
+                LCSSA.remove(module);
+                GepFold.run(module);
                 DeadCodeEliminate();
             }
             if (arg.LLVM) {
