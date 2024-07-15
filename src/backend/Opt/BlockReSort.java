@@ -316,7 +316,7 @@ public class BlockReSort {
         int idx = 0;
         for (RiscvBlock block : func.blocks) {
             idxMap.put(block, idx++);
-            weights.add(block.riscvInstructions.getSize());
+            weights.add(block.riscvInstructions.size());
         }
         idx = 0;
         for (RiscvBlock block : func.blocks) {

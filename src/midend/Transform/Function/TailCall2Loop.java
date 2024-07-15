@@ -91,7 +91,7 @@ public class TailCall2Loop {
     }
 
     private static Instruction.Call getLastRecursiveCall(BasicBlock block) {
-        int size = block.getInstructions().getSize();
+        int size = block.getInstructions().size();
         for (int i = size - 1; i >= 0; i--) {
             if (block.getInstructions().get(i) instanceof Instruction.Call) {
                 Instruction.Call call = (Instruction.Call) block.getInstructions().get(i);

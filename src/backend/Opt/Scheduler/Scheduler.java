@@ -39,10 +39,10 @@ public class Scheduler {
                 }
             }
         }
-        if (newlist.size() != block.riscvInstructions.getSize()) {
+        if (newlist.size() != block.riscvInstructions.size()) {
             throw new RuntimeException("fail!");
         }
-        block.riscvInstructions.setEmpty();
+        block.riscvInstructions.clear();
         for (RiscvInstruction ri : newlist) {
             block.riscvInstructions.addLast(ri);
         }
@@ -139,7 +139,7 @@ public class Scheduler {
         }
         int maxBusyCycles = 200;
         int busyCycle = 0;
-        while (newList.size() != block.riscvInstructions.getSize()) {
+        while (newList.size() != block.riscvInstructions.size()) {
             List<RiscvInstruction> newReadyInsts = new ArrayList<>();
             for (int idx = 0; idx < ScheduleModel.issueWidth; ++idx) {
                 int cnt = 0;
@@ -180,7 +180,7 @@ public class Scheduler {
             }
             schedulePlane.addAll(newReadyInsts);
         }
-        block.riscvInstructions.setEmpty();
+        block.riscvInstructions.clear();
         for (RiscvInstruction instr : newList) {
             block.riscvInstructions.addLast(instr);
         }

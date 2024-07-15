@@ -7,7 +7,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.ArrayList;
 
@@ -30,7 +30,8 @@ public class LivelessDCE {
             }
         }
         if (!delList.isEmpty()) {
-            delList.forEach(SyncLinkedList.SyncLinkNode::remove);
+            // System.err.println(delList);
+            delList.forEach(NelLinkedList.NelLinkNode::remove);
             LivenessAnalyze.RunOnFunc(function);
         }
     }

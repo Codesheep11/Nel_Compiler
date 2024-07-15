@@ -1,11 +1,11 @@
 package mir;
 
 
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.Objects;
 
-public class Use extends SyncLinkedList.SyncLinkNode {
+public class Use extends NelLinkedList.NelLinkNode {
     private final User user;
     private final Value value;
 
