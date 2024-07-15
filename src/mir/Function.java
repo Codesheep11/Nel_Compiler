@@ -2,14 +2,13 @@ package mir;
 
 import backend.operand.Address;
 import midend.Analysis.ScalarEvolution;
-import midend.Transform.ArithReduce;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Mem2Reg;
 import midend.Util.CloneInfo;
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
 import mir.result.SCEVInfo;
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.*;
 
@@ -49,7 +48,7 @@ public class Function extends Value {
 
     private final Type retType; // 返回值类型
     private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
-    private final SyncLinkedList<BasicBlock> blocks; // 内含基本块链表
+    private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
     private final DominanceGraph DG = new DominanceGraph(this);
@@ -63,7 +62,7 @@ public class Function extends Value {
         entry = null;
         setName(name);
         retType = type;
-        blocks = new SyncLinkedList<>();
+        blocks = new NelLinkedList<>();
         ArrayList<Argument> arguments = new ArrayList<>();
         for (int i = 0; i < argumentTypes.length; i++) {
             Argument arg = new Argument(argumentTypes[i], this);
@@ -78,7 +77,7 @@ public class Function extends Value {
         setName(name);
         entry = null;
         retType = type;
-        blocks = new SyncLinkedList<>();
+        blocks = new NelLinkedList<>();
         ArrayList<Argument> arguments = new ArrayList<>();
 
 
@@ -107,7 +106,7 @@ public class Function extends Value {
         return blocks.getLast();
     }
 
-    public SyncLinkedList<BasicBlock> getBlocks() {
+    public NelLinkedList<BasicBlock> getBlocks() {
         return blocks;
     }
 
@@ -191,10 +190,6 @@ public class Function extends Value {
 
     public void buildSCEVInfo() {
         scevInfo = ScalarEvolution.run(this);
-    }
-
-    public void runMem2Reg() {
-        Mem2Reg.run(this);
     }
 
 

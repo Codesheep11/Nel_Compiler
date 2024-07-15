@@ -3,7 +3,7 @@ package frontend.semantic;
 import mir.Constant;
 import mir.Type;
 import mir.Value;
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -69,6 +69,7 @@ public abstract class InitValue {
 
 
         @Override
+        @SuppressWarnings("deprecation")
         public Flatten flatten() {
             Flatten flatten = new Flatten();
             for (InitValue initValue :
@@ -208,8 +209,8 @@ public abstract class InitValue {
     }
 
 
-    public static class Flatten extends SyncLinkedList<Flatten.Slice> {
-        public static class Slice extends SyncLinkNode {
+    public static class Flatten extends NelLinkedList<Flatten.Slice> {
+        public static class Slice extends NelLinkNode {
             public Value value;
             public int count = 1;
 

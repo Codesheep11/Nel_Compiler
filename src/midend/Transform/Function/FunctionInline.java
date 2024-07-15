@@ -3,7 +3,7 @@ package midend.Transform.Function;
 import midend.Util.CloneInfo;
 import mir.*;
 import mir.Module;
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.*;
 
@@ -61,7 +61,7 @@ public class FunctionInline {
         for (Function function : functions) {
             int size = 0;
             for (BasicBlock basicBlock : function.getBlocks()) {
-                size += basicBlock.getInstructions().getSize();
+                size += basicBlock.getInstructions().size();
             }
             funcSize.put(function, size);
         }
@@ -193,7 +193,7 @@ public class FunctionInline {
             }
         }
         LinkedList<Instruction> instrs = new LinkedList<>();
-        SyncLinkedList.SyncLinkNode instr = inst.getNext();
+        NelLinkedList.NelLinkNode instr = inst.getNext();
         while (instr instanceof Instruction) {
             instrs.add((Instruction) instr);
             instr = instr.getNext();

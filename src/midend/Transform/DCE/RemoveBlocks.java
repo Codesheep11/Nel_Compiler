@@ -48,28 +48,24 @@ public class RemoveBlocks {
     private static void updatePhi(Function function) {
         //phi指令更新 这里考虑phi得到的信息会更少，同时默认LCSSA不会被删除
         for (BasicBlock block : function.getBlocks()) {
-            for (Instruction instr : block.getInstructions()) {
-                if (instr instanceof Instruction.Phi) {
-                    Instruction.Phi phi = (Instruction.Phi) instr;
-                    LinkedList<BasicBlock> rms = new LinkedList<>();
-                    for (BasicBlock preBlock : phi.getPreBlocks()) {
-                        if (!block.getPreBlocks().contains(preBlock)) {
-                            rms.add(preBlock);
-                        }
-                    }
-                    for (BasicBlock rm : rms) {
-                        phi.removeOptionalValue(rm);
-                    }
-                    if (phi.getPreBlocks().size() != block.getPreBlocks().size()) {
-                        throw new RuntimeException("phi error");
-                    }
-                    if (phi.canBeReplaced() && !phi.isLCSSA) {
-                        Value value = phi.getOptionalValue(phi.getPreBlocks().get(0));
-                        phi.replaceAllUsesWith(value);
-                        phi.remove();
+            for (var phi : block.getPhiInstructions()) {
+                LinkedList<BasicBlock> rms = new LinkedList<>();
+                for (BasicBlock preBlock : phi.getPreBlocks()) {
+                    if (!block.getPreBlocks().contains(preBlock)) {
+                        rms.add(preBlock);
                     }
                 }
-                else break;
+                for (BasicBlock rm : rms) {
+                    phi.removeOptionalValue(rm);
+                }
+                if (phi.getPreBlocks().size() != block.getPreBlocks().size()) {
+                    throw new RuntimeException("phi error");
+                }
+                if (phi.canBeReplaced() && !phi.isLCSSA) {
+                    Value value = phi.getOptionalValue(phi.getPreBlocks().get(0));
+                    phi.replaceAllUsesWith(value);
+                    phi.remove();
+                }
             }
         }
     }

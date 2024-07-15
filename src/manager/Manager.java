@@ -54,21 +54,21 @@ public class Manager {
             FrontEnd();
             if (arg.opt) {
                 Mem2Reg.run(module);
-                DeadCodeEliminate();
-                FuncPasses();
-                GlobalVarAnalysis.run(module);
-//                ConstArray2Value.run(module);
-                GlobalValueNumbering.run(module);
-                DeadCodeEliminate.run(module);
-                LoopInfo.build(module);
-                GlobalCodeMotion.run(module);
-                LCSSA.Run(module);
-//                LoopUnSwitching.run(module);
-                LoopInfo.build(module);
-                IndVars.run(module);
-                LoopInfo.build(module);
-                LCSSA.remove(module);
-                GepFold.run(module);
+//                DeadCodeEliminate();
+//                FuncPasses();
+//                GlobalVarAnalysis.run(module);
+////                ConstArray2Value.run(module);
+//                GlobalValueNumbering.run(module);
+//                DeadCodeEliminate.run(module);
+//                LoopInfo.build(module);
+//                GlobalCodeMotion.run(module);
+//                LCSSA.Run(module);
+////                LoopUnSwitching.run(module);
+//                LoopInfo.build(module);
+//                IndVars.run(module);
+//                LoopInfo.build(module);
+//                LCSSA.remove(module);
+//                GepFold.run(module);
                 DeadCodeEliminate();
             }
             if (arg.LLVM) {

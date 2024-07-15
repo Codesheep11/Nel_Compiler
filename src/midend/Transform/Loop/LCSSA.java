@@ -100,20 +100,17 @@ public class LCSSA {
     public static void remove(Module module) {
         for (Function function : module.getFuncSet()) {
             for (BasicBlock block : function.getBlocks()) {
-                for (Instruction instr : block.getInstructions()) {
-                    if (instr instanceof Instruction.Phi phi) {
-                        if (phi.isLCSSA) {
-                            if (phi.getPreBlocks().size() != 1) {
+                for (Instruction.Phi phi : block.getPhiInstructions()) {
+                    if (phi.isLCSSA) {
+                        if (phi.getPreBlocks().size() != 1) {
+                            if (!phi.canBeReplaced()) {
                                 phi.isLCSSA = false;
                                 continue;
                             }
-                            Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
-                            phi.replaceAllUsesWith(v);
-                            phi.delete();
                         }
-                    }
-                    else {
-                        break;
+                        Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
+                        phi.replaceAllUsesWith(v);
+                        phi.delete();
                     }
                 }
             }

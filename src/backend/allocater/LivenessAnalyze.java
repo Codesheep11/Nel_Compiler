@@ -4,8 +4,6 @@ import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
-import mir.Instruction;
-import mir.Use;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,10 +93,10 @@ public class LivenessAnalyze {
             }
         }
         for (RiscvBlock block : topoSort) {
-            if (block.riscvInstructions.getSize() == 0) continue;
+            if (block.riscvInstructions.size() == 0) continue;
             In.put(block.getFirst(), BlockIn.get(block));
             Out.put(block.getLast(), BlockOut.get(block));
-            int size = block.riscvInstructions.getSize();
+            int size = block.riscvInstructions.size();
             for (int i = size - 1; i >= 0; i--) {
 //                System.out.println("ins num: " + i + " size: " + size);
                 RiscvInstruction ins = block.riscvInstructions.get(i);
