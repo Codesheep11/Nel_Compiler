@@ -42,4 +42,9 @@ public class RiscvFloat extends RiscvGlobalVar {
         }
         return sb.toString() + "\n";
     }
+
+    @Override
+    public boolean hasInit() {
+        return true;// 浮点数必须是已经初始化的，否则不会存起来
+    }
 }

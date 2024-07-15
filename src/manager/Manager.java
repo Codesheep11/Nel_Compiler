@@ -1,5 +1,6 @@
 package manager;
 
+import backend.Opt.BlockInline;
 import backend.Opt.BlockReSort;
 import backend.Opt.CalculateOpt;
 import backend.Opt.SimplifyCFG;
@@ -70,12 +71,12 @@ public class Manager {
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
                 LCSSA.Run(module);
-//                LoopUnSwitching.run(module);
+                LoopUnSwitching.run(module);
                 LoopInfo.build(module);
                 IndVars.run(module);
                 LoopInfo.build(module);
                 LCSSA.remove(module);
-//                GepFold.run(module);
+                GepFold.run(module);
                 DeadCodeEliminate();
             }
             if (arg.LLVM) {
@@ -94,6 +95,7 @@ public class Manager {
                 afterRegAssign = true;
 //                Scheduler.postRASchedule(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
+                BlockInline.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {
@@ -115,13 +117,13 @@ public class Manager {
     }
 
     private void DeadCodeEliminate() {
-//        DeadLoopEliminate.run(module);
+        DeadLoopEliminate.run(module);
         SimplfyCFG.run(module);
         DeadCodeEliminate.run(module);
     }
 
     private void FuncPasses() {
-//        FunctionInline.run(module);
+        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         TailCall2Loop.run(module);

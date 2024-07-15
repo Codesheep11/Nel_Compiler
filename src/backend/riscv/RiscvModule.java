@@ -53,9 +53,17 @@ public class RiscvModule {
                 ".attribute unaligned_access, 0\n" +
                 ".attribute stack_align, 16\n.global main\n");
         StringBuilder sb = new StringBuilder("");
+        sb.append(".bss\n");
+        for (RiscvGlobalVar glob : globList) {
+            if (!glob.hasInit()) {
+                sb.append(glob.toString());
+            }
+        }
         sb.append(".data\n");
         for (RiscvGlobalVar glob : globList) {
-            sb.append(glob.toString());
+            if (glob.hasInit()) {
+                sb.append(glob.toString());
+            }
         }
         head.append(".type ").append("main").append(", @function\n");
         sb.append("\n");
