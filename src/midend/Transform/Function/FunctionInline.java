@@ -10,7 +10,7 @@ import java.util.*;
 import static manager.CentralControl._FUNC_INLINE_OPEN;
 
 public class FunctionInline {
-    private static final int INLINE_SIZE_THRESHOLD = 150;
+    private static final int INLINE_SIZE_THRESHOLD = 150000;
     private static Collection<Function> functions;
     private static Module module;
     private static ArrayList<Function> funcCanInline = new ArrayList<>();

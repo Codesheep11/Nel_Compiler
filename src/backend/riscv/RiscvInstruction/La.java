@@ -21,7 +21,7 @@ public class La extends RiscvInstruction {
 
     @Override
     public String toString() {
-        return "\tla\t\t" + reg + ", " + content.name;
+        return "\tlla\t\t" + reg + ", " + content.name;
     }
 
     @Override

@@ -3,21 +3,23 @@ package mir.Ir2RiscV;
 import backend.operand.Address;
 import backend.operand.Reg;
 import backend.riscv.RiscvFloat;
-import backend.riscv.RiscvInstruction.LS;
-import backend.riscv.RiscvInstruction.La;
-import backend.riscv.RiscvInstruction.Li;
-import backend.riscv.RiscvInstruction.R2;
+import backend.riscv.RiscvInstruction.*;
 import mir.Constant;
 import mir.Function;
 import mir.Type;
 import mir.Value;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class VirRegMap {
     public static final VirRegMap VRM = new VirRegMap();
 
     public final HashMap<Value, Reg> map = new HashMap<>();
+
+    // 被b指令用的寄存器的hashset表
+
+    public static final HashMap<Reg, Integer>bUseReg=new HashMap<>();
 
     private Function nowFunction;
 
@@ -28,6 +30,21 @@ public class VirRegMap {
     public void clean(Function function) {
         this.nowFunction = function;
         map.clear();
+    }
+
+    public Reg genReg(Value value) {
+        Type type = value.getType();
+        Reg reg;
+        if (type.isFloatTy()) {
+            reg = Reg.getVirtualReg(Reg.RegType.FPR, 32);
+        } else if (type.isInt64Ty() || type.isPointerTy()) {
+            reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
+        } else if (type.isInt1Ty() || type.isInt32Ty()) {
+            reg = Reg.getVirtualReg(Reg.RegType.GPR, 32);
+        } else {
+            throw new RuntimeException("alloc array to a reg");
+        }
+        return reg;
     }
 
     public void addValue(Value value) {
@@ -65,26 +82,34 @@ public class VirRegMap {
                 throw new RuntimeException("wrong type");
             }
             return reg;
+        } else if (value instanceof Constant) {
+            if ((value instanceof Constant.ConstantInt && (Integer) ((Constant.ConstantInt) value).getConstValue() == 0)
+                    || (value instanceof Constant.ConstantBool) && (Integer) ((Constant.ConstantBool) value).getConstValue() == 0) {
+                return Reg.getPreColoredReg(Reg.PhyReg.zero, 32);
+            }
+            Reg reg = genReg(value);
+            if (value instanceof Constant.ConstantFloat) {
+                Float init = ((Float) ((Constant.ConstantFloat) value).getConstValue());
+                RiscvFloat rf = CodeGen.ansRis.getSameFloat(init);
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
+                CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, tmp, rf));
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Address(0), LS.LSType.flw));
+            } else if (value instanceof Constant.ConstantInt) {
+                int init = ((Integer) ((Constant.ConstantInt) value).getConstValue());
+                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, init));
+            } else if (value instanceof Constant.ConstantBool) {
+                int init = ((Integer) ((Constant.ConstantBool) value).getConstValue());
+                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, init));
+            } else {
+                throw new RuntimeException("wrong const Type");
+            }
+            return reg;
+        } else {
+            if (!map.containsKey(value)) {
+                addValue(value);
+            }
+            return map.get(value);
         }
-        if (!map.containsKey(value) || value instanceof Constant) {
-            addValue(value);
-        }
-        Reg reg = map.get(value);
-        if (value instanceof Constant.ConstantFloat) {
-            Float init = ((Float) ((Constant.ConstantFloat) value).getConstValue());
-            RiscvFloat rf = new RiscvFloat(init);
-            CodeGen.ansRis.addGlobalVar(rf);
-            Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-            CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, tmp, rf));
-            CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Address(0), LS.LSType.flw));
-        } else if (value instanceof Constant.ConstantInt) {
-            int init = ((Integer) ((Constant.ConstantInt) value).getConstValue());
-            CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, init));
-        } else if (value instanceof Constant.ConstantBool) {
-            int init = ((Integer) ((Constant.ConstantBool) value).getConstValue());
-            CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, init));
-        }
-        return reg;
     }
 
     // b的绑定为a的寄存器

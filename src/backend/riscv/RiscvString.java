@@ -29,4 +29,9 @@ public class RiscvString extends RiscvGlobalVar {
         return name + ":\n\t" +
                 ".string " + data + "\n";
     }
+
+    @Override
+    public boolean hasInit() {
+        return true;
+    }
 }

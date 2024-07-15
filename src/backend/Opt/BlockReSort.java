@@ -5,6 +5,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.B;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
+import backend.riscv.RiscvModule;
 import utils.Pair;
 
 import java.util.*;
@@ -17,13 +18,6 @@ public class BlockReSort {
      **/
     public static final String blockPlacementAlgo = "Pettis-Hansen";
 
-    static class NodeIndex {
-        public int value;
-
-        public NodeIndex(int value) {
-            this.value = value;
-        }
-    }
 
     static class CostT {
         public double value;
@@ -48,13 +42,8 @@ public class BlockReSort {
     static class BlockSeq extends ArrayList<Integer> {
     }
 
-    static CostT evalExtTspScore(BlockSeq seq, List<Integer> weights, List<Double> freq, List<BranchEdge> edges) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
 
-    static BlockSeq solveExtTsp(List<Integer> weights, List<Double> freq, List<BranchEdge> edges) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+
 
     static BlockSeq solvePettisHansen(List<Integer> weights, List<Double> freq, List<BranchEdge> edges) {
         int blockCount = weights.size();
@@ -309,7 +298,14 @@ public class BlockReSort {
         seq.addAll(pop.get(0).getKey());
     }
 
-    public static void optimizeBlockLayout(RiscvFunction func) {
+    public static void blockSort(RiscvModule module) {
+        for (RiscvFunction function : module.funcList) {
+            if (function.isExternal) continue;
+            optimizeBlockLayout(function);
+        }
+    }
+
+    private static void optimizeBlockLayout(RiscvFunction func) {
         if (func.blocks.size() <= 2) return;
         HashMap<RiscvBlock, BackCFGNode> cfg = GenCFG.calcCFG(func);
         List<Integer> weights = new ArrayList<>(func.blocks.size());
@@ -342,9 +338,7 @@ public class BlockReSort {
             }
         } else if (blockPlacementAlgo.equals("Pettis-Hansen")) {
             seq = solvePettisHansen(weights, freq, edges);
-        } else if (blockPlacementAlgo.equals("ExtTSP")) {
-            seq = solveExtTsp(weights, freq, edges);
-        } else {
+        }  else {
             throw new IllegalArgumentException("Unrecognized block placement method: " + blockPlacementAlgo);
         }
 
