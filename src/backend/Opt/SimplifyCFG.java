@@ -20,7 +20,7 @@ public class SimplifyCFG {
     public static boolean redirectGoto(RiscvFunction func) {
         HashMap<RiscvBlock, RiscvBlock> redirect = new HashMap<>();
         for (RiscvBlock block : func.blocks) {
-            if (block.riscvInstructions.getSize() > 1) continue;
+            if (block.riscvInstructions.size() > 1) continue;
             if (block.riscvInstructions.isEmpty()) {
                 if (func.blocks.indexOf(block) == func.blocks.size() - 1) continue;
                 // 是最后一个块的话就跳过
@@ -75,7 +75,7 @@ public class SimplifyCFG {
         usedLabels.add(func.blocks.get(0));
         while (q.size() != 0) {
             RiscvBlock block = q.poll();
-            if (block.riscvInstructions.getSize() == 0) {
+            if (block.riscvInstructions.size() == 0) {
                 int idx = func.blocks.indexOf(block);
                 if (idx >= func.blocks.size() - 1) continue;
                 RiscvBlock next = func.blocks.get(idx + 1);
@@ -85,8 +85,8 @@ public class SimplifyCFG {
                 }
             } else {
                 RiscvInstruction jump = block.riscvInstructions.getLast();
-                if (block.riscvInstructions.getSize() >= 2) {
-                    RiscvInstruction branch = block.riscvInstructions.get(block.riscvInstructions.getSize() - 2);
+                if (block.riscvInstructions.size() >= 2) {
+                    RiscvInstruction branch = block.riscvInstructions.get(block.riscvInstructions.size() - 2);
                     if (branch instanceof B) {
                         if (!usedLabels.contains(((B) branch).targetBlock)) {
                             q.add(((B) branch).targetBlock);
@@ -165,7 +165,7 @@ public class SimplifyCFG {
             if (terminator instanceof B) {
                 targetBlock = ((B) terminator).targetBlock;
                 // 如果目标块的指令数量不等于2，继续
-                if (targetBlock.riscvInstructions.getSize() != 2) {
+                if (targetBlock.riscvInstructions.size() != 2) {
                     continue;
                 }
                 RiscvInstruction back = targetBlock.riscvInstructions.getLast();
@@ -202,11 +202,11 @@ public class SimplifyCFG {
             }
             RiscvBlock nextBlock = iter.next();
             iter.previous(); // Move back the iterator to the correct position
-            if (block.riscvInstructions.getSize() < 2) {
+            if (block.riscvInstructions.size() < 2) {
                 continue;
             }
             RiscvInstruction jump = block.riscvInstructions.getLast();
-            RiscvInstruction branch = block.riscvInstructions.get(block.riscvInstructions.getSize() - 2);
+            RiscvInstruction branch = block.riscvInstructions.get(block.riscvInstructions.size() - 2);
             if (branch instanceof B && jump instanceof J && ((J) jump).type == J.JType.j) {
                 if (((B) branch).targetBlock == nextBlock) {
                     ((B) branch).inverse();

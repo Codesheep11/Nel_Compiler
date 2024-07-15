@@ -8,7 +8,6 @@ import frontend.semantic.InitValue;
 import frontend.semantic.SymTable;
 import frontend.semantic.Symbol;
 import frontend.syntaxChecker.Ast;
-import manager.Manager;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -755,7 +754,7 @@ public class Visitor {
 
         if (hasOffSet) {
 //            pointer = new Instruction.GetElementPtr(currentBB, pointer, contentType, offsets);
-            ArrayList flattenOffsets = flatOffsets(offsets, pointer, contentType);
+            ArrayList<Value> flattenOffsets = flatOffsets(offsets, pointer, contentType);
             pointer = new Instruction.GetElementPtr(currentBB, pointer, contentType, flattenOffsets);
         }
 
