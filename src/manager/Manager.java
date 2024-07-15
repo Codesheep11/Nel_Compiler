@@ -63,7 +63,7 @@ public class Manager {
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
                 LCSSA.Run(module);
-                LoopUnSwitching.run(module);
+//                LoopUnSwitching.run(module);
                 LoopInfo.build(module);
                 IndVars.run(module);
                 LoopInfo.build(module);

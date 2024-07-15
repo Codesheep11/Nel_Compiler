@@ -2,6 +2,7 @@ package mir;
 
 import utils.SyncLinkedList;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -95,6 +96,12 @@ public class Value extends SyncLinkedList.SyncLinkNode {
     public void delete() {
         use_clear();
         this.remove();
+    }
+
+    public ArrayList<Instruction> getUsers() {
+        ArrayList<Instruction> users = new ArrayList<>();
+        for (Use use : uses) users.add((Instruction) use.getUser());
+        return users;
     }
 
 }
