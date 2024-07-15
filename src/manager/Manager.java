@@ -1,6 +1,5 @@
 package manager;
 
-import backend.Opt.BlockInline;
 import backend.Opt.BlockReSort;
 import backend.Opt.CalculateOpt;
 import backend.Opt.SimplifyCFG;
