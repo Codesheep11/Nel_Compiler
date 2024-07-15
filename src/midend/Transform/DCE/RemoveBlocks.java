@@ -1,6 +1,5 @@
 package midend.Transform.DCE;
 
-import midend.Util.Print;
 import mir.*;
 import mir.Module;
 

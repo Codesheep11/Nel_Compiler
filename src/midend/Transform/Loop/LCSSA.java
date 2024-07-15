@@ -71,9 +71,6 @@ public class LCSSA {
     /**
      * 判断指令是否在循环外部被使用
      *
-     * @param instr
-     * @param loop
-     * @return
      */
     public static boolean usedOutLoop(Instruction instr, Loop loop) {
         for (Use use : instr.getUses()) {

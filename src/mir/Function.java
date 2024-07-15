@@ -3,7 +3,6 @@ package mir;
 import backend.operand.Address;
 import midend.Analysis.ScalarEvolution;
 import midend.Transform.Loop.LoopInfo;
-import midend.Transform.Mem2Reg;
 import midend.Util.CloneInfo;
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
