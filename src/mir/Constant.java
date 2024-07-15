@@ -190,14 +190,22 @@ public abstract class Constant extends User {
             return flatten;
         }
 
-        public Constant getIdxEle(ArrayList<Integer> idx) {
-            if (idx.size() > ((Type.ArrayType) type).getDimensions()) {
+        public Constant getIdxEle(ConstantInt idx) {
+            int v = idx.getIntValue();
+            if (v > ((Type.ArrayType) type).getFlattenSize()) {
                 throw new RuntimeException("Index out of bound");
             }
             Constant ret = this;
-            for (int i = 0; i < idx.size(); i++) {
-                ret = ((ConstantArray) ret).getEle(idx.get(0));
+            //idx是数组展平的第i个元素，所以要找到第i个元素
+            Type eleType = ((Type.ArrayType) type).getEleType();
+            while (eleType instanceof Type.ArrayType) {
+                int len = ((Type.ArrayType) eleType).getFlattenSize();
+                int i = v / len;
+                v = v % len;
+                ret = ((ConstantArray) ret).getEle(i);
+                eleType = ((Type.ArrayType) eleType).getEleType();
             }
+
             return ret;
         }
 

@@ -67,7 +67,7 @@ public class GPRallocater {
         while (true) {
             clear();
             //标记第几轮循环
-            System.out.println(func.name + " GPR round: " + pass++);
+//            System.out.println(func.name + " GPR round: " + pass++);
 //            System.out.println(func);
             //建立冲突图
             buildConflictGraph();

@@ -63,7 +63,7 @@ public class Manager {
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
                 LCSSA.Run(module);
-                LoopUnSwitching.run(module);
+//                LoopUnSwitching.run(module);
                 LoopInfo.build(module);
                 IndVars.run(module);
                 LoopInfo.build(module);
@@ -111,7 +111,7 @@ public class Manager {
     }
 
     private void FuncPasses() {
-        FunctionInline.run(module);
+//        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         TailCall2Loop.run(module);
