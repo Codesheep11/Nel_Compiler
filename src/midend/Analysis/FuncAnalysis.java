@@ -45,7 +45,7 @@ public class FuncAnalysis {
             }
         }
         for (Function func : deleteList) {
-            func.delete();
+            func.release();
             module.removeFunction(func);
         }
 
