@@ -5,6 +5,7 @@ import frontend.lexer.TokenArray;
 import frontend.exception.*;
 import frontend.lexer.TokenType;
 import manager.Manager;
+import midend.Util.FuncInfo;
 
 import java.util.ArrayList;
 
@@ -27,12 +28,13 @@ public class Parser {
     }
 
     private Ast.Decl parseDecl() throws SyntaxError {
-        if(tokenArray.check(2, TokenType.L_PAREN)) {
+        if (tokenArray.check(2, TokenType.L_PAREN)) {
             return parseFuncDef();
         }
         if (tokenArray.check(TokenType.CONST)) {
             return parseConstDecl();
-        } else {
+        }
+        else {
             return parseVarDecl();
         }
 
@@ -43,7 +45,7 @@ public class Parser {
         Ast.Ident ident = parseIdent();
         tokenArray.consumeToken(TokenType.L_PAREN);
         boolean hasFuncFParams = !tokenArray.checkAndSkip(TokenType.R_PAREN);
-        if(hasFuncFParams) {
+        if (hasFuncFParams) {
             ArrayList<Ast.FuncFParam> funcFParams = parseFuncFParams();
             tokenArray.consumeToken(TokenType.R_PAREN);
             Ast.Block block = parseBlock();
@@ -58,7 +60,7 @@ public class Parser {
         tokenArray.consumeToken(TokenType.CONST);
         Ast.Btype btype = parseBtype();
         ArrayList<Ast.ConstDef> constDefs = new ArrayList<Ast.ConstDef>();
-        do{
+        do {
             Ast.ConstDef constDef = parseConstDef();
             constDefs.add(constDef);
         } while (tokenArray.checkAndSkip(TokenType.COMMA));
@@ -68,7 +70,7 @@ public class Parser {
 
     private Ast.ConstDef parseConstDef() throws SyntaxError {
         Ast.Ident ident = parseIdent();
-        if(tokenArray.checkAndSkip(TokenType.L_BRACK)) {
+        if (tokenArray.checkAndSkip(TokenType.L_BRACK)) {
             ArrayList<Ast.AddExp> addExps = new ArrayList<Ast.AddExp>();
             do {
                 Ast.AddExp addExp = parseAddExp();
@@ -78,7 +80,8 @@ public class Parser {
             tokenArray.consumeToken(TokenType.ASSIGN);
             Ast.ConstInitVal constInitVal = parseConstInitVal();
             return new Ast.ConstDef(ident, addExps, constInitVal);
-        } else {
+        }
+        else {
             tokenArray.consumeToken(TokenType.ASSIGN);
             Ast.ConstInitVal constInitVal = parseConstInitVal();
             return new Ast.ConstDef(ident, constInitVal);
@@ -90,10 +93,11 @@ public class Parser {
     }
 
     private Ast.ConstInitVal parseConstInitVal() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_BRACE)) {
-            if(tokenArray.checkAndSkip(TokenType.R_BRACE)) {
+        if (tokenArray.checkAndSkip(TokenType.L_BRACE)) {
+            if (tokenArray.checkAndSkip(TokenType.R_BRACE)) {
                 return new Ast.ConstInitVal();
-            } else {
+            }
+            else {
                 ArrayList<Ast.ConstInitVal> constInitVals = new ArrayList<Ast.ConstInitVal>();
                 do {
                     Ast.ConstInitVal constInitVal = parseConstInitVal();
@@ -102,7 +106,8 @@ public class Parser {
                 tokenArray.consumeToken(TokenType.R_BRACE);
                 return new Ast.ConstInitVal(constInitVals);
             }
-        } else {
+        }
+        else {
             Ast.AddExp constExp = parseConstExp();
             return new Ast.ConstInitVal(constExp);
         }
@@ -123,13 +128,13 @@ public class Parser {
         Ast.Ident ident = parseIdent();
         ArrayList<Ast.VarSuffix> varSuffixes = new ArrayList<Ast.VarSuffix>();
         ArrayList<Ast.AddExp> addExps = new ArrayList<>();
-        if(tokenArray.check(TokenType.L_BRACK)) {
+        if (tokenArray.check(TokenType.L_BRACK)) {
             do {
                 Ast.VarSuffix varSuffix = parseVarSuffix();
                 varSuffixes.add(varSuffix);
             } while (tokenArray.check(TokenType.L_BRACK));
-            for (Ast.VarSuffix varSuffix:
-                 varSuffixes) {
+            for (Ast.VarSuffix varSuffix :
+                    varSuffixes) {
                 addExps.add(varSuffix.getExp());
             }
             if (tokenArray.checkAndSkip(TokenType.ASSIGN)) {
@@ -137,19 +142,22 @@ public class Parser {
                 return new Ast.VarDef(ident, addExps, initVal);
             }
             return new Ast.VarDef(ident, addExps);
-        } else if (tokenArray.checkAndSkip(TokenType.ASSIGN)) {
+        }
+        else if (tokenArray.checkAndSkip(TokenType.ASSIGN)) {
             Ast.VarInitVal initVal = parseInitVal();
             return new Ast.VarDef(ident, initVal);
-        } else {
+        }
+        else {
             return new Ast.VarDef(ident);
         }
     }
 
     private Ast.VarInitVal parseInitVal() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_BRACE)) {
-            if(tokenArray.checkAndSkip(TokenType.R_BRACE)) {
+        if (tokenArray.checkAndSkip(TokenType.L_BRACE)) {
+            if (tokenArray.checkAndSkip(TokenType.R_BRACE)) {
                 return new Ast.VarInitVal();
-            } else {
+            }
+            else {
                 ArrayList<Ast.VarInitVal> initVals = new ArrayList<Ast.VarInitVal>();
                 do {
                     Ast.VarInitVal initVal = parseInitVal();
@@ -158,7 +166,8 @@ public class Parser {
                 tokenArray.consumeToken(TokenType.R_BRACE);
                 return new Ast.VarInitVal(initVals);
             }
-        } else {
+        }
+        else {
             Ast.AddExp exp = parseConstExp();
             return new Ast.VarInitVal(exp);
         }
@@ -167,8 +176,7 @@ public class Parser {
     private Ast.Block parseBlock() throws SyntaxError {
         tokenArray.consumeToken(TokenType.L_BRACE);
         ArrayList<Ast.BlockItem> blockItems = new ArrayList<Ast.BlockItem>();
-        while(!tokenArray.checkAndSkip(TokenType.R_BRACE))
-        {
+        while (!tokenArray.checkAndSkip(TokenType.R_BRACE)) {
             Ast.BlockItem blockItem = parseBlockItem();
             blockItems.add(blockItem);
         }
@@ -178,7 +186,8 @@ public class Parser {
     private Ast.BlockItem parseBlockItem() throws SyntaxError {
         if (tokenArray.check(TokenType.CONST, TokenType.INT, TokenType.FLOAT)) {
             return parseDecl();
-        } else {
+        }
+        else {
             return parseStmt();
         }
     }
@@ -202,7 +211,7 @@ public class Parser {
         Token firstToken = tokenArray.ahead(0);
         switch (firstToken.tokenType) {
             case IDENTIFIER -> {
-                if(tokenArray.ahead(1).tokenType == TokenType.L_PAREN) {
+                if (tokenArray.ahead(1).tokenType == TokenType.L_PAREN) {
                     Ast.AddExp exp = parseAddExp();
                     tokenArray.consumeToken(TokenType.SEMI);
                     return new Ast.ExpStmt(exp);
@@ -231,7 +240,7 @@ public class Parser {
                 Ast.Cond cond = parseCond();
                 tokenArray.consumeToken(TokenType.R_PAREN);
                 Ast.Stmt stmt = parseStmt();
-                if(tokenArray.checkAndSkip(TokenType.ELSE)) {
+                if (tokenArray.checkAndSkip(TokenType.ELSE)) {
                     Ast.Stmt stmt1 = parseStmt();
                     return new Ast.IfElStmt(cond, stmt, stmt1);
                 }
@@ -257,7 +266,7 @@ public class Parser {
             }
             case RETURN -> {
                 tokenArray.consumeToken(TokenType.RETURN);
-                if(tokenArray.checkAndSkip(TokenType.SEMI)) {
+                if (tokenArray.checkAndSkip(TokenType.SEMI)) {
                     return new Ast.ReturnStmt();
                 }
                 Ast.AddExp exp = parseAddExp();
@@ -360,11 +369,12 @@ public class Parser {
     }
 
     private Ast.VarSuffix parseVarSuffix() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_BRACK)) {
+        if (tokenArray.checkAndSkip(TokenType.L_BRACK)) {
             Ast.AddExp exp = parseAddExp();
             tokenArray.consumeToken(TokenType.R_BRACK);
             return new Ast.VarSuffix(exp);
-        } else {
+        }
+        else {
             return new Ast.VarSuffix();
         }
     }
@@ -387,25 +397,27 @@ public class Parser {
             Ast.MulExp mulExp = parseMulExp();
             Ast.AddExpSuffix addExpSuffix = parseAddExpSuffix();
             return new Ast.AddExpSuffix(mulExp, addExpSuffix, addOp);
-        } else if (tokenArray.check(TokenType.SUB)) {
+        }
+        else if (tokenArray.check(TokenType.SUB)) {
             Token subOp = tokenArray.consumeToken(TokenType.SUB);
             Ast.MulExp mulExp = parseMulExp();
             Ast.AddExpSuffix addExpSuffix = parseAddExpSuffix();
             return new Ast.AddExpSuffix(mulExp, addExpSuffix, subOp);
-        } else {
+        }
+        else {
             return new Ast.AddExpSuffix();
         }
     }
 
     private Ast.UnaryExp parseUnaryExp() throws SyntaxError {
-        if(tokenArray.check(TokenType.IDENTIFIER) && tokenArray.check(1, TokenType.L_PAREN)) {
+        if (tokenArray.check(TokenType.IDENTIFIER) && tokenArray.check(1, TokenType.L_PAREN)) {
             Ast.Ident ident = parseIdent();
             tokenArray.consumeToken(TokenType.L_PAREN);
-            if(tokenArray.checkAndSkip(TokenType.R_PAREN)) {
+            if (tokenArray.checkAndSkip(TokenType.R_PAREN)) {
                 return new Ast.UnaryExp(ident);
             }
             if (tokenArray.check(TokenType.STR)) {
-                if(!ident.identifier.content.equals(Manager.ExternFunc.PUTF.getName())) {
+                if (!ident.identifier.content.equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     throw new SyntaxError("Unexpeted string");
                 }
                 Token str = tokenArray.consumeToken(TokenType.STR);
@@ -420,34 +432,39 @@ public class Parser {
             Ast.FuncRParams funcRParams = parseFuncRParams();
             tokenArray.consumeToken(TokenType.R_PAREN);
             return new Ast.UnaryExp(ident, funcRParams);
-        } else if (tokenArray.check(TokenType.NOT, TokenType.ADD, TokenType.SUB)) {
+        }
+        else if (tokenArray.check(TokenType.NOT, TokenType.ADD, TokenType.SUB)) {
             Token unaryOp = tokenArray.consumeToken(TokenType.NOT, TokenType.ADD, TokenType.SUB);
             Ast.UnaryExp unaryExp = parseUnaryExp();
             return new Ast.UnaryExp(unaryOp, unaryExp);
-        } else {
+        }
+        else {
             return new Ast.UnaryExp(parsePrimaryExp());
         }
     }
 
     private Ast.MulExpSuffix parseMulExpSuffix() throws SyntaxError {
-        if(tokenArray.check(TokenType.MUL, TokenType.DIV, TokenType.MOD)) {
+        if (tokenArray.check(TokenType.MUL, TokenType.DIV, TokenType.MOD)) {
             Token mulOp = tokenArray.consumeToken(TokenType.MUL, TokenType.DIV, TokenType.MOD);
             Ast.UnaryExp unaryExp = parseUnaryExp();
             Ast.MulExpSuffix mulExpSuffix = parseMulExpSuffix();
             return new Ast.MulExpSuffix(unaryExp, mulExpSuffix, mulOp);
-        } else {
+        }
+        else {
             return new Ast.MulExpSuffix();
         }
     }
 
     private Ast.PrimaryExp parsePrimaryExp() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_PAREN)) {
+        if (tokenArray.checkAndSkip(TokenType.L_PAREN)) {
             Ast.AddExp exp = parseAddExp();
             tokenArray.consumeToken(TokenType.R_PAREN);
             return new Ast.PrimaryExp(exp);
-        } else if (tokenArray.check(TokenType.IDENTIFIER)) {
+        }
+        else if (tokenArray.check(TokenType.IDENTIFIER)) {
             return new Ast.PrimaryExp(parseLval());
-        } else {
+        }
+        else {
             Token number = tokenArray.consumeToken(TokenType.DEC_INT, TokenType.OCT_INT, TokenType.HEX_INT, TokenType.DEC_FLOAT, TokenType.HEX_FLOAT);
             return new Ast.PrimaryExp(number);
         }
@@ -469,7 +486,7 @@ public class Parser {
     }
 
     private Ast.LvalSuffix parseLvalSuffix() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_BRACK)) {
+        if (tokenArray.checkAndSkip(TokenType.L_BRACK)) {
             if (tokenArray.checkAndSkip(TokenType.R_BRACK)) {
                 Ast.LvalSuffix lvalSuffix = parseLvalSuffix();
                 return new Ast.LvalSuffix(lvalSuffix);
@@ -478,7 +495,8 @@ public class Parser {
             tokenArray.consumeToken(TokenType.R_BRACK);
             Ast.LvalSuffix lvalSuffix = parseLvalSuffix();
             return new Ast.LvalSuffix(exp, lvalSuffix);
-        } else {
+        }
+        else {
             return new Ast.LvalSuffix();
         }
     }
