@@ -111,7 +111,7 @@ public class Manager {
     }
 
     private void FuncPasses() {
-        FunctionInline.run(module);
+//        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         TailCall2Loop.run(module);
