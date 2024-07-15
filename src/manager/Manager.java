@@ -75,7 +75,7 @@ public class Manager {
                 IndVars.run(module);
                 LoopInfo.build(module);
                 LCSSA.remove(module);
-                GepFold.run(module);
+//                GepFold.run(module);
                 DeadCodeEliminate();
             }
             if (arg.LLVM) {
@@ -115,13 +115,13 @@ public class Manager {
     }
 
     private void DeadCodeEliminate() {
-        DeadLoopEliminate.run(module);
+//        DeadLoopEliminate.run(module);
         SimplfyCFG.run(module);
         DeadCodeEliminate.run(module);
     }
 
     private void FuncPasses() {
-        FunctionInline.run(module);
+//        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         TailCall2Loop.run(module);

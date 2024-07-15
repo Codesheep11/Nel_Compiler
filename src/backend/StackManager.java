@@ -129,11 +129,11 @@ public class StackManager {
             CallMap.put(call, new LinkedList<>());
         }
         LinkedList<Address> argList = CallMap.get(call);
-        for (Address arg : argList) {
-            if (arg.getRegName().equals(regName)) {
-                return arg;
-            }
-        }
+//        for (Address arg : argList) {
+//            if (arg.getRegName().equals(regName)) {
+//                return arg;
+//            }
+//        }
         Address ret = new Address(regName, byteSize);
         argList.addLast(ret);
         return ret;
