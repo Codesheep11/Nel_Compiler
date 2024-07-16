@@ -12,13 +12,6 @@ public class BasicBlock extends Value {
     private final Function parentFunction; // 父函数
     private final String label;
     private final NelLinkedList<Instruction> instructions;
-    // 支配图属性
-    private BasicBlock idom; // 支配图-直接支配块
-    private HashSet<BasicBlock> domSet = new HashSet<>(); // 支配图-支配块集合 (指的是支配该块的所有块, 即支配树上的父节点)
-    private final HashSet<BasicBlock> domFrontiers = new HashSet<>(); // 支配图-支配边界
-    private final ArrayList<BasicBlock> domTreeChildren = new ArrayList<>(); // 支配图-支配树孩子(直接支配)
-
-    private int domDepth = -1; // 支配图-深度
 
     public Loop loop = null;// 循环信息
     public boolean isDeleted = false;
@@ -104,48 +97,28 @@ public class BasicBlock extends Value {
         return false;
     }
 
-    // 为维护与旧版本兼容性而保留
-    @Deprecated(forRemoval = false)
     public ArrayList<BasicBlock> getPreBlocks() {
         return AnalysisManager.getCFGPredecessors(this);
     }
 
-    // 为维护与旧版本兼容性而保留
-    @Deprecated(forRemoval = false)
     public ArrayList<BasicBlock> getSucBlocks() {
         return AnalysisManager.getCFGSuccessors(this);
     }
 
-    public void setIdom(BasicBlock idom) {
-        this.idom = idom;
-    }
-
-    public BasicBlock getIdom() {
-        return idom;
-    }
-
     public HashSet<BasicBlock> getDomFrontiers() {
-        return domFrontiers;
+        return AnalysisManager.getDomFrontiers(this);
     }
 
     public ArrayList<BasicBlock> getDomTreeChildren() {
-        return domTreeChildren;
+        return AnalysisManager.getDomTreeChildren(this);
     }
 
     public HashSet<BasicBlock> getDomSet() {
-        return domSet;
-    }
-
-    public void setDomSet(HashSet<BasicBlock> domSet) {
-        this.domSet = domSet;
-    }
-
-    public void setDomDepth(int dep) {
-        this.domDepth = dep;
+        return AnalysisManager.getDominators(this);
     }
 
     public int getDomDepth() {
-        return this.domDepth;
+        return AnalysisManager.getDomDepth(this);
     }
 
     public int getLoopDepth() {
@@ -224,18 +197,6 @@ public class BasicBlock extends Value {
 
     public void fixClone(CloneInfo cloneInfo) {
         instructions.forEach(inst -> inst.fix(cloneInfo));
-    }
-
-//    public BasicBlock defaultClone() {
-//        BasicBlock ret = new BasicBlock(getDescriptor() + "_cp", parentFunction);
-//        for (Instruction inst : getInstructions()) {
-//            Instruction tmp = inst.cloneToBB(ret);
-//        }
-//        return ret;
-//    }
-
-    public boolean dominates(BasicBlock block) {
-        return block.domSet.contains(this);
     }
 
     @Override

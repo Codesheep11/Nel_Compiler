@@ -44,6 +44,7 @@ public final class CFGinfo {
         return map.get(block).succBlocks;
     }
 
+    @SuppressWarnings("unused")
     public void printCFG() {
         for (BasicBlock block : map.keySet()) {
             System.out.println("Block: " + block.getLabel());

@@ -51,7 +51,6 @@ public class Function extends Value {
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
-    private final DominanceGraph DG = new DominanceGraph(this);
 
     private int countOfBB = 0;
 
@@ -190,8 +189,14 @@ public class Function extends Value {
         AnalysisManager.refreshCFG(this);
     }
 
+    /**
+     * 构建函数的支配图 <br>
+     * 建议使用AnalysisManager.refreshDG(Function)来刷新DG
+     * @deprecated
+     */
+    @Deprecated
     public void buildDominanceGraph() {
-        DG.build();
+        AnalysisManager.refreshDG(this);
     }
 
     public void buildSCEVInfo() {

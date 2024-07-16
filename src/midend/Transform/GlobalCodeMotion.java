@@ -1,8 +1,10 @@
 package midend.Transform;
 
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import manager.CentralControl;
 import mir.Module;
+import mir.result.DGinfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,6 +21,7 @@ public class GlobalCodeMotion {
     private Function currentFunc;
     private BasicBlock entry;
     private final HashSet<Instruction> scheduledSet;
+    private DGinfo dginfo;
 
     private GlobalCodeMotion() {
         this.scheduledSet = new HashSet<>();
@@ -37,7 +40,8 @@ public class GlobalCodeMotion {
         GlobalCodeMotion gcm = new GlobalCodeMotion();
         gcm.entry = function.getEntry();
         gcm.currentFunc = function;
-        function.buildDominanceGraph();
+        AnalysisManager.refreshDG(function);
+        gcm.dginfo = AnalysisManager.getDG(function);
         gcm.GCMEarly4Block(function.getEntry());
         gcm.scheduledSet.clear();
         gcm.GCMLate4Block(function.getEntry());
@@ -139,7 +143,7 @@ public class GlobalCodeMotion {
         // int bestDepth = instr.latest.getDomDepth();
         int bestLoopDepth = instr.latest.getLoopDepth();
         while (instr.latest != instr.earliest) {
-            instr.latest = instr.latest.getIdom();
+            instr.latest = dginfo.getIDom(instr.latest);
             if (instr.latest.getLoopDepth() < bestLoopDepth) {
                 best = instr.latest;
 //                bestDepth = instr.latest.getDomDepth();
@@ -199,12 +203,12 @@ public class GlobalCodeMotion {
             return a;
         }
         while (a.getDomDepth() > b.getDomDepth())
-            a = a.getIdom();
+            a = dginfo.getIDom(a);
         while (a.getDomDepth() < b.getDomDepth())
-            b = b.getIdom();
+            b = dginfo.getIDom(b);
         while (a != b) {
-            a = a.getIdom();
-            b = b.getIdom();
+            a = dginfo.getIDom(a);
+            b = dginfo.getIDom(b);
         }
         return a;
     }
