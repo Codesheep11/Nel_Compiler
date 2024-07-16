@@ -28,8 +28,10 @@ public class LoopInfo {
 
     public void runLoopAnalysis() {
         clearBlocksLoopInfo();
-        function.buildControlFlowGraph();
+//        function.buildControlFlowGraph();
+        AnalysisManager.refreshCFG(function);
         function.buildDominanceGraph();
+
         LoopInfo4Func();
         for (Loop loop : TopLevelLoops) {
             genEnterExit4Loop(loop);

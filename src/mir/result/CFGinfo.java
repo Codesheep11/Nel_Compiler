@@ -27,6 +27,10 @@ public final class CFGinfo {
         final ArrayList <BasicBlock> predBlocks;
         final ArrayList <BasicBlock> succBlocks;
     }
+    public void declareBlock(BasicBlock block) {
+        if (map.containsKey(block)) return;
+        map.put(block, new _CFG_Block_Info(block));
+    }
 
     public void addPredBlock(BasicBlock block, BasicBlock predBlock) {
         map.get(block).predBlocks.add(predBlock);

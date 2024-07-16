@@ -15,7 +15,9 @@ import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.FuncAnalysis;
 import midend.Analysis.GlobalVarAnalysis;
+import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
+import midend.Transform.Array.LocalArrayLift;
 import midend.Transform.DCE.DeadArgEliminate;
 import midend.Transform.DCE.DeadCodeEliminate;
 import midend.Transform.DCE.DeadLoopEliminate;
@@ -65,24 +67,24 @@ public class Manager {
                 DeadCodeEliminate();
                 FuncPasses();
                 GlobalVarAnalysis.run(module);
-//                ConstArray2Value.run(module);
                 GlobalValueNumbering.run(module);
                 DeadCodeEliminate.run(module);
                 LoopInfo.build(module);
                 GlobalCodeMotion.run(module);
                 LCSSA.Run(module);
-//                LoopUnSwitching.run(module);
+                LoopUnSwitching.run(module);
                 LoopInfo.build(module);
                 IndVars.run(module);
                 LoopInfo.build(module);
                 LCSSA.remove(module);
-                GepFold.run(module);
+                ArrayPasses();
                 DeadCodeEliminate();
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
                 return;
-            } else {
+            }
+            if (arg.opt) {
                 RemovePhi.run(module);
 //                outputLLVM("test.txt", module);
                 CodeGen codeGen = new CodeGen();
@@ -95,7 +97,7 @@ public class Manager {
                 afterRegAssign = true;
 //                Scheduler.postRASchedule(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
-                BlockInline.run(riscvmodule);
+//                BlockInline.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
         } catch (Exception e) {
@@ -128,6 +130,12 @@ public class Manager {
         DeadArgEliminate.run();
         TailCall2Loop.run(module);
         FuncAnalysis.run(module);
+    }
+
+    private void ArrayPasses() {
+        GepFold.run(module);
+//        LocalArrayLift.run(module);
+        ConstIdx2Value.run(module);
     }
 
     public void LoopTest(Module module) {
@@ -167,7 +175,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

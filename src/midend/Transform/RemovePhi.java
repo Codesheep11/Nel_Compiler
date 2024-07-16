@@ -1,36 +1,47 @@
 package midend.Transform;
 
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
+import mir.result.CFGinfo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 public class RemovePhi {
     private static int idx = 0;
+
+    private static CFGinfo cfGinfo;
 
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) {
                 continue;
             }
+            cfGinfo = AnalysisManager.getCFG(function);
             removePhiAddPhiCopy(function);
             PhiCopy2move(function);
         }
     }
 
     public static void removePhiAddPhiCopy(Function function) {
-        for (BasicBlock bb : function.getBlocks()) {
+        ArrayList<BasicBlock> blocks = new ArrayList<>();
+        function.getBlocks().forEach(blocks::add);
+        for (BasicBlock bb : blocks) {
             if (!(bb.getFirstInst() instanceof Instruction.Phi)) {
                 continue;
             }
             ArrayList<BasicBlock> pres = new ArrayList<>(bb.getPreBlocks());
             for (BasicBlock pre : pres) {
-                Instruction.PhiCopy phiCopy = new Instruction.PhiCopy(pre, new ArrayList<>(), new ArrayList<>());
-                phiCopy.remove();
                 if (pre.getSucBlocks().size() > 1) {
+                    Instruction.PhiCopy phiCopy = new Instruction.PhiCopy(pre, new ArrayList<>(), new ArrayList<>());
+                    phiCopy.remove();
                     addMidBB(pre, phiCopy, bb);
-                } else {
+                }
+                else {
                     Instruction term = pre.getLastInst();
+                    Instruction.PhiCopy phiCopy = new Instruction.PhiCopy(pre, new ArrayList<>(), new ArrayList<>());
+                    phiCopy.remove();
                     pre.getInstructions().insertBefore(phiCopy, term);
                 }
             }
@@ -58,7 +69,8 @@ public class RemovePhi {
      */
     public static void addMidBB(BasicBlock pre, Instruction.PhiCopy phiCopy, BasicBlock bb) {
         BasicBlock mid = new BasicBlock(pre.getParentFunction().getBBName(), pre.getParentFunction());
-        phiCopy.remove();
+        cfGinfo.declareBlock(mid);
+//        phiCopy.remove();
         mid.addInstFirst(phiCopy);
         Instruction term = pre.getLastInst();
         term.replaceUseOfWith(bb, mid);

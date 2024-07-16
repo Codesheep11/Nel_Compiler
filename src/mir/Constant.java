@@ -205,7 +205,10 @@ public abstract class Constant extends User {
                 ret = ((ConstantArray) ret).getEle(i);
                 eleType = ((Type.ArrayType) eleType).getEleType();
             }
-
+            ret = ((ConstantArray) ret).getEle(v);
+            if (!(ret instanceof ConstantInt)) {
+                throw new RuntimeException("Index out of bound");
+            }
             return ret;
         }
 
