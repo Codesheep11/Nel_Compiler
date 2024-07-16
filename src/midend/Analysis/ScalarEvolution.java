@@ -1,7 +1,7 @@
 package midend.Analysis;
 
 import mir.*;
-import mir.result.SCEVInfo;
+import mir.result.SCEVinfo;
 
 /**
  * Scalar Evolution Analysis <br>
@@ -10,8 +10,8 @@ import mir.result.SCEVInfo;
  */
 public class ScalarEvolution {
 
-    public static SCEVInfo run(Function func) {
-        SCEVInfo res = new SCEVInfo();
+    public static SCEVinfo run(Function func) {
+        SCEVinfo res = new SCEVinfo();
 
         for (Loop loop : func.loopInfo.TopLevelLoops) {
             for (Instruction inst : loop.header.getInstructions()) {
@@ -34,7 +34,7 @@ public class ScalarEvolution {
      * @param res 结果
      * @param loop 循环
      */
-    private static void BasicInduceVariableAnalysis(Instruction.Phi phiInst, SCEVInfo res, Loop loop) {
+    private static void BasicInduceVariableAnalysis(Instruction.Phi phiInst, SCEVinfo res, Loop loop) {
         // TODO: 需要 check
         Value initial = getInitial(phiInst, loop);
         Value next = getNext(phiInst, loop);
@@ -66,7 +66,7 @@ public class ScalarEvolution {
     /**
      * 通用归纳变量分析
      */
-    private static void GeneralInduceVariableAnalysis(Instruction inst, SCEVInfo res) {
+    private static void GeneralInduceVariableAnalysis(Instruction inst, SCEVinfo res) {
         switch (inst.getInstType()) {
             case ADD -> {
                 Instruction.Add add = (Instruction.Add) inst;
@@ -94,7 +94,7 @@ public class ScalarEvolution {
         }
     }
 
-    private static SCEVExpr foldAdd(SCEVInfo res, SCEVExpr lhs, SCEVExpr rhs) {
+    private static SCEVExpr foldAdd(SCEVinfo res, SCEVExpr lhs, SCEVExpr rhs) {
         if (lhs.type == SCEVExpr.SCEVType.Constant && rhs.type == SCEVExpr.SCEVType.Constant) {
             SCEVExpr scev = new SCEVExpr(SCEVExpr.SCEVType.Constant);
             scev.constant = lhs.constant + rhs.constant;
@@ -103,7 +103,7 @@ public class ScalarEvolution {
         return null;
     }
 
-    private static SCEVExpr foldMul(SCEVInfo res, SCEVExpr lhs, SCEVExpr rhs) {
+    private static SCEVExpr foldMul(SCEVinfo res, SCEVExpr lhs, SCEVExpr rhs) {
         if (lhs.type == SCEVExpr.SCEVType.Constant && rhs.type == SCEVExpr.SCEVType.Constant) {
             SCEVExpr scev = new SCEVExpr(SCEVExpr.SCEVType.Constant);
             scev.constant = lhs.constant * rhs.constant;
