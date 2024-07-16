@@ -1,5 +1,6 @@
 package mir;
 
+import midend.Analysis.AnalysisManager;
 import midend.Util.CloneInfo;
 import utils.NelLinkedList;
 
@@ -11,9 +12,6 @@ public class BasicBlock extends Value {
     private final Function parentFunction; // 父函数
     private final String label;
     private final NelLinkedList<Instruction> instructions;
-    // 控制图属性
-    private final ArrayList<BasicBlock> preBlocks; // 控制图-前驱块
-    private final ArrayList<BasicBlock> sucBlocks; // 控制图-后继块
     // 支配图属性
     private BasicBlock idom; // 支配图-直接支配块
     private HashSet<BasicBlock> domSet = new HashSet<>(); // 支配图-支配块集合 (指的是支配该块的所有块, 即支配树上的父节点)
@@ -32,8 +30,6 @@ public class BasicBlock extends Value {
         this.parentFunction = parentFunction;
         parentFunction.appendBlock(this);
         this.label = label;
-        this.sucBlocks = new ArrayList<>();
-        this.preBlocks = new ArrayList<>();
         this.instructions = new NelLinkedList<>();
     }
 
@@ -108,24 +104,16 @@ public class BasicBlock extends Value {
         return false;
     }
 
-    public void addPreBlock(BasicBlock preBlock) {
-        if (!preBlocks.contains(preBlock)) {
-            preBlocks.add(preBlock);
-        }
-    }
-
-    public void addSucBlock(BasicBlock sucBlock) {
-        if (!sucBlocks.contains(sucBlock)) {
-            sucBlocks.add(sucBlock);
-        }
-    }
-
+    // 为维护与旧版本兼容性而保留
+    @Deprecated(forRemoval = false)
     public ArrayList<BasicBlock> getPreBlocks() {
-        return preBlocks;
+        return AnalysisManager.getCFGPredecessors(this);
     }
 
+    // 为维护与旧版本兼容性而保留
+    @Deprecated(forRemoval = false)
     public ArrayList<BasicBlock> getSucBlocks() {
-        return sucBlocks;
+        return AnalysisManager.getCFGSuccessors(this);
     }
 
     public void setIdom(BasicBlock idom) {
@@ -181,26 +169,8 @@ public class BasicBlock extends Value {
      * @param newBlock 新的后继块
      */
     public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
-//        for (int i = 0; i < sucBlocks.size(); i++) {
-//            if (sucBlocks.get(i).equals(oldBlock)) {
-//                sucBlocks.set(i, newBlock);
-//            }
-//        }
         getTerminator().replaceSucc(oldBlock, newBlock);
     }
-
-//    public void replacePred(BasicBlock oldBlock, BasicBlock newBlock) {
-//        for (int i = 0; i < preBlocks.size(); i++) {
-//            if (preBlocks.get(i).equals(oldBlock)) {
-//                preBlocks.set(i, newBlock);
-//            }
-//        }
-//        for (Instruction instruction : instructions) {
-//            if (instruction instanceof Instruction.Phi phi)
-//                phi.changePreBlock(oldBlock, newBlock);
-//            else break;
-//        }
-//    }
 
 
     @Override

@@ -1,12 +1,13 @@
 package mir;
 
 import backend.operand.Address;
+import midend.Analysis.AnalysisManager;
 import midend.Analysis.ScalarEvolution;
 import midend.Transform.Loop.LoopInfo;
 import midend.Util.CloneInfo;
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
-import mir.result.SCEVInfo;
+import mir.result.SCEVinfo;
 import utils.NelLinkedList;
 
 import java.util.*;
@@ -54,7 +55,7 @@ public class Function extends Value {
 
     private int countOfBB = 0;
 
-    public SCEVInfo scevInfo = new SCEVInfo();
+    public SCEVinfo scevInfo = new SCEVinfo();
 
     public Function(Type type, String name, Type... argumentTypes) {
         super(Type.FunctionType.FUNC_TYPE);
@@ -179,8 +180,14 @@ public class Function extends Value {
     }
 
 
+    /**
+     * 构建函数的控制流图 <br>
+     * 建议使用AnalysisManager.refreshCFG(Function)来刷新CFG
+     * @deprecated
+     */
+    @Deprecated
     public void buildControlFlowGraph() {
-        ControlFlowGraph.buildCFG(this);
+        AnalysisManager.refreshCFG(this);
     }
 
     public void buildDominanceGraph() {
