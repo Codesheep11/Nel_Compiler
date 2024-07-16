@@ -3,6 +3,7 @@ package midend.Util;
 import mir.BasicBlock;
 import mir.Function;
 import mir.Instruction;
+import mir.result.CFGinfo;
 
 import java.util.*;
 
@@ -10,15 +11,20 @@ public class ControlFlowGraph {
 
     private static Function parentFunction;
 
+    public static CFGinfo run(Function function) {
+        parentFunction = function;
+        CFGinfo cfgInfo = new CFGinfo(function);
+        buildGraph(cfgInfo);
+        return cfgInfo;
+    }
 
+    @Deprecated(forRemoval = true)
     public static void buildCFG(Function function) {
         parentFunction = function;
-        clearGraph();
-        buildGraph();
     }
 
     // 顺序枚举blocks 下的 Terminator 由 分支命令 维护相应block 的前驱后继
-    private static void buildGraph() {
+    private static void buildGraph(CFGinfo info) {
         for (BasicBlock block : parentFunction.getBlocks()) {
             // 加入全集
             if (block.getInstructions().isEmpty()) {
@@ -45,45 +51,19 @@ public class ControlFlowGraph {
                 BasicBlock thenBlock = ((Instruction.Branch) instr).getThenBlock();
                 BasicBlock elseBlock = ((Instruction.Branch) instr).getElseBlock();
                 // then edge
-                block.addSucBlock(thenBlock);
-                thenBlock.addPreBlock(block);
+                info.addSuccBlock(block, thenBlock);
+                info.addPredBlock(thenBlock, block);
                 // else edge
-                block.addSucBlock(elseBlock);
-                elseBlock.addPreBlock(block);
+                info.addSuccBlock(block, elseBlock);
+                info.addPredBlock(elseBlock, block);
             }
             if (instr instanceof Instruction.Jump) {
                 // System.out.println(block.getLabel() + " :" + inst.getDescriptor());
                 BasicBlock targetBlock = ((Instruction.Jump) instr).getTargetBlock();
                 // jump edge
-                block.addSucBlock(targetBlock);
-                targetBlock.addPreBlock(block);
+                info.addSuccBlock(block, targetBlock);
+                info.addPredBlock(targetBlock, block);
             }
         }
     }
-
-    //清理前驱后继
-    private static void clearGraph() {
-        for (BasicBlock block : parentFunction.getBlocks()) {
-            block.getSucBlocks().clear();
-            block.getPreBlocks().clear();
-        }
-    }
-
-
-    public void printGraph() {
-        // print suc and pre blocks for each block
-        for (BasicBlock block : parentFunction.getBlocks()) {
-            System.out.println(" block: " + block.getLabel());
-            System.out.println("pre blocks: ");
-            for (BasicBlock preBlock : block.getPreBlocks()) {
-                System.out.println(preBlock.getLabel());
-            }
-            System.out.println("suc blocks: ");
-            for (BasicBlock sucBlock : block.getSucBlocks()) {
-                System.out.println(sucBlock.getLabel());
-            }
-        }
-    }
-
-
 }

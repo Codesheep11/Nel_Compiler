@@ -2,7 +2,7 @@ package midend.Transform.Loop;
 
 import mir.*;
 import mir.Module;
-import mir.result.SCEVInfo;
+import mir.result.SCEVinfo;
 
 /**
  * 邮电部诗人
@@ -53,7 +53,7 @@ public class IndVars {
         return -1;
     }
 
-    private static boolean getTripCount(Loop loop, SCEVInfo scevInfo) {
+    private static boolean getTripCount(Loop loop, SCEVinfo scevInfo) {
         if (loop.tripCount != -1) return true;
         Instruction.Terminator terminator = loop.header.getTerminator();
         if (!(terminator instanceof Instruction.Branch branch)) return false;
@@ -80,7 +80,7 @@ public class IndVars {
         return false;
     }
 
-    private static void run(Loop loop, SCEVInfo scevInfo) {
+    private static void run(Loop loop, SCEVinfo scevInfo) {
         if (getTripCount(loop, scevInfo)) {
             BasicBlock exit = loop.getExit();
             for (var inst : exit.getPhiInstructions()) {

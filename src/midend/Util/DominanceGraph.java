@@ -3,29 +3,35 @@ package midend.Util;
 import midend.Transform.DCE.RemoveBlocks;
 import mir.BasicBlock;
 import mir.Function;
+import mir.result.DGinfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 /**
  * 支配图
  *
- * @author ReActor, Srchycz
- * TODO: 优化支配图的构建, GVN、GCM 均需要构建支配图，考虑记录是否构建过的标志变量，减少重复 build 的代价
+ * @author Srchycz
  */
 public class DominanceGraph {
-    private final Function parentFunction;
-    private BasicBlock entry;
-    private final HashSet<BasicBlock> vis = new HashSet<>();
-    private final ArrayList<BasicBlock> blocks = new ArrayList<>();
+    private static Function parentFunction;
+    private static BasicBlock entry;
+    private static final HashSet<BasicBlock> vis = new HashSet<>();
+    private static final ArrayList<BasicBlock> blocks = new ArrayList<>();
 
-    public DominanceGraph(Function parentFunction) {
-        this.parentFunction = parentFunction;
+    private static DGinfo dginfo;
+
+    public static DGinfo runOnFunc(Function function) {
+        dginfo = new DGinfo(function);
+        parentFunction = function;
+        build();
+        return dginfo;
     }
 
-    public void build() {
+    private static void build() {
         clear();
-        this.entry = parentFunction.getEntry();
+        entry = parentFunction.getEntry();
         RemoveBlocks.runOnFunc(parentFunction);
         buildDominatorSet();
         buildImmDominateTree();
@@ -34,56 +40,16 @@ public class DominanceGraph {
         //printDomInfo();
     }
 
-    private void clear() {
+    private static void clear() {
         vis.clear();
         blocks.clear();
-        for (BasicBlock block : parentFunction.getBlocks()) {
-            block.getDomSet().clear();
-            block.getDomFrontiers().clear();
-            block.getDomTreeChildren().clear();
-            block.setIdom(null);
-        }
     }
 
     private void printDomInfo() {
-        printDominators();
-        printIdom();
-        printDomTree();
-        printDominanceFrontier();
-    }
-
-    private void printDomTree() {
-        System.out.println("domTree:");
-        for (BasicBlock block : blocks) {
-            System.out.print(block.getLabel() + " : ");
-            for (BasicBlock domTreeChild : block.getDomTreeChildren()) {
-                System.out.print(domTreeChild.getLabel() + " ");
-            }
-            System.out.println();
-        }
-    }
-
-    private void printIdom() {
-        System.out.println("idom:");
-        for (BasicBlock block : blocks) {
-            if (block.getIdom() != null) {
-                System.out.println(block.getLabel() + " : " + block.getIdom().getLabel());
-            }
-            else {
-                System.out.println(block.getLabel() + " : null");
-            }
-        }
-    }
-
-    private void printDominanceFrontier() {
-        System.out.println("Dominance Frontier:");
-        for (BasicBlock block : blocks) {
-            System.out.print(block.getLabel() + " : ");
-            for (BasicBlock domFrontier : block.getDomFrontiers()) {
-                System.out.print(domFrontier.getLabel() + " ");
-            }
-            System.out.println();
-        }
+        dginfo.printDominators();
+        dginfo.printIdom();
+        dginfo.printDomTree();
+        dginfo.printDominanceFrontier();
     }
 
     private void printReversePostorderTraversal() {
@@ -94,7 +60,7 @@ public class DominanceGraph {
         System.out.println();
     }
 
-    private void search(BasicBlock cur) {
+    private static void search(BasicBlock cur) {
         vis.add(cur);
         for (BasicBlock preBlock : cur.getPreBlocks()) {
             if (!vis.contains(preBlock)) {
@@ -105,7 +71,7 @@ public class DominanceGraph {
         blocks.add(cur);
     }
 
-    private void makeReversePostorderTraversal() {
+    private static void makeReversePostorderTraversal() {
         vis.clear();
         for (BasicBlock block : parentFunction.getBlocks()) {
             if (!vis.contains(block)) {
@@ -114,29 +80,22 @@ public class DominanceGraph {
         }
     }
 
-    private void printDominators() {
-        for (BasicBlock block : blocks) {
-            System.out.print(block.getLabel() + " : ");
-            for (BasicBlock dom : block.getDomSet()) {
-                System.out.print(dom.getLabel() + " ");
-            }
-            System.out.println();
-        }
-    }
-
-    private void buildDominatorSet() {
+    private static void buildDominatorSet() {
         // 计算逆后序
         makeReversePostorderTraversal();
+        HashMap<BasicBlock, HashSet<BasicBlock>> _domSet = new HashMap<>();
+        for (BasicBlock block : blocks) {
+            _domSet.put(block, new HashSet<>());
+        }
         // printReversePostorderTraversal();
         // 初始化节点的支配集合
         for (BasicBlock block : blocks) {
             // System.out.println("init " + block.getLabel());
-            block.getDomSet().clear();
             if (block.equals(entry)) {
-                block.getDomSet().add(entry);
+                _domSet.get(block).add(entry);
             }
             else {
-                block.getDomSet().addAll(blocks);
+                _domSet.get(block).addAll(blocks);
             }
         }
         // 边界检测
@@ -149,48 +108,39 @@ public class DominanceGraph {
                 if (block.equals(entry)) {
                     continue;
                 }
-                HashSet<BasicBlock> dom = block.getDomSet();
+                HashSet<BasicBlock> dom = _domSet.get(block);
                 HashSet<BasicBlock> new_dom = new HashSet<>(blocks);
                 // 取支配交集
                 for (BasicBlock preBlock : block.getPreBlocks()) {
-                    HashSet<BasicBlock> preDom = preBlock.getDomSet();
+                    HashSet<BasicBlock> preDom = _domSet.get(preBlock);
                     new_dom.retainAll(preDom);
                 }
                 // 加入自身
                 new_dom.add(block);
                 // 更新并 标记修改
                 if (!dom.equals(new_dom)) {
-                    block.setDomSet(new_dom);
+                    _domSet.put(block, new_dom);
                     changed = true;
                 }
             }
         } while (changed);
-    }
-
-
-    private boolean dominates(BasicBlock x, BasicBlock y) {
-        return y.getDomSet().contains(x);
-    }
-
-    // check whether x strictly dominates y
-    private boolean strictlyDominates(BasicBlock x, BasicBlock y) {
-        return dominates(x, y) && !x.equals(y);
+        dginfo.setDominator(_domSet);
     }
 
     // 直接支配
-    private boolean immDominates(BasicBlock x, BasicBlock y) {
+    private static boolean immDominates(BasicBlock x, BasicBlock y) {
         // 严格支配 y
-        if (!strictlyDominates(x, y)) {
+        if (!dginfo.strictlyDominate(x, y)) {
             return false;
         }
 
-        for (BasicBlock strictDom : y.getDomSet()) {
+        for (BasicBlock strictDom : dginfo.getDominators(y)) {
             // 跳过自身
             if (strictDom.equals(y)) {
                 continue;
             }
             // 不允许严格支配其他支配块
-            if (strictlyDominates(x, strictDom)) {
+            if (dginfo.strictlyDominate(x, strictDom)) {
                 return false;
             }
         }
@@ -198,45 +148,45 @@ public class DominanceGraph {
         return true;
     }
 
-    private void buildImmDominateTree() {
+    private static void buildImmDominateTree() {
         for (BasicBlock block : blocks) {
             if (block.equals(entry)) {
                 continue;
             }
-            for (BasicBlock dom : block.getDomSet()) {
+            for (BasicBlock dom : dginfo.getDominators(block)) {
                 if (immDominates(dom, block)) {
-                    block.setIdom(dom);
+                    dginfo.setIDom(block, dom);
                     break;
                 }
             }
         }
         for (BasicBlock block : blocks) {
-            BasicBlock idom = block.getIdom();
+            BasicBlock idom = dginfo.getIDom(block);
             if (idom != null) {
-                idom.getDomTreeChildren().add(block);
+                dginfo.getDomTreeChildren(idom).add(block);
             }
         }
     }
 
-    private void buildDomDepth() {
+    private static void buildDomDepth() {
         dfsDomTree(entry, 0);
     }
 
-    private void dfsDomTree(BasicBlock cur, int dep) {
-        cur.setDomDepth(dep);
-        for (BasicBlock domTreeChild : cur.getDomTreeChildren()) {
+    private static void dfsDomTree(BasicBlock cur, int dep) {
+        dginfo.setDepth(cur, dep);
+        for (BasicBlock domTreeChild : dginfo.getDomTreeChildren(cur)) {
             dfsDomTree(domTreeChild, dep + 1);
         }
     }
 
-    private void buildDominanceFrontier() {
+    private static void buildDominanceFrontier() {
         // 枚举控制图的边
         for (BasicBlock a : blocks) {
             for (BasicBlock b : a.getSucBlocks()) {
                 BasicBlock x = a;
-                while (x != null && !strictlyDominates(x, b)) {
-                    x.getDomFrontiers().add(b);
-                    x = x.getIdom();
+                while (x != null && !dginfo.strictlyDominate(x, b)) {
+                    dginfo.getDomFrontiers(x).add(b);
+                    x = dginfo.getIDom(x);
                 }
             }
         }
