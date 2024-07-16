@@ -132,7 +132,7 @@ public class LocalArrayLift {
                 constant.setIdxEle(idx, idxMap.get(idx));
             }
             GlobalVariable gv = new GlobalVariable(constant, "_lift_array_" + count++);
-            System.out.println(gv.label);
+//            System.out.println(gv.label);
             module.addGlobalValue(gv);
             alloc.replaceAllUsesWith(gv);
             delList.add(alloc);
