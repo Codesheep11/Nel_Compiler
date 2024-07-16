@@ -6,9 +6,7 @@ import mir.*;
 import mir.Module;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * 数组飞升
