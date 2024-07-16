@@ -6,7 +6,7 @@ import mir.Value;
 
 import java.util.HashMap;
 
-public class SCEVInfo {
+public final class SCEVinfo {
 
     private HashMap<Value, SCEVExpr> map = new HashMap<>();
 

@@ -1,5 +1,6 @@
 package midend.Transform.Loop;
 
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
 
@@ -106,7 +107,7 @@ public class LoopSimplifyForm {
         HashSet<BasicBlock> newExits = new HashSet<>();
         Function parentFunction = loop.header.getParentFunction();
         for (BasicBlock exit : loop.exits) {
-            if (!exit.getDomSet().contains(loop.header)) {
+            if (!AnalysisManager.dominate(loop.header, exit)) {
                 // TODO: 可能需要修改 新建块的loop归属
                 BasicBlock newExit = new BasicBlock(getNewLabel(parentFunction, "exit"), parentFunction);
                 loop.exitings.forEach(exiting -> exiting.replaceSucc(exit, newExit));

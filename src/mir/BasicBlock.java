@@ -1,5 +1,6 @@
 package mir;
 
+import midend.Analysis.AnalysisManager;
 import midend.Util.CloneInfo;
 import utils.NelLinkedList;
 
@@ -11,16 +12,6 @@ public class BasicBlock extends Value {
     private final Function parentFunction; // 父函数
     private final String label;
     private final NelLinkedList<Instruction> instructions;
-    // 控制图属性
-    private final ArrayList<BasicBlock> preBlocks; // 控制图-前驱块
-    private final ArrayList<BasicBlock> sucBlocks; // 控制图-后继块
-    // 支配图属性
-    private BasicBlock idom; // 支配图-直接支配块
-    private HashSet<BasicBlock> domSet = new HashSet<>(); // 支配图-支配块集合 (指的是支配该块的所有块, 即支配树上的父节点)
-    private final HashSet<BasicBlock> domFrontiers = new HashSet<>(); // 支配图-支配边界
-    private final ArrayList<BasicBlock> domTreeChildren = new ArrayList<>(); // 支配图-支配树孩子(直接支配)
-
-    private int domDepth = -1; // 支配图-深度
 
     public Loop loop = null;// 循环信息
     public boolean isDeleted = false;
@@ -32,8 +23,6 @@ public class BasicBlock extends Value {
         this.parentFunction = parentFunction;
         parentFunction.appendBlock(this);
         this.label = label;
-        this.sucBlocks = new ArrayList<>();
-        this.preBlocks = new ArrayList<>();
         this.instructions = new NelLinkedList<>();
     }
 
@@ -108,56 +97,28 @@ public class BasicBlock extends Value {
         return false;
     }
 
-    public void addPreBlock(BasicBlock preBlock) {
-        if (!preBlocks.contains(preBlock)) {
-            preBlocks.add(preBlock);
-        }
-    }
-
-    public void addSucBlock(BasicBlock sucBlock) {
-        if (!sucBlocks.contains(sucBlock)) {
-            sucBlocks.add(sucBlock);
-        }
-    }
-
     public ArrayList<BasicBlock> getPreBlocks() {
-        return preBlocks;
+        return AnalysisManager.getCFGPredecessors(this);
     }
 
     public ArrayList<BasicBlock> getSucBlocks() {
-        return sucBlocks;
-    }
-
-    public void setIdom(BasicBlock idom) {
-        this.idom = idom;
-    }
-
-    public BasicBlock getIdom() {
-        return idom;
+        return AnalysisManager.getCFGSuccessors(this);
     }
 
     public HashSet<BasicBlock> getDomFrontiers() {
-        return domFrontiers;
+        return AnalysisManager.getDomFrontiers(this);
     }
 
     public ArrayList<BasicBlock> getDomTreeChildren() {
-        return domTreeChildren;
+        return AnalysisManager.getDomTreeChildren(this);
     }
 
     public HashSet<BasicBlock> getDomSet() {
-        return domSet;
-    }
-
-    public void setDomSet(HashSet<BasicBlock> domSet) {
-        this.domSet = domSet;
-    }
-
-    public void setDomDepth(int dep) {
-        this.domDepth = dep;
+        return AnalysisManager.getDominators(this);
     }
 
     public int getDomDepth() {
-        return this.domDepth;
+        return AnalysisManager.getDomDepth(this);
     }
 
     public int getLoopDepth() {
@@ -181,26 +142,8 @@ public class BasicBlock extends Value {
      * @param newBlock 新的后继块
      */
     public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
-//        for (int i = 0; i < sucBlocks.size(); i++) {
-//            if (sucBlocks.get(i).equals(oldBlock)) {
-//                sucBlocks.set(i, newBlock);
-//            }
-//        }
         getTerminator().replaceSucc(oldBlock, newBlock);
     }
-
-//    public void replacePred(BasicBlock oldBlock, BasicBlock newBlock) {
-//        for (int i = 0; i < preBlocks.size(); i++) {
-//            if (preBlocks.get(i).equals(oldBlock)) {
-//                preBlocks.set(i, newBlock);
-//            }
-//        }
-//        for (Instruction instruction : instructions) {
-//            if (instruction instanceof Instruction.Phi phi)
-//                phi.changePreBlock(oldBlock, newBlock);
-//            else break;
-//        }
-//    }
 
 
     @Override
@@ -254,18 +197,6 @@ public class BasicBlock extends Value {
 
     public void fixClone(CloneInfo cloneInfo) {
         instructions.forEach(inst -> inst.fix(cloneInfo));
-    }
-
-//    public BasicBlock defaultClone() {
-//        BasicBlock ret = new BasicBlock(getDescriptor() + "_cp", parentFunction);
-//        for (Instruction inst : getInstructions()) {
-//            Instruction tmp = inst.cloneToBB(ret);
-//        }
-//        return ret;
-//    }
-
-    public boolean dominates(BasicBlock block) {
-        return block.domSet.contains(this);
     }
 
     @Override
