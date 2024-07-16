@@ -92,7 +92,6 @@ public class BasicBlock extends Value {
     /**
      * 返回一个指令列表的快照 <br>
      * 主要用于边遍历边修改 防止并发修改异常<br>
-     * TODO: SYNCLINKEDLIST 应该增强安全性 抛出相应异常
      */
     public ArrayList<Instruction> getInstructionsSnap() {
         ArrayList<Instruction> snap = new ArrayList<>();
