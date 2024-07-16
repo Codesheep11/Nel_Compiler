@@ -28,4 +28,9 @@ public class RiscvInt extends RiscvGlobalVar {
         }
         return sb.toString()+"\n";
     }
+
+    @Override
+    public boolean hasInit() {
+        return data != 0;
+    }
 }

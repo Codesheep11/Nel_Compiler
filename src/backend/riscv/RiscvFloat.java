@@ -2,7 +2,7 @@ package backend.riscv;
 
 public class RiscvFloat extends RiscvGlobalVar {
     // 浮点数,初值按照bits存储
-    private final Integer floatBits;
+    private final int floatBits;
 
     // 字面量计数器,用来计算其中的字面量的数目
     public static int literalCount = 0;
@@ -10,6 +10,10 @@ public class RiscvFloat extends RiscvGlobalVar {
     public RiscvFloat(String name, float data) {
         super(name, GlobType.FLOAT);
         this.floatBits = Float.floatToIntBits(data);
+    }
+
+    public boolean equalFloat(Float floatx) {
+        return (floatBits == Float.floatToIntBits(floatx));
     }
 
     public RiscvFloat(String name) {
@@ -36,6 +40,11 @@ public class RiscvFloat extends RiscvGlobalVar {
         } else {
             sb.append("\t.word ").append(floatBits);
         }
-        return sb.toString()+"\n";
+        return sb.toString() + "\n";
+    }
+
+    @Override
+    public boolean hasInit() {
+        return true;// 浮点数必须是已经初始化的，否则不会存起来
     }
 }
