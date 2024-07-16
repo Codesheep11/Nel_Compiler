@@ -129,9 +129,8 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
     /**
      * 将参数列表中的节点插入到当前链表尾部
      * 考虑到节点实体的唯一性，该操作会使得that链表为空
-     * @deprecated 仅保留供 Visitor调用
      */
-    @Deprecated // 仅保留供 Visitor调用
+    @Deprecated(forRemoval = false) // 仅保留供 Visitor调用
     public void concat(NelLinkedList<Type> that) {
         if (this == that) {
             throw new IllegalArgumentException("Cannot concat the same list!");

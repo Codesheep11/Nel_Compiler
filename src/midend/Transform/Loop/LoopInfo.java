@@ -1,5 +1,6 @@
 package midend.Transform.Loop;
 
+import midend.Analysis.AnalysisManager;
 import mir.BasicBlock;
 import mir.Function;
 import mir.Loop;
@@ -81,7 +82,7 @@ public class LoopInfo {
         for (BasicBlock header : postOrderTravel) {
             backEdges.clear();
             for (BasicBlock pre : header.getPreBlocks()) {
-                if (header.dominates(pre)) {
+                if (AnalysisManager.dominate(header, pre)) {
 //                    System.out.println("backEdge: " + pre.getLabel() + " -> " + header.getLabel());
                     backEdges.add(pre);
                 }
