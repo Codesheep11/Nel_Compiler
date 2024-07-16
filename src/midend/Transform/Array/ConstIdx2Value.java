@@ -38,7 +38,7 @@ public class ConstIdx2Value {
             }
             else {
                 if (address.getOffsets().get(address.getOffsets().size() - 1) instanceof Constant c) {
-                    Constant constValue = ((Constant.ConstantArray) gv.getConstValue()).getIdxEle((Constant.ConstantInt) c);
+                    Constant constValue = ((Constant.ConstantArray) gv.getConstValue()).getIdxEle(((Constant.ConstantInt) c).getIntValue());
                     loadInst.replaceAllUsesWith(constValue);
                     delList.add(loadInst);
                 }

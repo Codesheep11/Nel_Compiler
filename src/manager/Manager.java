@@ -134,7 +134,7 @@ public class Manager {
 
     private void ArrayPasses() {
         GepFold.run(module);
-//        LocalArrayLift.run(module);
+        LocalArrayLift.run(module);
         ConstIdx2Value.run(module);
     }
 

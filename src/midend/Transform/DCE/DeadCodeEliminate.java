@@ -73,8 +73,12 @@ public class DeadCodeEliminate {
 //        System.out.println("updateUse: " + value);
 //        newUsefulVar.add(value);
         if (value.getType().isPointerTy()) {
-            for (Use use : value.getUses()) {
-                newUsefulVar.add(use.getUser());
+            for (Instruction inst : value.getUsers()) {
+                if (inst instanceof Instruction.Store || inst instanceof Instruction.Call) {
+                    newUsefulVar.add(inst);
+                    continue;
+                }
+                if (inst.getUses().size() != 0) newUsefulVar.add(inst);
             }
         }
         if (value instanceof Instruction inst) {
@@ -160,7 +164,8 @@ public class DeadCodeEliminate {
 //                System.out.println("uselessInstDelete: " + inst.getDescriptor());
 //                iterator.remove();
                 delList.add(block);
-            } else uselessInstDelete(block);
+            }
+            else uselessInstDelete(block);
         }
         delList.forEach(BasicBlock::delete);
     }

@@ -31,6 +31,10 @@ public class Module {
         functions.putIfAbsent(function.getName(), function);
     }
 
+    public void addGlobalValue(GlobalVariable gv) {
+        globalVariables.add(gv);
+    }
+
     public Collection<Function> getFuncSet() {
         return functions.values();
     }
