@@ -11,7 +11,7 @@ public class GlobalVariable extends Constant {
     //constant fixed address (after linking).
     //对应 llvm 类型系统的 global variable
     //拥有@的全局标识符
-    public Ast.Ident ident;
+    public String label;
     public Constant value;
 
     // llvm 要求对于未初始化值需要一个指定的初值， 涉及到类型问题
@@ -37,7 +37,7 @@ public class GlobalVariable extends Constant {
     private GlobalVariable(Type type) {
         //全局变量的类型是指针类型
         super(new Type.PointerType(type));
-        ident = new Ast.Ident(new Token(TokenType.IDENTIFIER, "undef_" + undefTable.size()));
+        label = "undef_" + undefTable.size();
         if (type.isInt32Ty()) {
             value = new Constant.ConstantInt(0);
         }
@@ -55,8 +55,14 @@ public class GlobalVariable extends Constant {
 
     public GlobalVariable(Type innerType, Ast.Ident ident, InitValue initValue) {
         super(new Type.PointerType(innerType));
-        this.ident = ident;
+        this.label = ident.toString();
         this.value = initValue.genConstant();
+    }
+
+    public GlobalVariable(Constant constant, String label) {
+        super(new Type.PointerType(constant.type));
+        this.label = label;
+        this.value = constant;
     }
 
     public Type getInnerType() {
@@ -82,7 +88,7 @@ public class GlobalVariable extends Constant {
         if (getClass() != o.getClass()) {
             return false;
         }
-        return ident.equals(((GlobalVariable) o).ident);
+        return label.equals(((GlobalVariable) o).label);
     }
 
     /***
@@ -96,23 +102,9 @@ public class GlobalVariable extends Constant {
 
     @Override
     public String getDescriptor() {
-        return "@" + ident.identifier.content;
+        return "@" + label;
     }
 
-//    public ArrayList<Value> getInitValue() {
-////        return getConstValue().flatten();
-//        ArrayList<Value> flatten = new ArrayList<>();
-//        //特判数组类型
-//        if (value instanceof Constant.ConstantArray) {
-//            return ((Constant.ConstantArray) value).flatten();
-//        }
-//        else {
-//            flatten.add(value);
-//        }
-//        return flatten;
-//    }
-
-    // todo:
     @Override
     public String toString() {
         return getDescriptor() + " = global " + value.getType() + " " + value.toString();
@@ -124,6 +116,6 @@ public class GlobalVariable extends Constant {
      * @return riscv全局变量名
      */
     public String getRiscGlobalVariableName() {
-        return "g_" + ident.toString();
+        return "g_" + label;
     }
 }
