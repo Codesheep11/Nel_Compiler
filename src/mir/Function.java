@@ -421,7 +421,7 @@ public class Function extends Value {
 
     @Override
     public void delete() {
-        super.delete();
+        super.release();
         ArrayList<BasicBlock> delList = new ArrayList<>();
         blocks.forEach(delList::add);
         delList.forEach(Value::delete);
