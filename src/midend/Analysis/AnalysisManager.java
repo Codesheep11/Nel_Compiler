@@ -4,6 +4,7 @@ import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
 import mir.BasicBlock;
 import mir.Function;
+import mir.Instruction;
 import mir.Module;
 import mir.result.CFGinfo;
 import mir.result.DGinfo;
@@ -15,6 +16,7 @@ import java.util.HashSet;
 
 /**
  * 分析信息管理器
+ *
  * @author Srchycz
  * TODO: 增加标记机制 实现懒更新以提升性能
  */
@@ -30,6 +32,7 @@ public final class AnalysisManager {
     public static void refreshCFG(Function function) {
         cfgMap.put(function, ControlFlowGraph.run(function));
     }
+
     public static CFGinfo getCFG(Function function) {
         if (!cfgMap.containsKey(function)) {
             cfgMap.put(function, ControlFlowGraph.run(function));
@@ -50,6 +53,7 @@ public final class AnalysisManager {
     public static void refreshDG(Function function) {
         dgMap.put(function, DominanceGraph.runOnFunc(function));
     }
+
     public static DGinfo getDG(Function function) {
         if (!dgMap.containsKey(function)) {
             dgMap.put(function, DominanceGraph.runOnFunc(function));
@@ -59,6 +63,15 @@ public final class AnalysisManager {
 
     public static boolean dominate(BasicBlock a, BasicBlock b) {
         return dgMap.get(a.getParentFunction()).dominate(a, b);
+    }
+
+    public static boolean dominate(Instruction a, Instruction b) {
+        BasicBlock block_a = a.getParentBlock();
+        BasicBlock block_b = b.getParentBlock();
+        if (block_a.equals(block_b)) {
+            return a.getIndex() < b.getIndex();
+        }
+        else return dominate(block_a, block_b);
     }
 
     public static boolean strictlyDominate(BasicBlock a, BasicBlock b) {
@@ -87,5 +100,6 @@ public final class AnalysisManager {
 
     // endregion
 
-    private AnalysisManager() { }
+    private AnalysisManager() {
+    }
 }

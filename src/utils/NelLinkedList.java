@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 
 /**
  * NEL-链表
+ *
  * @param <Type>
  * @author Srchycz
  * <br>
@@ -62,8 +63,8 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         newNode.setNext(node);
         node.getPrev().setNext(newNode);
         node.setPrev(newNode);
-        ++ size;
-        ++ modCount;
+        ++size;
+        ++modCount;
     }
 
     public void insertAfter(Type newNode, Type node) {
@@ -72,8 +73,8 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         newNode.setPrev(node);
         node.getNext().setPrev(newNode);
         node.setNext(newNode);
-        ++ size;
-        ++ modCount;
+        ++size;
+        ++modCount;
     }
 
     public void addFirst(Type newNode) {
@@ -82,8 +83,8 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         newNode.setNext(head.next);
         head.getNext().setPrev(newNode);
         head.setNext(newNode);
-        ++ size;
-        ++ modCount;
+        ++size;
+        ++modCount;
     }
 
     public void addLast(Type newNode) {
@@ -92,8 +93,8 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         newNode.setNext(tail);
         tail.prev.setNext(newNode);
         tail.setPrev(newNode);
-        ++ size;
-        ++ modCount;
+        ++size;
+        ++modCount;
     }
 
     public int size() {
@@ -203,6 +204,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
 
         /**
          * 检查是否在迭代过程中被非迭代器方法修改
+         *
          * @throws ConcurrentModificationException 并发修改异常
          */
         final void checkForComodification() {
@@ -270,6 +272,17 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
             parent.size--;
             parent.modCount++;
             parent = null;
+        }
+
+        public int getIndex() {
+            int idx = 0;
+            NelLinkNode cur = parent.head;
+            while (cur.hasNext()) {
+                cur = cur.next;
+                if (cur.equals(this)) return idx;
+                idx++;
+            }
+            throw new NoSuchElementException("parent doesn't have this ele");
         }
     }
 
