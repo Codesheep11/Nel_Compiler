@@ -12,13 +12,8 @@ import backend.riscv.RiscvInstruction.RiscvInstruction;
 import java.util.*;
 
 import static backend.allocater.LivenessAnalyze.*;
-<<<<<<< HEAD
 import static backend.operand.Reg.PhyReg.a7;
 import static backend.operand.Reg.PhyReg.zero;
-=======
-import static backend.operand.Reg.PhyReg.zero;
-import static backend.operand.Reg.PhyReg.*;
->>>>>>> e82cb0a774f766b3437304acd614b6b0cff413ab
 
 public class GPRallocater {
 

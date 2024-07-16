@@ -88,11 +88,10 @@ public class Manager {
                 RiscvModule riscvmodule = codeGen.genCode(module);
                 BlockReSort.blockSort(riscvmodule);
                 CalculateOpt.run(riscvmodule);
-//                Scheduler.preRASchedule(riscvmodule);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
                 afterRegAssign = true;
-//                Scheduler.postRASchedule(riscvmodule);
+//                AfterRAScheduler.postRASchedule(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
                 //BlockInline.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);

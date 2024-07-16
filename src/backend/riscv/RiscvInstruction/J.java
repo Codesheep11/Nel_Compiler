@@ -56,11 +56,9 @@ public class J extends RiscvInstruction {
     public String toString() {
         if (type == JType.ret) {
             return "\t" + type;
-        }
-        else if (type == JType.call) {
+        } else if (type == JType.call) {
             return "\t" + type + "\t" + RiscvFunction.funcNameWrap(funcName);
-        }
-        else {
+        } else {
             return "\t" + type + "\t\t" + targetBlock.name;
         }
     }
@@ -136,5 +134,21 @@ public class J extends RiscvInstruction {
     @Override
     public Reg getRegByIdx(int idx) {
         return Reg.getPreColoredReg(Reg.PhyReg.ra, 32);
+    }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        switch (type) {
+            case ret -> {
+                return new J(block, type);
+            }
+            case j -> {
+                return new J(block, type, targetBlock);
+            }
+            case call -> {
+                return new J(block, type, funcName);
+            }
+            default -> throw new RuntimeException("wrong type");
+        }
     }
 }

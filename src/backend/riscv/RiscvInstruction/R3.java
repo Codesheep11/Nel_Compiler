@@ -211,4 +211,9 @@ public class R3 extends RiscvInstruction {
     public int getInstFlag() {
         return InstFlag.None.value;
     }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        return new R3(block, rd, rs1, rs2, type);
+    }
 }

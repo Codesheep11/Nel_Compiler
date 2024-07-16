@@ -152,4 +152,9 @@ public class LS extends RiscvInstruction {
             default -> throw new RuntimeException("wrong type");
         }
     }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        return new LS(block, rs1, rs2, imm, type, isSpilled);
+    }
 }
