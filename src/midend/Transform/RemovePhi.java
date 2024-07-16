@@ -29,28 +29,22 @@ public class RemovePhi {
                 phiCopy.remove();
                 if (pre.getSucBlocks().size() > 1) {
                     addMidBB(pre, phiCopy, bb);
-                }
-                else {
+                } else {
                     Instruction term = pre.getLastInst();
                     pre.getInstructions().insertBefore(phiCopy, term);
                 }
             }
-            for (Instruction phi : bb.getInstructions()) {
-                if (phi instanceof Instruction.Phi) {
-                    for (BasicBlock pre : bb.getPreBlocks()) {
-                        Value v = ((Instruction.Phi) phi).getOptionalValue(pre);
-                        //如果value为空，说明value是关键边，phi中值映射来自pre前一个基本块
-                        if (v == null) {
-                            v = ((Instruction.Phi) phi).getOptionalValue(pre.getPreBlocks().get(0));
-                        }
-                        Instruction.PhiCopy pc = (Instruction.PhiCopy) pre.getLastInst().getPrev();
-                        pc.add(phi, v);
+            for (Instruction.Phi phi : bb.getPhiInstructions()) {
+                for (BasicBlock pre : bb.getPreBlocks()) {
+                    Value v = phi.getOptionalValue(pre);
+                    //如果value为空，说明value是关键边，phi中值映射来自pre前一个基本块
+                    if (v == null) {
+                        v = phi.getOptionalValue(pre.getPreBlocks().get(0));
                     }
-                    phi.delete();
+                    Instruction.PhiCopy pc = (Instruction.PhiCopy) pre.getLastInst().getPrev();
+                    pc.add(phi, v);
                 }
-                else {
-                    break;
-                }
+                phi.delete();
             }
         }
     }
