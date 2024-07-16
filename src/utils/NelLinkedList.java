@@ -237,7 +237,8 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
 
         public void setParent(NelLinkedList<? extends NelLinkNode> list) {
             if (this.parent != null) {
-                System.out.println("Warning: Node already has a parent!");
+                throw new IllegalStateException("Node already has a parent!");
+//                System.out.println("Warning: Node already has a parent!");
             }
             this.parent = list;
         }

@@ -99,7 +99,7 @@ public class BlockInline {
                 }
             } else {
                 // 有很多指向它的,这里就需要考虑最大块宽度问题了
-                if (block.riscvInstructions.getSize() <= MAX_LEN) {
+                if (block.riscvInstructions.size() <= MAX_LEN) {
                     boolean canRemove = true;
                     for (Pair<RiscvBlock, Boolean> from : myFrom.get(block)) {
                         if (from.second) {
