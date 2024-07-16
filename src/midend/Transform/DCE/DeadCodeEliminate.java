@@ -140,7 +140,7 @@ public class DeadCodeEliminate {
             else uselessBBDelete(function);
         }
         for (Function func : delList) {
-            func.release();
+            func.delete();
             module.removeFunction(func);
         }
         ArrayList<GlobalVariable> delGlobals = new ArrayList<>();

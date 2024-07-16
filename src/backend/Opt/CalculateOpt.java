@@ -30,9 +30,9 @@ public class CalculateOpt {
     public static void liAdd2Addi(RiscvFunction function) {
         for (RiscvBlock block : function.blocks) {
             ArrayList<RiscvInstruction> newList = new ArrayList<>();
-            for (int i = 0; i < block.riscvInstructions.getSize(); i++) {
+            for (int i = 0; i < block.riscvInstructions.size(); i++) {
                 RiscvInstruction now = block.riscvInstructions.get(i);
-                if (i != block.riscvInstructions.getSize() - 1) {
+                if (i != block.riscvInstructions.size() - 1) {
                     RiscvInstruction next = block.riscvInstructions.get(i + 1);
                     if (now instanceof Li && next instanceof R3) {
                         Reg liReg = ((Li) now).reg;
@@ -68,7 +68,7 @@ public class CalculateOpt {
                 }
                 newList.add(now);
             }
-            block.riscvInstructions.setEmpty();
+            block.riscvInstructions.clear();
             for (RiscvInstruction instr : newList) {
                 block.riscvInstructions.addLast(instr);
             }
@@ -81,7 +81,7 @@ public class CalculateOpt {
         final int range = 10;
         HashMap<Integer, Pair<Reg, Integer>> map = new HashMap<>();
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
-        for (int i = 0; i < riscvBlock.riscvInstructions.getSize(); i++) {
+        for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
             RiscvInstruction instr = riscvBlock.riscvInstructions.get(i);
             for (int idx = 0; idx < instr.getOperandNum(); idx++) {
                 if (instr.isDef(idx) && !(instr instanceof Li)) {
@@ -94,7 +94,7 @@ public class CalculateOpt {
                 if (map.containsKey(((Li) instr).imm)) {
                     Reg now = map.get(((Li) instr).imm).first;
                     Reg def = ((Li) instr).reg;
-                    for (int j = i + 1; j < riscvBlock.riscvInstructions.getSize(); j++) {
+                    for (int j = i + 1; j < riscvBlock.riscvInstructions.size(); j++) {
                         RiscvInstruction needReplace = riscvBlock.riscvInstructions.get(j);
                         if (needReplace instanceof J) continue;
                         needReplace.replaceUseReg(def, now);
@@ -118,7 +118,7 @@ public class CalculateOpt {
                 map.remove(need);
             }
         }
-        riscvBlock.riscvInstructions.setEmpty();
+        riscvBlock.riscvInstructions.clear();
         for (RiscvInstruction ri : newList) {
             riscvBlock.riscvInstructions.addLast(ri);
         }
@@ -170,10 +170,10 @@ public class CalculateOpt {
     // 将icmp和branch合并
     public static void icmpBranchToBranch(RiscvBlock block) {
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
-        for (int i = 0; i < block.riscvInstructions.getSize(); i++) {
+        for (int i = 0; i < block.riscvInstructions.size(); i++) {
             RiscvInstruction now = block.riscvInstructions.get(i);
             boolean modified = false;
-            if (i < block.riscvInstructions.getSize() - 1) {
+            if (i < block.riscvInstructions.size() - 1) {
                 RiscvInstruction next = block.riscvInstructions.get(i + 1);
                 if (matchSLTAndSGT(now, next)) {
                     //slt ,置1，bne r,zero,不为0则跳转,所以就是小于则跳转
@@ -185,7 +185,7 @@ public class CalculateOpt {
                         modified = true;
                     }
                 }
-                else if (i < block.riscvInstructions.getSize() - 2) {
+                else if (i < block.riscvInstructions.size() - 2) {
                     RiscvInstruction farNext = block.riscvInstructions.get(i + 2);
                     if (matchFarNext(now, next, farNext)) {
                         B.BType type;
@@ -212,7 +212,7 @@ public class CalculateOpt {
                 newList.add(now);
             }
         }
-        block.riscvInstructions.setEmpty();
+        block.riscvInstructions.clear();
         for (RiscvInstruction ri : newList) {
             block.riscvInstructions.addLast(ri);
         }
@@ -222,7 +222,7 @@ public class CalculateOpt {
         final int range = 10;
         HashMap<RiscvGlobalVar, Pair<Reg, Integer>> map = new HashMap<>();
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
-        for (int i = 0; i < riscvBlock.riscvInstructions.getSize(); i++) {
+        for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
             RiscvInstruction instr = riscvBlock.riscvInstructions.get(i);
             for (int idx = 0; idx < instr.getOperandNum(); idx++) {
                 if (instr.isDef(idx) && !(instr instanceof La)) {
@@ -235,7 +235,7 @@ public class CalculateOpt {
                 if (map.containsKey((((La) instr).content))) {
                     Reg now = map.get(((La) instr).content).first;
                     Reg def = ((La) instr).reg;
-                    for (int j = i + 1; j < riscvBlock.riscvInstructions.getSize(); j++) {
+                    for (int j = i + 1; j < riscvBlock.riscvInstructions.size(); j++) {
                         RiscvInstruction needReplace = riscvBlock.riscvInstructions.get(j);
                         if (needReplace instanceof J) continue;
                         needReplace.replaceUseReg(def, now);
@@ -259,7 +259,7 @@ public class CalculateOpt {
                 map.remove(need);
             }
         }
-        riscvBlock.riscvInstructions.setEmpty();
+        riscvBlock.riscvInstructions.clear();
         for (RiscvInstruction ri : newList) {
             riscvBlock.riscvInstructions.addLast(ri);
         }
