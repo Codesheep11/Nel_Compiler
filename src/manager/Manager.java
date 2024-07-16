@@ -1,5 +1,8 @@
 package manager;
 
+import backend.Opt.BlockInline;
+import backend.Opt.BlockReSort;
+import backend.Opt.CalculateOpt;
 import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
@@ -12,7 +15,6 @@ import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.FuncAnalysis;
 import midend.Analysis.GlobalVarAnalysis;
-import midend.Transform.*;
 import midend.Transform.Array.GepFold;
 import midend.Transform.DCE.DeadArgEliminate;
 import midend.Transform.DCE.DeadCodeEliminate;
@@ -20,13 +22,19 @@ import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplfyCFG;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
+import midend.Transform.GlobalCodeMotion;
+import midend.Transform.GlobalValueNumbering;
 import midend.Transform.Loop.IndVars;
 import midend.Transform.Loop.LCSSA;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Loop.LoopUnSwitching;
+import midend.Transform.Mem2Reg;
+import midend.Transform.RemovePhi;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
+import mir.Loop;
 import mir.Module;
 
 import java.io.*;
@@ -74,18 +82,22 @@ public class Manager {
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
                 return;
+            } else {
+                RemovePhi.run(module);
+//                outputLLVM("test.txt", module);
+                CodeGen codeGen = new CodeGen();
+                RiscvModule riscvmodule = codeGen.genCode(module);
+                BlockReSort.blockSort(riscvmodule);
+                CalculateOpt.run(riscvmodule);
+//                Scheduler.preRASchedule(riscvmodule);
+                outputRiscv("debug.txt", riscvmodule);
+                Allocater.run(riscvmodule);
+                afterRegAssign = true;
+//                Scheduler.postRASchedule(riscvmodule);
+                SimplifyCFG.run(riscvmodule);
+                BlockInline.run(riscvmodule);
+                outputRiscv(arg.outPath, riscvmodule);
             }
-            RemovePhi.run(module);
-//            outputLLVM("test.txt", module);
-            CodeGen codeGen = new CodeGen();
-            RiscvModule riscvmodule = codeGen.genCode(module);
-//            Scheduler.preRASchedule(riscvmodule);
-            outputRiscv("debug.txt", riscvmodule);
-            Allocater.run(riscvmodule);
-            afterRegAssign = true;
-//            Scheduler.postRASchedule(riscvmodule);
-            SimplifyCFG.run(riscvmodule);
-            outputRiscv(arg.outPath, riscvmodule);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
@@ -155,8 +167,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

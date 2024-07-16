@@ -3,14 +3,14 @@ package backend.riscv.RiscvInstruction;
 import backend.allocater.LivenessAnalyze;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
-import utils.SyncLinkedList;
+import utils.NelLinkedList;
 
 import java.util.HashSet;
 
 import static backend.allocater.LivenessAnalyze.Def;
 import static backend.allocater.LivenessAnalyze.Use;
 
-public class RiscvInstruction extends SyncLinkedList.SyncLinkNode {
+public class RiscvInstruction extends NelLinkedList.NelLinkNode {
 
     public RiscvBlock block;
     public static int cnt = 0;

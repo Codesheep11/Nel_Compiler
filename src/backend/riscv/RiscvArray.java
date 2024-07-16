@@ -35,7 +35,7 @@ public class RiscvArray extends RiscvGlobalVar {
             if (type == GlobType.FLOAT) {
                 values.add(Float.floatToIntBits((Float) (init.get(i)).getConstValue()));
             } else {
-                values.add((Integer) ( init.get(i)).getConstValue());
+                values.add((Integer) (init.get(i)).getConstValue());
             }
         }
         this.size = size;
@@ -70,5 +70,11 @@ public class RiscvArray extends RiscvGlobalVar {
             sb.append(4 * (size - index - 1));
         }
         return sb.toString() + "\n";
+    }
+
+    @Override
+    public boolean hasInit() {
+        int index = indexOfLastNotZero();
+        return index != -1;
     }
 }
