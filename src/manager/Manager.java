@@ -1,6 +1,5 @@
 package manager;
 
-import backend.Opt.BlockInline;
 import backend.Opt.BlockReSort;
 import backend.Opt.CalculateOpt;
 import backend.Opt.SimplifyCFG;
@@ -14,14 +13,11 @@ import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.FuncAnalysis;
-import midend.Analysis.GlobalVarAnalysis;
+import midend.Transform.GlobalVarLocalize;
 import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
 import midend.Transform.Array.LocalArrayLift;
-import midend.Transform.DCE.DeadArgEliminate;
-import midend.Transform.DCE.DeadCodeEliminate;
-import midend.Transform.DCE.DeadLoopEliminate;
-import midend.Transform.DCE.SimplfyCFG;
+import midend.Transform.DCE.*;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.GlobalCodeMotion;
@@ -33,7 +29,6 @@ import midend.Transform.Loop.LoopUnSwitching;
 import midend.Transform.Mem2Reg;
 import midend.Transform.RemovePhi;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
 import mir.*;
 import mir.Ir2RiscV.CodeGen;
 import mir.Loop;
@@ -66,7 +61,7 @@ public class Manager {
                 Mem2Reg.run(module);
                 DeadCodeEliminate();
                 FuncPasses();
-                GlobalVarAnalysis.run(module);
+                GlobalVarLocalize.run(module);
                 GlobalValueNumbering.run(module);
                 DeadCodeEliminate.run(module);
                 LoopInfo.build(module);
@@ -79,6 +74,7 @@ public class Manager {
                 LCSSA.remove(module);
                 ArrayPasses();
                 DeadCodeEliminate();
+                GlobalValueNumbering.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
@@ -125,7 +121,7 @@ public class Manager {
     }
 
     private void FuncPasses() {
-//        FunctionInline.run(module);
+        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         TailCall2Loop.run(module);
@@ -134,6 +130,8 @@ public class Manager {
 
     private void ArrayPasses() {
         GepFold.run(module);
+        LoadEliminate.run(module);
+        StoreEliminate.run(module);
         LocalArrayLift.run(module);
         ConstIdx2Value.run(module);
     }

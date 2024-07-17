@@ -88,6 +88,19 @@ public abstract class Constant extends User {
             return intValue == 0;
         }
 
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ConstantInt) {
+                return ((ConstantInt) obj).intValue == intValue;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return intValue;
+        }
+
     }
 
     /**
