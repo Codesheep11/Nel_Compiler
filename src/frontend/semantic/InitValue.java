@@ -69,12 +69,11 @@ public abstract class InitValue {
 
 
         @Override
-        @SuppressWarnings("deprecation")
         public Flatten flatten() {
             Flatten flatten = new Flatten();
             for (InitValue initValue : arrayValues) {
                 Flatten initFlattenValue = initValue.flatten();
-                flatten.concat(initFlattenValue);
+                flatten.addAll(initFlattenValue);
                 flatten.mergeAll();
             }
             return flatten;
@@ -118,10 +117,10 @@ public abstract class InitValue {
             Type.BasicType basicType = ((Type.ArrayType) type).getBasicEleType();
             Flatten flatten = new Flatten();
             if (basicType.isInt32Ty()) {
-                flatten.addLast(new Flatten.Slice(new Constant.ConstantInt(0), size));
+                flatten.add(new Flatten.Slice(new Constant.ConstantInt(0), size));
             }
             else {
-                flatten.addLast(new Flatten.Slice(new Constant.ConstantFloat(0), size));
+                flatten.add(new Flatten.Slice(new Constant.ConstantFloat(0), size));
             }
             return flatten;
         }
@@ -162,7 +161,7 @@ public abstract class InitValue {
         @Override
         public Flatten flatten() {
             Flatten flatten = new Flatten();
-            flatten.addLast(new Flatten.Slice(value));
+            flatten.add(new Flatten.Slice(value));
             return flatten;
         }
 
@@ -186,7 +185,7 @@ public abstract class InitValue {
         @Override
         public Flatten flatten() {
             Flatten flatten = new Flatten();
-            flatten.addLast(new Flatten.Slice(result));
+            flatten.add(new Flatten.Slice(result));
             return flatten;
         }
 
@@ -208,10 +207,17 @@ public abstract class InitValue {
     }
 
 
-    public static class Flatten extends NelLinkedList<Flatten.Slice> {
-        public static class Slice extends NelLinkNode {
+    public static class Flatten {
+        private ArrayList<Slice> slices = new ArrayList<>();
+
+        public Flatten() {
+
+        }
+
+        public static class Slice {
             public Value value;
             public int count = 1;
+            public Flatten flatten;
 
             public Slice(Value value, int count) {
                 this.value = value;
@@ -223,16 +229,16 @@ public abstract class InitValue {
             }
 
             public boolean canbeMerged(Slice that) {
-                if (that != this.getNext()) {
+                if (that != flatten.slices.get(flatten.slices.indexOf(this) + 1)) {
                     return false;
                 }
-                return this.value.equals(that.value);
+                return this.value.equals(that.value) && this.value.equals(new Constant.ConstantInt(0));
             }
 
             public void merge(Slice that) {
                 assert canbeMerged(that);
                 this.count += that.count;
-                that.remove();
+                flatten.slices.remove(that);
             }
 
             public boolean isZero() {
@@ -251,23 +257,38 @@ public abstract class InitValue {
 
         }
 
+        public void add(Slice slice) {
+            slices.add(slice);
+            slice.flatten = this;
+        }
+
+        public void addAll(Flatten flatten) {
+            slices.addAll(flatten.slices);
+            for (Slice slice : flatten.slices) {
+                slice.flatten = this;
+            }
+        }
+
         public void mergeAll() {
             int sizeBeforeMerge = countOfWords();
-
-            for (Slice slice :
-                    this) {
-                while (slice.getNext() instanceof Slice && slice.canbeMerged((Slice) slice.getNext())) {
-                    slice.merge((Slice) slice.getNext());
+            ArrayList<Slice> newSlices = new ArrayList<>();
+            for (int i = 0; i < slices.size(); ) {
+                Slice slice = slices.get(i);
+                int j = i + 1;
+                while (j < slices.size() && slice.canbeMerged(slices.get(j))) {
+                    slice.merge(slices.get(j));
+                    j++;
                 }
+                newSlices.add(slice);
+                i = j;
             }
-
+            slices = newSlices;
             assert sizeBeforeMerge == countOfWords();
         }
 
         public int countOfWords() {
             int size = 0;
-            for (Slice slice :
-                    this) {
+            for (Slice slice : slices) {
                 size += slice.count;
             }
             return size;
@@ -277,8 +298,7 @@ public abstract class InitValue {
         public Map<Integer, Value> IndexOfNZero() {
             int offset = 0;
             Map<Integer, Value> ret = new LinkedHashMap<>();
-            for (Slice slice :
-                    this) {
+            for (Slice slice : slices) {
                 if (slice.isZero()) {
                     offset += slice.count;
                 }

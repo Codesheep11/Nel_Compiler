@@ -1,20 +1,17 @@
-package midend.Analysis;
+package midend.Transform;
 
-import midend.Transform.ArithReduce;
-import midend.Transform.Mem2Reg;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 
 /**
  * 全局变量分析
  * 只支持标量的替换
  */
-public class GlobalVarAnalysis {
+public class GlobalVarLocalize {
 
     private static HashSet<GlobalVariable> GlobalReplace = new HashSet<>();
 
