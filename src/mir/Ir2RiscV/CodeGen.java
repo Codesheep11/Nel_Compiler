@@ -7,6 +7,7 @@ import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.*;
 import backend.riscv.RiscvInstruction.*;
+import manager.Manager;
 import midend.Util.FuncInfo;
 import mir.Module;
 import mir.*;

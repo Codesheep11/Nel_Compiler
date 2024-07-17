@@ -42,14 +42,14 @@ import java.util.Map;
 
 public class Manager {
 
-    public final Arg arg;
+    public static Arg arg;
 
     private final ArrayList<String> outputList = new ArrayList<>();
 
     public static boolean afterRegAssign = false;
 
     public Manager(Arg arg) {
-        this.arg = arg;
+        Manager.arg = arg;
     }
 
     public static Module module;
@@ -57,41 +57,43 @@ public class Manager {
     public void run() {
         try {
             FrontEnd();
-            if (arg.opt) {
-                Mem2Reg.run(module);
-                DeadCodeEliminate();
-                FuncPasses();
-                GlobalVarLocalize.run(module);
-                GlobalValueNumbering.run(module);
-                DeadCodeEliminate.run(module);
-                LoopInfo.build(module);
-                GlobalCodeMotion.run(module);
-                LCSSA.Run(module);
-                LoopUnSwitching.run(module);
-                LoopInfo.build(module);
-                IndVars.run(module);
-                LoopInfo.build(module);
-                LCSSA.remove(module);
-                ArrayPasses();
-                DeadCodeEliminate();
-                GlobalValueNumbering.run(module);
-            }
+            FuncAnalysis.run(module);
+//            if (arg.opt) {
+            Mem2Reg.run(module);
+            DeadCodeEliminate();
+            FuncPasses();
+            GlobalVarLocalize.run(module);
+            GlobalValueNumbering.run(module);
+            DeadCodeEliminate.run(module);
+            LoopInfo.build(module);
+            GlobalCodeMotion.run(module);
+            LCSSA.Run(module);
+            LoopUnSwitching.run(module);
+            LoopInfo.build(module);
+            IndVars.run(module);
+            LoopInfo.build(module);
+            LCSSA.remove(module);
+            ArrayPasses();
+            DeadCodeEliminate();
+            GlobalValueNumbering.run(module);
+//            }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
                 return;
             }
-            if (arg.opt) RemovePhi.run(module);
+//            if (arg.opt)
+            RemovePhi.run(module);
             CodeGen codeGen = new CodeGen();
             RiscvModule riscvmodule = codeGen.genCode(module);
-            if (arg.opt) {
-                BlockReSort.blockSort(riscvmodule);
-                CalculateOpt.run(riscvmodule);
-            }
+//            if (arg.opt) {
+            BlockReSort.blockSort(riscvmodule);
+            CalculateOpt.run(riscvmodule);
+//            }
             Allocater.run(riscvmodule);
             afterRegAssign = true;
-            if (arg.opt) {
-                SimplifyCFG.run(riscvmodule);
-            }
+//            if (arg.opt) {
+            SimplifyCFG.run(riscvmodule);
+//            }
             outputRiscv(arg.outPath, riscvmodule);
         } catch (
                 Exception e) {
