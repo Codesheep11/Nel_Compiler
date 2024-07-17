@@ -6,9 +6,6 @@ import backend.riscv.RiscvBlock;
 
 import java.util.HashSet;
 
-import static backend.allocater.LivenessAnalyze.Def;
-import static backend.allocater.LivenessAnalyze.Use;
-
 public class B extends RiscvInstruction {
 
     public BType type;
@@ -119,5 +116,10 @@ public class B extends RiscvInstruction {
         return InstFlag.None.value |
                 InstFlag.Terminator.value |
                 InstFlag.Branch.value;
+    }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        return new B(block, type, rs1, rs2, targetBlock);
     }
 }

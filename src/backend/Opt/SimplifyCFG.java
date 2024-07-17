@@ -183,7 +183,9 @@ public class SimplifyCFG {
                 // 反转条件跳转指令
                 ((B) terminator).inverse();
                 ((B) terminator).targetBlock = nextTargetBlock;
-                block.riscvInstructions.addLast(targetBlock.riscvInstructions.getFirst());
+                RiscvInstruction needMove = targetBlock.riscvInstructions.getFirst();
+                needMove.remove();
+                block.riscvInstructions.addLast(needMove);
                 modified = true;
             }
         }

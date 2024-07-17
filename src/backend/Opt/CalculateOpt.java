@@ -124,8 +124,11 @@ public class CalculateOpt {
         }
     }
 
-    public static void Mul2SrAdd(RiscvBlock block) {
-
+    public static void uselessLoadRemove(RiscvBlock block) {
+        /**
+         sw		t1, 0(t0)
+         lw		t1, 0(t0)
+         **/
     }
 
     private static boolean matchEQ(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
