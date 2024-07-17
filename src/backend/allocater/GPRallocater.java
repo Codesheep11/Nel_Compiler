@@ -12,8 +12,6 @@ import backend.riscv.RiscvInstruction.RiscvInstruction;
 import java.util.*;
 
 import static backend.allocater.LivenessAnalyze.*;
-import static backend.operand.Reg.PhyReg.a7;
-import static backend.operand.Reg.PhyReg.zero;
 
 public class GPRallocater {
 
@@ -34,7 +32,7 @@ public class GPRallocater {
     /*
     x5 - x31均可分配
      */
-    private static int K = 26;
+    private static int K = 27;
     //t0作为临时寄存器，不参与图着色寄存器分配
 
     private static final LinkedHashSet<Reg.PhyReg> Regs = new LinkedHashSet<>(
@@ -43,7 +41,8 @@ public class GPRallocater {
                     Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4, Reg.PhyReg.s5, Reg.PhyReg.s6,
                     Reg.PhyReg.s7, Reg.PhyReg.s8, Reg.PhyReg.s9, Reg.PhyReg.s10, Reg.PhyReg.s11,
                     Reg.PhyReg.a0, Reg.PhyReg.a1, Reg.PhyReg.a2, Reg.PhyReg.a3, Reg.PhyReg.a4,
-                    Reg.PhyReg.a5, Reg.PhyReg.a6, a7
+                    Reg.PhyReg.a5, Reg.PhyReg.a6, Reg.PhyReg.a7,
+                    Reg.PhyReg.tp
             )
     );
 
@@ -168,7 +167,8 @@ public class GPRallocater {
             R2 move = it.next();
             if (conflictGraph.get(move.rd).contains(move.rs)) {
                 it.remove();
-            } else {
+            }
+            else {
                 moveNodes.add((Reg) move.rd);
                 moveNodes.add((Reg) move.rs);
             }
@@ -227,7 +227,8 @@ public class GPRallocater {
                     spillNodes.remove(node);
                 }
                 curUsedRegs.add(node.phyReg);
-            } else {
+            }
+            else {
                 spillNodes.add(node);
                 DeleteNode(node);
             }
@@ -320,7 +321,8 @@ public class GPRallocater {
         for (Reg reg : nodes) {
             if (reg.preColored) {
                 regs.add(reg.phyReg);
-            } else size++;
+            }
+            else size++;
         }
         regs.removeAll(unAllocateRegs);
         return regs.size() + size;
@@ -362,7 +364,8 @@ public class GPRallocater {
                             if (r1.preColored) {
                                 newReg = r1;
                                 oldReg = r2;
-                            } else {
+                            }
+                            else {
                                 newReg = r2;
                                 oldReg = r1;
                             }
@@ -370,7 +373,8 @@ public class GPRallocater {
                             //合并节点
                             newReg.mergeReg(oldReg);
                             moveNodes.remove(oldReg);
-                        } else {
+                        }
+                        else {
                             newReg = r1;
                         }
                         //删除move指令
@@ -433,7 +437,7 @@ public class GPRallocater {
         if (r1.preColored && r2.preColored)
             if (r1.phyReg == r2.phyReg) return true;
             else return false;
-        if (r1.phyReg == zero || r2.phyReg == zero) return false;
+        if (r1.phyReg == Reg.PhyReg.zero || r2.phyReg == Reg.PhyReg.zero) return false;
         if (curCG.get(r1).contains(r2)) return false;
         //合并策略1：如果两个节点的合并节点度数小于K，则可以合并
         HashSet<Reg> neighbors = new HashSet<>();

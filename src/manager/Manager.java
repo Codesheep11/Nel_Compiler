@@ -80,23 +80,21 @@ public class Manager {
                 outputLLVM(arg.outPath, module);
                 return;
             }
+            if (arg.opt) RemovePhi.run(module);
+            CodeGen codeGen = new CodeGen();
+            RiscvModule riscvmodule = codeGen.genCode(module);
             if (arg.opt) {
-                RemovePhi.run(module);
-//                outputLLVM("test.txt", module);
-                CodeGen codeGen = new CodeGen();
-                RiscvModule riscvmodule = codeGen.genCode(module);
                 BlockReSort.blockSort(riscvmodule);
                 CalculateOpt.run(riscvmodule);
-//                Scheduler.preRASchedule(riscvmodule);
-                outputRiscv("debug.txt", riscvmodule);
-                Allocater.run(riscvmodule);
-                afterRegAssign = true;
-//                Scheduler.postRASchedule(riscvmodule);
-                SimplifyCFG.run(riscvmodule);
-//                BlockInline.run(riscvmodule);
-                outputRiscv(arg.outPath, riscvmodule);
             }
-        } catch (Exception e) {
+            Allocater.run(riscvmodule);
+            afterRegAssign = true;
+            if (arg.opt) {
+                SimplifyCFG.run(riscvmodule);
+            }
+            outputRiscv(arg.outPath, riscvmodule);
+        } catch (
+                Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
         }
@@ -236,6 +234,6 @@ public class Manager {
     }
 
 
-    //end region
+//end region
 
 }
