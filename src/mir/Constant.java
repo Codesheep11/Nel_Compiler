@@ -88,6 +88,19 @@ public abstract class Constant extends User {
             return intValue == 0;
         }
 
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ConstantInt) {
+                return ((ConstantInt) obj).intValue == intValue;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return intValue;
+        }
+
     }
 
     /**
@@ -130,6 +143,19 @@ public abstract class Constant extends User {
             super(new Type.ArrayType(constArray.size(), eleType));
             this.constArray = constArray;
             this.eleType = eleType;
+        }
+
+        public ConstantArray(Type.ArrayType arrayType) {
+            super(arrayType);
+            eleType = arrayType.getEleType();
+            int size = arrayType.getSize();
+            ArrayList<Constant> array = new ArrayList<>();
+            if (eleType.isArrayTy())
+                for (int i = 0; i < size; i++) array.add(new ConstantArray((Type.ArrayType) eleType));
+            else if (eleType.isInt32Ty()) for (int i = 0; i < size; i++) array.add(new ConstantInt(0));
+            else if (eleType.isFloatTy()) for (int i = 0; i < size; i++) array.add(new ConstantFloat(0));
+            else throw new RuntimeException("Type is illegal!");
+            constArray = array;
         }
 
         @Override
@@ -190,8 +216,14 @@ public abstract class Constant extends User {
             return flatten;
         }
 
-        public Constant getIdxEle(ConstantInt idx) {
-            int v = idx.getIntValue();
+        /**
+         * 根据展平后的索引找到元素
+         *
+         * @param idx
+         * @return
+         */
+        public Constant getIdxEle(int idx) {
+            int v = idx;
             if (v > ((Type.ArrayType) type).getFlattenSize()) {
                 throw new RuntimeException("Index out of bound");
             }
@@ -212,8 +244,39 @@ public abstract class Constant extends User {
             return ret;
         }
 
+        /**
+         * 根据展平后的索引设置元素
+         *
+         * @param idx
+         * @param value
+         */
+        public void setIdxEle(int idx, Constant value) {
+            int v = idx;
+            if (v > ((Type.ArrayType) type).getFlattenSize()) {
+                throw new RuntimeException("Index out of bound");
+            }
+            Constant ret = this;
+            //idx是数组展平的第i个元素，所以要找到第i个元素
+            Type eleType = ((Type.ArrayType) type).getEleType();
+            while (eleType instanceof Type.ArrayType) {
+                int len = ((Type.ArrayType) eleType).getFlattenSize();
+                int i = v / len;
+                v = v % len;
+                ret = ((ConstantArray) ret).getEle(i);
+                eleType = ((Type.ArrayType) eleType).getEleType();
+            }
+            if (!(((ConstantArray) ret).getEle(v) instanceof ConstantInt)) {
+                throw new RuntimeException("Index out of bound");
+            }
+            ((ConstantArray) ret).setEle(v, value);
+        }
+
         public Constant getEle(int index) {
             return constArray.get(index);
+        }
+
+        public void setEle(int index, Constant value) {
+            constArray.set(index, value);
         }
 
     }

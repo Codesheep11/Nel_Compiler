@@ -1,5 +1,6 @@
 package midend.Analysis;
 
+import midend.Transform.GlobalVarLocalize;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -97,10 +98,10 @@ public class FuncAnalysis {
         for (BasicBlock bb : function.getBlocks()) {
             for (Instruction inst : bb.getInstructions()) {
                 if (inst instanceof Instruction.Load load) {
-                    if (GlobalVarAnalysis.isGlobalAddr(load.getAddr()) != null) hasMemoryRead = true;
+                    if (GlobalVarLocalize.isGlobalAddr(load.getAddr()) != null) hasMemoryRead = true;
                 }
                 else if (inst instanceof Instruction.Store store) {
-                    if (GlobalVarAnalysis.isGlobalAddr(store.getAddr()) != null) hasMemoryWrite = true;
+                    if (GlobalVarLocalize.isGlobalAddr(store.getAddr()) != null) hasMemoryWrite = true;
                     else if (isSideEffect(store.getAddr(), function)) hasSideEffect = true;
                 }
                 else if (inst instanceof Instruction.Call call) {

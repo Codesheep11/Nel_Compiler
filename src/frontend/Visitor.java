@@ -47,7 +47,6 @@ public class Visitor {
     }
 
 
-
     public void visitAst(Ast ast) throws SemanticError {
         assert isGlobal && currentBB == null && currentFunc == null;
         module = new Module(globalStr, globalVariables);
@@ -880,8 +879,7 @@ public class Visitor {
         Calculator calculator = new Calculator(currentSymTable);
         ArrayList<Integer> dims = new ArrayList<>();
         //数组类型
-        for (Ast.AddExp addExp :
-                varDef.getAddExps()) {
+        for (Ast.AddExp addExp : varDef.getAddExps()) {
             dims.add(calculator.evalConsInt(addExp));
         }
         for (int i = dims.size() - 1; i >= 0; i--) {

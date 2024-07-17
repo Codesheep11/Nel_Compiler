@@ -6,9 +6,7 @@ import mir.*;
 import mir.Module;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * 数组飞升
@@ -20,7 +18,12 @@ public class LocalArrayLift {
 
     private static Function func;
 
+    private static int count = 0;
+
+    private static Module module;
+
     public static void run(Module module) {
+        LocalArrayLift.module = module;
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
             runOnFunc(func);
@@ -68,7 +71,7 @@ public class LocalArrayLift {
             if (useInst instanceof Instruction.Load) loads.add(useInst);
             else if (useInst instanceof Instruction.Store store) {
                 Instruction.GetElementPtr addr = (Instruction.GetElementPtr) store.getAddr();
-                Value idx = addr.getOffsets().get(addr.getOffsets().size() - 1);
+                Value idx = addr.getIdx();
                 Value val = store.getValue();
                 if (idx instanceof Constant && val instanceof Constant) stores.add(useInst);
                 else return;
@@ -104,15 +107,16 @@ public class LocalArrayLift {
         }
         //满足上述条件，记录数组信息，默认此处已经消除了冗余store
         HashMap<Integer, Constant> init = new HashMap<>();
-        Collections.reverse(stores);
+//        Collections.reverse(stores);
         for (Instruction store : stores) {
+            if (store instanceof Instruction.Call) continue;
             Instruction.GetElementPtr addr = (Instruction.GetElementPtr) ((Instruction.Store) store).getAddr();
-            Value idx = addr.getOffsets().get(addr.getOffsets().size() - 1);
+            int idx = ((Constant.ConstantInt) addr.getIdx()).getIntValue();
             Value val = ((Instruction.Store) store).getValue();
             if (init.containsKey(idx)) continue;
-            init.put(((Constant.ConstantInt) idx).getIntValue(), (Constant) val);
+            init.put(idx, (Constant) val);
         }
-        arrayInitMap.put(alloc, new HashMap<>());
+        arrayInitMap.put(alloc, init);
         delList.addAll(stores);
     }
 
@@ -120,8 +124,15 @@ public class LocalArrayLift {
         //对于每一个要提升的数组，生成全局变量
         for (Instruction.Alloc alloc : arrayInitMap.keySet()) {
             Type.ArrayType arrayType = (Type.ArrayType) ((Type.PointerType) alloc.getType()).getInnerType();
-
-//            GlobalVariable gv = new GlobalVariable(arrayType);
+            Constant.ConstantArray constant = new Constant.ConstantArray(arrayType);
+            HashMap<Integer, Constant> idxMap = arrayInitMap.get(alloc);
+            for (int idx : idxMap.keySet()) {
+                constant.setIdxEle(idx, idxMap.get(idx));
+            }
+            GlobalVariable gv = new GlobalVariable(constant, "_lift_array_" + count++);
+//            System.out.println(gv.label);
+            module.addGlobalValue(gv);
+            alloc.replaceAllUsesWith(gv);
             delList.add(alloc);
         }
         delList.forEach(Value::delete);

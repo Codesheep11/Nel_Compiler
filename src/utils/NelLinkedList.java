@@ -26,6 +26,8 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         tail = new NelLinkNode();
         head.setNext(tail);
         tail.setPrev(head);
+        head.parent = this;
+        tail.parent = this;
         size = 0;
         modCount = 0;
     }
@@ -127,31 +129,31 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         modCount++;
     }
 
-    /**
-     * 将参数列表中的节点插入到当前链表尾部
-     * 考虑到节点实体的唯一性，该操作会使得that链表为空
-     */
-    @Deprecated(forRemoval = false) // 仅保留供 Visitor调用
-    public void concat(NelLinkedList<Type> that) {
-        if (this == that) {
-            throw new IllegalArgumentException("Cannot concat the same list!");
-        }
-        if (that.isEmpty()) {
-            that.clear();
-            modCount++;
-            return;
-        }
-        that.forEach(node -> node.parent = this);
-
-        that.head.next.setPrev(this.tail.prev);
-        that.tail.prev.setNext(this.tail);
-        this.tail.prev.setNext(that.head.next);
-        this.tail.setPrev(that.tail.prev);
-        size += that.size();
-        // 销毁
-        that.clear();
-        modCount++;
-    }
+//    /**
+//     * 将参数列表中的节点插入到当前链表尾部
+//     * 考虑到节点实体的唯一性，该操作会使得that链表为空
+//     */
+//    @Deprecated(forRemoval = false) // 仅保留供 Visitor调用
+//    public void concat(NelLinkedList<Type> that) {
+//        if (this == that) {
+//            throw new IllegalArgumentException("Cannot concat the same list!");
+//        }
+//        if (that.isEmpty()) {
+//            that.clear();
+//            modCount++;
+//            return;
+//        }
+//        that.forEach(node -> node.parent = this);
+//
+//        that.head.next.setPrev(this.tail.prev);
+//        that.tail.prev.setNext(this.tail);
+//        this.tail.prev.setNext(that.head.next);
+//        this.tail.setPrev(that.tail.prev);
+//        size += that.size();
+//        // 销毁
+//
+//        modCount++;
+//    }
 
     public boolean isEmpty() {
         return size == 0;
