@@ -97,15 +97,13 @@ public class BlockInline {
                         }
                     }
                 }
-            } else {
+            } else if (myFrom.get(block).size() >= 2) {
                 // 有很多指向它的,这里就需要考虑最大块宽度问题了
                 if (block.riscvInstructions.size() <= MAX_LEN) {
                     boolean canRemove = true;
                     for (Pair<RiscvBlock, Boolean> from : myFrom.get(block)) {
                         if (from.second) {
                             RiscvBlock fromBlock = from.first;
-                            System.out.println(fromBlock);
-                            System.out.println(block);
                             // 如果是跨越式到达，删除最后的J，然后粘贴所有指令，然后附加一个到原本block后面的块的指令
                             if (fromBlock.riscvInstructions.getLast() instanceof J) {
                                 fromBlock.riscvInstructions.removeLast();

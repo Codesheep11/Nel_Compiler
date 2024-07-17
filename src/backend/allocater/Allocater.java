@@ -11,6 +11,7 @@ import backend.riscv.RiscvInstruction.*;
 import backend.riscv.RiscvModule;
 import manager.Manager;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -106,8 +107,7 @@ public class Allocater {
                 R3 afterCall2 = new R3(call.block, sp, sp, tmp, R3.R3Type.add);
                 call.block.riscvInstructions.insertAfter(afterCall2, call);
                 call.block.riscvInstructions.insertAfter(afterCall1, call);
-            }
-            else {
+            } else {
                 Imm offset1 = new Imm(-1 * funcSize);
                 Imm offset2 = new Imm(funcSize);
                 R3 beforeCall = new R3(call.block, Reg.getPreColoredReg(sp, 64), Reg.getPreColoredReg(sp, 64), offset1, R3.R3Type.addi);
@@ -123,11 +123,13 @@ public class Allocater {
         for (RiscvFunction function : riscvModule.funcList) {
             if (function.isExternal) continue;
             for (RiscvBlock riscvBlock : function.blocks) {
+                ArrayList<LS> needInsert = new ArrayList<>();
                 for (RiscvInstruction ri : riscvBlock.riscvInstructions) {
-                    if (ri instanceof LS ls) {
-                        ls.replaceMe(riscvBlock);
+                    if (ri instanceof LS) {
+                        needInsert.add((LS) ri);
                     }
                 }
+                needInsert.forEach(ls -> ls.replaceMe(riscvBlock));
             }
         }
     }
