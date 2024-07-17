@@ -66,7 +66,6 @@ public class J extends RiscvInstruction {
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-
         super.updateUseDef();
         throw new RuntimeException("J instruction should not be replaced");
 
@@ -92,7 +91,7 @@ public class J extends RiscvInstruction {
     public HashSet<Reg> getDef() {
         HashSet<Reg> def = new HashSet<>();
         if (type == JType.call) {
-            RiscvFunction rf = block.function;
+            RiscvFunction rf = CodeGen.ansRis.getFunction(funcName);
             if (rf.retTypeCode == 1) def.add(Reg.getPreColoredReg(Reg.PhyReg.a0, 32));
             if (rf.retTypeCode == -1) def.add(Reg.getPreColoredReg(Reg.PhyReg.fa0, 32));
             def.addAll(rf.defs);

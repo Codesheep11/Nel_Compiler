@@ -86,13 +86,13 @@ public class Manager {
 //                outputLLVM("test.txt", module);
                 CodeGen codeGen = new CodeGen();
                 RiscvModule riscvmodule = codeGen.genCode(module);
-                BlockReSort.blockSort(riscvmodule);
-                CalculateOpt.run(riscvmodule);
+//                BlockReSort.blockSort(riscvmodule);
+//                CalculateOpt.run(riscvmodule);
                 outputRiscv("debug.txt", riscvmodule);
                 Allocater.run(riscvmodule);
-                afterRegAssign = true;
+//                afterRegAssign = true;
 //                AfterRAScheduler.postRASchedule(riscvmodule);
-                SimplifyCFG.run(riscvmodule);
+//                SimplifyCFG.run(riscvmodule);
                 //BlockInline.run(riscvmodule);
                 outputRiscv(arg.outPath, riscvmodule);
             }
