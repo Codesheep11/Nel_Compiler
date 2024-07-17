@@ -56,11 +56,9 @@ public class J extends RiscvInstruction {
     public String toString() {
         if (type == JType.ret) {
             return "\t" + type;
-        }
-        else if (type == JType.call) {
+        } else if (type == JType.call) {
             return "\t" + type + "\t" + RiscvFunction.funcNameWrap(funcName);
-        }
-        else {
+        } else {
             return "\t" + type + "\t\t" + targetBlock.name;
         }
     }
@@ -68,7 +66,6 @@ public class J extends RiscvInstruction {
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-
         super.updateUseDef();
         throw new RuntimeException("J instruction should not be replaced");
 
@@ -94,7 +91,7 @@ public class J extends RiscvInstruction {
     public HashSet<Reg> getDef() {
         HashSet<Reg> def = new HashSet<>();
         if (type == JType.call) {
-            RiscvFunction rf = block.function;
+            RiscvFunction rf = CodeGen.ansRis.getFunction(funcName);
             if (rf.retTypeCode == 1) def.add(Reg.getPreColoredReg(Reg.PhyReg.a0, 32));
             if (rf.retTypeCode == -1) def.add(Reg.getPreColoredReg(Reg.PhyReg.fa0, 32));
             def.addAll(rf.defs);
@@ -136,5 +133,21 @@ public class J extends RiscvInstruction {
     @Override
     public Reg getRegByIdx(int idx) {
         return Reg.getPreColoredReg(Reg.PhyReg.ra, 32);
+    }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        switch (type) {
+            case ret -> {
+                return new J(block, type);
+            }
+            case j -> {
+                return new J(block, type, targetBlock);
+            }
+            case call -> {
+                return new J(block, type, funcName);
+            }
+            default -> throw new RuntimeException("wrong type");
+        }
     }
 }

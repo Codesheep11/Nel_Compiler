@@ -110,4 +110,8 @@ public class RiscvInstruction extends NelLinkedList.NelLinkNode {
         regs.addAll(getDef());
         return regs;
     }
+
+    public RiscvInstruction myCopy() {
+        return new RiscvInstruction(block);
+    }
 }

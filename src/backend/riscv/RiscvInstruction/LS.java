@@ -6,6 +6,7 @@ import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class LS extends RiscvInstruction {
@@ -151,5 +152,10 @@ public class LS extends RiscvInstruction {
             }
             default -> throw new RuntimeException("wrong type");
         }
+    }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        return new LS(block, rs1, rs2, imm, type, isSpilled);
     }
 }

@@ -69,4 +69,9 @@ public class La extends RiscvInstruction {
     public int getInstFlag() {
         return InstFlag.None.value | InstFlag.LoadConstant.value | InstFlag.PCRel.value;
     }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        return new La(block, reg, content);
+    }
 }
