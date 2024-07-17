@@ -6,7 +6,7 @@ public class Arg {
     public final String srcFileName;
     public final FileInputStream srcStream;
     public final String outPath;
-    public final boolean opt;//是否开启优化
+    public boolean opt;//是否开启优化
     public final boolean LLVM;//是否输出LLVM代码
 
     private Arg(String src, String outPath, boolean opt, boolean LLVM) throws FileNotFoundException {

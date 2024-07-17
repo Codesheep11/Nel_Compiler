@@ -57,6 +57,7 @@ public class Manager {
 
     public void run() {
         try {
+            arg.opt = true;
             FrontEnd();
             AnalysisManager.buildCFG(module);
             FuncAnalysis.run(module);
@@ -91,7 +92,7 @@ public class Manager {
                 BlockReSort.blockSort(riscvmodule);
                 CalculateOpt.run(riscvmodule);
             }
-            outputRiscv("debug.txt", riscvmodule);
+//            outputRiscv("debug.txt", riscvmodule);
             Allocater.run(riscvmodule);
             afterRegAssign = true;
             if (arg.opt) {
