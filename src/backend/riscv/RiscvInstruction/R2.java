@@ -145,4 +145,9 @@ public class R2 extends RiscvInstruction {
         }
         return InstFlag.None.value;
     }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        return new R2(block, rd, rs, type);
+    }
 }

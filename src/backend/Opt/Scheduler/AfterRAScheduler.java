@@ -3,126 +3,14 @@ package backend.Opt.Scheduler;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
-import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
 
 import java.util.*;
 import java.util.function.BiConsumer;
 
-public class Scheduler {
+public class AfterRAScheduler {
 
-    public static void chainNear(RiscvBlock block,
-                                 HashMap<RiscvInstruction, Integer> degrees,
-                                 HashMap<RiscvInstruction, HashSet<RiscvInstruction>> antiDeps) {
-        ArrayList<RiscvInstruction> newlist = new ArrayList<>();
-        LinkedList<RiscvInstruction> canExe = new LinkedList<>();// 方便取最外层
-        for (RiscvInstruction instr : block.riscvInstructions) {
-            if (degrees.getOrDefault(instr, 0) == 0) {
-                canExe.add(instr);
-                // 筛选出可以执行的指令
-            }
-        }
-        while (canExe.size() != 0) {
-            RiscvInstruction instr = canExe.removeFirst();
-//            System.out.println(instr);
-            newlist.add(instr);
-            for (RiscvInstruction depinstr : antiDeps.getOrDefault(instr, new HashSet<>())) {
-                int newdegree = degrees.get(depinstr) - 1;
-                degrees.put(depinstr, newdegree);
-                if (newdegree == 0) {
-                    if (depinstr instanceof LS && depinstr.isUse(0)) {
-                        canExe.addFirst(depinstr);
-                    } else {
-                        canExe.add(depinstr);
-                    }
-                }
-            }
-        }
-        if (newlist.size() != block.riscvInstructions.size()) {
-            throw new RuntimeException("fail!");
-        }
-        block.riscvInstructions.clear();
-        for (RiscvInstruction ri : newlist) {
-            block.riscvInstructions.addLast(ri);
-        }
-    }
-
-    public static void preRAScheduleBlock(RiscvBlock block) {
-        // 先定义好这个deps是什么东西:antiDeps[u]是谁依赖u
-        HashMap<RiscvInstruction, HashSet<RiscvInstruction>> antiDeps = new HashMap<>();
-        // degree[u]是u依赖了几个
-        HashMap<RiscvInstruction, Integer> degrees = new HashMap<>();
-        //最后一次使用reg的指令
-        HashMap<Reg, ArrayList<RiscvInstruction>> lastTouch = new HashMap<>();// 使用
-        //最后一次修改def的指令
-        HashMap<Reg, RiscvInstruction> lastDef = new HashMap<>();
-        // Lambda for adding dependency
-        // 依赖v的加上一个u fixme: 注意重复情况,hash可以，但是这个degrees需要避免
-        BiConsumer<RiscvInstruction, RiscvInstruction> addDep = (u, v) -> {
-            if (u == v) return;
-            antiDeps.computeIfAbsent(v, k -> new HashSet<>());
-            if (!antiDeps.get(v).contains(u)) {
-                antiDeps.get(v).add(u);
-                degrees.put(u, degrees.getOrDefault(u, 0) + 1);
-            }
-            //System.out.println("add dep " + u + " on " + v);
-        };
-        RiscvInstruction lastSideEffect = null;
-        RiscvInstruction lastInOrder = null;
-
-        for (RiscvInstruction inst : block.riscvInstructions) {
-            for (int idx = 0; idx < inst.getOperandNum(); idx++) {
-                Reg reg = inst.getRegByIdx(idx);
-                if (inst.isUse(idx)) {
-                    if (lastDef.containsKey(reg)) {
-                        addDep.accept(inst, lastDef.get(reg));
-                    }
-                    lastTouch.computeIfAbsent(reg, k -> new ArrayList<>()).add(inst);
-                }
-            }
-            for (int idx = 0; idx < inst.getOperandNum(); idx++) {
-                Reg reg = inst.getRegByIdx(idx);
-                if (inst.isDef(idx)) {
-                    for (RiscvInstruction use : lastTouch.getOrDefault(reg, new ArrayList<>())) {
-                        addDep.accept(inst, use);
-                    }
-                    lastTouch.put(reg, new ArrayList<>(Collections.singletonList(inst)));
-                    lastDef.put(reg, inst);
-                }
-            }
-            if (lastInOrder != null) {
-                addDep.accept(inst, lastInOrder);
-            }
-            // 如果这个指令有副作用
-            if (inst.hasFlag(RiscvInstruction.InstFlag.SideEffect.value)) {
-                if (lastSideEffect != null) {
-                    // 那么需要等上个副作用的
-                    addDep.accept(inst, lastSideEffect);
-                }
-                lastSideEffect = inst;
-                //如果是call或者终结指令,它需要依赖前面所有指令完成
-                if (inst.hasFlag(RiscvInstruction.InstFlag.Call.value
-                        | RiscvInstruction.InstFlag.Terminator.value)) {
-                    for (RiscvInstruction prevInst : block.riscvInstructions) {
-                        if (prevInst == inst) break;
-                        addDep.accept(inst, prevInst);
-                    }
-                    lastInOrder = inst;
-                }
-            }
-        }
-        chainNear(block, degrees, antiDeps);
-    }
-
-    public static void preRASchedule(RiscvModule riscvModule) {
-        for (RiscvFunction function : riscvModule.funcList) {
-            if (function.isExternal) continue;
-            for (RiscvBlock block : function.blocks) {
-                preRAScheduleBlock(block);
-            }
-        }
-    }
 
     public static void topDownScheduling(RiscvBlock block,
                                          HashMap<RiscvInstruction, Integer> degrees,//某个指令依赖其他指令的度数

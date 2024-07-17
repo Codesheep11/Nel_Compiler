@@ -67,4 +67,9 @@ public class Li extends RiscvInstruction {
     public int getInstFlag() {
         return InstFlag.None.value | InstFlag.LoadConstant.value;
     }
+
+    @Override
+    public RiscvInstruction myCopy() {
+        return new Li(block, reg, imm);
+    }
 }
