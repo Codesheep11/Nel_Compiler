@@ -68,12 +68,7 @@ public class CodeGen {
             VirRegMap.VRM.clean(function);
             visitFunction(function);
         }
-        for (Function func : FuncInfo.getFuncTopoSort()) {
-            //fixme:
-            RiscvFunction rf = ansRis.getFunction(func.getName());
-            if (rf == null) continue;
-            ansRis.TopoSort.add(rf);
-        }
+        FuncInfo.getFuncTopoSort().forEach(func -> ansRis.TopoSort.add(ansRis.getFunction(func.getName())));
         for (RiscvFunction rf : ansRis.funcList) {
             if (RiscvModule.isMain(rf)) {
                 rf.isMain = true;
@@ -448,10 +443,33 @@ public class CodeGen {
         }
         else {
             // 给偏移找一个寄存器,方便计算
-            Reg offreg = VirRegMap.VRM.ensureRegForValue(useable);
+            Reg reg_for_useable = VirRegMap.VRM.ensureRegForValue(useable);
+            Reg offreg = new Reg(Reg.RegType.GPR, 32);
             // 这个式子是判断size是否是2的幂次,如果是的化直接将size移位即可,不需要用乘法计算
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, offreg, base, R3.R3Type.sh2add));
+            if ((size & (size - 1)) == 0) {
+                int shift = Integer.toBinaryString(size).length() - 1;
+                if (shift == 1) {
+                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_useable, base, R3.R3Type.sh1add));
+                    return;
+                }
+                else if (shift == 2) {
+                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_useable, base, R3.R3Type.sh2add));
+                    return;
+                }
+                else if (shift == 3) {
+                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_useable, base, R3.R3Type.sh3add));
+                    return;
+                }
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, offreg, reg_for_useable, new Imm(shift), R3.R3Type.slliw));
+            }
+            else {
+                Reg reg_for_size = new Reg(Reg.RegType.GPR, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, reg_for_size, size));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, offreg, reg_for_size, reg_for_useable, R3.R3Type.mulw));
+            }
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, offreg, R3.R3Type.add));
         }
+
 
     }
 

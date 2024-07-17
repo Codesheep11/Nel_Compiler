@@ -12,6 +12,7 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
+import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.GlobalVarLocalize;
 import midend.Transform.Array.ConstIdx2Value;
@@ -57,43 +58,45 @@ public class Manager {
     public void run() {
         try {
             FrontEnd();
+            AnalysisManager.buildCFG(module);
             FuncAnalysis.run(module);
-//            if (arg.opt) {
-            Mem2Reg.run(module);
-            DeadCodeEliminate();
-            FuncPasses();
-            GlobalVarLocalize.run(module);
-            GlobalValueNumbering.run(module);
-            DeadCodeEliminate.run(module);
-            LoopInfo.build(module);
-            GlobalCodeMotion.run(module);
-            LCSSA.Run(module);
-            LoopUnSwitching.run(module);
-            LoopInfo.build(module);
-            IndVars.run(module);
-            LoopInfo.build(module);
-            LCSSA.remove(module);
-            ArrayPasses();
-            DeadCodeEliminate();
-            GlobalValueNumbering.run(module);
-//            }
+            if (arg.opt) {
+                Mem2Reg.run(module);
+                DeadCodeEliminate();
+                FuncPasses();
+                GlobalVarLocalize.run(module);
+                GlobalValueNumbering.run(module);
+                DeadCodeEliminate.run(module);
+                LoopInfo.build(module);
+                GlobalCodeMotion.run(module);
+                LCSSA.Run(module);
+                LoopUnSwitching.run(module);
+                LoopInfo.build(module);
+                IndVars.run(module);
+                LoopInfo.build(module);
+                LCSSA.remove(module);
+                ArrayPasses();
+                DeadCodeEliminate();
+                GlobalValueNumbering.run(module);
+                FuncAnalysis.run(module);
+            }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
                 return;
             }
-//            if (arg.opt)
-            RemovePhi.run(module);
+            if (arg.opt) RemovePhi.run(module);
             CodeGen codeGen = new CodeGen();
             RiscvModule riscvmodule = codeGen.genCode(module);
-//            if (arg.opt) {
-            BlockReSort.blockSort(riscvmodule);
-            CalculateOpt.run(riscvmodule);
-//            }
+            if (arg.opt) {
+                BlockReSort.blockSort(riscvmodule);
+                CalculateOpt.run(riscvmodule);
+            }
+            outputRiscv("debug.txt", riscvmodule);
             Allocater.run(riscvmodule);
             afterRegAssign = true;
-//            if (arg.opt) {
-            SimplifyCFG.run(riscvmodule);
-//            }
+            if (arg.opt) {
+                SimplifyCFG.run(riscvmodule);
+            }
             outputRiscv(arg.outPath, riscvmodule);
         } catch (
                 Exception e) {

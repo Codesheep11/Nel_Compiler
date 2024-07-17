@@ -40,6 +40,7 @@ public class Allocater {
             for (int i = 60; i <= 63; i++) add(getPhyRegByOrder(i));
         }};
         for (RiscvFunction func : module.TopoSort) {
+//            System.out.println(func.name);
             if (func.isExternal) {
                 HashSet<Reg.PhyReg> used = new HashSet<>();
                 used.addAll(allRegs);
