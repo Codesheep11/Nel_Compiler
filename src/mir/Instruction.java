@@ -1510,6 +1510,10 @@ public class Instruction extends User {
             return eleType;
         }
 
+        public Value getIdx() {
+            return offsets.get(offsets.size() - 1);
+        }
+
         public boolean isConstOffset() {
             for (Value offset : offsets) {
                 if (!(offset instanceof Constant.ConstantInt)) {

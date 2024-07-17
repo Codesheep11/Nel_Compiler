@@ -6,9 +6,7 @@ import mir.*;
 import mir.Module;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * 数组飞升
@@ -73,7 +71,7 @@ public class LocalArrayLift {
             if (useInst instanceof Instruction.Load) loads.add(useInst);
             else if (useInst instanceof Instruction.Store store) {
                 Instruction.GetElementPtr addr = (Instruction.GetElementPtr) store.getAddr();
-                Value idx = addr.getOffsets().get(addr.getOffsets().size() - 1);
+                Value idx = addr.getIdx();
                 Value val = store.getValue();
                 if (idx instanceof Constant && val instanceof Constant) stores.add(useInst);
                 else return;
@@ -113,7 +111,7 @@ public class LocalArrayLift {
         for (Instruction store : stores) {
             if (store instanceof Instruction.Call) continue;
             Instruction.GetElementPtr addr = (Instruction.GetElementPtr) ((Instruction.Store) store).getAddr();
-            int idx = ((Constant.ConstantInt) addr.getOffsets().get(addr.getOffsets().size() - 1)).getIntValue();
+            int idx = ((Constant.ConstantInt) addr.getIdx()).getIntValue();
             Value val = ((Instruction.Store) store).getValue();
             if (init.containsKey(idx)) continue;
             init.put(idx, (Constant) val);
