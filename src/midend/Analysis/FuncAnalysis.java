@@ -151,6 +151,7 @@ public class FuncAnalysis {
     public static void TransAttribute() {
         ArrayList<Function> funcTopoSort = FuncInfo.getFuncTopoSort();
         for (Function func : funcTopoSort) {
+//            System.out.println(func.getName());
             boolean hasMemoryRead = FuncInfo.hasMemoryRead.get(func);
             boolean hasMemoryWrite = FuncInfo.hasMemoryWrite.get(func);
             boolean hasMemoryAlloc = FuncInfo.hasMemoryAlloc.get(func);
