@@ -33,7 +33,7 @@ public class Allocater {
     public static void run(RiscvModule riscvModule) {
         module = riscvModule;
         HashSet<Reg.PhyReg> allRegs = new HashSet<Reg.PhyReg>() {{
-            for (int i = 4; i <= 7; i++) add(getPhyRegByOrder(i));
+            for (int i = 3; i <= 7; i++) add(getPhyRegByOrder(i));
             for (int i = 10; i <= 17; i++) add(getPhyRegByOrder(i));
             for (int i = 28; i <= 39; i++) add(getPhyRegByOrder(i));
             for (int i = 42; i <= 49; i++) add(getPhyRegByOrder(i));
