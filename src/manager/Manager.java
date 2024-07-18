@@ -14,18 +14,17 @@ import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
-import midend.Transform.GlobalVarLocalize;
+import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
 import midend.Transform.Array.LocalArrayLift;
 import midend.Transform.DCE.*;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
-import midend.Transform.GlobalCodeMotion;
-import midend.Transform.GlobalValueNumbering;
-import midend.Transform.Loop.*;
-import midend.Transform.Mem2Reg;
-import midend.Transform.RemovePhi;
+import midend.Transform.Loop.IndVars;
+import midend.Transform.Loop.LCSSA;
+import midend.Transform.Loop.LoopInfo;
+import midend.Transform.Loop.LoopUnSwitching;
 import midend.Util.FuncInfo;
 import midend.Util.Print;
 import mir.*;
@@ -97,8 +96,7 @@ public class Manager {
                 SimplifyCFG.run(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
-        } catch (
-                Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
         }
@@ -119,6 +117,7 @@ public class Manager {
     private void DeadCodeEliminate() {
         DeadLoopEliminate.run(module);
         SimplfyCFG.run(module);
+        ArithReduce.run(module);
         DeadCodeEliminate.run(module);
     }
 
