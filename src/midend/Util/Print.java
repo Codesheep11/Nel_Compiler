@@ -11,6 +11,22 @@ import java.util.ArrayList;
 
 public class Print {
 
+    public static void output(Module module, String filepath) {
+        try {
+            OutputStream out = new FileOutputStream(filepath);
+            ArrayList<String> outputList = new ArrayList<>();
+            for (Function func : module.getFuncSet()) {
+                if (func.isExternal()) {
+                    continue;
+                }
+                outputList.addAll(func.output());
+            }
+            streamOutput(out, outputList);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void outputLLVM(Function func, String filepath) {
         try {
             OutputStream out = new FileOutputStream(filepath);

@@ -22,7 +22,6 @@ import java.util.HashSet;
  */
 public final class AnalysisManager {
 
-
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
     private static final HashMap<Function, SCEVinfo> scevMap = new HashMap<>();
@@ -107,6 +106,18 @@ public final class AnalysisManager {
 
     // endregion
 
-    private AnalysisManager() {
+    // region SCEV
+    public static void refreshSCEV(Function function) {
+        scevMap.put(function, ScalarEvolution.runOnFunc(function));
     }
+
+    public static SCEVinfo getSCEV(Function function) {
+        if (!scevMap.containsKey(function)) {
+            scevMap.put(function, ScalarEvolution.runOnFunc(function));
+        }
+        return scevMap.get(function);
+    }
+    // endregion
+
+    private AnalysisManager() { }
 }

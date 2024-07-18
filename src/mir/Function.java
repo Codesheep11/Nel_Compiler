@@ -51,10 +51,7 @@ public class Function extends Value {
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
-
     private int countOfBB = 0;
-
-    public SCEVinfo scevInfo = new SCEVinfo();
 
     public Function(Type type, String name, Type... argumentTypes) {
         super(Type.FunctionType.FUNC_TYPE);
@@ -199,10 +196,6 @@ public class Function extends Value {
         AnalysisManager.refreshDG(this);
     }
 
-    public void buildSCEVInfo() {
-        scevInfo = ScalarEvolution.run(this);
-    }
-
 
     public Value inlineToFunc(CloneInfo cloneInfo, Function tagFunc, BasicBlock retBB, Instruction.Call call, int idx) {
         //Instruction.Phi retPhi = null;
@@ -215,8 +208,7 @@ public class Function extends Value {
         }
         for (BasicBlock block : bbMap.values()) {
             for (Instruction instr : block.getInstructions()) {
-                if (instr instanceof Instruction.Phi) {
-                    Instruction.Phi phi = (Instruction.Phi) instr;
+                if (instr instanceof Instruction.Phi phi) {
                     phi.changePreBlocks(bbMap);
                 }
                 else break;

@@ -131,6 +131,20 @@ public class Loop {
         return latchs.iterator().next();
     }
 
+    /**
+     * 获得该循环的大小 (指令数)
+     */
+    public int getSize(){
+        int sum = 0;
+        for (var block : nowLevelBB) {
+            sum += block.getInstructions().size();
+        }
+        for (var loop : children) {
+            sum += loop.getSize();
+        }
+        return sum;
+    }
+
     public LoopCloneInfo cloneAndInfo() {
         LoopCloneInfo info = new LoopCloneInfo();
         info.src = this;
@@ -146,6 +160,7 @@ public class Loop {
         exitings.forEach(bb -> info.cpy.exitings.add((BasicBlock) info.getReflectedValue(bb)));
 
         Loop cpLoop = info.cpy;
+        cpLoop.tripCount = tripCount;
         cpLoop.parent = parent;
         cpLoop.isRoot = isRoot;
         cpLoop.idcSet = idcSet;
