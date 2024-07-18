@@ -657,15 +657,15 @@ public class Visitor {
         Function function = module.getFunctions().get(ident.identifier.content);
         if (function == null) {
             function = FuncInfo.ExternFunc.externFunctions.get(ident.identifier.content);
-            if (function == null) {
-                throw new SemanticError("Undefined Function: " + ident.identifier.content);
-            }
-            else {
-                module.addFunction(function);
-            }
+            if (function == null) throw new SemanticError("Undefined Function: " + ident.identifier.content);
+            else module.addFunction(function);
         }
         ArrayList<Value> rParams = new ArrayList<>();
-
+        if (ident.identifier.content.equals("starttime") || ident.identifier.content.equals("stoptime")) {
+            Constant.ConstantInt lineNo = new Constant.ConstantInt(ident.identifier.line);
+            rParams.add(lineNo);
+            return new Instruction.Call(currentBB, function, rParams);
+        }
         if (str != null) {
             assert ident.identifier.content.equals(FuncInfo.ExternFunc.PUTF.getName());
             for (int i = 0; i < funcRParams.getParams().size(); i++) {

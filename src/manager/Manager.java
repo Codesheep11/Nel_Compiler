@@ -12,6 +12,7 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
+import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.GlobalVarLocalize;
 import midend.Transform.Array.ConstIdx2Value;
@@ -42,21 +43,24 @@ import java.util.Map;
 
 public class Manager {
 
-    public final Arg arg;
+    public static Arg arg;
 
     private final ArrayList<String> outputList = new ArrayList<>();
 
     public static boolean afterRegAssign = false;
 
     public Manager(Arg arg) {
-        this.arg = arg;
+        Manager.arg = arg;
     }
 
     public static Module module;
 
     public void run() {
         try {
+            arg.opt = true;
             FrontEnd();
+            AnalysisManager.buildCFG(module);
+            FuncAnalysis.run(module);
             if (arg.opt) {
                 Mem2Reg.run(module);
                 DeadCodeEliminate();
@@ -75,28 +79,28 @@ public class Manager {
                 ArrayPasses();
                 DeadCodeEliminate();
                 GlobalValueNumbering.run(module);
+                FuncAnalysis.run(module);
             }
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
                 return;
             }
+            if (arg.opt) RemovePhi.run(module);
+            CodeGen codeGen = new CodeGen();
+            RiscvModule riscvmodule = codeGen.genCode(module);
             if (arg.opt) {
-                RemovePhi.run(module);
-//                outputLLVM("test.txt", module);
-                CodeGen codeGen = new CodeGen();
-                RiscvModule riscvmodule = codeGen.genCode(module);
                 BlockReSort.blockSort(riscvmodule);
                 CalculateOpt.run(riscvmodule);
-//                Scheduler.preRASchedule(riscvmodule);
-                outputRiscv("debug.txt", riscvmodule);
-                Allocater.run(riscvmodule);
-                afterRegAssign = true;
-//                Scheduler.postRASchedule(riscvmodule);
-                SimplifyCFG.run(riscvmodule);
-//                BlockInline.run(riscvmodule);
-                outputRiscv(arg.outPath, riscvmodule);
             }
-        } catch (Exception e) {
+//            outputRiscv("debug.txt", riscvmodule);
+            Allocater.run(riscvmodule);
+            afterRegAssign = true;
+            if (arg.opt) {
+                SimplifyCFG.run(riscvmodule);
+            }
+            outputRiscv(arg.outPath, riscvmodule);
+        } catch (
+                Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
         }
@@ -236,6 +240,6 @@ public class Manager {
     }
 
 
-    //end region
+//end region
 
 }

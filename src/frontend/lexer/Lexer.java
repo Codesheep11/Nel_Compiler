@@ -29,14 +29,10 @@ public class Lexer {
     }
 
     private int detectType(String str) {
-        for(TokenType tokenType : TokenType.values())
-        {
+        for (TokenType tokenType : TokenType.values()) {
             Pattern p = tokenType.getPattern();
-            if(p.matcher(str).matches())
-            {
-                if(debugMode) {
-                    System.out.println(tokenType.toString() + "\t" + str);
-                }
+            if (p.matcher(str).matches()) {
+                if (debugMode) System.out.println(tokenType.toString() + "\t" + str);
                 tokenArray.append(new Token(tokenType, str));
                 return 0;
             }
@@ -45,7 +41,7 @@ public class Lexer {
     }
 
     public void lex() throws IOException {
-        if(stringHandler.reachEOF()) {
+        if (stringHandler.reachEOF()) {
             System.err.println("Try to lex a file which has reached the end!");
             return;
         }
@@ -53,18 +49,16 @@ public class Lexer {
         while (!stringHandler.reachEOF()) {
             String cur = stringHandler.scanf();
             ArrayList<String> subStrings = stringHandler.SplitString(cur);
-            for (String subString:
-                 subStrings) {
-                if(detectType(subString) < 0) {
-                    throw new RuntimeException("Unexpected token type, content:"+"\t"+subString);
+//            System.out.println(subStrings);
+            for (String subString : subStrings) {
+                if (detectType(subString) < 0) {
+                    throw new RuntimeException("Unexpected token type, content:" + "\t" + subString);
                 }
             }
         }
-
-        if(stringHandler.reachEOF())
-        {
+        if (stringHandler.reachEOF()) {
             tokenArray.append(new Token(TokenType.EOF, ""));
-            if(debugMode) {
+            if (debugMode) {
                 System.out.println(TokenType.EOF.toString() + "\t" + "");
             }
         }
