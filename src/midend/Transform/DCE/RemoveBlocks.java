@@ -58,6 +58,8 @@ public class RemoveBlocks {
                     phi.removeOptionalValue(rm);
                 }
                 if (phi.getPreBlocks().size() != block.getPreBlocks().size()) {
+                    System.out.println(phi.getParentBlock().getDescriptor());
+                    System.out.println(phi);
                     throw new RuntimeException("phi error");
                 }
                 if (phi.canBeReplaced() && !phi.isLCSSA) {

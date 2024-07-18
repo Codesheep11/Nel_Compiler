@@ -106,6 +106,18 @@ public final class AnalysisManager {
 
     // endregion
 
-    private AnalysisManager() {
+    // region SCEV
+    public static void refreshSCEV(Function function) {
+        scevMap.put(function, ScalarEvolution.runOnFunc(function));
     }
+
+    public static SCEVinfo getSCEV(Function function) {
+        if (!scevMap.containsKey(function)) {
+            scevMap.put(function, ScalarEvolution.runOnFunc(function));
+        }
+        return scevMap.get(function);
+    }
+    // endregion
+
+    private AnalysisManager() { }
 }
