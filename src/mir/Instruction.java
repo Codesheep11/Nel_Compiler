@@ -182,7 +182,7 @@ public class Instruction extends User {
     /**
      * 返回值决定指令Type
      */
-    public static class Return extends Instruction implements Terminator {
+    public static class Return extends Terminator {
 
         private Value retValue;
 
@@ -347,11 +347,15 @@ public class Instruction extends User {
     /**
      * 终结符, ValueType: Void
      */
-    public interface Terminator {
-        void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock);
+    public static abstract class Terminator extends Instruction{
+        public Terminator(BasicBlock parentBlock, Type type, InstType instType) {
+            super(parentBlock, type, instType);
+        }
+
+        public abstract void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock);
     }
 
-    public static class Branch extends Instruction implements Terminator {
+    public static class Branch extends Terminator {
         private Value cond;
         private BasicBlock thenBlock;
         private BasicBlock elseBlock;
@@ -419,7 +423,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Jump extends Instruction implements Terminator {
+    public static class Jump extends Terminator {
         private BasicBlock targetBlock;
         private Recorder.Mark mark;
 

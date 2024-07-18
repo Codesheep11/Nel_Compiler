@@ -1,6 +1,7 @@
 package midend.Transform.Loop;
 
 import manager.CentralControl;
+import midend.Analysis.AnalysisManager;
 import midend.Transform.DCE.RemoveBlocks;
 import mir.*;
 import mir.Module;
@@ -58,7 +59,7 @@ public class LoopUnSwitching {
         Instruction.Branch branch = branches.get(0);
         Function parentFunction = branch.getParentBlock().getParentFunction();
         BasicBlock oldPreHeader = loop.getPreHeader();
-        parentFunction.buildControlFlowGraph();
+        AnalysisManager.refreshCFG(parentFunction);
         ArrayList<BasicBlock> trueBlocks = new ArrayList<>();
         ArrayList<BasicBlock> falseBlocks = new ArrayList<>();
 

@@ -3,14 +3,20 @@ package midend.Analysis;
 import mir.*;
 import mir.result.SCEVinfo;
 
+import java.util.HashMap;
+import java.util.HashSet;
+
 /**
  * Scalar Evolution Analysis <br>
  * 标量演化分析 <br>
  * @author Srchycz
+ * NOTE: 互相依赖无法处理
  */
 public class ScalarEvolution {
 
-    public static SCEVinfo run(Function func) {
+    private static HashSet<Instruction> visited = new HashSet<>();
+    public static SCEVinfo runOnFunc(Function func) {
+        visited.clear();
         SCEVinfo res = new SCEVinfo();
 
         for (Loop loop : func.loopInfo.TopLevelLoops) {
@@ -30,26 +36,27 @@ public class ScalarEvolution {
 
     /**
      * 基础归纳变量分析
-     * @param phiInst phi指令 应该位于 header处
+     * @param aimPhi phi指令 应该位于 header处
      * @param res 结果
      * @param loop 循环
      */
-    private static void BasicInduceVariableAnalysis(Instruction.Phi phiInst, SCEVinfo res, Loop loop) {
-        // TODO: 需要 check
-        Value initial = getInitial(phiInst, loop);
-        Value next = getNext(phiInst, loop);
+    private static void BasicInduceVariableAnalysis(Instruction.Phi aimPhi, SCEVinfo res, Loop loop) {
+        if (visited.contains(aimPhi)) return;
+        visited.add(aimPhi);
+        Value initial = getInitial(aimPhi, loop);
+        Value next = getNext(aimPhi, loop);
 
         if (next instanceof Constant) {
 //            System.out.println("Invariant");
             return;
         }
         Instruction nextInst = (Instruction) next;
-        if (nextInst instanceof Instruction.BinaryOperation bo && nextInst.getInstType() == Instruction.InstType.ADD) {
-            Value op1 = bo.getOperand_1();
-            Value op2 = bo.getOperand_2();
-            if (op1 == phiInst || op2 == phiInst) {
+        if (nextInst instanceof Instruction.BinaryOperation.Add addInst) {
+            Value op1 = addInst.getOperand_1();
+            Value op2 = addInst.getOperand_2();
+            if (op1 == aimPhi || op2 == aimPhi) {
                 // 获取递增量
-                Value c = (op1 == phiInst) ? op2 : op1;
+                Value c = (op1 == aimPhi) ? op2 : op1;
                 SCEVExpr initialSCEV = res.query(initial);
                 SCEVExpr incSCEV = res.query(c);
                 if (initialSCEV != null && incSCEV != null) {
@@ -57,7 +64,7 @@ public class ScalarEvolution {
                     scev.operands.add(initialSCEV);
                     scev.operands.add(incSCEV);
                     scev.loop = loop;
-                    res.addSCEV(phiInst, scev);
+                    res.addSCEV(aimPhi, scev);
                 }
             }
         }
@@ -123,12 +130,4 @@ public class ScalarEvolution {
         throw new RuntimeException("getNext: no next value");
     }
 
-    // Main方法示例
-//    public static void main(String[] args) {
-//        Function func = new Function();
-//        AnalysisPassManager analysis = new AnalysisPassManager();
-//        ScalarEvolutionAnalysis analysisPass = new ScalarEvolutionAnalysis();
-//        SCEVAnalysisResult result = analysisPass.run(func, analysis);
-//        System.out.println("SCEV Analysis Completed.");
-//    }
 }

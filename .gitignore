@@ -6,8 +6,5 @@ out/
 
 compiler2024-nel.iml
 /src/META-INF/MANIFEST.MF
-<<<<<<< HEAD
-=======
-
->>>>>>> 50e8ff4ffb8ee42e6700254764da58eca11c43b0
 *.jar
+qodana.yaml

@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 public final class SCEVinfo {
 
-    private HashMap<Value, SCEVExpr> map = new HashMap<>();
+    private final HashMap<Value, SCEVExpr> map = new HashMap<>();
 
     public void addSCEV(Value value, SCEVExpr cr) {
         map.put(value, cr);

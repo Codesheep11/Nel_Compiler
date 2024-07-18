@@ -31,9 +31,9 @@ public class CharType {
 
 
     public boolean isSpecialNum(String str) {
-        String hexFloat = "(0(x|X)[0-9A-Fa-f]*\\.[0-9A-Fa-f]*((p|P|e|E)(\\+|\\-)?[0-9A-Fa-f]*)?)|" +
-                "(0(x|X)[0-9A-Fa-f]*[\\.]?[0-9A-Fa-f]*(p|P|e|E)((\\+|\\-)?[0-9A-Fa-f]*)?)";
-        String hexInt = "0(x|X)[0-9A-Fa-f]+";
+        String hexFloat = "(0([xX])[0-9A-Fa-f]*\\.[0-9A-Fa-f]*(([pPeE])([+\\-])?[0-9A-Fa-f]*)?)|" +
+                "(0([xX])[0-9A-Fa-f]*[.]?[0-9A-Fa-f]*([pPeE])(([+\\-])?[0-9A-Fa-f]*)?)";
+        String hexInt = "0([xX])[0-9A-Fa-f]+";
 
         String sciNumber = "^[+-]?\\d*\\.?\\d+[Ee][+-]?$";
 

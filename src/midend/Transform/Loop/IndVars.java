@@ -1,5 +1,6 @@
 package midend.Transform.Loop;
 
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
 import mir.result.SCEVinfo;
@@ -8,20 +9,23 @@ import mir.result.SCEVinfo;
  * 邮电部诗人
  */
 public class IndVars {
+
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            run(function);
+            runOnFunc(function);
         }
     }
 
-    public static void run(Function func) {
-        func.buildSCEVInfo();
+    public static void runOnFunc(Function func) {
+        AnalysisManager.refreshSCEV(func);
+        SCEVinfo scevInfo = AnalysisManager.getSCEV(func);
         for (Loop loop : func.loopInfo.TopLevelLoops) {
-            run(loop, func.scevInfo);
+            run(loop, scevInfo);
         }
     }
 
+    // TODO: 判断tripCount的方式太朴素了 考虑优化
     private static int tick(SCEVExpr scevExpr, Instruction.Icmp.CondCode cmp, int n) {
         int max = 100000;
         int i = -1;
