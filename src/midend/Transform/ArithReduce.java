@@ -39,7 +39,7 @@ public class ArithReduce {
         for (Instruction inst : delList) inst.delete();
         block.getInstructions().clear();
         for (Instruction inst : reducedList) {
-            if (inst.getUsers().size() == 0) continue;
+//            if (inst.getUsers().size() == 0 && inst.isNoSideEffect()) continue;
 //            System.out.println("add:" + inst);
             block.addInstLast(inst);
         }
