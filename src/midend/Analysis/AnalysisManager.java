@@ -22,7 +22,6 @@ import java.util.HashSet;
  */
 public final class AnalysisManager {
 
-
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
     private static final HashMap<Function, SCEVinfo> scevMap = new HashMap<>();
