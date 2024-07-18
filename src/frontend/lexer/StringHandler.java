@@ -389,7 +389,7 @@ public class StringHandler {
                         builders.add(new StringBuilder());
                         builder = builders.get(builders.size() - 1);
                     }
-                    if (isStr == false) {
+                    if (!isStr) {
                         isStr = true;
                         builder.append(cur);
                     } else {

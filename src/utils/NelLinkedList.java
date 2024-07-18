@@ -276,6 +276,22 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
             parent = null;
         }
 
+//        public void replaceWith(NelLinkNode newNode) {
+//            if (parent == null) {
+//                throw new IllegalStateException("Node has no parent!");
+//            }
+//            if (prev == null || next == null) {
+//                throw new IllegalStateException("Node is not in the list!");
+//            }
+//            newNode.setParent(this.parent);
+//            newNode.setNext(this.next);
+//            newNode.setPrev(this.prev);
+//            this.prev.setNext(newNode);
+//            this.next.setPrev(newNode);
+//            this.parent.modCount++;
+//            this.parent = null;
+//        }
+
         public int getIndex() {
             int idx = 0;
             NelLinkNode cur = parent.head;
