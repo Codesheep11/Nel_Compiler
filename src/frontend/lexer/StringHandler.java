@@ -21,16 +21,16 @@ public class StringHandler {
         return tmp;
     }
 
-    public String scanf(int c) throws IOException {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(c);
-        return getString(stringBuilder);
-    }
-
-    public String scanf(String str) throws IOException {
-        StringBuilder stringBuilder = new StringBuilder(str);
-        return getString(stringBuilder);
-    }
+//    public String scanf(int c) throws IOException {
+//        StringBuilder stringBuilder = new StringBuilder();
+//        stringBuilder.append(c);
+//        return getString(stringBuilder);
+//    }
+//
+//    public String scanf(String str) throws IOException {
+//        StringBuilder stringBuilder = new StringBuilder(str);
+//        return getString(stringBuilder);
+//    }
 
     /**
      * the function will skip all the blank characters and comments

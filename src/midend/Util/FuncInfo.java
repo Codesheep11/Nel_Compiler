@@ -98,8 +98,8 @@ public class FuncInfo {
         public static final Function GETFLOAT = new Function(Type.BasicType.F32_TYPE, "getfloat");
         public static final Function PUTCH = new Function(Type.VoidType.VOID_TYPE, "putch", Type.BasicType.I32_TYPE);
         public static final Function PUTFLOAT = new Function(Type.VoidType.VOID_TYPE, "putfloat", Type.BasicType.F32_TYPE);
-        public static final Function STARTTIME = new Function(Type.VoidType.VOID_TYPE, "_sysy_starttime");
-        public static final Function STOPTIME = new Function(Type.VoidType.VOID_TYPE, "_sysy_stoptime");
+        public static final Function STARTTIME = new Function(Type.VoidType.VOID_TYPE, "_sysy_starttime", Type.BasicType.I32_TYPE);
+        public static final Function STOPTIME = new Function(Type.VoidType.VOID_TYPE, "_sysy_stoptime", Type.BasicType.I32_TYPE);
         public static final Function GETARRAY = new Function(Type.BasicType.I32_TYPE, "getarray", new Type.PointerType(Type.BasicType.I32_TYPE));
         public static final Function GETFARRAY = new Function(Type.BasicType.I32_TYPE, "getfarray", new Type.PointerType(Type.BasicType.F32_TYPE));
         public static final Function PUTARRAY = new Function(Type.VoidType.VOID_TYPE, "putarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.I32_TYPE));
