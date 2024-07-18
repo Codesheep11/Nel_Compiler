@@ -1,7 +1,7 @@
 package frontend.lexer;
 
 public class CharType {
-    public CharType(){
+    public CharType() {
 
     }
 
@@ -31,20 +31,19 @@ public class CharType {
 
 
     public boolean isSpecialNum(String str) {
-        String hexFloat ="(0(x|X)[0-9A-Fa-f]*\\.[0-9A-Fa-f]*((p|P|e|E)(\\+|\\-)?[0-9A-Fa-f]*)?)|" +
+        String hexFloat = "(0(x|X)[0-9A-Fa-f]*\\.[0-9A-Fa-f]*((p|P|e|E)(\\+|\\-)?[0-9A-Fa-f]*)?)|" +
                 "(0(x|X)[0-9A-Fa-f]*[\\.]?[0-9A-Fa-f]*(p|P|e|E)((\\+|\\-)?[0-9A-Fa-f]*)?)";
         String hexInt = "0(x|X)[0-9A-Fa-f]+";
 
         String sciNumber = "^[+-]?\\d*\\.?\\d+[Ee][+-]?$";
 
 
-
         return str.matches(hexFloat) || str.matches(hexInt) || str.matches(sciNumber);
     }
 
 
-
     public boolean isBlank(char c) {
+        if (c == '\n') Token.lineNum++;
         return c == ' ' || c == '\r' || c == '\n' || c == '\t';
     }
 

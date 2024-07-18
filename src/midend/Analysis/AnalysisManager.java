@@ -29,6 +29,13 @@ public final class AnalysisManager {
 
 
     // region CFG
+
+    public static void buildCFG(Module module) {
+        for (Function function : module.getFuncSet()) {
+            if (!function.isExternal()) cfgMap.put(function, ControlFlowGraph.run(function));
+        }
+    }
+
     public static void refreshCFG(Function function) {
         cfgMap.put(function, ControlFlowGraph.run(function));
     }
