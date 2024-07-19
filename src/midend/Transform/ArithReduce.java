@@ -31,6 +31,7 @@ public class ArithReduce {
         while (idx < snap.size()) {
             Instruction instruction = snap.get(idx);
             if (instruction instanceof Instruction.BinaryOperation) {
+//                System.out.println("runOnBinaryInst:" + instruction);
                 runOnBinaryInst(instruction);
             }
             else reducedList.add(instruction);
@@ -84,16 +85,27 @@ public class ArithReduce {
                     return;
                 }
             }
-            //c2 + (x - c1) -> (c2 - c1) + x
-            if (inst.getOperand_2() instanceof Instruction.Sub) {
-                Instruction.Sub sub = (Instruction.Sub) inst.getOperand_2();
+            if (inst.getOperand_2() instanceof Instruction.Sub sub) {
+                //c2 + (c1 - x) -> (c2 + c1) - x
                 if (sub.getOperand_1() instanceof Constant) {
                     Instruction.Sub newSub = new Instruction.Sub(inst.getParentBlock(), inst.getType(),
-                            new Constant.ConstantInt(((int) ((Constant) inst.getOperand_1()).getConstValue()) - ((int) (((Constant) sub.getOperand_1()).getConstValue()))), sub.getOperand_2());
+                            new Constant.ConstantInt(((int) ((Constant) inst.getOperand_1()).getConstValue()) + ((int) (((Constant) sub.getOperand_1()).getConstValue()))),
+                            sub.getOperand_2());
 //                    newSub.remove();
                     inst.replaceAllUsesWith(newSub);
                     delList.add(inst);
                     snap.add(idx + 1, newSub);
+                    return;
+                }
+                //c2 + (x - c1) -> (c2 - c1) + x
+                if (sub.getOperand_2() instanceof Constant) {
+                    Instruction.Add newAdd = new Instruction.Add(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantInt(((int) ((Constant) inst.getOperand_1()).getConstValue()) - ((int) (((Constant) sub.getOperand_2()).getConstValue()))),
+                            sub.getOperand_1());
+//                    newAdd.remove();
+                    inst.replaceAllUsesWith(newAdd);
+                    delList.add(inst);
+                    snap.add(idx + 1, newAdd);
                     return;
                 }
             }
@@ -296,21 +308,23 @@ public class ArithReduce {
     }
 
     private static void reduceDiv(Instruction.Div inst) {
-        if (inst.getOperand_1() instanceof Constant) {
+        if (inst.getOperand_1() instanceof Constant constant) {
             // 0 / v -> 0
-            if (((Constant) inst.getOperand_1()).isZero()) {
+            if (constant.isZero()) {
                 inst.replaceAllUsesWith(new Constant.ConstantInt(0));
                 delList.add(inst);
                 return;
             }
+        }
+        if (inst.getOperand_2() instanceof Constant constant) {
             // v / 1 -> v
-            if (((Constant) inst.getOperand_2()).getConstValue().equals(1)) {
+            if (constant.getConstValue().equals(1)) {
                 inst.replaceAllUsesWith(inst.getOperand_1());
                 delList.add(inst);
                 return;
             }
             // v / -1 -> 0 - v
-            if (((Constant) inst.getOperand_2()).getConstValue().equals(-1)) {
+            if (constant.getConstValue().equals(-1)) {
                 Instruction.Sub sub = new Instruction.Sub(inst.getParentBlock(), inst.getType(),
                         new Constant.ConstantInt(0), inst.getOperand_1());
 //                sub.remove();
@@ -319,39 +333,41 @@ public class ArithReduce {
                 snap.add(idx + 1, sub);
                 return;
             }
-            //v / v -> 1
-            if (inst.getOperand_1().equals(inst.getOperand_2())) {
-                inst.replaceAllUsesWith(new Constant.ConstantInt(1));
+        }
+        //v / v -> 1
+        if (inst.getOperand_1().equals(inst.getOperand_2())) {
+            inst.replaceAllUsesWith(new Constant.ConstantInt(1));
+            delList.add(inst);
+            return;
+        }
+        //v / a / b -> v / (a * b) 确保 a / b 只有一个作用点
+        if (inst.getOperand_1() instanceof Instruction.Div) {
+            Instruction.Div div = (Instruction.Div) inst.getOperand_1();
+            if (div.getUsers().size() == 1) {
+                Instruction.Mul mul = new Instruction.Mul(inst.getParentBlock(), inst.getType(),
+                        div.getOperand_2(), inst.getOperand_2());
+                Instruction.Div newDiv = new Instruction.Div(inst.getParentBlock(), inst.getType(),
+                        div.getOperand_1(), mul);
+                inst.replaceAllUsesWith(newDiv);
                 delList.add(inst);
+                snap.add(idx + 1, mul);
+                snap.add(idx + 2, newDiv);
                 return;
-            }
-            //v / a / b -> v / (a * b) 确保 a / b 只有一个作用点
-            if (inst.getOperand_1() instanceof Instruction.Div) {
-                Instruction.Div div = (Instruction.Div) inst.getOperand_1();
-                if (div.getUsers().size() == 1) {
-                    Instruction.Mul mul = new Instruction.Mul(inst.getParentBlock(), inst.getType(),
-                            div.getOperand_2(), inst.getOperand_2());
-                    Instruction.Div newDiv = new Instruction.Div(inst.getParentBlock(), inst.getType(),
-                            div.getOperand_1(), mul);
-                    inst.replaceAllUsesWith(newDiv);
-                    delList.add(inst);
-                    snap.add(idx + 1, mul);
-                    snap.add(idx + 2, newDiv);
-                    return;
-                }
             }
         }
         reducedList.add(inst);
     }
 
     private static void reduceRem(Instruction.Rem inst) {
-        if (inst.getOperand_1() instanceof Constant) {
+        if (inst.getOperand_1() instanceof Constant constant) {
             // 0 % v -> 0
-            if (((Constant) inst.getOperand_1()).isZero()) {
+            if (constant.isZero()) {
                 inst.replaceAllUsesWith(new Constant.ConstantInt(0));
                 delList.add(inst);
                 return;
             }
+        }
+        if (inst.getOperand_2() instanceof Constant constant) {
             // v % 1 -> 0
             if (((Constant) inst.getOperand_2()).getConstValue().equals(1)) {
                 inst.replaceAllUsesWith(new Constant.ConstantInt(0));
@@ -364,12 +380,12 @@ public class ArithReduce {
                 delList.add(inst);
                 return;
             }
-            // v % v -> 0
-            if (inst.getOperand_1().equals(inst.getOperand_2())) {
-                inst.replaceAllUsesWith(new Constant.ConstantInt(0));
-                delList.add(inst);
-                return;
-            }
+        }
+        // v % v -> 0
+        if (inst.getOperand_1().equals(inst.getOperand_2())) {
+            inst.replaceAllUsesWith(new Constant.ConstantInt(0));
+            delList.add(inst);
+            return;
         }
         reducedList.add(inst);
     }
