@@ -87,13 +87,13 @@ public class Manager {
             CodeGen codeGen = new CodeGen();
             RiscvModule riscvmodule = codeGen.genCode(module);
             if (arg.opt) {
-                BlockReSort.blockSort(riscvmodule);
                 CalculateOpt.run(riscvmodule);
             }
-//            outputRiscv("debug.txt", riscvmodule);
+            outputRiscv("debug.txt", riscvmodule);
             Allocater.run(riscvmodule);
             afterRegAssign = true;
             if (arg.opt) {
+//                BlockReSort.blockSort(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
