@@ -87,9 +87,9 @@ public class FPRallocater {
         for (Reg reg : spillNodes) {
 //            System.out.println("spill: " + reg);
             ArrayList<RiscvInstruction> contains = new ArrayList<>(RegUse.get(reg));
-            HashSet<RiscvInstruction> uses = new HashSet<>();
-            HashSet<RiscvInstruction> defs = new HashSet<>();
-            HashSet<RiscvInstruction> uds = new HashSet<>();
+            ArrayList<RiscvInstruction> uses = new ArrayList<>();
+            ArrayList<RiscvInstruction> defs = new ArrayList<>();
+            ArrayList<RiscvInstruction> uds = new ArrayList<>();
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
             for (RiscvInstruction ins : contains) {
                 if (Def.get(ins).contains(reg) && Use.get(ins).contains(reg)) uds.add(ins);
@@ -99,6 +99,7 @@ public class FPRallocater {
             for (RiscvInstruction ud : uds) {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 RiscvInstruction store = new LS(ud.block, tmp, sp, offset, LS.LSType.fsw, true);
                 RiscvInstruction load = new LS(ud.block, tmp, sp, offset, LS.LSType.flw, true);
                 ud.replaceUseReg(reg, tmp);
@@ -111,27 +112,23 @@ public class FPRallocater {
                 //非 ssa 在使用点使用新的虚拟寄存器
                 if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).rs1.equals(reg)) {
                     LS.LSType type = ((LS) def).type;
-                    if (type == LS.LSType.fsw) {
-                        StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                        continue;
-                    }
+                    if (type == LS.LSType.fsw) continue;
                 }
                 RiscvInstruction store;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 store = new LS(def.block, tmp, sp, offset, LS.LSType.fsw, true);
                 def.replaceUseReg(reg, tmp);
                 def.block.riscvInstructions.insertAfter(store, def);
             }
             for (RiscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
-                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1.equals(reg)) {
-                    StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                    continue;
-                }
+                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1.equals(reg)) continue;
                 RiscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 load = new LS(use.block, tmp, sp, offset, LS.LSType.flw, true);
                 use.replaceUseReg(reg, tmp);
                 use.block.riscvInstructions.insertBefore(load, use);
@@ -161,7 +158,8 @@ public class FPRallocater {
             R2 move = it.next();
             if (conflictGraph.get(move.rd).contains(move.rs)) {
                 it.remove();
-            } else {
+            }
+            else {
                 moveNodes.add((Reg) move.rd);
                 moveNodes.add((Reg) move.rs);
             }
@@ -220,7 +218,8 @@ public class FPRallocater {
                     spillNodes.remove(node);
                 }
                 curUsedRegs.add(node.phyReg);
-            } else {
+            }
+            else {
                 spillNodes.add(node);
                 DeleteNode(node);
             }
@@ -313,7 +312,8 @@ public class FPRallocater {
         for (Reg reg : nodes) {
             if (reg.preColored) {
                 regs.add(reg.phyReg);
-            } else size++;
+            }
+            else size++;
         }
         regs.removeAll(unAllocateRegs);
         return regs.size() + size;
@@ -356,7 +356,8 @@ public class FPRallocater {
                             if (r1.preColored) {
                                 newReg = r1;
                                 oldReg = r2;
-                            } else {
+                            }
+                            else {
                                 newReg = r2;
                                 oldReg = r1;
                             }
@@ -364,7 +365,8 @@ public class FPRallocater {
                             //合并节点
                             newReg.mergeReg(oldReg);
                             moveNodes.remove(oldReg);
-                        } else {
+                        }
+                        else {
                             newReg = r1;
                         }
                         //删除move指令

@@ -63,6 +63,30 @@ public class StackManager {
         return funcMap.get(regName);
     }
 
+    /**
+     * 将虚拟寄存器与栈上偏移绑定 <br />
+     *
+     * @param funcName
+     * @param regName
+     * @param address
+     */
+    public void blingRegOffset(String funcName, String regName, int byteSize, Address address) {
+        regName = regName + "_" + byteSize;
+        if (!offsetMap.containsKey(funcName)) {
+            offsetMap.put(funcName, new HashMap<>());
+            if (!llvm2Offset.containsKey(funcName)) {
+                llvm2Offset.put(funcName, new HashMap<>());
+                funcSizeMap.put(funcName, 0);
+            }
+        }
+        HashMap<String, Address> funcMap = offsetMap.get(funcName);
+        if (funcMap.containsKey(regName)) {
+            throw new RuntimeException("RegName has been binded");
+        }
+        funcMap.put(regName, address);
+        return;
+    }
+
     private final HashMap<String, HashMap<Value, Integer>> llvm2Offset = new HashMap<>();
 
 

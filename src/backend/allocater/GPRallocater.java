@@ -93,9 +93,9 @@ public class GPRallocater {
         for (Reg reg : spillNodes) {
 //            System.out.println("spill: " + reg);
             ArrayList<RiscvInstruction> contains = new ArrayList<>(RegUse.get(reg));
-            HashSet<RiscvInstruction> uses = new HashSet<>();
-            HashSet<RiscvInstruction> defs = new HashSet<>();
-            HashSet<RiscvInstruction> uds = new HashSet<>();
+            ArrayList<RiscvInstruction> uses = new ArrayList<>();
+            ArrayList<RiscvInstruction> defs = new ArrayList<>();
+            ArrayList<RiscvInstruction> uds = new ArrayList<>();
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
             for (RiscvInstruction ins : contains) {
                 if (Def.get(ins).contains(reg) && Use.get(ins).contains(reg)) uds.add(ins);
@@ -105,6 +105,7 @@ public class GPRallocater {
             for (RiscvInstruction ud : uds) {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 RiscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
                 RiscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
                 ud.replaceUseReg(reg, tmp);
@@ -113,31 +114,29 @@ public class GPRallocater {
             }
             for (RiscvInstruction def : defs) {
                 //如果定义点是lw或者ld指令，则不需要sw保护？
+                //其实应该是溢出点不能重复保护，之后需要对寄存器增加cost属性来进行限制
                 //错误的，定义点也可能会溢出，比如call多个load或者多个arg
                 //非 ssa 在使用点使用新的虚拟寄存器
+//                System.out.println("def: " + def);
                 if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).rs1.equals(reg)) {
                     LS.LSType type = ((LS) def).type;
-                    if (type == LS.LSType.ld || type == LS.LSType.lw) {
-                        StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                        continue;
-                    }
+                    if (type == LS.LSType.ld || type == LS.LSType.lw) continue;
                 }
                 RiscvInstruction store;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
                 def.replaceUseReg(reg, tmp);
                 def.block.riscvInstructions.insertAfter(store, def);
             }
             for (RiscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
-                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1.equals(reg)) {
-                    StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                    continue;
-                }
+                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1.equals(reg)) continue;
                 RiscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 load = new LS(use.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
                 use.replaceUseReg(reg, tmp);
                 use.block.riscvInstructions.insertBefore(load, use);
