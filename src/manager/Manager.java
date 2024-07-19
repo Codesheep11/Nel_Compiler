@@ -18,6 +18,7 @@ import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
 import midend.Transform.Array.LocalArrayLift;
+import midend.Transform.Array.SroaPass;
 import midend.Transform.DCE.*;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
@@ -133,6 +134,7 @@ public class Manager {
         GepFold.run(module);
         LoadEliminate.run(module);
         StoreEliminate.run(module);
+        SroaPass.run(module);
         LocalArrayLift.run(module);
         ConstIdx2Value.run(module);
     }
