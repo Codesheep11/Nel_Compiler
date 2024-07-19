@@ -93,7 +93,7 @@ public class Manager {
             Allocater.run(riscvmodule);
             afterRegAssign = true;
             if (arg.opt) {
-//                BlockReSort.blockSort(riscvmodule);
+                BlockReSort.blockSort(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
