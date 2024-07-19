@@ -22,10 +22,7 @@ import midend.Transform.Array.SroaPass;
 import midend.Transform.DCE.*;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
-import midend.Transform.Loop.IndVars;
-import midend.Transform.Loop.LCSSA;
-import midend.Transform.Loop.LoopInfo;
-import midend.Transform.Loop.LoopUnSwitching;
+import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
 import midend.Util.Print;
 import mir.*;
@@ -55,13 +52,12 @@ public class Manager {
 
     public void run() {
         try {
-            arg.opt = true;
+//            arg.opt = true;
             FrontEnd();
-            AnalysisManager.buildCFG(module);
+            Mem2Reg.run(module);
             FuncAnalysis.run(module);
+            DeadCodeEliminate();
             if (arg.opt) {
-                Mem2Reg.run(module);
-                DeadCodeEliminate();
                 FuncPasses();
                 GlobalVarLocalize.run(module);
                 GlobalValueNumbering.run(module);
@@ -70,15 +66,22 @@ public class Manager {
                 GlobalCodeMotion.run(module);
                 LCSSA.Run(module);
                 LoopUnSwitching.run(module);
+                DeadCodeEliminate();
                 LoopInfo.build(module);
+                LoopSimplifyForm.run(module);
                 IndVars.run(module);
+//                Print.output(module, "debug.txt");
+                LoopUnRoll.run(module);
+//                Print.output(module, "debug.txt");
+                DeadCodeEliminate();
                 LoopInfo.build(module);
                 LCSSA.remove(module);
                 ArrayPasses();
                 DeadCodeEliminate();
-                GlobalValueNumbering.run(module);
-                FuncAnalysis.run(module);
+                DeadCodeEliminate();
+                DeadCodeEliminate();
             }
+            FuncAnalysis.run(module);
             if (arg.LLVM) {
                 outputLLVM(arg.outPath, module);
                 return;
@@ -97,7 +100,8 @@ public class Manager {
                 SimplifyCFG.run(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
         }
@@ -117,6 +121,8 @@ public class Manager {
 
     private void DeadCodeEliminate() {
         DeadLoopEliminate.run(module);
+//        SimplfyCFG.run(module);
+        GlobalValueNumbering.run(module);
         SimplfyCFG.run(module);
         ArithReduce.run(module);
         DeadCodeEliminate.run(module);
@@ -176,8 +182,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

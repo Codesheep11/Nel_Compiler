@@ -28,7 +28,7 @@ public class LoopSimplifyForm {
      *
      * @param module 模块
      */
-    public static void test(Module module) {
+    public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             for (Loop loop : function.loopInfo.TopLevelLoops)

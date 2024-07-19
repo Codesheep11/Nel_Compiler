@@ -1,5 +1,7 @@
 package midend.Transform.DCE;
 
+import midend.Analysis.AnalysisManager;
+import midend.Transform.Loop.LoopInfo;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -11,11 +13,13 @@ public class DeadLoopEliminate {
     public static void run(Module module) {
         for (var function : module.getFuncSet()) {
             if (function.isExternal()) continue;
+            function.loopInfo = new LoopInfo(function);
             runOnFunc(function);
         }
     }
 
     private static void runOnFunc(Function function) {
+        AnalysisManager.refreshCFG(function);
         if (function.loopInfo == null) return;
         HashSet<Loop> removes = new HashSet<>();
         for (Loop loop : function.loopInfo.TopLevelLoops) {
@@ -34,19 +38,27 @@ public class DeadLoopEliminate {
 
         if (loopCanRemove(loop)) {
             BasicBlock exit = loop.exits.iterator().next();
-            BasicBlock preHead = loop.preHeader;
-            BasicBlock head = loop.header;
-            Instruction.Terminator term = preHead.getTerminator();
-            term.replaceSucc(head, exit);
+            if (loop.preHeader == null) {
+                for (BasicBlock entering : loop.enterings) {
+                    BasicBlock head = loop.header;
+                    Instruction.Terminator term = entering.getTerminator();
+                    term.replaceSucc(head, exit);
+                }
+            } else {
+                BasicBlock preHead = loop.preHeader;
+                BasicBlock head = loop.header;
+                Instruction.Terminator term = preHead.getTerminator();
+                term.replaceSucc(head, exit);
+            }
         }
         return false;
     }
 
     private static boolean loopCanRemove(Loop loop) {
-        if (loop.children.size() != 0) return false;
+        if (!loop.children.isEmpty()) return false;
         if (loop.exits.size() != 1) return false;
         BasicBlock exit = loop.exits.iterator().next();
-        if (exit.getFirstInst() instanceof Instruction.Phi) return false;
+        if (!exit.getInstructions().isEmpty() && exit.getFirstInst() instanceof Instruction.Phi) return false;
         if (loop.exits.size() != exit.getPreBlocks().size()) return false;
         for (BasicBlock block : loop.nowLevelBB) {
             for (Instruction instr : block.getInstructions()) {

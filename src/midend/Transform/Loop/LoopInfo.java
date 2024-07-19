@@ -35,10 +35,9 @@ public class LoopInfo {
         LoopInfo4Func();
         for (Loop loop : TopLevelLoops) {
             genEnterExit4Loop(loop);
-            LoopSimplifyForm.run(loop);
-//            LCSSA.run(loop);
+//            LoopSimplifyForm.run(loop);
         }
-        function.buildControlFlowGraph();
+        AnalysisManager.refreshCFG(function);
 //        printLoopInfo();
     }
 
@@ -112,8 +111,7 @@ public class LoopInfo {
                 loop.addNowLevelBB(predBB);
                 if (predBB.equals(loop.header)) continue;
                 reverseCFGWorkList.addAll(predBB.getPreBlocks());
-            }
-            else {
+            } else {
                 while (subLoop.parent != null) {
                     subLoop = subLoop.parent;
                 }
