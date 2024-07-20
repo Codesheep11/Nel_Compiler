@@ -119,7 +119,7 @@ public class B extends RiscvInstruction {
     }
 
     @Override
-    public RiscvInstruction myCopy() {
-        return new B(block, type, rs1, rs2, targetBlock);
+    public RiscvInstruction myCopy(RiscvBlock newBlock) {
+        return new B(newBlock, type, rs1, rs2, targetBlock);
     }
 }

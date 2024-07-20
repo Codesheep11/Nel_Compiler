@@ -111,7 +111,7 @@ public class RiscvInstruction extends NelLinkedList.NelLinkNode {
         return regs;
     }
 
-    public RiscvInstruction myCopy() {
-        return new RiscvInstruction(block);
+    public RiscvInstruction myCopy(RiscvBlock newBlock) {
+        return new RiscvInstruction(newBlock);
     }
 }
