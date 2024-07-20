@@ -1,5 +1,6 @@
 package midend.Transform.DCE;
 
+import midend.Transform.Loop.LoopInfo;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -11,6 +12,7 @@ public class DeadLoopEliminate {
     public static void run(Module module) {
         for (var function : module.getFuncSet()) {
             if (function.isExternal()) continue;
+            LoopInfo.runOnFunc(function);
             runOnFunc(function);
         }
     }
@@ -31,13 +33,21 @@ public class DeadLoopEliminate {
             if (runOnLoop(child)) removes.add(child);
         }
         removes.forEach(loop.children::remove);
-
         if (loopCanRemove(loop)) {
             BasicBlock exit = loop.exits.iterator().next();
             BasicBlock preHead = loop.preHeader;
             BasicBlock head = loop.header;
-            Instruction.Terminator term = preHead.getTerminator();
-            term.replaceSucc(head, exit);
+            if (preHead == null) {
+                for (BasicBlock entering : loop.enterings) {
+                    Instruction.Terminator term = entering.getTerminator();
+                    term.replaceSucc(head, exit);
+                }
+            }
+            else {
+                Instruction.Terminator term = preHead.getTerminator();
+                term.replaceSucc(head, exit);
+            }
+            return true;
         }
         return false;
     }
