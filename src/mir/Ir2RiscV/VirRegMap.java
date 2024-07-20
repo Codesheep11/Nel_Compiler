@@ -1,19 +1,16 @@
 package mir.Ir2RiscV;
 
-import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Reg;
 import backend.riscv.RiscvFloat;
-import backend.riscv.RiscvInstruction.LS;
-import backend.riscv.RiscvInstruction.La;
-import backend.riscv.RiscvInstruction.Li;
-import backend.riscv.RiscvInstruction.R2;
+import backend.riscv.RiscvInstruction.*;
 import mir.Constant;
 import mir.Function;
 import mir.Type;
 import mir.Value;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class VirRegMap {
     public static final VirRegMap VRM = new VirRegMap();
@@ -22,7 +19,7 @@ public class VirRegMap {
 
     // 被b指令用的寄存器的hashset表
 
-    public static final HashMap<Reg, Integer> bUseReg = new HashMap<>();
+    public static final HashMap<Reg, Integer>bUseReg=new HashMap<>();
 
     private Function nowFunction;
 
@@ -125,6 +122,5 @@ public class VirRegMap {
         } else {
             map.put(b, reg);
         }
-        StackManager.getInstance().bindingValue(nowFunction.getName(), a, b);
     }
 }
