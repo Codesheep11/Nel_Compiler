@@ -1,8 +1,7 @@
 package backend;
 
 import backend.operand.Address;
-import mir.Constant;
-import mir.GlobalVariable;
+import mir.Function;
 import mir.Instruction;
 import mir.Value;
 
@@ -37,16 +36,6 @@ public class StackManager {
 
     private final HashMap<String, HashMap<Instruction.Call, LinkedList<Address>>> funcArgMap;
 
-    private void prepareFunc(String funcName) {
-        if (!offsetMap.containsKey(funcName)) {
-            offsetMap.put(funcName, new HashMap<>());
-            if (!llvm2Offset.containsKey(funcName)) {
-                llvm2Offset.put(funcName, new HashMap<>());
-                funcSizeMap.put(funcName, 0);
-            }
-        }
-    }
-
     /**
      * 存储并获取栈上内存的偏移量 <br />
      *
@@ -57,7 +46,13 @@ public class StackManager {
      */
     public Address getRegOffset(String funcName, String regName, int byteSize) {
         regName = regName + "_" + byteSize;
-        prepareFunc(funcName);
+        if (!offsetMap.containsKey(funcName)) {
+            offsetMap.put(funcName, new HashMap<>());
+            if (!llvm2Offset.containsKey(funcName)) {
+                llvm2Offset.put(funcName, new HashMap<>());
+                funcSizeMap.put(funcName, 0);
+            }
+        }
         HashMap<String, Address> funcMap = offsetMap.get(funcName);
         int offset = funcSizeMap.get(funcName);
         if (!funcMap.containsKey(regName)) {
@@ -77,7 +72,13 @@ public class StackManager {
      */
     public void blingRegOffset(String funcName, String regName, int byteSize, Address address) {
         regName = regName + "_" + byteSize;
-        prepareFunc(funcName);
+        if (!offsetMap.containsKey(funcName)) {
+            offsetMap.put(funcName, new HashMap<>());
+            if (!llvm2Offset.containsKey(funcName)) {
+                llvm2Offset.put(funcName, new HashMap<>());
+                funcSizeMap.put(funcName, 0);
+            }
+        }
         HashMap<String, Address> funcMap = offsetMap.get(funcName);
         if (funcMap.containsKey(regName)) {
             throw new RuntimeException("RegName has been binded");
@@ -95,49 +96,31 @@ public class StackManager {
      * size 是字节
      */
     public void allocOnStack(String funcName, Value pointer, int size) {
-        prepareFunc(funcName);
+        if (!llvm2Offset.containsKey(funcName)) {
+            llvm2Offset.put(funcName, new HashMap<>());
+            if (!offsetMap.containsKey(funcName)) {
+                offsetMap.put(funcName, new HashMap<>());
+                funcSizeMap.put(funcName, 0);
+            }
+        }
         HashMap<Value, Integer> funcMap = llvm2Offset.get(funcName);
         int offset = funcSizeMap.get(funcName);
         funcMap.put(pointer, offset + size);
         funcSizeMap.replace(funcName, offset + size);
-        llvm2Offset.get(funcName).put(pointer, offset + size);
     }
 
-    public void bindingValue(String funcName, Value before, Value after) {
-        prepareFunc(funcName);
-        if (llvm2Offset.get(funcName).containsKey(before)) {
-            llvm2Offset.get(funcName).put(after, llvm2Offset.get(funcName).get(before));
+    public Address getPointerAddress(String funcName, Value pointer) {
+        if (!llvm2Offset.containsKey(funcName)) {
+            llvm2Offset.put(funcName, new HashMap<>());
+            if (!offsetMap.containsKey(funcName)) {
+                offsetMap.put(funcName, new HashMap<>());
+                funcSizeMap.put(funcName, 0);
+            }
         }
-    }
-
-    public int getPointerAddress(String funcName, Value pointer) {
-        prepareFunc(funcName);
         HashMap<Value, Integer> funcMap = llvm2Offset.get(funcName);
-        return funcMap.get(pointer);
+        int offset = funcMap.get(pointer);
+        return new Address(offset);
     }
-
-    public void calAsOffset(String funcName, Value base, Value offset, int size, Value ans) {
-        prepareFunc(funcName);
-        if (base instanceof GlobalVariable) throw new RuntimeException("global wrong");
-        if (!(offset instanceof Constant.ConstantInt)) throw new RuntimeException("not constant wrong");
-        int off = ((Constant.ConstantInt) offset).getIntValue();
-        int now_off = llvm2Offset.get(funcName).get(base);
-        llvm2Offset.get(funcName).put(ans, -size * off + now_off);
-    }
-
-    public boolean canBeCalAsOffset(String funcName, Value pointer) {
-        prepareFunc(funcName);
-        return llvm2Offset.get(funcName).containsKey(pointer);
-    }
-
-    public Address getSpOffset(String funcName, Value pointer) {
-        prepareFunc(funcName);
-        if (!canBeCalAsOffset(funcName, pointer)) {
-            throw new RuntimeException("wrong offset!");
-        }
-        return new Address(llvm2Offset.get(funcName).get(pointer));
-    }
-
 
     /**
      * 获取某个函数栈帧的大小(单位：字节) <br />
