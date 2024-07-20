@@ -19,6 +19,7 @@ public class CalculateOpt {
         for (RiscvFunction function : riscvModule.funcList) {
             liAdd2Addi(function);
             for (RiscvBlock block : function.blocks) {
+                uselessLoadRemove(block);
                 ConstValueReUse(block);
                 ConstPointerReUse(block);
                 icmpBranchToBranch(block);
@@ -125,10 +126,19 @@ public class CalculateOpt {
     }
 
     public static void uselessLoadRemove(RiscvBlock block) {
-        /**
-         sw		t1, 0(t0)
-         lw		t1, 0(t0)
-         **/
+        HashSet<RiscvInstruction> needRemove = new HashSet<>();
+        for (RiscvInstruction instr : block.riscvInstructions) {
+            if (instr == block.riscvInstructions.getFirst()) continue;
+            RiscvInstruction before = (RiscvInstruction) instr.prev;
+            if (before instanceof LS be && instr instanceof LS af) {
+                if (be.rs1.equals(af.rs1) && be.rs2.equals(af.rs2) && be.imm.equals(af.imm)) {
+                    needRemove.add(instr);
+                }
+            }
+        }
+        for (RiscvInstruction ri : needRemove) {
+            ri.remove();
+        }
     }
 
     private static boolean matchEQ(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
@@ -187,8 +197,7 @@ public class CalculateOpt {
                         // 将next忽略
                         modified = true;
                     }
-                }
-                else if (i < block.riscvInstructions.size() - 2) {
+                } else if (i < block.riscvInstructions.size() - 2) {
                     RiscvInstruction farNext = block.riscvInstructions.get(i + 2);
                     if (matchFarNext(now, next, farNext)) {
                         B.BType type;

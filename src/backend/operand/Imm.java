@@ -1,7 +1,5 @@
 package backend.operand;
 
-import java.util.HashSet;
-
 public class Imm extends Operand {
 
     private int val;
@@ -23,5 +21,13 @@ public class Imm extends Operand {
 
     public int getVal() {
         return val;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Imm) {
+            return val == ((Imm) obj).val;
+        }
+        return false;
     }
 }

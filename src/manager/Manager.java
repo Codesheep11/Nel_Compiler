@@ -1,5 +1,6 @@
 package manager;
 
+import backend.Opt.BlockInline;
 import backend.Opt.BlockReSort;
 import backend.Opt.CalculateOpt;
 import backend.Opt.SimplifyCFG;
@@ -93,6 +94,7 @@ public class Manager {
             afterRegAssign = true;
             if (arg.opt) {
                 BlockReSort.blockSort(riscvmodule);
+                BlockInline.run(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);

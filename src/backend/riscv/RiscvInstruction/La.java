@@ -71,7 +71,7 @@ public class La extends RiscvInstruction {
     }
 
     @Override
-    public RiscvInstruction myCopy() {
-        return new La(block, reg, content);
+    public RiscvInstruction myCopy(RiscvBlock newBlock) {
+        return new La(newBlock, reg, content);
     }
 }
