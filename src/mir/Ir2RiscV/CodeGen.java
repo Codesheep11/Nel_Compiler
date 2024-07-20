@@ -122,8 +122,7 @@ public class CodeGen {
                     nowFunc.defs.add(Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(fa0order + count_flot), 32));
                     count_flot++;
                 }
-            }
-            else {
+            } else {
                 if (argument.getType().isPointerTy() || argument.getType().isInt64Ty()) {
                     if (count_int < 8) {
                         Reg reg = VirRegMap.VRM.ensureRegForValue(argument);
@@ -136,8 +135,7 @@ public class CodeGen {
                         nowFunc.defs.add(Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(a0order + count_int), 64));
                         count_int++;
                     }
-                }
-                else {
+                } else {
                     if (count_int < 8) {
                         Reg reg = VirRegMap.VRM.ensureRegForValue(argument);
                         int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
@@ -181,8 +179,7 @@ public class CodeGen {
             Reg fa0 = Reg.getPreColoredReg(Reg.PhyReg.fa0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
             nowBlock.riscvInstructions.addLast(new R2(nowBlock, fa0, src, R2.R2Type.fmv));
-        }
-        else if (type.isInt32Ty()) {
+        } else if (type.isInt32Ty()) {
             Reg a0 = Reg.getPreColoredReg(Reg.PhyReg.a0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
             nowBlock.riscvInstructions.addLast(new R2(nowBlock, a0, src, R2.R2Type.mv));
@@ -219,12 +216,11 @@ public class CodeGen {
                 Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
                 if (byte_off < 2048) {
                     // addi 装得下
-                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, paraReg, sp, new Imm(byte_off), R3.R3Type.addi));
-                }
-                else {
+                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, paraReg, sp, new Imm(-1 * byte_off), R3.R3Type.addi));
+                } else {
                     // addi装不下,那么需要装到li中再去加
                     Reg imm = new Reg(Reg.RegType.GPR, 32);
-                    nowBlock.riscvInstructions.addLast(new Li(nowBlock, imm, byte_off));
+                    nowBlock.riscvInstructions.addLast(new Li(nowBlock, imm, -1 * byte_off));
                     nowBlock.riscvInstructions.addLast(new R3(nowBlock, paraReg, imm, sp, R3.R3Type.add));
                 }
             }
@@ -238,8 +234,7 @@ public class CodeGen {
                             paraReg,
                             R2.R2Type.fmv));
                     count_float++;
-                }
-                else {
+                } else {
                     // 获取当前的偏移地址
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 4);
@@ -249,8 +244,7 @@ public class CodeGen {
                             address,
                             LS.LSType.fsw));
                 }
-            }
-            else if (para.getType().isPointerTy()) {
+            } else if (para.getType().isPointerTy()) {
                 if (count_int < 8) {
                     int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
                     nowBlock.riscvInstructions.addLast(new R2(nowBlock,
@@ -259,8 +253,7 @@ public class CodeGen {
                             R2.R2Type.mv
                     ));
                     count_int++;
-                }
-                else {
+                } else {
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 8);
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock,
@@ -269,8 +262,7 @@ public class CodeGen {
                             address,
                             LS.LSType.sd));
                 }
-            }
-            else if (para.getType().isInt32Ty()) {
+            } else if (para.getType().isInt32Ty()) {
                 if (count_int < 8) {
                     int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
                     nowBlock.riscvInstructions.addLast(new R2(nowBlock,
@@ -279,8 +271,7 @@ public class CodeGen {
                             R2.R2Type.mv
                     ));
                     count_int++;
-                }
-                else {
+                } else {
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 4);
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock,
@@ -298,11 +289,9 @@ public class CodeGen {
         if (reg != null) {
             if (type.isInt32Ty()) {
                 nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.a0, 32), R2.R2Type.mv));
-            }
-            else if (type.isFloatTy()) {
+            } else if (type.isFloatTy()) {
                 nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.fa0, 32), R2.R2Type.fmv));
-            }
-            else {
+            } else {
                 throw new RuntimeException("....");
             }
         }
@@ -333,8 +322,7 @@ public class CodeGen {
         Type type = loadInstr.getInnerType();
         if (type.isArrayTy()) {
             throw new RuntimeException("load an array!");
-        }
-        else {
+        } else {
             // 给load的值分配一个虚拟寄存器
             Reg reg = VirRegMap.VRM.ensureRegForValue(loadInstr);
             if (StackManager.getInstance().canBeCalAsOffset(nowFunc.name, loadInstr.getAddr())) {
@@ -343,11 +331,9 @@ public class CodeGen {
                 LS.LSType lstype;
                 if (type.isInt64Ty() || type.isPointerTy()) {
                     lstype = LS.LSType.ld;
-                }
-                else if (type.isInt32Ty() || type.isInt1Ty()) {
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
                     lstype = LS.LSType.lw;
-                }
-                else {
+                } else {
                     lstype = LS.LSType.flw;
                 }
                 nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, lstype));
@@ -360,21 +346,17 @@ public class CodeGen {
                 nowBlock.riscvInstructions.addLast(new La(nowBlock, tmp, label));
                 if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.flw));
-                }
-                else {
+                } else {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.lw));
                 }
-            }
-            else {
+            } else {
                 //否则我们获得了一个指针，这个指针可以通过查询得到
                 Reg addr = VirRegMap.VRM.ensureRegForValue(loadInstr.getAddr());
                 if (type.isInt64Ty() || type.isPointerTy()) {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.ld));
-                }
-                else if (type.isInt32Ty() || type.isInt1Ty()) {
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.lw));
-                }
-                else {
+                } else {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.flw));
                 }
             }
@@ -388,8 +370,7 @@ public class CodeGen {
         Type type = ((Type.PointerType) storeInstr.getAddr().getType()).getInnerType();
         if (type.isArrayTy()) {
             throw new RuntimeException("load an array!");
-        }
-        else {
+        } else {
             // 获取store的值的寄存器
             Reg reg = VirRegMap.VRM.ensureRegForValue(storeInstr.getValue());
             if (StackManager.getInstance().canBeCalAsOffset(nowFunc.name, storeInstr.getAddr())) {
@@ -398,11 +379,9 @@ public class CodeGen {
                 LS.LSType lstype;
                 if (type.isInt64Ty() || type.isPointerTy()) {
                     lstype = LS.LSType.sd;
-                }
-                else if (type.isInt32Ty() || type.isInt1Ty()) {
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
                     lstype = LS.LSType.sw;
-                }
-                else {
+                } else {
                     lstype = LS.LSType.fsw;
                 }
                 nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, lstype));
@@ -415,21 +394,17 @@ public class CodeGen {
                 nowBlock.riscvInstructions.addLast(new La(nowBlock, tmp, label));
                 if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.fsw));
-                }
-                else {
+                } else {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Address(0), LS.LSType.sw));
                 }
-            }
-            else {
+            } else {
                 //否则我们获得了一个指针，这个指针可以通过查询得到
                 Reg addr = VirRegMap.VRM.ensureRegForValue(storeInstr.getAddr());
                 if (type.isInt64Ty() || type.isPointerTy()) {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.sd));
-                }
-                else if (type.isInt32Ty() || type.isInt1Ty()) {
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.sw));
-                }
-                else {
+                } else {
                     nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Address(0), LS.LSType.fsw));
                 }
             }
@@ -453,8 +428,7 @@ public class CodeGen {
                 base = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 RiscvGlobalVar globalVar = gloMap.get(((GlobalVariable) getElementPtr.getBase()).label);
                 nowBlock.riscvInstructions.addLast(new La(nowBlock, base, globalVar));
-            }
-            else {
+            } else {
                 base = VirRegMap.VRM.ensureRegForValue(getElementPtr.getBase());
             }
             if (offset instanceof Constant.ConstantInt) {
@@ -463,8 +437,7 @@ public class CodeGen {
                 if (byte_off < 2048) {
                     // addi 装得下
                     nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, new Imm(byte_off), R3.R3Type.addi));
-                }
-                else {
+                } else {
                     // addi装不下,那么需要装到li中再去加
                     Reg imm = new Reg(Reg.RegType.GPR, 32);
                     nowBlock.riscvInstructions.addLast(new Li(nowBlock, imm, byte_off));
@@ -472,15 +445,13 @@ public class CodeGen {
                 }
                 return;
             }
-        }
-        else {
+        } else {
             // 不是全局的或者是参数那就说明是一个局部变量指针,
             // 这种情况下仅仅记录了这个局部变量在栈上的偏移，需要通过计算来得到
             if (offset instanceof Constant.ConstantInt) {
                 StackManager.getInstance().calAsOffset(nowFunc.name, getElementPtr.getBase(), offset, size, getElementPtr);
                 return;
-            }
-            else {
+            } else {
                 // 如果不是常数的话，则就需要计算出来指针了
                 int baseOffset = StackManager.getInstance().getPointerAddress(nowFunc.name, getElementPtr.getBase());
                 base = new Reg(Reg.RegType.GPR, 64);
@@ -488,8 +459,7 @@ public class CodeGen {
                 if (baseOffset < 2048) {
                     // addi 装得下
                     nowBlock.riscvInstructions.addLast(new R3(nowBlock, base, sp, new Imm(-1 * baseOffset), R3.R3Type.addi));
-                }
-                else {
+                } else {
                     // addi装不下,那么需要装到li中再去加
                     Reg imm = new Reg(Reg.RegType.GPR, 32);
                     nowBlock.riscvInstructions.addLast(new Li(nowBlock, imm, -1 * baseOffset));
@@ -506,18 +476,15 @@ public class CodeGen {
             if (shift == 1) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh1add));
                 return;
-            }
-            else if (shift == 2) {
+            } else if (shift == 2) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh2add));
                 return;
-            }
-            else if (shift == 3) {
+            } else if (shift == 3) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh3add));
                 return;
             }
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_offset, new Imm(shift), R3.R3Type.slliw));
-        }
-        else {
+        } else {
             Reg reg_for_size = new Reg(Reg.RegType.GPR, 32);
             nowBlock.riscvInstructions.addLast(new Li(nowBlock, reg_for_size, size));
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_size, reg_for_offset, R3.R3Type.mulw));
@@ -678,8 +645,7 @@ public class CodeGen {
 
     private void solveAdd(Instruction.Add add) {
         if (!add.getOperand_1().getType().isInt32Ty() ||
-                !add.getOperand_2().getType().isInt32Ty())
-        {
+                !add.getOperand_2().getType().isInt32Ty()) {
             throw new RuntimeException("not all oper of add is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
@@ -693,8 +659,7 @@ public class CodeGen {
      */
     private void solveSub(Instruction.Sub sub) {
         if (!sub.getOperand_1().getType().isInt32Ty() ||
-                !sub.getOperand_2().getType().isInt32Ty())
-        {
+                !sub.getOperand_2().getType().isInt32Ty()) {
             throw new RuntimeException("not all oper of sub is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
@@ -708,8 +673,7 @@ public class CodeGen {
      */
     private void solveFAdd(Instruction.FAdd fAdd) {
         if (!fAdd.getOperand_1().getType().isFloatTy() ||
-                !fAdd.getOperand_2().getType().isFloatTy())
-        {
+                !fAdd.getOperand_2().getType().isFloatTy()) {
             throw new RuntimeException("not all oper of fAdd is float");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fAdd.getOperand_1());
@@ -723,8 +687,7 @@ public class CodeGen {
      */
     private void solveFSub(Instruction.FSub fSub) {
         if (!fSub.getOperand_1().getType().isFloatTy() ||
-                !fSub.getOperand_2().getType().isFloatTy())
-        {
+                !fSub.getOperand_2().getType().isFloatTy()) {
             throw new RuntimeException("not all oper of fSub is float");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fSub.getOperand_1());
@@ -736,8 +699,7 @@ public class CodeGen {
 
     private void solveMul(Instruction.Mul mul) {
         if (!mul.getOperand_1().getType().isInt32Ty() ||
-                !mul.getOperand_2().getType().isInt32Ty())
-        {
+                !mul.getOperand_2().getType().isInt32Ty()) {
             throw new RuntimeException("not all oper of mul is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
@@ -748,8 +710,7 @@ public class CodeGen {
 
     private void solveDiv(Instruction.Div div) {
         if (!div.getOperand_1().getType().isInt32Ty() ||
-                !div.getOperand_2().getType().isInt32Ty())
-        {
+                !div.getOperand_2().getType().isInt32Ty()) {
             throw new RuntimeException("not all oper of div is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(div.getOperand_1());
@@ -777,8 +738,7 @@ public class CodeGen {
      */
     private void solveRem(Instruction.Rem rem) {
         if (!rem.getOperand_1().getType().isInt32Ty() ||
-                !rem.getOperand_2().getType().isInt32Ty())
-        {
+                !rem.getOperand_2().getType().isInt32Ty()) {
             throw new RuntimeException("not all oper of rem is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_1());
@@ -819,8 +779,7 @@ public class CodeGen {
         Reg dst = VirRegMap.VRM.ensureRegForValue(move.getTarget());
         if (move.getSrc().getType().isFloatTy()) {
             nowBlock.riscvInstructions.addLast(new R2(nowBlock, dst, src, R2.R2Type.fmv));
-        }
-        else {
+        } else {
             nowBlock.riscvInstructions.addLast(new R2(nowBlock, dst, src, R2.R2Type.mv));
         }
     }
@@ -837,80 +796,55 @@ public class CodeGen {
             // 加入注释语句
             if (instruction instanceof Instruction.Return) {
                 solveReturn((Instruction.Return) instruction);
-            }
-            else if (instruction instanceof Instruction.Call) {
+            } else if (instruction instanceof Instruction.Call) {
                 solveCall((Instruction.Call) instruction);
-            }
-            else if (instruction instanceof Instruction.Alloc) {
+            } else if (instruction instanceof Instruction.Alloc) {
                 solveAlloc((Instruction.Alloc) instruction);
-            }
-            else if (instruction instanceof Instruction.Load) {
+            } else if (instruction instanceof Instruction.Load) {
                 solveLoad((Instruction.Load) instruction);
-            }
-            else if (instruction instanceof Instruction.Store) {
+            } else if (instruction instanceof Instruction.Store) {
                 solveStore((Instruction.Store) instruction);
-            }
-            else if (instruction instanceof Instruction.Branch) {
+            } else if (instruction instanceof Instruction.Branch) {
                 solveBranch((Instruction.Branch) instruction);
-            }
-            else if (instruction instanceof Instruction.Jump) {
+            } else if (instruction instanceof Instruction.Jump) {
                 solveJump((Instruction.Jump) instruction);
-            }
-            else if (instruction instanceof Instruction.SItofp) {
+            } else if (instruction instanceof Instruction.SItofp) {
                 solveSItofp((Instruction.SItofp) instruction);
-            }
-            else if (instruction instanceof Instruction.FPtosi) {
+            } else if (instruction instanceof Instruction.FPtosi) {
                 solveFPtosi((Instruction.FPtosi) instruction);
-            }
-            else if (instruction instanceof Instruction.Zext) {
+            } else if (instruction instanceof Instruction.Zext) {
                 solveZext((Instruction.Zext) instruction);
-            }
-            else if (instruction instanceof Instruction.Icmp) {
+            } else if (instruction instanceof Instruction.Icmp) {
                 solveIcmp((Instruction.Icmp) instruction);
-            }
-            else if (instruction instanceof Instruction.Fcmp) {
+            } else if (instruction instanceof Instruction.Fcmp) {
                 solveFcmp((Instruction.Fcmp) instruction);
-            }
-            else if (instruction instanceof Instruction.GetElementPtr) {
+            } else if (instruction instanceof Instruction.GetElementPtr) {
                 solveGEP((Instruction.GetElementPtr) instruction);
-            }
-            else if (instruction instanceof Instruction.BitCast) {
+            } else if (instruction instanceof Instruction.BitCast) {
                 solveBitCast((Instruction.BitCast) instruction);
-            }
-            else if (instruction instanceof Instruction.Add) {
+            } else if (instruction instanceof Instruction.Add) {
                 solveAdd((Instruction.Add) instruction);
-            }
-            else if (instruction instanceof Instruction.Sub) {
+            } else if (instruction instanceof Instruction.Sub) {
                 solveSub((Instruction.Sub) instruction);
-            }
-            else if (instruction instanceof Instruction.FAdd) {
+            } else if (instruction instanceof Instruction.FAdd) {
                 solveFAdd((Instruction.FAdd) instruction);
-            }
-            else if (instruction instanceof Instruction.FSub) {
+            } else if (instruction instanceof Instruction.FSub) {
                 solveFSub((Instruction.FSub) instruction);
-            }
-            else if (instruction instanceof Instruction.Mul) {
+            } else if (instruction instanceof Instruction.Mul) {
                 solveMul((Instruction.Mul) instruction);
-            }
-            else if (instruction instanceof Instruction.FMul) {
+            } else if (instruction instanceof Instruction.FMul) {
                 solveFMul((Instruction.FMul) instruction);
-            }
-            else if (instruction instanceof Instruction.FDiv) {
+            } else if (instruction instanceof Instruction.FDiv) {
                 solveFDiv((Instruction.FDiv) instruction);
-            }
-            else if (instruction instanceof Instruction.Div) {
+            } else if (instruction instanceof Instruction.Div) {
                 solveDiv((Instruction.Div) instruction);
-            }
-            else if (instruction instanceof Instruction.Rem) {
+            } else if (instruction instanceof Instruction.Rem) {
                 solveRem((Instruction.Rem) instruction);
-            }
-            else if (instruction instanceof Instruction.FRem) {
+            } else if (instruction instanceof Instruction.FRem) {
                 solveFRem((Instruction.FRem) instruction);
-            }
-            else if (instruction instanceof Instruction.Move) {
+            } else if (instruction instanceof Instruction.Move) {
                 solveMove((Instruction.Move) instruction);
-            }
-            else {
+            } else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
             }
         }
