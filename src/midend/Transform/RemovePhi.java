@@ -15,12 +15,12 @@ public class RemovePhi {
 
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) {
-                continue;
-            }
+            if (function.isExternal()) continue;
             cfGinfo = AnalysisManager.getCFG(function);
             removePhiAddPhiCopy(function);
             PhiCopy2move(function);
+            AnalysisManager.refreshCFG(function);
+            AnalysisManager.refreshDG(function);
         }
     }
 

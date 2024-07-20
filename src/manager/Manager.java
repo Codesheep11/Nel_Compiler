@@ -77,8 +77,6 @@ public class Manager {
                 ArrayPasses();
                 DeadCodeEliminate();
                 GlobalValueNumbering.run(module);
-//                AnalysisManager.buildCFG(module);
-//                AnalysisManager.buildDG(module);
                 FuncAnalysis.run(module);
             }
             if (arg.LLVM) {
@@ -91,7 +89,6 @@ public class Manager {
             if (arg.opt) {
                 CalculateOpt.run(riscvmodule);
             }
-            outputRiscv("debug.txt", riscvmodule);
             Allocater.run(riscvmodule);
             afterRegAssign = true;
             if (arg.opt) {
@@ -178,7 +175,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }
