@@ -61,6 +61,7 @@ public final class AnalysisManager {
             if (!function.isExternal()) dgMap.put(function, DominanceGraph.runOnFunc(function));
         }
     }
+
     public static void refreshDG(Function function) {
         dgMap.put(function, DominanceGraph.runOnFunc(function));
     }
@@ -124,5 +125,6 @@ public final class AnalysisManager {
     }
     // endregion
 
-    private AnalysisManager() { }
+    private AnalysisManager() {
+    }
 }
