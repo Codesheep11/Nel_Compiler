@@ -6,7 +6,6 @@ import backend.riscv.RiscvInstruction.B;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
-import utils.Pair;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,40 +84,30 @@ public class SimplifyCFG {
                     usedLabels.add(next);
                 }
             } else {
-                RiscvInstruction jump = block.riscvInstructions.getLast();
-                if (block.riscvInstructions.size() >= 2) {
-                    RiscvInstruction branch = block.riscvInstructions.get(block.riscvInstructions.size() - 2);
-                    if (branch instanceof B) {
-                        if (!usedLabels.contains(((B) branch).targetBlock)) {
-                            q.add(((B) branch).targetBlock);
-                            usedLabels.add(((B) branch).targetBlock);
+                for (RiscvInstruction ri : block.riscvInstructions) {
+                    if (ri instanceof B) {
+                        RiscvBlock tar = ((B) ri).targetBlock;
+                        if (!usedLabels.contains(tar)) {
+                            q.add(tar);
+                            usedLabels.add(tar);
+                        }
+                    } else if (ri instanceof J && ((J) ri).type == J.JType.j) {
+                        RiscvBlock tar = ((J) ri).targetBlock;
+                        if (!usedLabels.contains(tar)) {
+                            q.add(tar);
+                            usedLabels.add(tar);
                         }
                     }
                 }
-                if (jump instanceof J) {
-                    if (((J) jump).type == J.JType.j) {
-                        if (!usedLabels.contains(((J) jump).targetBlock)) {
-                            q.add(((J) jump).targetBlock);
-                            usedLabels.add(((J) jump).targetBlock);
-                        }
-                        continue;
-                    } else if (((J) jump).type == J.JType.ret) {
-                        continue;
+                if (!(block.riscvInstructions.getLast() instanceof J)) {
+                    //如果最后一个不是j的只需要找下面的就行
+                    int idx = func.blocks.indexOf(block);
+                    if (idx >= func.blocks.size() - 1) continue;
+                    RiscvBlock next = func.blocks.get(idx + 1);
+                    if (!usedLabels.contains(next)) {
+                        q.add(next);
+                        usedLabels.add(next);
                     }
-                }
-                if (jump instanceof B) {
-                    if (!usedLabels.contains(((B) jump).targetBlock)) {
-                        q.add(((B) jump).targetBlock);
-                        usedLabels.add(((B) jump).targetBlock);
-                    }
-                }
-                //剩下的只需要找下面的就行
-                int idx = func.blocks.indexOf(block);
-                if (idx >= func.blocks.size() - 1) continue;
-                RiscvBlock next = func.blocks.get(idx + 1);
-                if (!usedLabels.contains(next)) {
-                    q.add(next);
-                    usedLabels.add(next);
                 }
             }
         }
@@ -222,10 +211,29 @@ public class SimplifyCFG {
         return modified;
     }
 
+    public static boolean blockLinkOpt(RiscvFunction func) {
+        // 下面就是在解决跳转问题
+        // 解决策略:如果下一个块就是直接跳转的target,那么就去掉跳转指令
+        boolean modify = false;
+        for (int i = 0; i < func.blocks.size() - 1; i++) {
+            RiscvBlock block = func.blocks.get(i);
+            if (block.riscvInstructions.getLast() instanceof J j) {
+                if (j.type == J.JType.j) {
+                    if (j.targetBlock == func.blocks.get(i + 1)) {
+                        block.riscvInstructions.removeLast();
+                        modify = true;
+                    }
+                }
+            }
+        }
+        return modify;
+    }
+
 
     private static void simplifyCFG(RiscvFunction func) {
         while (true) {
             boolean modified = false;
+            modified |= blockLinkOpt(func);
             modified |= redirectGoto(func);
             modified |= reorderBranch(func);
             //modified |= Peephole.genericPeepholeOpt(func);
@@ -244,56 +252,8 @@ public class SimplifyCFG {
     public static void run(RiscvModule riscvModule) {
         for (RiscvFunction function : riscvModule.funcList) {
             if (function.isExternal) continue;
-            blockLinkOpt(function);
             simplifyCFG(function);
         }
     }
-
-    public static void blockLinkOpt(RiscvFunction func) {
-        // 下面就是在解决跳转问题
-        // 解决策略:如果下一个块就是直接跳转的target,那么就去掉跳转指令
-        // 如果下一个块不是默认的target,且最后一个不是跳往的指令，那么就应该加上
-        HashMap<RiscvBlock, BackCFGNode> cfg = GenCFG.calcCFG(func);
-        for (int i = 0; i < func.blocks.size(); i++) {
-            RiscvBlock block = func.blocks.get(i);
-            HashSet<RiscvBlock> targets = new HashSet<>();
-            for (Pair<RiscvBlock, Double> pair : cfg.get(block).suc) {
-                targets.add(pair.first);
-                // 将所有目的加入其中
-            }
-            boolean removeLast = false;// 是否要删除最后一条指令
-            for (RiscvInstruction ri : block.riscvInstructions) {
-                // 检查B,将所有的可能的块收入其中
-                if (ri instanceof B) {
-                    targets.remove(((B) ri).targetBlock);
-                    if (ri == block.getLast()) {
-                        if (func.blocks.get(i + 1) == ((B) ri).targetBlock) {
-                            removeLast = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            // 如果是最后一个指令
-            RiscvInstruction ri = block.getLast();
-            if (ri instanceof J && ((J) block.getLast()).type != J.JType.ret) {
-                // 如果最后一个是J,不是而J的目标是下一个block的话,
-                targets.remove(((J) ri).targetBlock);
-                if (func.blocks.size() > i + 1) {
-                    if (func.blocks.get(i + 1) == ((J) ri).targetBlock) {
-                        removeLast = true;
-                    }
-                }
-            }
-            if (targets.size() == 1) {
-                // 如果最后一个指令还有剩余
-                block.addInstrucion(new J(targets.iterator().next(), J.JType.j));
-            } else if (targets.size() >= 1) {
-                throw new RuntimeException("too more target block");
-            }
-            if (removeLast) {
-                block.riscvInstructions.removeLast();
-            }
-        }
-    }
+    //执行这个之后，所有j等格式均不确定,因此只能放到最后一个
 }

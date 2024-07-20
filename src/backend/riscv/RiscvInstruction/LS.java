@@ -155,7 +155,7 @@ public class LS extends RiscvInstruction {
     }
 
     @Override
-    public RiscvInstruction myCopy() {
-        return new LS(block, rs1, rs2, imm, type, isSpilled);
+    public RiscvInstruction myCopy(RiscvBlock newBlock) {
+        return new LS(newBlock, rs1, rs2, imm, type, isSpilled);
     }
 }

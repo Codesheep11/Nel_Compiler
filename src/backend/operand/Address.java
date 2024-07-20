@@ -64,4 +64,14 @@ public class Address extends Operand {
         }
         return "no refilled";
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Address) {
+            if (hasFilled && ((Address) obj).hasFilled) {
+                return this.offset == ((Address) obj).offset;
+            }
+        }
+        return false;
+    }
 }

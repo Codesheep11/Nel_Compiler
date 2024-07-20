@@ -16,7 +16,7 @@ public class BlockReSort {
      * 重排序原则：尽量减少j指令，且尽量把块都放一起
      * 比如可以将j的指令重排
      **/
-    public static final String blockPlacementAlgo = "Pettis-Hansen";
+    private static final String blockPlacementAlgo = "Pettis-Hansen";
 
 
     static class CostT {
@@ -327,20 +327,7 @@ public class BlockReSort {
             }
         }
         BlockSeq seq;
-        if (blockPlacementAlgo.equals("GA")) {
-            seq = new BlockSeq();
-            for (int i = 0; i < func.blocks.size(); ++i) seq.add(i);
-            int bufferSize = 128;
-            if (seq.size() <= 10) {
-                solveBruteForce(seq, edges, freq, weights, bufferSize);
-            } else {
-                solveGA(seq, edges, freq, weights, bufferSize);
-            }
-        } else if (blockPlacementAlgo.equals("Pettis-Hansen")) {
-            seq = solvePettisHansen(weights, freq, edges);
-        }  else {
-            throw new IllegalArgumentException("Unrecognized block placement method: " + blockPlacementAlgo);
-        }
+        seq = solvePettisHansen(weights, freq, edges);
 
         if (seq.get(0) != 0) throw new AssertionError("Entry block is not at the beginning");
 

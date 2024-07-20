@@ -69,7 +69,7 @@ public class Li extends RiscvInstruction {
     }
 
     @Override
-    public RiscvInstruction myCopy() {
-        return new Li(block, reg, imm);
+    public RiscvInstruction myCopy(RiscvBlock newBlock) {
+        return new Li(newBlock, reg, imm);
     }
 }
