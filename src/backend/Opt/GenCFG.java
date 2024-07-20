@@ -43,6 +43,7 @@ public class GenCFG {
                     prob *= (1 - ((B) instruction).getYesProb());
                 }
             }
+            System.out.println(block);
             if (block.getLast() instanceof B) {
                 // 由于不是ret，因此不可能是最后一个
                 RiscvBlock next = blocks.get(i + 1);

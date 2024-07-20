@@ -56,6 +56,11 @@ public final class AnalysisManager {
     // endregion
 
     // region DG
+    public static void buildDG(Module module) {
+        for (Function function : module.getFuncSet()) {
+            if (!function.isExternal()) dgMap.put(function, DominanceGraph.runOnFunc(function));
+        }
+    }
     public static void refreshDG(Function function) {
         dgMap.put(function, DominanceGraph.runOnFunc(function));
     }

@@ -154,7 +154,7 @@ public class CodeGen {
         for (RiscvInstruction riscvInstruction : paramPassing) {
             nowBlock.riscvInstructions.addLast(riscvInstruction);
         }
-        for (BasicBlock block : function.getBlocks()) {
+        for (BasicBlock block : function.getDomTreeLayerSort()) {
             visitBlock(block);
         }
         if (offset != null) {
