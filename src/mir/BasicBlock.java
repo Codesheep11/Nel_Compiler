@@ -70,6 +70,14 @@ public class BasicBlock extends Value {
         instructions.addFirst(inst);
     }
 
+    public void addInstAfterPhi(Instruction inst) {
+        Instruction pos = instructions.getFirst();
+        while (pos instanceof Instruction.Phi) {
+            pos = (Instruction) pos.getNext();
+        }
+        instructions.insertBefore(inst, pos);
+    }
+
     public void addInstLast(Instruction inst) {
         instructions.addLast(inst);
     }
