@@ -94,8 +94,8 @@ public class Manager {
             afterRegAssign = true;
             if (arg.opt) {
                 BlockReSort.blockSort(riscvmodule);
-                SimplifyCFG.run(riscvmodule);
                 BlockInline.run(riscvmodule);
+                SimplifyCFG.run(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
         } catch (Exception e) {
