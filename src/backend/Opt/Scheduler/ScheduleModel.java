@@ -12,8 +12,8 @@ public class ScheduleModel {
     public static boolean hardwarePrefetch = true;
     public static int maxDataStreams = 8;
     public static int maxStrideByBytes = 256;
-    private static final boolean preRA = true;
+    private static final boolean preRA = false;
     private static final boolean postSA = true;
-    private static final boolean inSSAForm = true;
+    private static final boolean inSSAForm = false;
 
 }
