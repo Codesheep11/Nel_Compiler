@@ -27,8 +27,8 @@ import midend.Transform.Loop.LCSSA;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.Loop.LoopUnSwitching;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
-import mir.*;
+import mir.Function;
+import mir.GlobalVariable;
 import mir.Ir2RiscV.CodeGen;
 import mir.Loop;
 import mir.Module;
@@ -89,11 +89,10 @@ public class Manager {
             if (arg.opt) {
                 CalculateOpt.run(riscvmodule);
             }
-            outputRiscv("debug.txt", riscvmodule);
             Allocater.run(riscvmodule);
             afterRegAssign = true;
             if (arg.opt) {
-//                BlockReSort.blockSort(riscvmodule);
+                BlockReSort.blockSort(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
