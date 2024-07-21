@@ -26,6 +26,8 @@ public final class AnalysisManager {
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
     private static final HashMap<Function, SCEVinfo> scevMap = new HashMap<>();
 
+    // Constraint Map for Alias
+
 
     // region CFG
 
@@ -103,7 +105,6 @@ public final class AnalysisManager {
     public static int getDomDepth(BasicBlock block) {
         return dgMap.get(block.getParentFunction()).getDomDepth(block);
     }
-
     // endregion
 
     private AnalysisManager() {

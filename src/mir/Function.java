@@ -51,7 +51,6 @@ public class Function extends Value {
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
-
     private int countOfBB = 0;
 
     public SCEVinfo scevInfo = new SCEVinfo();

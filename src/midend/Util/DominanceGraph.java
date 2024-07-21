@@ -9,11 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-/**
- * 支配图
- *
- * @author Srchycz
- */
 public class DominanceGraph {
     private static Function parentFunction;
     private static BasicBlock entry;
