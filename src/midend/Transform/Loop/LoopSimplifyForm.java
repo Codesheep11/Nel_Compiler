@@ -31,8 +31,13 @@ public class LoopSimplifyForm {
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            for (Loop loop : function.loopInfo.TopLevelLoops) runOnLoop(loop);
+            runOnFunc(function);
         }
+    }
+
+    public static void runOnFunc(Function function) {
+        for (Loop loop : function.loopInfo.TopLevelLoops)
+            runOnLoop(loop);
     }
 
     public static void runOnLoop(Loop loop) {

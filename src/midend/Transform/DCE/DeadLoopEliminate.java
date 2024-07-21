@@ -1,6 +1,8 @@
 package midend.Transform.DCE;
 
 import midend.Transform.Loop.LoopInfo;
+import midend.Analysis.AnalysisManager;
+import midend.Transform.Loop.LoopInfo;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -17,7 +19,8 @@ public class DeadLoopEliminate {
         }
     }
 
-    private static void runOnFunc(Function function) {
+    public static void runOnFunc(Function function) {
+        AnalysisManager.refreshCFG(function);
         if (function.loopInfo == null) return;
         HashSet<Loop> removes = new HashSet<>();
         for (Loop loop : function.loopInfo.TopLevelLoops) {
@@ -53,10 +56,10 @@ public class DeadLoopEliminate {
     }
 
     private static boolean loopCanRemove(Loop loop) {
-        if (loop.children.size() != 0) return false;
+        if (!loop.children.isEmpty()) return false;
         if (loop.exits.size() != 1) return false;
         BasicBlock exit = loop.exits.iterator().next();
-        if (exit.getFirstInst() instanceof Instruction.Phi) return false;
+        if (!exit.getInstructions().isEmpty() && exit.getFirstInst() instanceof Instruction.Phi) return false;
         if (loop.exits.size() != exit.getPreBlocks().size()) return false;
         for (BasicBlock block : loop.nowLevelBB) {
             for (Instruction instr : block.getInstructions()) {
