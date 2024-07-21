@@ -11,7 +11,7 @@ public class R3 extends RiscvInstruction {
 
     public enum R3Type {
         add, addi, addw, addiw, subw, divw, mulw, remw, andw, andiw, orw, oriw, xorw, xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti,
-        fadd, fsub, fmul, fdiv, fmin, fmax, feq, fle, flt,
+        fadd, fsub, fmul, fdiv, min, max, feq, fle, flt,
         sh1add, sh2add, sh3add;// 这三个的最后一个参数才是需要位移的
 
         @Override
@@ -113,11 +113,11 @@ public class R3 extends RiscvInstruction {
                 case fdiv -> {
                     return "fdiv.s";
                 }
-                case fmin -> {
-                    return "fmin.s";
+                case min -> {
+                    return "min";
                 }
-                case fmax -> {
-                    return "fmax.s";
+                case max -> {
+                    return "max";
                 }
                 case feq -> {
                     return "feq.s";

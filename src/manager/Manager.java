@@ -3,6 +3,7 @@ package manager;
 import backend.Opt.BlockInline;
 import backend.Opt.BlockReSort;
 import backend.Opt.CalculateOpt;
+import backend.Opt.Scheduler.AfterRAScheduler;
 import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
@@ -96,6 +97,7 @@ public class Manager {
                 BlockReSort.blockSort(riscvmodule);
                 BlockInline.run(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
+                AfterRAScheduler.postRASchedule(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
         } catch (Exception e) {
