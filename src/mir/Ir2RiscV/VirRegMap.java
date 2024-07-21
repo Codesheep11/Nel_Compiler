@@ -2,6 +2,7 @@ package mir.Ir2RiscV;
 
 import backend.StackManager;
 import backend.operand.Address;
+import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvFloat;
 import backend.riscv.RiscvInstruction.LS;
@@ -94,15 +95,15 @@ public class VirRegMap {
             if (value instanceof Constant.ConstantFloat) {
                 Float init = ((Float) ((Constant.ConstantFloat) value).getConstValue());
                 RiscvFloat rf = CodeGen.ansRis.getSameFloat(init);
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR,64);
                 CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, tmp, rf));
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Address(0), LS.LSType.flw));
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Imm(0), LS.LSType.flw));
             } else if (value instanceof Constant.ConstantInt) {
                 int init = ((Integer) ((Constant.ConstantInt) value).getConstValue());
-                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, init));
+                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
             } else if (value instanceof Constant.ConstantBool) {
                 int init = ((Integer) ((Constant.ConstantBool) value).getConstValue());
-                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, init));
+                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
             } else {
                 throw new RuntimeException("wrong const Type");
             }

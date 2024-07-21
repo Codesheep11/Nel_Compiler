@@ -1,5 +1,8 @@
 package backend.riscv.RiscvInstruction;
 
+import backend.operand.Address;
+import backend.operand.Imm;
+import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 
@@ -7,12 +10,12 @@ import java.util.HashSet;
 
 public class Li extends RiscvInstruction {
 
-    public Integer imm;
+    public Operand imm;
 
 
     public Reg reg;
 
-    public Li(RiscvBlock block, Reg reg, Integer value) {
+    public Li(RiscvBlock block, Reg reg, Operand value) {
         super(block);
         this.imm = value;
         this.reg = reg;
@@ -38,7 +41,7 @@ public class Li extends RiscvInstruction {
 
     @Override
     public HashSet<Reg> getDef() {
-        HashSet def = new HashSet<>();
+        HashSet<Reg> def = new HashSet<>();
         def.add(reg);
         return def;
     }
@@ -71,5 +74,13 @@ public class Li extends RiscvInstruction {
     @Override
     public RiscvInstruction myCopy(RiscvBlock newBlock) {
         return new Li(newBlock, reg, imm);
+    }
+
+    public int getVal() {
+        if (imm instanceof Address) {
+            return -((Address) imm).getOffset();
+        } else if (imm instanceof Imm) {
+            return ((Imm) imm).getVal();
+        } else throw new RuntimeException("wrong type");
     }
 }

@@ -25,8 +25,10 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import mir.GlobalVariable;
 import midend.Util.Print;
 import mir.*;
+import mir.Ir2RiscV.AfterRA;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
 
@@ -52,7 +54,6 @@ public class Manager {
 
     public void run() {
         try {
-//            arg.opt = true;
             FrontEnd();
             if (arg.opt) O1();
             else O0();
@@ -91,13 +92,13 @@ public class Manager {
         RemovePhi.run(module);
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
-        CalculateOpt.run(riscvmodule);
+        CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
-        afterRegAssign = true;
+        AfterRA.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         BlockInline.run(riscvmodule);
         SimplifyCFG.run(riscvmodule);
-        AfterRAScheduler.postRASchedule(riscvmodule);
+//        AfterRAScheduler.postRASchedule(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }
 
@@ -225,12 +226,12 @@ public class Manager {
         RemovePhi.run(module);
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
-        CalculateOpt.run(riscvmodule);
+        CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
-        afterRegAssign = true;
+        AfterRA.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
-        AfterRAScheduler.postRASchedule(riscvmodule);
+//        AfterRAScheduler.postRASchedule(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }
 
