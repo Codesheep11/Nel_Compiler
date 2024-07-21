@@ -27,14 +27,23 @@ public class LoopUnSwitching {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             for (Loop loop : function.loopInfo.TopLevelLoops)
+//                unSwitching(loop);
                 collectBranch(loop);
         }
     }
 
     // NOTE: 最好不要超过10
-    private static final int threshold = 5;
+    private static final int threshold = 10;
 
-    private static void collectBranch(Loop loop) {
+//    private static boolean unSwitching(Loop loop) {
+//        boolean modified = false;
+//        for (Loop child : loop.children) {
+//            modified |= unSwitching(child);
+//        }
+//        return modified | collectBranch(loop);
+//    }
+
+    private static boolean collectBranch(Loop loop) {
         ArrayList<Instruction.Branch> branches = new ArrayList<>();
         for (BasicBlock block : loop.nowLevelBB) {
             if (block.getLastInst() instanceof Instruction.Branch branch) {
@@ -50,9 +59,10 @@ public class LoopUnSwitching {
                     break;
             }
         }
-        if (branches.isEmpty()) return;
+        if (branches.isEmpty()) return false;
         //demo
         unSwitching(loop, branches);
+        return true;
     }
 
     private static void unSwitching(Loop loop, ArrayList<Instruction.Branch> branches) {
