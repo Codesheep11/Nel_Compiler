@@ -49,7 +49,7 @@ public class LCSSA {
     }
 
     private static void addPhiAtExitBB(Instruction instr, BasicBlock exit, Loop loop) {
-        System.out.println("addPhiAtExitBB: " + instr + " " + exit.getLabel());
+//        System.out.println("addPhiAtExitBB: " + instr + " " + exit.getLabel());
         LinkedHashMap<BasicBlock, Value> phiMap = new LinkedHashMap<>();
         for (BasicBlock pre : exit.getPreBlocks()) {
             phiMap.put(pre, instr);
@@ -59,14 +59,10 @@ public class LCSSA {
         exit.addInstFirst(phi);
         LinkedList<Instruction> users = new LinkedList<>();
         for (Instruction user : instr.getUsers()) {
+            //已经存在LCSSA
+            if (user.equals(phi)) continue;
             if ((user instanceof Instruction.Phi p) && p.getParentBlock().equals(exit))
                 continue;
-            BasicBlock parentBlock = user.getParentBlock();
-            HashSet<BasicBlock> visited = new HashSet<>();
-            visited.add(exit);
-            if (!isDomable(exit, parentBlock, visited)) continue;
-            Instruction user = (Instruction) use.getUser();
-            if (user.equals(phi)) continue;
             if (loop.LoopContains(user.getParentBlock())) continue;
             users.add(user);
         }

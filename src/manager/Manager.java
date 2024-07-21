@@ -74,10 +74,8 @@ public class Manager {
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
         DeadCodeEliminate();
-        Print.output(module, "debug.txt");
-//        ConstLoopUnRoll.run(module);
+        ConstLoopUnRoll.run(module);
         DeadCodeEliminate();
-//        ConstLoopUnRoll.run(module);
         LCSSA.remove(module);
         ArrayPasses();
         DeadCodeEliminate();
@@ -121,7 +119,6 @@ public class Manager {
         GlobalValueNumbering.run(module);
         SimplfyCFG.run(module);
         ArithReduce.run(module);
-//        Print.output(module, "debug.txt");
         DeadCodeEliminate.run(module);
     }
 
