@@ -25,6 +25,11 @@ public class LoopInfo {
         }
     }
 
+    public static void runOnFunc(Function function) {
+        if (function.isExternal()) return;
+        function.loopInfo = new LoopInfo(function);
+    }
+
 
     public void runLoopAnalysis() {
         clearBlocksLoopInfo();
@@ -36,6 +41,7 @@ public class LoopInfo {
         for (Loop loop : TopLevelLoops) {
             genEnterExit4Loop(loop);
 //            LoopSimplifyForm.run(loop);
+//            LCSSA.run(loop);
         }
         AnalysisManager.refreshCFG(function);
 //        printLoopInfo();

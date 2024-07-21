@@ -1,7 +1,9 @@
 package manager;
 
+import backend.Opt.BlockInline;
 import backend.Opt.BlockReSort;
 import backend.Opt.CalculateOpt;
+import backend.Opt.Scheduler.AfterRAScheduler;
 import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
@@ -12,7 +14,6 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
-import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
@@ -52,17 +53,18 @@ public class Manager {
 
     public void run() {
         try {
-//            arg.opt = true;
+            arg.opt = true;
             FrontEnd();
-            Mem2Reg.run(module);
-            FuncAnalysis.run(module);
-            DeadCodeEliminate();
             if (arg.opt) {
+                Mem2Reg.run(module);
+                FuncAnalysis.run(module);
+                DeadCodeEliminate();
                 FuncPasses();
                 GlobalVarLocalize.run(module);
                 GlobalValueNumbering.run(module);
                 DeadCodeEliminate.run(module);
                 LoopInfo.build(module);
+                LoopSimplifyForm.run(module);
                 GlobalCodeMotion.run(module);
                 LCSSA.Run(module);
                 LoopUnSwitching.run(module);
@@ -78,8 +80,10 @@ public class Manager {
                 LCSSA.remove(module);
                 ArrayPasses();
                 DeadCodeEliminate();
+                Branch2MinMax.run(module);
                 DeadCodeEliminate();
-                DeadCodeEliminate();
+                GlobalValueNumbering.run(module);
+                FuncAnalysis.run(module);
             }
             FuncAnalysis.run(module);
             if (arg.LLVM) {
@@ -92,16 +96,16 @@ public class Manager {
             if (arg.opt) {
                 CalculateOpt.run(riscvmodule);
             }
-            outputRiscv("debug.txt", riscvmodule);
             Allocater.run(riscvmodule);
             afterRegAssign = true;
             if (arg.opt) {
                 BlockReSort.blockSort(riscvmodule);
+                BlockInline.run(riscvmodule);
                 SimplifyCFG.run(riscvmodule);
+                AfterRAScheduler.postRASchedule(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
-        } catch (
-                Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
         }
@@ -121,7 +125,7 @@ public class Manager {
 
     private void DeadCodeEliminate() {
         DeadLoopEliminate.run(module);
-//        SimplfyCFG.run(module);
+        SimplfyCFG.run(module);
         GlobalValueNumbering.run(module);
         SimplfyCFG.run(module);
         ArithReduce.run(module);

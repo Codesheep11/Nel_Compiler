@@ -91,6 +91,12 @@ public abstract class ScheduleClass {
         }
     }
 
+    public static class RISCVScheduleClassIntegerArithmeticEarlyLateB extends RISCVScheduleClassIntegerArithmeticGeneric {
+        public RISCVScheduleClassIntegerArithmeticEarlyLateB() {
+            super(RISCVIssueMask.RISCVPipelineB, true, true);
+        }
+    }
+
     static class RISCVScheduleClassBranch extends ScheduleClass {
         public boolean schedule(ScheduleState state, RiscvInstruction inst) {
             if (!state.isAvailable(RISCVIssueMask.RISCVPipelineB.mask)) {
@@ -333,8 +339,11 @@ public abstract class ScheduleClass {
         } else if (instr instanceof R3 r3) {
             switch (r3.type) {
                 case add, addi, addw, addiw, subw, andw, andiw, orw, oriw, xorw,
-                        xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti -> {
+                        xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti, min, max -> {
                     return new RISCVScheduleClassIntegerArithmetic();
+                }
+                case sh1add, sh2add, sh3add -> {
+                    return new RISCVScheduleClassIntegerArithmeticEarlyLateB();
                 }
                 case mulw -> {
                     return new RISCVScheduleClassMulti();
@@ -344,9 +353,6 @@ public abstract class ScheduleClass {
                 }
                 case fdiv -> {
                     return new RISCVScheduleClassFPDiv();
-                }
-                case fmax, fmin -> {
-                    return new RISCVScheduleClassFPCycle2();
                 }
                 case feq, fle, flt -> {
                     return new RISCVScheduleClassFPCycle4();

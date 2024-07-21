@@ -136,16 +136,16 @@ public class J extends RiscvInstruction {
     }
 
     @Override
-    public RiscvInstruction myCopy() {
+    public RiscvInstruction myCopy(RiscvBlock newBlock) {
         switch (type) {
             case ret -> {
-                return new J(block, type);
+                return new J(newBlock, type);
             }
             case j -> {
-                return new J(block, type, targetBlock);
+                return new J(newBlock, type, targetBlock);
             }
             case call -> {
-                return new J(block, type, funcName);
+                return new J(newBlock, type, funcName);
             }
             default -> throw new RuntimeException("wrong type");
         }

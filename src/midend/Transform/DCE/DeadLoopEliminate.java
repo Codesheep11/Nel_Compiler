@@ -1,5 +1,6 @@
 package midend.Transform.DCE;
 
+import midend.Transform.Loop.LoopInfo;
 import midend.Analysis.AnalysisManager;
 import midend.Transform.Loop.LoopInfo;
 import midend.Util.FuncInfo;
@@ -13,7 +14,7 @@ public class DeadLoopEliminate {
     public static void run(Module module) {
         for (var function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            function.loopInfo = new LoopInfo(function);
+            LoopInfo.runOnFunc(function);
             runOnFunc(function);
         }
     }
@@ -35,21 +36,21 @@ public class DeadLoopEliminate {
             if (runOnLoop(child)) removes.add(child);
         }
         removes.forEach(loop.children::remove);
-
         if (loopCanRemove(loop)) {
             BasicBlock exit = loop.exits.iterator().next();
-            if (loop.preHeader == null) {
+            BasicBlock preHead = loop.preHeader;
+            BasicBlock head = loop.header;
+            if (preHead == null) {
                 for (BasicBlock entering : loop.enterings) {
-                    BasicBlock head = loop.header;
                     Instruction.Terminator term = entering.getTerminator();
                     term.replaceSucc(head, exit);
                 }
-            } else {
-                BasicBlock preHead = loop.preHeader;
-                BasicBlock head = loop.header;
+            }
+            else {
                 Instruction.Terminator term = preHead.getTerminator();
                 term.replaceSucc(head, exit);
             }
+            return true;
         }
         return false;
     }

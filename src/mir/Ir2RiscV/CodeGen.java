@@ -154,7 +154,7 @@ public class CodeGen {
         for (RiscvInstruction riscvInstruction : paramPassing) {
             nowBlock.riscvInstructions.addLast(riscvInstruction);
         }
-        for (BasicBlock block : function.getBlocks()) {
+        for (BasicBlock block : function.getDomTreeLayerSort()) {
             visitBlock(block);
         }
         if (offset != null) {
@@ -193,7 +193,19 @@ public class CodeGen {
      * 参数有3种,指针,int32，float
      */
     private void solveCall(Instruction.Call callInstr) {
-        J call = new J(nowBlock, J.JType.call, callInstr.getDestFunction().getName());
+        String min = "llvm.smin.i32";
+        String max = "llvm.smax.i32";
+        // 开局拦截min和max
+        String funcName = callInstr.getDestFunction().getName();
+        if (funcName.equals(min) || funcName.equals(max)) {
+            R3.R3Type type = funcName.equals(max) ? R3.R3Type.max : R3.R3Type.min;
+            Reg r1 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(0));
+            Reg r2 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(1));
+            Reg ans = VirRegMap.VRM.ensureRegForValue(callInstr);
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, r1, r2, type));
+            return;
+        }
+        J call = new J(nowBlock, J.JType.call, funcName);
         Type type = callInstr.getType();
         Reg reg = null;
         if (!(type instanceof Type.VoidType)) {
@@ -216,11 +228,11 @@ public class CodeGen {
                 Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
                 if (byte_off < 2048) {
                     // addi 装得下
-                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, paraReg, sp, new Imm(byte_off), R3.R3Type.addi));
+                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, paraReg, sp, new Imm(-1 * byte_off), R3.R3Type.addi));
                 } else {
                     // addi装不下,那么需要装到li中再去加
                     Reg imm = new Reg(Reg.RegType.GPR, 32);
-                    nowBlock.riscvInstructions.addLast(new Li(nowBlock, imm, byte_off));
+                    nowBlock.riscvInstructions.addLast(new Li(nowBlock, imm, -1 * byte_off));
                     nowBlock.riscvInstructions.addLast(new R3(nowBlock, paraReg, imm, sp, R3.R3Type.add));
                 }
             }

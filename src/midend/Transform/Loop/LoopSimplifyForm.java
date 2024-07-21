@@ -31,14 +31,13 @@ public class LoopSimplifyForm {
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            for (Loop loop : function.loopInfo.TopLevelLoops)
-                run(loop);
+            for (Loop loop : function.loopInfo.TopLevelLoops) runOnLoop(loop);
         }
     }
 
-    public static void run(Loop loop) {
+    public static void runOnLoop(Loop loop) {
         for (Loop child : loop.children) {
-            run(child);
+            runOnLoop(child);
         }
         simplifyPreHeader(loop);
         simplifyLatch(loop);

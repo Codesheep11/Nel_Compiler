@@ -46,6 +46,13 @@ public class LoopUnRoll {
         if (_pre.size() > 1 || _pre.get(0) != loop.header) return false;
         int loopSize = loop.getSize();
         if (loopSize * loop.tripCount > MAXIMUM_LINE) return false;
+        // 循环不变量的补丁
+        for (Instruction.Phi phi : loop.header.getPhiInstructions()) {
+            if (phi.getOptionalValue(loop.getLatch()) == phi) {
+                phi.replaceAllUsesWith(phi.getOptionalValue(loop.getPreHeader()));
+                phi.delete();
+            }
+        }
         // 展开为 loop.tripCount + 1 次
         ArrayList<LoopCloneInfo> infos = new ArrayList<>();
         for (int i = 0; i <= loop.tripCount; i++) {
@@ -103,7 +110,7 @@ public class LoopUnRoll {
                 reflectPhi.delete();
             }
         }
-        // 优化跳转
+        // 优化跳转 TODO:
         for (int i = 0; i < loop.tripCount; i++) {
             LoopCloneInfo now = infos.get(i);
             BasicBlock header = now.cpy.header;
