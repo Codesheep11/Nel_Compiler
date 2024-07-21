@@ -4,13 +4,13 @@ import backend.Opt.LivelessDCE;
 import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Reg;
-import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
-import backend.riscv.RiscvInstruction.*;
+import backend.riscv.RiscvInstruction.J;
+import backend.riscv.RiscvInstruction.LS;
+import backend.riscv.RiscvInstruction.R3;
+import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
-import manager.Manager;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -53,8 +53,6 @@ public class Allocater {
             LivenessAnalyze.RunOnFunc(func);
             SaveReg4Call(func);
         }
-        Manager.afterRegAssign = true;
-        LS2LiAddLS(riscvModule);
     }
 
     /**
@@ -94,44 +92,7 @@ public class Allocater {
         }
         //保护sp
         StackManager.getInstance().refill(func.name);
-        int funcSize = StackManager.getInstance().getFuncSize(func.name);
-        for (J call : func.calls) {
-            // 移动栈指针
-            if (funcSize >= 2048) {
-                Reg tmp = Reg.getPreColoredReg(t0, 64);
-                Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-                Li beforeCall1 = new Li(call.block, tmp, new Address(funcSize));
-                R3 beforeCall2 = new R3(call.block, sp, sp, tmp, R3.R3Type.add);
-                call.block.riscvInstructions.insertBefore(beforeCall1, call);
-                call.block.riscvInstructions.insertBefore(beforeCall2, call);
-                Li afterCall1 = new Li(call.block, tmp, new Address(-funcSize));
-                R3 afterCall2 = new R3(call.block, sp, sp, tmp, R3.R3Type.add);
-                call.block.riscvInstructions.insertAfter(afterCall2, call);
-                call.block.riscvInstructions.insertAfter(afterCall1, call);
-            } else {
-                Address offset1 = new Address(funcSize);
-                Address offset2 = new Address(-funcSize);
-                R3 beforeCall = new R3(call.block, Reg.getPreColoredReg(sp, 64), Reg.getPreColoredReg(sp, 64), offset1, R3.R3Type.addi);
-                call.block.riscvInstructions.insertBefore(beforeCall, call);
-                R3 afterCall = new R3(call.block, Reg.getPreColoredReg(sp, 64), Reg.getPreColoredReg(sp, 64), offset2, R3.R3Type.addi);
-                call.block.riscvInstructions.insertAfter(afterCall, call);
-            }
-        }
     }
 
 
-    public static void LS2LiAddLS(RiscvModule riscvModule) {
-        for (RiscvFunction function : riscvModule.funcList) {
-            if (function.isExternal) continue;
-            for (RiscvBlock riscvBlock : function.blocks) {
-                ArrayList<LS> needInsert = new ArrayList<>();
-                for (RiscvInstruction ri : riscvBlock.riscvInstructions) {
-                    if (ri instanceof LS) {
-                        needInsert.add((LS) ri);
-                    }
-                }
-                needInsert.forEach(ls -> ls.replaceMe(riscvBlock));
-            }
-        }
-    }
 }

@@ -87,15 +87,15 @@ public class LS extends RiscvInstruction {
         return "\t" + type + "\t\t" + rs1 + ", " + addr + "(" + rs2 + ")" + (isSpilled ? " #spilled" : "");
     }
 
-    public void replaceMe(RiscvBlock nowBlock) {
+    public void replaceMe() {
         if (addr instanceof Address) {
             if (((Address) addr).getOffset() >= 2048 || ((Address) addr).getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-                Li li = new Li(nowBlock, tmp, addr);
-                nowBlock.riscvInstructions.insertBefore(li, this);
-                R3 add = new R3(nowBlock, tmp, tmp, rs2, R3.R3Type.add);
-                nowBlock.riscvInstructions.insertBefore(add, this);
-                this.addr = new Address(0);
+                Li li = new Li(block, tmp, addr);
+                block.riscvInstructions.insertBefore(li, this);
+                R3 add = new R3(block, tmp, rs2, tmp, R3.R3Type.add);
+                block.riscvInstructions.insertBefore(add, this);
+                this.addr = new Imm(0);
                 this.rs2 = tmp;
             }
         }

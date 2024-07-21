@@ -1,5 +1,7 @@
 package backend.riscv.RiscvInstruction;
 
+import backend.operand.Address;
+import backend.operand.Imm;
 import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
@@ -215,5 +217,26 @@ public class R3 extends RiscvInstruction {
     @Override
     public RiscvInstruction myCopy(RiscvBlock newBlock) {
         return new R3(newBlock, rd, rs1, rs2, type);
+    }
+
+    public void replaceMe() {
+        if (type != R3Type.addi) return;
+        if (rs2 instanceof Address add) {
+            if (add.getOffset() >= 2048 || add.getOffset() <= -2048) {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                Li li = new Li(block, tmp, add);
+                block.riscvInstructions.insertBefore(li, this);
+                this.rs2 = tmp;
+                this.type = R3Type.add;
+            }
+        } else if (rs2 instanceof Imm imm) {
+            if (imm.getVal() >= 2048 | imm.getVal() <= -2048) {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                Li li = new Li(block, tmp, imm);
+                block.riscvInstructions.insertBefore(li, this);
+                this.rs2 = tmp;
+                this.type = R3Type.add;
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 package backend.Opt;
 
+import backend.operand.Address;
 import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
@@ -28,53 +29,6 @@ public class CalculateOpt {
     }
 
     // 重要依据，这些拉取的常数和全局的不会跨过块
-    public static void ConstValueReUse(RiscvBlock riscvBlock) {
-        final int range = 10;
-        HashMap<Integer, Pair<Reg, Integer>> map = new HashMap<>();
-        ArrayList<RiscvInstruction> newList = new ArrayList<>();
-        for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
-            RiscvInstruction instr = riscvBlock.riscvInstructions.get(i);
-            for (int idx = 0; idx < instr.getOperandNum(); idx++) {
-                if (instr.isDef(idx) && !(instr instanceof Li)) {
-                    int finalIdx = idx;
-                    map.keySet().removeIf(key -> map.get(key).first.equals(instr.getRegByIdx(finalIdx)));
-                }//删除所有重定义的
-            }
-            if (instr instanceof Li) {
-                // 如果前面有记录这个值，那么就将这个li给删掉，然后将后面的所有使用这个的寄存器都换掉
-                int value = ((Li) instr).getVal();
-                if (map.containsKey(value)) {
-                    Reg now = map.get(value).first;
-                    Reg def = ((Li) instr).reg;
-                    for (int j = i + 1; j < riscvBlock.riscvInstructions.size(); j++) {
-                        RiscvInstruction needReplace = riscvBlock.riscvInstructions.get(j);
-                        if (needReplace instanceof J) continue;
-                        needReplace.replaceUseReg(def, now);
-                    }
-                    map.get(value).second = range;// 刷新生存周期
-                    continue;
-                } else {
-                    map.keySet().removeIf(key -> map.get(key).first.equals(((Li) instr).reg));
-                    map.put(value, new Pair<>(((Li) instr).reg, range));
-                }
-            }
-            newList.add(instr);
-            HashSet<Integer> needRemove = new HashSet<>();
-            for (Integer key : map.keySet()) {
-                map.get(key).second--;
-                if (map.get(key).second == 0) {
-                    needRemove.add(key);
-                }
-            }
-            for (Integer need : needRemove) {
-                map.remove(need);
-            }
-        }
-        riscvBlock.riscvInstructions.clear();
-        for (RiscvInstruction ri : newList) {
-            riscvBlock.riscvInstructions.addLast(ri);
-        }
-    }
 
     public static void uselessLoadRemove(RiscvBlock block) {
         HashSet<RiscvInstruction> needRemove = new HashSet<>();
@@ -178,6 +132,53 @@ public class CalculateOpt {
         block.riscvInstructions.clear();
         for (RiscvInstruction ri : newList) {
             block.riscvInstructions.addLast(ri);
+        }
+    }
+    public static void ConstValueReUse(RiscvBlock riscvBlock) {
+        final int range = 10;
+        HashMap<Integer, Pair<Reg, Integer>> map = new HashMap<>();
+        ArrayList<RiscvInstruction> newList = new ArrayList<>();
+        for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
+            RiscvInstruction instr = riscvBlock.riscvInstructions.get(i);
+            for (int idx = 0; idx < instr.getOperandNum(); idx++) {
+                if (instr.isDef(idx) && !(instr instanceof Li)) {
+                    int finalIdx = idx;
+                    map.keySet().removeIf(key -> map.get(key).first.equals(instr.getRegByIdx(finalIdx)));
+                }//删除所有重定义的
+            }
+            if (instr instanceof Li) {
+                // 如果前面有记录这个值，那么就将这个li给删掉，然后将后面的所有使用这个的寄存器都换掉
+                int value = ((Li) instr).getVal();
+                if (map.containsKey(value)) {
+                    Reg now = map.get(value).first;
+                    Reg def = ((Li) instr).reg;
+                    for (int j = i + 1; j < riscvBlock.riscvInstructions.size(); j++) {
+                        RiscvInstruction needReplace = riscvBlock.riscvInstructions.get(j);
+                        if (needReplace instanceof J) continue;
+                        needReplace.replaceUseReg(def, now);
+                    }
+                    map.get(value).second = range;// 刷新生存周期
+                    continue;
+                } else {
+                    map.keySet().removeIf(key -> map.get(key).first.equals(((Li) instr).reg));
+                    map.put(value, new Pair<>(((Li) instr).reg, range));
+                }
+            }
+            newList.add(instr);
+            HashSet<Integer> needRemove = new HashSet<>();
+            for (Integer key : map.keySet()) {
+                map.get(key).second--;
+                if (map.get(key).second == 0) {
+                    needRemove.add(key);
+                }
+            }
+            for (Integer need : needRemove) {
+                map.remove(need);
+            }
+        }
+        riscvBlock.riscvInstructions.clear();
+        for (RiscvInstruction ri : newList) {
+            riscvBlock.riscvInstructions.addLast(ri);
         }
     }
 

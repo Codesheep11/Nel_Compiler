@@ -95,9 +95,9 @@ public class VirRegMap {
             if (value instanceof Constant.ConstantFloat) {
                 Float init = ((Float) ((Constant.ConstantFloat) value).getConstValue());
                 RiscvFloat rf = CodeGen.ansRis.getSameFloat(init);
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR,64);
                 CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, tmp, rf));
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Address(0), LS.LSType.flw));
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Imm(0), LS.LSType.flw));
             } else if (value instanceof Constant.ConstantInt) {
                 int init = ((Integer) ((Constant.ConstantInt) value).getConstValue());
                 CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
