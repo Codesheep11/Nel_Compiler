@@ -1,7 +1,9 @@
 package midend.Transform.Loop;
 
 import midend.Analysis.AnalysisManager;
-import midend.Transform.Loop.LoopCloneInfo;
+import midend.Transform.DCE.DeadLoopEliminate;
+import midend.Transform.DCE.SimplfyCFG;
+import midend.Transform.GlobalValueNumbering;
 import midend.Util.Print;
 import mir.*;
 import mir.Module;
@@ -12,7 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 
-public class LoopUnRoll {
+public class ConstLoopUnRoll {
     private static final int MAXIMUM_LINE = 10000;
 
     private static SCEVinfo scevInfo;
@@ -22,30 +24,42 @@ public class LoopUnRoll {
             if (function.isExternal()) continue;
             runOnFunc(function);
         }
-        Print.output(module, "debug.txt");
+//        Print.output(module, "debug.txt");
     }
 
     public static void runOnFunc(Function function) {
-        AnalysisManager.refreshCFG(function);
-        AnalysisManager.refreshSCEV(function);
-        scevInfo = AnalysisManager.getSCEV(function);
-        for (var loop : function.loopInfo.TopLevelLoops) {
-            tryUnrollLoop(loop);
-        }
+
+        boolean modified;
+        do {
+            modified = false;
+            AnalysisManager.refreshCFG(function);
+            LoopReBuildAndNormalize(function);
+            IndVars.runOnFunc(function);
+            for (var loop : function.loopInfo.TopLevelLoops) {
+                modified |= tryUnrollLoop(loop);
+            }
+            DeadLoopEliminate.runOnFunc(function);
+            SimplfyCFG.runOnFunc(function);
+            GlobalValueNumbering.runOnFunc(function);
+            SimplfyCFG.runOnFunc(function);
+        } while (modified);
     }
 
     // 确保是子循环
     public static boolean tryUnrollLoop(Loop loop) {
-
+        boolean modified = false;
+        for (Loop child : loop.getChildrenSnap()) {
+            modified |= tryUnrollLoop(child);
+            Print.output(loop.header.getParentFunction(), "debug.txt");
+        }
         // TODO: 或许可以优化展开后循环内的跳转
-        // TODO: 改进不止展开一级循环
-        if (!loop.children.isEmpty()) return false;
-        if (loop.tripCount <= 0) return false;
-        if (loop.exits.size() > 1) return false;
+//        if (!loop.children.isEmpty()) return false;
+        if (loop.tripCount <= 0) return modified;
+        if (loop.exits.size() > 1) return modified;
         ArrayList<BasicBlock> _pre = loop.getExit().getPreBlocks();
-        if (_pre.size() > 1 || _pre.get(0) != loop.header) return false;
+        if (_pre.size() > 1 || _pre.get(0) != loop.header) return modified;
         int loopSize = loop.getSize();
-        if (loopSize * loop.tripCount > MAXIMUM_LINE) return false;
+        if (loopSize * loop.tripCount > MAXIMUM_LINE) return modified;
         // 循环不变量的补丁
         for (Instruction.Phi phi : loop.header.getPhiInstructions()) {
             if (phi.getOptionalValue(loop.getLatch()) == phi) {
@@ -58,6 +72,12 @@ public class LoopUnRoll {
         for (int i = 0; i <= loop.tripCount; i++) {
             LoopCloneInfo info = loop.cloneAndInfo();
             infos.add(info);
+            if (loop.parent != null) {
+               loop.parent.nowLevelBB.addAll(info.cpy.nowLevelBB);
+               for (Loop _child : info.cpy.children) {
+                   loop.parent.addChildLoop(_child);
+               }
+            }
         }
 
         BasicBlock preHeader = loop.getPreHeader();
@@ -123,6 +143,13 @@ public class LoopUnRoll {
         }
 //        Loop end = infos.get(loop.tripCount).cpy;
         return true;
+    }
+
+    private static void LoopReBuildAndNormalize(Function func) {
+        LCSSA.removeOnFunc(func);
+        LoopInfo.runOnFunc(func);
+        LoopSimplifyForm.runOnFunc(func);
+        LCSSA.runOnFunc(func);
     }
 
 

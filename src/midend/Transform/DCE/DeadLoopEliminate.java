@@ -19,7 +19,7 @@ public class DeadLoopEliminate {
         }
     }
 
-    private static void runOnFunc(Function function) {
+    public static void runOnFunc(Function function) {
         AnalysisManager.refreshCFG(function);
         if (function.loopInfo == null) return;
         HashSet<Loop> removes = new HashSet<>();

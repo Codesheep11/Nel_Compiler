@@ -2,13 +2,14 @@ package mir;
 
 import midend.Transform.Loop.LoopCloneInfo;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 //import static midend.Util.CloneInfo.bbMap;
 
 public class Loop {
     private static int loopCounter = 0;
-    private int hash;
+    private final int hash;
     public Loop parent = null;
     public HashSet<Loop> children = new HashSet<>();
     public HashSet<BasicBlock> nowLevelBB = new HashSet<>();
@@ -21,17 +22,7 @@ public class Loop {
 
     public int tripCount = -1;
     //todo: cond
-    public boolean canAggressiveParallel = false;
     public boolean isRoot = false;
-    public Boolean idcSet = false;
-    public Value idcAlu = null;
-    public Value idcPhi = null;
-    public Value idcCmp = null;
-    public Value idcInit = null;
-    public Value idcEnd = null;
-    public Value idcStep = null;
-    public boolean idcTimeSet = false;
-    public int idcTime = -1;
 
 
     public Loop(BasicBlock header) {
@@ -41,6 +32,10 @@ public class Loop {
 
     public Loop() {
         this.hash = loopCounter++;
+    }
+
+    public ArrayList<Loop> getChildrenSnap() {
+        return new ArrayList<>(children);
     }
 
     /**
@@ -150,8 +145,17 @@ public class Loop {
         info.src = this;
         info.cpy = new Loop();
 
+        for (Loop child : children) {
+            LoopCloneInfo childInfo = child.cloneAndInfo();
+            info.cpy.addChildLoop(childInfo.cpy);
+            info.merge(childInfo);
+        }
+
         nowLevelBB.forEach(bb -> info.cpy.addNowLevelBB(bb.cloneToFunc(info, bb.getParentFunction())));
         info.cpy.nowLevelBB.forEach(bb -> bb.fixClone(info));
+        for (var block : info.cpy.getAllBlocks()) {
+            block.fixClone(info);
+        }
 
         info.cpy.header = (BasicBlock) info.getReflectedValue(header);
         info.cpy.enterings = new HashSet<>(enterings);
@@ -163,15 +167,6 @@ public class Loop {
         cpLoop.tripCount = tripCount;
         cpLoop.parent = parent;
         cpLoop.isRoot = isRoot;
-        cpLoop.idcSet = idcSet;
-        cpLoop.idcAlu = idcAlu;
-        cpLoop.idcPhi = idcPhi;
-        cpLoop.idcCmp = idcCmp;
-        cpLoop.idcInit = idcInit;
-        cpLoop.idcEnd = idcEnd;
-        cpLoop.idcStep = idcStep;
-        cpLoop.idcTimeSet = idcTimeSet;
-        cpLoop.idcTime = idcTime;
 
         return info;
     }

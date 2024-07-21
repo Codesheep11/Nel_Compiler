@@ -20,18 +20,26 @@ public class ScalarEvolution {
         SCEVinfo res = new SCEVinfo();
 
         for (Loop loop : func.loopInfo.TopLevelLoops) {
-            for (Instruction inst : loop.header.getInstructions()) {
-                if (inst instanceof Instruction.Phi phiInst) {
-                    if (phiInst.getIncomingValueSize() == 2) {
-                        BasicInduceVariableAnalysis(phiInst, res, loop);
-                    }
-                } else {
-                    GeneralInduceVariableAnalysis(inst, res);
-                }
-            }
+            runLoop(loop, res);
+
         }
 
         return res;
+    }
+
+    public static void runLoop(Loop loop, SCEVinfo res) {
+        for (Loop child : loop.children) {
+            runLoop(child, res);
+        }
+        for (Instruction inst : loop.header.getInstructions()) {
+            if (inst instanceof Instruction.Phi phiInst) {
+                if (phiInst.getIncomingValueSize() == 2) {
+                    BasicInduceVariableAnalysis(phiInst, res, loop);
+                }
+            } else {
+                GeneralInduceVariableAnalysis(inst, res);
+            }
+        }
     }
 
     /**

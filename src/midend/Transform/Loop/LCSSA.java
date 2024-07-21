@@ -1,5 +1,6 @@
 package midend.Transform.Loop;
 
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
 
@@ -14,19 +15,25 @@ public class LCSSA {
     //循环出口构建LCSSA
 
 
-    public static void Run(Module module) {
+    public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            for (Loop loop : function.loopInfo.TopLevelLoops) {
-                run(loop);
-            }
+            runOnFunc(function);
         }
     }
 
-    public static void run(Loop loop) {
+    public static void runOnFunc(Function function) {
+        AnalysisManager.refreshCFG(function);
+        AnalysisManager.refreshDG(function);
+        for (Loop loop : function.loopInfo.TopLevelLoops) {
+            runOnLoop(loop);
+        }
+    }
+
+    public static void runOnLoop(Loop loop) {
         //先对子循环进行处理
         for (Loop child : loop.children) {
-            run(child);
+            runOnLoop(child);
         }
         //再对当前循环进行处理
         for (BasicBlock block : loop.nowLevelBB) {
@@ -42,7 +49,7 @@ public class LCSSA {
     }
 
     private static void addPhiAtExitBB(Instruction instr, BasicBlock exit, Loop loop) {
-//        System.out.println("addPhiAtExitBB: " + instr + " " + exit.getLabel());
+        System.out.println("addPhiAtExitBB: " + instr + " " + exit.getLabel());
         LinkedHashMap<BasicBlock, Value> phiMap = new LinkedHashMap<>();
         for (BasicBlock pre : exit.getPreBlocks()) {
             phiMap.put(pre, instr);
@@ -51,10 +58,10 @@ public class LCSSA {
         phi.remove();
         exit.addInstFirst(phi);
         LinkedList<Instruction> users = new LinkedList<>();
-        for (Use use : instr.getUses()) {
-            if ((use.getUser() instanceof Instruction.Phi) && (((Instruction.Phi) use.getUser()).getParentBlock().equals(exit)))
+        for (Instruction user : instr.getUsers()) {
+            if ((user instanceof Instruction.Phi p) && p.getParentBlock().equals(exit))
                 continue;
-            BasicBlock parentBlock = ((Instruction) use.getUser()).getParentBlock();
+            BasicBlock parentBlock = user.getParentBlock();
             HashSet<BasicBlock> visited = new HashSet<>();
             visited.add(exit);
             if (!isDomable(exit, parentBlock, visited)) continue;
@@ -70,7 +77,6 @@ public class LCSSA {
 
     /**
      * 判断指令是否在循环外部被使用
-     *
      */
     public static boolean usedOutLoop(Instruction instr, Loop loop) {
         for (Use use : instr.getUses()) {
@@ -96,19 +102,24 @@ public class LCSSA {
 
     public static void remove(Module module) {
         for (Function function : module.getFuncSet()) {
-            for (BasicBlock block : function.getBlocks()) {
-                for (Instruction.Phi phi : block.getPhiInstructions()) {
-                    if (phi.isLCSSA) {
-                        if (phi.getPreBlocks().size() != 1) {
-                            if (!phi.canBeReplaced()) {
-                                phi.isLCSSA = false;
-                                continue;
-                            }
+            if (function.isExternal()) continue;
+            removeOnFunc(function);
+        }
+    }
+
+    public static void removeOnFunc(Function function) {
+        for (BasicBlock block : function.getBlocks()) {
+            for (Instruction.Phi phi : block.getPhiInstructions()) {
+                if (phi.isLCSSA) {
+                    if (phi.getPreBlocks().size() != 1) {
+                        if (!phi.canBeReplaced()) {
+                            phi.isLCSSA = false;
+                            continue;
                         }
-                        Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
-                        phi.replaceAllUsesWith(v);
-                        phi.delete();
                     }
+                    Value v = phi.getOptionalValue(phi.getPreBlocks().get(0));
+                    phi.replaceAllUsesWith(v);
+                    phi.delete();
                 }
             }
         }

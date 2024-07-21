@@ -16,12 +16,12 @@ public class SimplfyCFG {
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            RunOnFunc(function);
+            runOnFunc(function);
         }
     }
 
 
-    private static void RunOnFunc(Function function) {
+    public static void runOnFunc(Function function) {
 //        System.out.println("br2Jump");
         Br2Jump(function);
         RemoveBlocks.runOnFunc(function);
