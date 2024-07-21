@@ -6,6 +6,7 @@ import mir.GlobalVariable;
 import mir.Instruction;
 import mir.Value;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
@@ -20,6 +21,20 @@ import java.util.LinkedList;
 public class StackManager {
 
     private static final StackManager INSTANCE = new StackManager();
+
+    private static final HashMap<String, ArrayList<Address>> funcAddressManger = new HashMap<>();
+
+    public static void changeAllAddress(String funcName, int offset) {
+        if (!funcAddressManger.containsKey(funcName)) funcAddressManger.put(funcName, new ArrayList<>());
+        for (Address address : funcAddressManger.get(funcName)) {
+            address.setOffset(address.getOffset() - offset);
+        }
+    }
+
+    public static void arrangeAddress(String funcName, Address address) {
+        if (!funcAddressManger.containsKey(funcName)) funcAddressManger.put(funcName, new ArrayList<>());
+        funcAddressManger.get(funcName).add(address);
+    }
 
     private StackManager() {
         offsetMap = new HashMap<>();
@@ -62,7 +77,7 @@ public class StackManager {
         int offset = funcSizeMap.get(funcName);
         if (!funcMap.containsKey(regName)) {
             offset += byteSize;
-            funcMap.put(regName, new Address(regName, offset, byteSize));
+            funcMap.put(regName, new Address(regName, offset, byteSize, funcName));
             funcSizeMap.replace(funcName, offset);
         }
         return funcMap.get(regName);
@@ -70,10 +85,6 @@ public class StackManager {
 
     /**
      * 将虚拟寄存器与栈上偏移绑定 <br />
-     *
-     * @param funcName
-     * @param regName
-     * @param address
      */
     public void blingRegOffset(String funcName, String regName, int byteSize, Address address) {
         regName = regName + "_" + byteSize;
@@ -83,7 +94,6 @@ public class StackManager {
             throw new RuntimeException("RegName has been binded");
         }
         funcMap.put(regName, address);
-        return;
     }
 
     private final HashMap<String, HashMap<Value, Integer>> llvm2Offset = new HashMap<>();
@@ -135,7 +145,7 @@ public class StackManager {
         if (!canBeCalAsOffset(funcName, pointer)) {
             throw new RuntimeException("wrong offset!");
         }
-        return new Address(llvm2Offset.get(funcName).get(pointer));
+        return new Address(llvm2Offset.get(funcName).get(pointer), funcName);
     }
 
 
@@ -170,12 +180,7 @@ public class StackManager {
             CallMap.put(call, new LinkedList<>());
         }
         LinkedList<Address> argList = CallMap.get(call);
-//        for (Address arg : argList) {
-//            if (arg.getRegName().equals(regName)) {
-//                return arg;
-//            }
-//        }
-        Address ret = new Address(regName, byteSize);
+        Address ret = new Address(regName, byteSize, funcName);
         argList.addLast(ret);
         return ret;
     }
@@ -193,8 +198,9 @@ public class StackManager {
                 funcSizeMap.put(funcName, 0);
                 return;
             }
-            int offset = funcSizeMap.get(funcName);
-            funcSizeMap.replace(funcName, align(offset));
+            int offset = align(funcSizeMap.get(funcName));
+            funcSizeMap.replace(funcName, offset);
+            changeAllAddress(funcName, offset);
             return;
         }
         HashMap<Instruction.Call, LinkedList<Address>> CallMap = this.funcArgMap.get(funcName);
@@ -212,13 +218,13 @@ public class StackManager {
             }
         }
         funcSizeMap.replace(funcName, offset);
+        changeAllAddress(funcName, offset);
     }
 
     /**
      * 16 字节对齐
      *
      * @param size 原始大小
-     * @return
      */
     private int align(int size) {
         return (size + 15) / 16 * 16;

@@ -2,12 +2,8 @@ package mir;
 
 import backend.operand.Address;
 import midend.Analysis.AnalysisManager;
-import midend.Analysis.ScalarEvolution;
 import midend.Transform.Loop.LoopInfo;
 import midend.Util.CloneInfo;
-import midend.Util.ControlFlowGraph;
-import midend.Util.DominanceGraph;
-import mir.result.SCEVinfo;
 import utils.NelLinkedList;
 
 import java.util.*;
@@ -179,6 +175,7 @@ public class Function extends Value {
     /**
      * 构建函数的控制流图 <br>
      * 建议使用AnalysisManager.refreshCFG(Function)来刷新CFG
+     *
      * @deprecated
      */
     @Deprecated
@@ -189,6 +186,7 @@ public class Function extends Value {
     /**
      * 构建函数的支配图 <br>
      * 建议使用AnalysisManager.refreshDG(Function)来刷新DG
+     *
      * @deprecated
      */
     @Deprecated
@@ -210,8 +208,7 @@ public class Function extends Value {
             for (Instruction instr : block.getInstructions()) {
                 if (instr instanceof Instruction.Phi phi) {
                     phi.changePreBlocks(bbMap);
-                }
-                else break;
+                } else break;
             }
         }
 
@@ -253,8 +250,7 @@ public class Function extends Value {
                     //retBB.getInstructions().insertAfter(load, store);
                     inst.remove();
                     //维护前驱后继
-                }
-                else if (inst instanceof Instruction.Return) {
+                } else if (inst instanceof Instruction.Return) {
                     Instruction jumpToRetBB = new Instruction.Jump(needFixBB, retBB);
                     jumpToRetBB.remove();
                     needFixBB.getInstructions().insertBefore(jumpToRetBB, inst);
@@ -304,21 +300,19 @@ public class Function extends Value {
         int float_count = 0;
         for (Argument arg : funcRArguments) {
             if (arg == argument) {
-                return new Address(sp_move);
+                return new Address(sp_move, name);
             }
             if (arg.getType().isPointerTy() || arg.getType().isInt64Ty()) {
                 int_count++;
                 if (int_count > 8) {
                     sp_move -= 8;
                 }
-            }
-            else if (arg.getType().isInt32Ty()) {
+            } else if (arg.getType().isInt32Ty()) {
                 int_count++;
                 if (int_count > 8) {
                     sp_move -= 4;
                 }
-            }
-            else if (arg.getType().isFloatTy()) {
+            } else if (arg.getType().isFloatTy()) {
                 float_count++;
                 if (float_count > 8) {
                     sp_move -= 4;
@@ -409,8 +403,7 @@ public class Function extends Value {
                 if (!rpot.contains(current)) {
                     rpot.add(current);
                 }
-            }
-            else {
+            } else {
                 visited.add(current);
                 for (BasicBlock succ : current.getSucBlocks()) {
                     if (!visited.contains(succ)) {

@@ -278,7 +278,7 @@ public abstract class ScheduleClass {
         @Override
         public boolean schedule(ScheduleState state, RiscvInstruction inst) {
             assert inst instanceof Li;
-            Integer imm = ((Li) inst).imm;
+            int imm = ((Li) inst).getVal();
             if (imm < 2048 && imm > -2048) {
                 state.makeRegisterReady(inst, 0, 1);
             } else {
