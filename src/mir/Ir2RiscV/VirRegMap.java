@@ -2,6 +2,7 @@ package mir.Ir2RiscV;
 
 import backend.StackManager;
 import backend.operand.Address;
+import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvFloat;
 import backend.riscv.RiscvInstruction.LS;
@@ -99,10 +100,10 @@ public class VirRegMap {
                 CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Address(0), LS.LSType.flw));
             } else if (value instanceof Constant.ConstantInt) {
                 int init = ((Integer) ((Constant.ConstantInt) value).getConstValue());
-                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, init));
+                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
             } else if (value instanceof Constant.ConstantBool) {
                 int init = ((Integer) ((Constant.ConstantBool) value).getConstValue());
-                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, init));
+                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
             } else {
                 throw new RuntimeException("wrong const Type");
             }

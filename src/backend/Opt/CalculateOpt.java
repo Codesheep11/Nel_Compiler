@@ -15,9 +15,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class CalculateOpt {
-    public static void run(RiscvModule riscvModule) {
+    public static void runBeforeRA(RiscvModule riscvModule) {
         for (RiscvFunction function : riscvModule.funcList) {
-            liAdd2Addi(function);
+            if (function.isExternal) continue;
             for (RiscvBlock block : function.blocks) {
                 uselessLoadRemove(block);
                 ConstValueReUse(block);
@@ -26,56 +26,6 @@ public class CalculateOpt {
             }
         }
     }
-
-    //
-    public static void liAdd2Addi(RiscvFunction function) {
-        for (RiscvBlock block : function.blocks) {
-            ArrayList<RiscvInstruction> newList = new ArrayList<>();
-            for (int i = 0; i < block.riscvInstructions.size(); i++) {
-                RiscvInstruction now = block.riscvInstructions.get(i);
-                if (i != block.riscvInstructions.size() - 1) {
-                    RiscvInstruction next = block.riscvInstructions.get(i + 1);
-                    if (now instanceof Li && next instanceof R3) {
-                        Reg liReg = ((Li) now).reg;
-                        Reg opRs1 = (Reg) ((R3) next).rs1;
-                        Reg opRs2 = (Reg) ((R3) next).rs2;
-                        R3 opi = null;
-                        if (((R3) next).type == R3.R3Type.addw) {
-                            if (((Li) now).imm >= -2047 && ((Li) now).imm <= 2047) {
-                                // 如果li的寄存器和addw用的寄存器之一重合
-                                if (liReg.equals(opRs1)) {
-                                    opi = new R3(block, ((R3) next).rd, opRs2, new Imm(((Li) now).imm), R3.R3Type.addi);
-                                } else if (liReg.equals(opRs2)) {
-                                    opi = new R3(block, ((R3) next).rd, opRs1, new Imm(((Li) now).imm), R3.R3Type.addi);
-                                }
-                                if (opi != null) {
-                                    newList.add(opi);
-                                    i++;// 跳过next
-                                    continue;
-                                }
-                            }
-                        } else if (((R3) next).type == R3.R3Type.subw) {
-                            if (((Li) now).imm >= -2047 && ((Li) now).imm <= 2047) {
-                                // 如果li的寄存器和sub的减的寄存器重合，因为如果被减的话需要反转另一个参数
-                                if (liReg.equals(opRs2)) {
-                                    opi = new R3(block, ((R3) next).rd, opRs1, new Imm(((Li) now).imm * -1), R3.R3Type.addi);
-                                    newList.add(opi);
-                                    i++;// 跳过next
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                }
-                newList.add(now);
-            }
-            block.riscvInstructions.clear();
-            for (RiscvInstruction instr : newList) {
-                block.riscvInstructions.addLast(instr);
-            }
-        }
-    }
-
 
     // 重要依据，这些拉取的常数和全局的不会跨过块
     public static void ConstValueReUse(RiscvBlock riscvBlock) {
@@ -92,19 +42,20 @@ public class CalculateOpt {
             }
             if (instr instanceof Li) {
                 // 如果前面有记录这个值，那么就将这个li给删掉，然后将后面的所有使用这个的寄存器都换掉
-                if (map.containsKey(((Li) instr).imm)) {
-                    Reg now = map.get(((Li) instr).imm).first;
+                int value = ((Li) instr).getVal();
+                if (map.containsKey(value)) {
+                    Reg now = map.get(value).first;
                     Reg def = ((Li) instr).reg;
                     for (int j = i + 1; j < riscvBlock.riscvInstructions.size(); j++) {
                         RiscvInstruction needReplace = riscvBlock.riscvInstructions.get(j);
                         if (needReplace instanceof J) continue;
                         needReplace.replaceUseReg(def, now);
                     }
-                    map.get(((Li) instr).imm).second = range;// 刷新生存周期
+                    map.get(value).second = range;// 刷新生存周期
                     continue;
                 } else {
                     map.keySet().removeIf(key -> map.get(key).first.equals(((Li) instr).reg));
-                    map.put(((Li) instr).imm, new Pair<>(((Li) instr).reg, range));
+                    map.put(value, new Pair<>(((Li) instr).reg, range));
                 }
             }
             newList.add(instr);
@@ -131,7 +82,7 @@ public class CalculateOpt {
             if (instr == block.riscvInstructions.getFirst()) continue;
             RiscvInstruction before = (RiscvInstruction) instr.prev;
             if (before instanceof LS be && instr instanceof LS af) {
-                if (be.rs1.equals(af.rs1) && be.rs2.equals(af.rs2) && be.imm.equals(af.imm)) {
+                if (be.rs1.equals(af.rs1) && be.rs2.equals(af.rs2) && be.addr.equals(af.addr)) {
                     needRemove.add(instr);
                 }
             }

@@ -25,7 +25,6 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.CodeGen;
@@ -89,7 +88,7 @@ public class Manager {
             CodeGen codeGen = new CodeGen();
             RiscvModule riscvmodule = codeGen.genCode(module);
             if (arg.opt) {
-                CalculateOpt.run(riscvmodule);
+                CalculateOpt.runBeforeRA(riscvmodule);
             }
             Allocater.run(riscvmodule);
             afterRegAssign = true;

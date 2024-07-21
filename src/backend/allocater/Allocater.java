@@ -3,7 +3,6 @@ package backend.allocater;
 import backend.Opt.LivelessDCE;
 import backend.StackManager;
 import backend.operand.Address;
-import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
@@ -101,17 +100,17 @@ public class Allocater {
             if (funcSize >= 2048) {
                 Reg tmp = Reg.getPreColoredReg(t0, 64);
                 Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-                Li beforeCall1 = new Li(call.block, tmp, -1 * funcSize);
+                Li beforeCall1 = new Li(call.block, tmp, new Address(funcSize));
                 R3 beforeCall2 = new R3(call.block, sp, sp, tmp, R3.R3Type.add);
                 call.block.riscvInstructions.insertBefore(beforeCall1, call);
                 call.block.riscvInstructions.insertBefore(beforeCall2, call);
-                Li afterCall1 = new Li(call.block, tmp, funcSize);
+                Li afterCall1 = new Li(call.block, tmp, new Address(-funcSize));
                 R3 afterCall2 = new R3(call.block, sp, sp, tmp, R3.R3Type.add);
                 call.block.riscvInstructions.insertAfter(afterCall2, call);
                 call.block.riscvInstructions.insertAfter(afterCall1, call);
             } else {
-                Imm offset1 = new Imm(-1 * funcSize);
-                Imm offset2 = new Imm(funcSize);
+                Address offset1 = new Address(funcSize);
+                Address offset2 = new Address(-funcSize);
                 R3 beforeCall = new R3(call.block, Reg.getPreColoredReg(sp, 64), Reg.getPreColoredReg(sp, 64), offset1, R3.R3Type.addi);
                 call.block.riscvInstructions.insertBefore(beforeCall, call);
                 R3 afterCall = new R3(call.block, Reg.getPreColoredReg(sp, 64), Reg.getPreColoredReg(sp, 64), offset2, R3.R3Type.addi);
