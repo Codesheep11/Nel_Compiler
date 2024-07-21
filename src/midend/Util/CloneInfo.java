@@ -30,4 +30,13 @@ public class CloneInfo {
         return valueMap.containsKey(value);
     }
 
+    public void merge(CloneInfo cloneInfo) {
+        for (Value key : cloneInfo.valueMap.keySet()) {
+            if (valueMap.containsKey(key)) {
+                throw new RuntimeException("CloneInfo merge error");
+            }
+        }
+        valueMap.putAll(cloneInfo.valueMap);
+    }
+
 }

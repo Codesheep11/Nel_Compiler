@@ -16,12 +16,12 @@ public class SimplfyCFG {
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            RunOnFunc(function);
+            runOnFunc(function);
         }
     }
 
 
-    private static void RunOnFunc(Function function) {
+    public static void runOnFunc(Function function) {
 //        System.out.println("br2Jump");
         Br2Jump(function);
         RemoveBlocks.runOnFunc(function);
@@ -46,7 +46,8 @@ public class SimplfyCFG {
             if (block.getSucBlocks().size() == 1) {
                 BasicBlock cur = block.getSucBlocks().get(0);
                 ArrayList<BasicBlock> merges = new ArrayList<>();
-                while (cur.getPreBlocks().size() == 1) {
+                while (cur.getPreBlocks().size() == 1
+                        && cur.getPhiInstructions().isEmpty()) {
                     mergeBlocks.add(cur);
                     merges.add(cur);
                     if (cur.getSucBlocks().size() == 1) cur = cur.getSucBlocks().get(0);

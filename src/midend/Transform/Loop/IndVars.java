@@ -85,6 +85,9 @@ public class IndVars {
     }
 
     private static void run(Loop loop, SCEVinfo scevInfo) {
+        for (Loop child : loop.children) {
+            run(child, scevInfo);
+        }
         if (getTripCount(loop, scevInfo)) {
             BasicBlock exit = loop.getExit();
             for (var inst : exit.getPhiInstructions()) {

@@ -65,7 +65,7 @@ public class RemoveBlocks {
                 if (phi.canBeReplaced() && !phi.isLCSSA) {
                     Value value = phi.getOptionalValue(phi.getPreBlocks().get(0));
                     phi.replaceAllUsesWith(value);
-                    phi.remove();
+                    phi.delete();
                 }
             }
         }
