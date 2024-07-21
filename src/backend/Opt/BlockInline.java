@@ -20,12 +20,23 @@ public class BlockInline {
             if (function.isExternal) continue;
             boolean con = true;
             while (con) {
+                con = preSimplify(function);
+            }
+            con = true;
+            while (con) {
                 con = blockInline(function);
             }
         }
     }
 
-    private static final int MAX_LEN = 12;
+    private static final int MAX_LEN = 200000;
+
+    public static boolean preSimplify(RiscvFunction func) {
+        boolean modify = false;
+        modify |= SimplifyCFG.redirectGoto(func);
+        modify |= removeUnusedLabels(func);
+        return modify;
+    }
 
     public static boolean removeUnusedLabels(RiscvFunction func) {
         ArrayList<RiscvBlock> blocks = func.blocks;

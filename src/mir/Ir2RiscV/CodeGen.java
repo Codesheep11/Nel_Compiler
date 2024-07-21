@@ -193,7 +193,19 @@ public class CodeGen {
      * 参数有3种,指针,int32，float
      */
     private void solveCall(Instruction.Call callInstr) {
-        J call = new J(nowBlock, J.JType.call, callInstr.getDestFunction().getName());
+        String min = "llvm.smin.i32";
+        String max = "llvm.smax.i32";
+        // 开局拦截min和max
+        String funcName = callInstr.getDestFunction().getName();
+        if (funcName.equals(min) || funcName.equals(max)) {
+            R3.R3Type type = funcName.equals(max) ? R3.R3Type.max : R3.R3Type.min;
+            Reg r1 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(0));
+            Reg r2 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(1));
+            Reg ans = VirRegMap.VRM.ensureRegForValue(callInstr);
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, r1, r2, type));
+            return;
+        }
+        J call = new J(nowBlock, J.JType.call, funcName);
         Type type = callInstr.getType();
         Reg reg = null;
         if (!(type instanceof Type.VoidType)) {

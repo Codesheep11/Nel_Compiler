@@ -38,7 +38,7 @@ public class RiscvBlock {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(name + ":\n");
+        StringBuilder sb = new StringBuilder(".p2align 2\n" + name + ":\n");
         for (RiscvInstruction ri : riscvInstructions) {
             sb.append(ri + "\n");
         }
