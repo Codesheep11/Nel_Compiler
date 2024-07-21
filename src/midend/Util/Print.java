@@ -27,7 +27,7 @@ public class Print {
         }
     }
 
-    public static void outputLLVM(Function func, String filepath) {
+    public static void output(Function func, String filepath) {
         try {
             OutputStream out = new FileOutputStream(filepath);
             ArrayList<String> outputList = new ArrayList<>(func.output());

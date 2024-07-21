@@ -28,12 +28,12 @@ public class GlobalValueNumbering {
         }
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            run(func);
+            runOnFunc(func);
         }
     }
 
 
-    public static void run(Function function) {
+    public static void runOnFunc(Function function) {
         function.buildDominanceGraph();
         GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
     }
