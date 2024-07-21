@@ -1,34 +1,39 @@
 package backend.operand;
 
+import backend.StackManager;
+
 public class Address extends Operand {
 
     private int offset;
     private boolean hasFilled;
 
-    private String regName;
+    private final String regName;
 
-    private int byteSize;
+    private final int byteSize;
 
-    public Address(String regName, int byteSize) {
+    public Address(String regName, int byteSize,String func) {
         this.regName = regName;
         this.byteSize = byteSize;
         this.offset = 0;
         this.hasFilled = false;
+        StackManager.arrangeAddress(func,this);
     }
 
-    public Address(String regName, int offset, int byteSize) {
+    public Address(String regName, int offset, int byteSize,String func) {
         this.regName = regName;
         this.byteSize = byteSize;
         this.offset = offset;
         this.hasFilled = true;
+        StackManager.arrangeAddress(func,this);
     }
 
     // 此方法是专门为了LS设置的，因此绑定的寄存器选择绑定t0，byteSize 64
-    public Address(int offset) {
+    public Address(int offset,String func) {
         this.regName = "t0";
         this.byteSize = 64;
         this.offset = offset;
         hasFilled = true;
+        StackManager.arrangeAddress(func,this);
     }
 
     public boolean hasFilled() {

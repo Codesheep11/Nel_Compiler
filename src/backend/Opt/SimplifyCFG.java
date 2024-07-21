@@ -99,7 +99,8 @@ public class SimplifyCFG {
                         }
                     }
                 }
-                if (!(block.riscvInstructions.getLast() instanceof J)) {
+                RiscvInstruction last =block.riscvInstructions.getLast();
+                if(!(last instanceof J) || ((J) last).type == J.JType.call){
                     //如果最后一个不是j的只需要找下面的就行
                     int idx = func.blocks.indexOf(block);
                     if (idx >= func.blocks.size() - 1) continue;

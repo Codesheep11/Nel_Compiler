@@ -100,7 +100,7 @@ public class RiscvFunction {
     public String toString() {
         StringBuilder sb = new StringBuilder(funcNameWrap(name) + ":\n");
         for (RiscvBlock rb : blocks) {
-            sb.append(rb + "\n");
+            sb.append(rb);
         }
         return sb.toString();
     }

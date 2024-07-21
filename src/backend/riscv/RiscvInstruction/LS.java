@@ -6,7 +6,6 @@ import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 
 public class LS extends RiscvInstruction {
@@ -41,25 +40,25 @@ public class LS extends RiscvInstruction {
         }
     }
 
-    public Operand rs1, rs2, imm;
+    public Operand rs1, rs2, addr;
 
 
     //标记是否是因为寄存器分配阶段由于寄存器溢出而产生的访存指令
     public boolean isSpilled = false;
 
-    public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand imm, LSType type) {
+    public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand addr, LSType type) {
         super(block);
         this.rs1 = rs1;
         this.rs2 = rs2;
-        this.imm = imm;
+        this.addr = addr;
         this.type = type;
     }
 
-    public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand imm, LSType type, boolean isSpilled) {
+    public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand addr, LSType type, boolean isSpilled) {
         super(block);
         this.rs1 = rs1;
         this.rs2 = rs2;
-        this.imm = imm;
+        this.addr = addr;
         this.type = type;
         this.isSpilled = isSpilled;
     }
@@ -85,18 +84,18 @@ public class LS extends RiscvInstruction {
 
     @Override
     public String toString() {
-        return "\t" + type + "\t\t" + rs1 + ", " + imm + "(" + rs2 + ")" + (isSpilled ? " #spilled" : "");
+        return "\t" + type + "\t\t" + rs1 + ", " + addr + "(" + rs2 + ")" + (isSpilled ? " #spilled" : "");
     }
 
-    public void replaceMe(RiscvBlock nowBlock) {
-        if (imm instanceof Address) {
-            if (((Address) imm).getOffset() >= 2048 || ((Address) imm).getOffset() <= -2048) {
+    public void replaceMe() {
+        if (addr instanceof Address) {
+            if (((Address) addr).getOffset() >= 2048 || ((Address) addr).getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
-                Li li = new Li(nowBlock, tmp, -1 * ((Address) imm).getOffset());
-                nowBlock.riscvInstructions.insertBefore(li, this);
-                R3 add = new R3(nowBlock, tmp, tmp, rs2, R3.R3Type.add);
-                nowBlock.riscvInstructions.insertBefore(add, this);
-                this.imm = new Imm(0);
+                Li li = new Li(block, tmp, addr);
+                block.riscvInstructions.insertBefore(li, this);
+                R3 add = new R3(block, tmp, rs2, tmp, R3.R3Type.add);
+                block.riscvInstructions.insertBefore(add, this);
+                this.addr = new Imm(0);
                 this.rs2 = tmp;
             }
         }
@@ -156,6 +155,6 @@ public class LS extends RiscvInstruction {
 
     @Override
     public RiscvInstruction myCopy(RiscvBlock newBlock) {
-        return new LS(newBlock, rs1, rs2, imm, type, isSpilled);
+        return new LS(newBlock, rs1, rs2, addr, type, isSpilled);
     }
 }
