@@ -25,11 +25,11 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
-import mir.Function;
 import mir.GlobalVariable;
+import midend.Util.Print;
+import mir.*;
+import mir.Ir2RiscV.AfterRA;
 import mir.Ir2RiscV.CodeGen;
-import mir.Loop;
 import mir.Module;
 
 import java.io.*;
@@ -54,56 +54,52 @@ public class Manager {
 
     public void run() {
         try {
-            arg.opt = true;
             FrontEnd();
-            if (arg.opt) {
-                Mem2Reg.run(module);
-                FuncAnalysis.run(module);
-                DeadCodeEliminate();
-                FuncPasses();
-                GlobalVarLocalize.run(module);
-                GlobalValueNumbering.run(module);
-                DeadCodeEliminate.run(module);
-                LoopInfo.build(module);
-                LoopSimplifyForm.run(module);
-                GlobalCodeMotion.run(module);
-                LCSSA.Run(module);
-                LoopUnSwitching.run(module);
-                LoopInfo.build(module);
-                IndVars.run(module);
-                LoopSimplifyForm.run(module);
-                LoopInfo.build(module);
-                LCSSA.remove(module);
-                ArrayPasses();
-                DeadCodeEliminate();
-                Branch2MinMax.run(module);
-                DeadCodeEliminate();
-                GlobalValueNumbering.run(module);
-                FuncAnalysis.run(module);
-            }
-            if (arg.LLVM) {
-                outputLLVM(arg.outPath, module);
-                return;
-            }
-            if (arg.opt) RemovePhi.run(module);
-            CodeGen codeGen = new CodeGen();
-            RiscvModule riscvmodule = codeGen.genCode(module);
-            if (arg.opt) {
-                CalculateOpt.run(riscvmodule);
-            }
-            Allocater.run(riscvmodule);
-            afterRegAssign = true;
-            if (arg.opt) {
-                BlockReSort.blockSort(riscvmodule);
-                BlockInline.run(riscvmodule);
-                SimplifyCFG.run(riscvmodule);
-                AfterRAScheduler.postRASchedule(riscvmodule);
-            }
-            outputRiscv(arg.outPath, riscvmodule);
+            if (arg.opt) O1();
+            else O0();
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(e.getClass().getSimpleName().length());
         }
+    }
+
+    private void O1() throws IOException {
+        Mem2Reg.run(module);
+        FuncAnalysis.run(module);
+        DeadCodeEliminate();
+        FuncPasses();
+        GlobalVarLocalize.run(module);
+        GlobalValueNumbering.run(module);
+        DeadCodeEliminate.run(module);
+        LoopBuildAndNormalize();
+        GlobalCodeMotion.run(module);
+        LoopUnSwitching.run(module);
+        DeadCodeEliminate();
+        ConstLoopUnRoll.run(module);
+        DeadCodeEliminate();
+        LCSSA.remove(module);
+        ArrayPasses();
+        DeadCodeEliminate();
+        ArrayPasses();
+        Branch2MinMax.run(module);
+        DeadCodeEliminate();
+        GlobalValueNumbering.run(module);
+        FuncAnalysis.run(module);
+        if (arg.LLVM) {
+            outputLLVM(arg.outPath, module);
+            return;
+        }
+        RemovePhi.run(module);
+        CodeGen codeGen = new CodeGen();
+        RiscvModule riscvmodule = codeGen.genCode(module);
+        CalculateOpt.runBeforeRA(riscvmodule);
+        Allocater.run(riscvmodule);
+        AfterRA.run(riscvmodule);
+        BlockReSort.blockSort(riscvmodule);
+        BlockInline.run(riscvmodule);
+        SimplifyCFG.run(riscvmodule);
+//        AfterRAScheduler.postRASchedule(riscvmodule);
+        outputRiscv(arg.outPath, riscvmodule);
     }
 
     private void FrontEnd() throws IOException, SyntaxError, SemanticError {
@@ -121,6 +117,8 @@ public class Manager {
     private void DeadCodeEliminate() {
         DeadLoopEliminate.run(module);
         SimplfyCFG.run(module);
+        GlobalValueNumbering.run(module);
+        SimplfyCFG.run(module);
         ArithReduce.run(module);
         DeadCodeEliminate.run(module);
     }
@@ -137,17 +135,17 @@ public class Manager {
         GepFold.run(module);
         LoadEliminate.run(module);
         StoreEliminate.run(module);
+        GlobalValueNumbering.run(module);
         SroaPass.run(module);
         LocalArrayLift.run(module);
         ConstIdx2Value.run(module);
     }
 
-    public void LoopTest(Module module) {
-        for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) continue;
-            for (Loop loop : function.loopInfo.TopLevelLoops)
-                loop.LoopInfoPrint();
-        }
+    private void LoopBuildAndNormalize() {
+        LCSSA.remove(module);
+        LoopInfo.run(module);
+        LoopSimplifyForm.run(module);
+        LCSSA.run(module);
     }
 
 
@@ -179,8 +177,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }
@@ -195,6 +192,47 @@ public class Manager {
             outputList.addAll(function.output());
         }
         streamOutput(out, outputList);
+    }
+
+    private void O0() throws IOException {
+        Mem2Reg.run(module);
+        FuncAnalysis.run(module);
+        DeadCodeEliminate();
+        FuncPasses();
+        GlobalVarLocalize.run(module);
+        GlobalValueNumbering.run(module);
+        DeadCodeEliminate.run(module);
+        LoopInfo.run(module);
+        LoopSimplifyForm.run(module);
+        GlobalCodeMotion.run(module);
+        LCSSA.run(module);
+        DeadCodeEliminate();
+        LoopInfo.run(module);
+        LoopSimplifyForm.run(module);
+        IndVars.run(module);
+        DeadCodeEliminate();
+        LoopInfo.run(module);
+        LCSSA.remove(module);
+        ArrayPasses();
+        DeadCodeEliminate();
+        Branch2MinMax.run(module);
+        DeadCodeEliminate();
+        GlobalValueNumbering.run(module);
+        FuncAnalysis.run(module);
+        if (arg.LLVM) {
+            outputLLVM(arg.outPath, module);
+            return;
+        }
+        RemovePhi.run(module);
+        CodeGen codeGen = new CodeGen();
+        RiscvModule riscvmodule = codeGen.genCode(module);
+        CalculateOpt.runBeforeRA(riscvmodule);
+        Allocater.run(riscvmodule);
+        AfterRA.run(riscvmodule);
+        BlockReSort.blockSort(riscvmodule);
+        SimplifyCFG.run(riscvmodule);
+//        AfterRAScheduler.postRASchedule(riscvmodule);
+        outputRiscv(arg.outPath, riscvmodule);
     }
 
     //region outputLLVM IR

@@ -44,7 +44,7 @@ public class GlobalCodeMotion {
         gcm.dginfo = AnalysisManager.getDG(function);
         gcm.GCMEarly4Block(function.getEntry());
         gcm.scheduledSet.clear();
-        gcm.GCMLate4Block(function.getEntry());
+        gcm.GCMLate4Block();
     }
 
     private void GCMEarly4Block(BasicBlock block) {
@@ -56,7 +56,7 @@ public class GlobalCodeMotion {
         }
     }
 
-    private void GCMLate4Block(BasicBlock block) {
+    private void GCMLate4Block() {
         ArrayList<BasicBlock> visitList = currentFunc.getDomTreePostOrder();
         Collections.reverse(visitList);
         for (BasicBlock basicblock : currentFunc.getDomTreePostOrder()) {
@@ -140,14 +140,17 @@ public class GlobalCodeMotion {
             return;
         }
         BasicBlock best = instr.latest;
-        // int bestDepth = instr.latest.getDomDepth();
+        int bestDepth = instr.latest.getDomDepth();
         int bestLoopDepth = instr.latest.getLoopDepth();
         while (instr.latest != instr.earliest) {
             instr.latest = dginfo.getIDom(instr.latest);
             if (instr.latest.getLoopDepth() < bestLoopDepth) {
                 best = instr.latest;
-//                bestDepth = instr.latest.getDomDepth();
+                bestDepth = instr.latest.getDomDepth();
                 bestLoopDepth = instr.latest.getLoopDepth();
+            } else if(instr.latest.getLoopDepth() == bestLoopDepth && instr.latest.getDomDepth() > bestDepth) {
+                best = instr.latest;
+                bestDepth = instr.latest.getDomDepth();
             }
         }
         instr.latest = best;
@@ -171,10 +174,10 @@ public class GlobalCodeMotion {
 
             if (inst instanceof Instruction.Phi) {
                 // region test
-                if (users.contains(inst)) {
+//                if (users.contains(inst)) {
                         // just for test
 //                    System.out.println("Error: GCM 尝试调度在PHI指令之前!");
-                }
+//                }
                 // endregion
                 continue;
             }

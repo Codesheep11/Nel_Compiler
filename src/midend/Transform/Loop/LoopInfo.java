@@ -18,10 +18,10 @@ public class LoopInfo {
         runLoopAnalysis();
     }
 
-    public static void build(Module module) {
-        for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) continue;
-            function.loopInfo = new LoopInfo(function);
+    public static void run(Module module) {
+        for (Function func : module.getFuncSet()) {
+            if (func.isExternal()) continue;
+            runOnFunc(func);
         }
     }
 
@@ -33,9 +33,8 @@ public class LoopInfo {
 
     public void runLoopAnalysis() {
         clearBlocksLoopInfo();
-//        function.buildControlFlowGraph();
         AnalysisManager.refreshCFG(function);
-        function.buildDominanceGraph();
+        AnalysisManager.refreshDG(function);
 
         LoopInfo4Func();
         for (Loop loop : TopLevelLoops) {
@@ -43,7 +42,7 @@ public class LoopInfo {
 //            LoopSimplifyForm.run(loop);
 //            LCSSA.run(loop);
         }
-        function.buildControlFlowGraph();
+        AnalysisManager.refreshCFG(function);
 //        printLoopInfo();
     }
 
@@ -117,8 +116,7 @@ public class LoopInfo {
                 loop.addNowLevelBB(predBB);
                 if (predBB.equals(loop.header)) continue;
                 reverseCFGWorkList.addAll(predBB.getPreBlocks());
-            }
-            else {
+            } else {
                 while (subLoop.parent != null) {
                     subLoop = subLoop.parent;
                 }
