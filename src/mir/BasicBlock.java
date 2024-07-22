@@ -46,6 +46,16 @@ public class BasicBlock extends Value {
         return phiInstructions;
     }
 
+    public ArrayList<Instruction> getMainInstructions() {
+        ArrayList<Instruction> mainInstructions = new ArrayList<>();
+        for (Instruction inst : instructions) {
+            if (inst instanceof Instruction.Phi) continue;
+            if (inst instanceof Instruction.Terminator) break;
+            mainInstructions.add(inst);
+        }
+        return mainInstructions;
+    }
+
     public Function getParentFunction() {
         return parentFunction;
     }

@@ -78,7 +78,7 @@ public class LocalArrayLift {
             }
             else if (useInst instanceof Instruction.Call) {
                 if (((Instruction.Call) useInst).getDestFunction().getName().equals("memset")) stores.add(useInst);
-                if (FuncInfo.hasSideEffect.get(((Instruction.Call) useInst).getDestFunction())) return;
+                else if (FuncInfo.hasSideEffect.get(((Instruction.Call) useInst).getDestFunction())) return;
             }
             else if (useInst instanceof Instruction.GetElementPtr || useInst instanceof Instruction.BitCast)
                 use.addAll(useInst.getUsers());
