@@ -88,6 +88,7 @@ public class FuncAnalysis {
         if (FuncInfo.callGraph.containsKey(PUTARRAY)) FuncInfo.hasPutOut.put(PUTARRAY, true);
         if (FuncInfo.callGraph.containsKey(PUTFARRAY)) FuncInfo.hasPutOut.put(PUTFARRAY, true);
         if (FuncInfo.callGraph.containsKey(PUTF)) FuncInfo.hasPutOut.put(PUTF, true);
+        if (FuncInfo.callGraph.containsKey(MEMSET)) FuncInfo.hasSideEffect.put(MEMSET, true);
     }
 
     private static void BuildAttribute(Function function) {

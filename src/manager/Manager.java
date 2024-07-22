@@ -85,6 +85,7 @@ public class Manager {
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
         FuncAnalysis.run(module);
+        Scheduler.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);
             return;
@@ -177,7 +178,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

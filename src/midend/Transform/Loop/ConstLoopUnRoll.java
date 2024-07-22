@@ -15,7 +15,7 @@ import java.util.Map;
 
 
 public class ConstLoopUnRoll {
-    private static final int MAXIMUM_LINE = 3000;
+    private static final int MAXIMUM_LINE = 5000;
 
     private static SCEVinfo scevInfo;
 
@@ -50,7 +50,6 @@ public class ConstLoopUnRoll {
         boolean modified = false;
         for (Loop child : loop.getChildrenSnap()) {
             modified |= tryUnrollLoop(child);
-            Print.output(loop.header.getParentFunction(), "debug.txt");
         }
         // TODO: 或许可以优化展开后循环内的跳转
 //        if (!loop.children.isEmpty()) return false;
@@ -73,10 +72,10 @@ public class ConstLoopUnRoll {
             LoopCloneInfo info = loop.cloneAndInfo();
             infos.add(info);
             if (loop.parent != null) {
-               loop.parent.nowLevelBB.addAll(info.cpy.nowLevelBB);
-               for (Loop _child : info.cpy.children) {
-                   loop.parent.addChildLoop(_child);
-               }
+                loop.parent.nowLevelBB.addAll(info.cpy.nowLevelBB);
+                for (Loop _child : info.cpy.children) {
+                    loop.parent.addChildLoop(_child);
+                }
             }
         }
 
@@ -94,12 +93,14 @@ public class ConstLoopUnRoll {
                             newMap.put(
                                     (BasicBlock) infos.get(loop.tripCount).getReflectedValue(entry.getKey()),
                                     infos.get(loop.tripCount).getReflectedValue(entry.getValue()));
-                        } else {
+                        }
+                        else {
                             newMap.put(
                                     (BasicBlock) infos.get(loop.tripCount).getReflectedValue(entry.getKey()),
                                     entry.getValue());
                         }
-                    } else {
+                    }
+                    else {
                         newMap.put(entry.getKey(), entry.getValue());
                     }
                 }
