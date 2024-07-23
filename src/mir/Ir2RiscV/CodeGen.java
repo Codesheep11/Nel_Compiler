@@ -432,7 +432,13 @@ public class CodeGen {
             if (offset instanceof Constant.ConstantInt) {
                 int of = (Integer) ((Constant.ConstantInt) offset).getConstValue();
                 int byte_off = of * size;
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, new Imm(byte_off), R3.R3Type.addi));
+                if (byte_off >= -2047 && byte_off <= 2047) {
+                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, new Imm(byte_off), R3.R3Type.addi));
+                } else {
+                    Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                    nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(byte_off)));
+                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, tmp, R3.R3Type.add));
+                }
                 return;
             }
         } else {
@@ -643,7 +649,13 @@ public class CodeGen {
                 op = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
                 value = (int) ((Constant.ConstantInt) add.getOperand_2()).getConstValue();
             }
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(value), R3.R3Type.addi));
+            if (value >= -2047 && value <= 2047) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(value), R3.R3Type.addi));
+            } else {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(value)));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.add));
+            }
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(add.getOperand_2());
@@ -663,7 +675,13 @@ public class CodeGen {
         if (sub.getOperand_2() instanceof Constant.ConstantInt) {
             Reg op = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             int value = (int) ((Constant.ConstantInt) sub.getOperand_2()).getConstValue();
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(-1 * value), R3.R3Type.addi));
+            if (value >= -2047 && value <= 2047) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(-1 * value), R3.R3Type.addi));
+            } else {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(-1 * value)));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.add));
+            }
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_2());
@@ -787,6 +805,108 @@ public class CodeGen {
         }
     }
 
+    private void solveShl(Instruction.Shl shl) {
+        Value value1 = shl.getOperand_1();
+        Value value2 = shl.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(shl);
+        Reg op = VirRegMap.VRM.ensureRegForValue(value1);
+        if (value2 instanceof Constant.ConstantInt) {
+            int val = ((Constant.ConstantInt) value2).getIntValue();
+            if (val >= -2047 && val <= 2047) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.slliw));
+            } else {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.sllw));
+            }
+        }
+    }
+
+    private void solveAnd(Instruction.And and) {
+        Value value1 = and.getOperand_1();
+        Value value2 = and.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(and);
+        Reg op = VirRegMap.VRM.ensureRegForValue(value1);
+        if (value2 instanceof Constant.ConstantInt) {
+            int val = ((Constant.ConstantInt) value2).getIntValue();
+            if (val >= -2047 && val <= 2047) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.andi));
+            } else {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.and));
+            }
+        }
+    }
+
+    private void solveLShr(Instruction.LShr lShr) {
+        Value value1 = lShr.getOperand_1();
+        Value value2 = lShr.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(lShr);
+        Reg op = VirRegMap.VRM.ensureRegForValue(value1);
+        if (value2 instanceof Constant.ConstantInt) {
+            int val = ((Constant.ConstantInt) value2).getIntValue();
+            if (val >= -2047 && val <= 2047) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.srliw));
+            } else {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.srlw));
+            }
+        }
+    }
+
+    private void solveAShr(Instruction.AShr aShr) {
+        Value value1 = aShr.getOperand_1();
+        Value value2 = aShr.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(aShr);
+        Reg op = VirRegMap.VRM.ensureRegForValue(value1);
+        if (value2 instanceof Constant.ConstantInt) {
+            int val = ((Constant.ConstantInt) value2).getIntValue();
+            if (val >= -2047 && val <= 2047) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.sraiw));
+            } else {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.sraw));
+            }
+        }
+    }
+
+    private void solveXor(Instruction.Xor xor) {
+        Value value1 = xor.getOperand_1();
+        Value value2 = xor.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(xor);
+        Reg op = VirRegMap.VRM.ensureRegForValue(value1);
+        if (value2 instanceof Constant.ConstantInt) {
+            int val = ((Constant.ConstantInt) value2).getIntValue();
+            if (val >= -2047 && val <= 2047) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.xoriw));
+            } else {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.xorw));
+            }
+        }
+    }
+
+    private void solveOr(Instruction.Or or) {
+        Value value1 = or.getOperand_1();
+        Value value2 = or.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(or);
+        Reg op = VirRegMap.VRM.ensureRegForValue(value1);
+        if (value2 instanceof Constant.ConstantInt) {
+            int val = ((Constant.ConstantInt) value2).getIntValue();
+            if (val >= -2047 && val <= 2047) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.ori));
+            } else {
+                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.or));
+            }
+        }
+    }
+
     private void visitBlock(BasicBlock block) {
         nowBlock = blockMap.get(block);
         for (Instruction instruction : block.getInstructions()) {
@@ -841,6 +961,18 @@ public class CodeGen {
                 solveFRem((Instruction.FRem) instruction);
             } else if (instruction instanceof Instruction.Move) {
                 solveMove((Instruction.Move) instruction);
+            } else if (instruction instanceof Instruction.And) {
+                solveAnd((Instruction.And) instruction);
+            } else if (instruction instanceof Instruction.Shl) {
+                solveShl((Instruction.Shl) instruction);
+            } else if (instruction instanceof Instruction.LShr) {
+                solveLShr((Instruction.LShr) instruction);
+            } else if (instruction instanceof Instruction.AShr) {
+                solveAShr((Instruction.AShr) instruction);
+            } else if (instruction instanceof Instruction.Or) {
+                solveOr((Instruction.Or) instruction);
+            } else if (instruction instanceof Instruction.Xor) {
+                solveXor((Instruction.Xor) instruction);
             } else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
             }
