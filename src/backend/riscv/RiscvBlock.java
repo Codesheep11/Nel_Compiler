@@ -13,6 +13,8 @@ public class RiscvBlock {
 
     public NelLinkedList<RiscvInstruction> riscvInstructions = new NelLinkedList<>();//便于插入指令
 
+    public int loopDepth = 0; //循环深度
+
     //riscvBlock的前驱和后继,在codegen时维护
 
     public HashSet<RiscvBlock> preBlock = new HashSet<>();

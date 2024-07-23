@@ -1,7 +1,5 @@
 package backend.Opt;
 
-import backend.operand.Address;
-import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
@@ -86,6 +84,7 @@ public class CalculateOpt {
 
 
     // 将icmp和branch合并
+    // 这里的原本的B可能是bne也可能是beq,需要特殊判定
     public static void icmpBranchToBranch(RiscvBlock block) {
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
         for (int i = 0; i < block.riscvInstructions.size(); i++) {
@@ -94,10 +93,17 @@ public class CalculateOpt {
             if (i < block.riscvInstructions.size() - 1) {
                 RiscvInstruction next = block.riscvInstructions.get(i + 1);
                 if (matchSLTAndSGT(now, next)) {
-                    //slt ,置1，bne r,zero,不为0则跳转,所以就是小于则跳转
+                    //slt ,置1，bne r,zero,不为0则跳转,所以就是小于则跳转,beq r,zero,就是大于等于则跳转
                     Reg reg = (Reg) ((R3) now).rd;
                     if (VirRegMap.bUseReg.get(reg) <= 1) {
-                        newList.add(new B(block, B.BType.blt, ((R3) now).rs1, (((R3) now).rs2), ((B) next).targetBlock));
+                        double prob = ((B) next).getYesProb();
+                        if (((B) next).type == B.BType.bne) {
+                            newList.add(new B(block, B.BType.blt, ((R3) now).rs1,
+                                    (((R3) now).rs2), ((B) next).targetBlock, prob));
+                        } else {
+                            newList.add(new B(block, B.BType.bge, ((R3) now).rs1,
+                                    (((R3) now).rs2), ((B) next).targetBlock, prob));
+                        }
                         i++;
                         // 将next忽略
                         modified = true;
@@ -106,19 +112,21 @@ public class CalculateOpt {
                     RiscvInstruction farNext = block.riscvInstructions.get(i + 2);
                     if (matchFarNext(now, next, farNext)) {
                         B.BType type;
+                        boolean reverse = ((B) farNext).type == B.BType.beq;
                         if (matchEQ(now, next, farNext)) {
                             // subw,seqz,看看是不是0
-                            type = B.BType.beq;
+                            type = reverse ? B.BType.bne : B.BType.beq;
                         } else if (matchNE(now, next, farNext)) {
-                            type = B.BType.bne;
+                            type = reverse ? B.BType.beq : B.BType.bne;
                         } else if (matchSGEAndSLE(now, next, farNext)) {
                             // 这个存起来就看后面的是不是大于等于前面的
-                            type = B.BType.bge;
+                            type = reverse ? B.BType.blt : B.BType.bge;
                         } else throw new RuntimeException("wrong match");
                         assert next instanceof R2;
                         Reg reg = (Reg) ((R2) next).rd;
                         if (VirRegMap.bUseReg.get(reg) <= 1) {
-                            newList.add(new B(block, type, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
+                            double prob = ((B) farNext).getYesProb();
+                            newList.add(new B(block, type, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock, prob));
                             i = i + 2;
                             modified = true;
                         }
@@ -134,6 +142,7 @@ public class CalculateOpt {
             block.riscvInstructions.addLast(ri);
         }
     }
+
     public static void ConstValueReUse(RiscvBlock riscvBlock) {
         final int range = 10;
         HashMap<Integer, Pair<Reg, Integer>> map = new HashMap<>();

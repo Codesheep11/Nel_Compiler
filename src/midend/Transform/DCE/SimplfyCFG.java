@@ -22,13 +22,10 @@ public class SimplfyCFG {
 
 
     public static void runOnFunc(Function function) {
-//        System.out.println("br2Jump");
         Br2Jump(function);
         RemoveBlocks.runOnFunc(function);
         function.buildDominanceGraph();
-//        Print.outputLLVM(function, "debug2.txt");
         MergeBlocks(function);
-//        Print.outputLLVM(function, "debug2.txt");
         RemoveBlocks.runOnFunc(function);
         ChangeTarget(function);
         RemoveBlocks.runOnFunc(function);
