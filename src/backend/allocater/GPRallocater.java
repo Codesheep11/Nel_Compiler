@@ -35,15 +35,24 @@ public class GPRallocater {
     private static int K = 26;
     //t0作为临时寄存器，不参与图着色寄存器分配
 
-    private static final LinkedHashSet<Reg.PhyReg> Regs = new LinkedHashSet<>(
+    private static final ArrayList<Reg.PhyReg> Regs = new ArrayList<>(
             Arrays.asList(Reg.PhyReg.t1, Reg.PhyReg.t2, Reg.PhyReg.t3,
-                    Reg.PhyReg.t4, Reg.PhyReg.t5, Reg.PhyReg.t6, Reg.PhyReg.s0, Reg.PhyReg.s1,
-                    Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4, Reg.PhyReg.s5, Reg.PhyReg.s6,
-                    Reg.PhyReg.s7, Reg.PhyReg.s8, Reg.PhyReg.s9, Reg.PhyReg.s10, Reg.PhyReg.s11,
+                    Reg.PhyReg.t4, Reg.PhyReg.t5, Reg.PhyReg.t6,
                     Reg.PhyReg.a0, Reg.PhyReg.a1, Reg.PhyReg.a2, Reg.PhyReg.a3, Reg.PhyReg.a4,
-                    Reg.PhyReg.a5, Reg.PhyReg.a6, Reg.PhyReg.a7
-//                    Reg.PhyReg.tp
-            )
+                    Reg.PhyReg.a5, Reg.PhyReg.a6, Reg.PhyReg.a7,
+                    Reg.PhyReg.s0, Reg.PhyReg.s1, Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4,
+                    Reg.PhyReg.s5, Reg.PhyReg.s6, Reg.PhyReg.s7, Reg.PhyReg.s8, Reg.PhyReg.s9,
+                    Reg.PhyReg.s10, Reg.PhyReg.s11)
+    );
+
+    private static final ArrayList<Reg.PhyReg> Regs4CallOut = new ArrayList<>(
+            Arrays.asList(Reg.PhyReg.s0, Reg.PhyReg.s1, Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4,
+                    Reg.PhyReg.s5, Reg.PhyReg.s6, Reg.PhyReg.s7, Reg.PhyReg.s8, Reg.PhyReg.s9,
+                    Reg.PhyReg.s10, Reg.PhyReg.s11,
+                    Reg.PhyReg.a0, Reg.PhyReg.a1, Reg.PhyReg.a2, Reg.PhyReg.a3, Reg.PhyReg.a4,
+                    Reg.PhyReg.a5, Reg.PhyReg.a6, Reg.PhyReg.a7,
+                    Reg.PhyReg.t1, Reg.PhyReg.t2, Reg.PhyReg.t3, Reg.PhyReg.t4, Reg.PhyReg.t5,
+                    Reg.PhyReg.t6)
     );
 
     private static final HashSet<Reg.PhyReg> unAllocateRegs = new HashSet<>(
@@ -90,7 +99,9 @@ public class GPRallocater {
      * 再在变量使用处从内存中取出
      */
     private static void ReWrite() {
-        for (Reg reg : spillNodes) {
+        RegCost.buildSpillCost(spillNodes);
+        ArrayList<Reg> spills = RegCost.getSpillArray();
+        for (Reg reg : spills) {
 //            System.out.println("spill: " + reg);
             ArrayList<RiscvInstruction> contains = new ArrayList<>(RegUse.get(reg));
             ArrayList<RiscvInstruction> uses = new ArrayList<>();
@@ -183,15 +194,15 @@ public class GPRallocater {
      * @return 分配结果
      */
     private static boolean AssignPhy(Reg v) {
-        if (v.preColored) {
-            return true;
-        }
-        LinkedHashSet<Reg.PhyReg> regs2Assign = new LinkedHashSet<>(Regs);
+        if (v.preColored) return true;
+        ArrayList<Reg.PhyReg> regs2Assign;
+        if (!callSaved.contains(v)) regs2Assign = new ArrayList<>(Regs);
+        else regs2Assign = new ArrayList<>(Regs4CallOut);
         for (Reg u : curCG.get(v)) {
             regs2Assign.remove(u.phyReg);
         }
         if (regs2Assign.size() != 0) {
-            v.phyReg = regs2Assign.iterator().next();
+            v.phyReg = regs2Assign.get(0);
             return true;
         }
         return false;
