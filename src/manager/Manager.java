@@ -84,6 +84,7 @@ public class Manager {
         Branch2MinMax.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
+        BitwiseOperation.run(module);
         FuncAnalysis.run(module);
         Scheduler.run(module);
         if (arg.LLVM) {
@@ -178,8 +179,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

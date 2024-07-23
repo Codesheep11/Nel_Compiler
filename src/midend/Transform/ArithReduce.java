@@ -8,8 +8,8 @@ import java.util.*;
 
 public class ArithReduce {
 
-    private static ArrayList<Instruction> reducedList = new ArrayList<>();
-    private static ArrayList<Instruction> delList = new ArrayList<>();
+    private static final ArrayList<Instruction> reducedList = new ArrayList<>();
+    private static final ArrayList<Instruction> delList = new ArrayList<>();
 
     private static ArrayList<Instruction> snap;
     private static int idx;
@@ -129,9 +129,7 @@ public class ArithReduce {
          a * b + a * c -> (b + c) * a
          b * a + a * c -> (b + c) * a
          */
-        if (inst.getOperand_1() instanceof Instruction.Mul && inst.getOperand_2() instanceof Instruction.Mul) {
-            Instruction.Mul mul1 = (Instruction.Mul) inst.getOperand_1();
-            Instruction.Mul mul2 = (Instruction.Mul) inst.getOperand_2();
+        if (inst.getOperand_1() instanceof Instruction.Mul mul1 && inst.getOperand_2() instanceof Instruction.Mul mul2) {
             if (mul1.getUsers().size() == 1 || mul2.getUsers().size() == 1) {
                 Value a = null, b = null, c = null;
                 if (mul1.getOperand_1().equals(mul2.getOperand_1())) {
@@ -248,9 +246,7 @@ public class ArithReduce {
          a * b - a * c -> (b - c) * a
          b * a - a * c -> (b - c) * a
          */
-        if (inst.getOperand_1() instanceof Instruction.Mul && inst.getOperand_2() instanceof Instruction.Mul) {
-            Instruction.Mul mul1 = (Instruction.Mul) inst.getOperand_1();
-            Instruction.Mul mul2 = (Instruction.Mul) inst.getOperand_2();
+        if (inst.getOperand_1() instanceof Instruction.Mul mul1 && inst.getOperand_2() instanceof Instruction.Mul mul2) {
             if (mul1.getUsers().size() == 1 || mul2.getUsers().size() == 1) {
                 Value a = null, b = null, c = null;
                 if (mul1.getOperand_1().equals(mul2.getOperand_1())) {
