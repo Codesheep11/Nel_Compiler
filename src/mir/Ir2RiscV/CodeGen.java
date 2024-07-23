@@ -435,7 +435,7 @@ public class CodeGen {
                 if (byte_off >= -2047 && byte_off <= 2047) {
                     nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, new Imm(byte_off), R3.R3Type.addi));
                 } else {
-                    Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                    Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                     nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(byte_off)));
                     nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, tmp, R3.R3Type.add));
                 }
@@ -650,11 +650,11 @@ public class CodeGen {
                 value = (int) ((Constant.ConstantInt) add.getOperand_2()).getConstValue();
             }
             if (value >= -2047 && value <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(value), R3.R3Type.addi));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(value), R3.R3Type.addiw));
             } else {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(value)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.add));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.addw));
             }
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
@@ -676,11 +676,11 @@ public class CodeGen {
             Reg op = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             int value = (int) ((Constant.ConstantInt) sub.getOperand_2()).getConstValue();
             if (value >= -2047 && value <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(-1 * value), R3.R3Type.addi));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(-1 * value), R3.R3Type.addiw));
             } else {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(-1 * value)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.add));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.addw));
             }
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
