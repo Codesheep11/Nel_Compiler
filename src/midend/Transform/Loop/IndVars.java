@@ -23,6 +23,9 @@ public class IndVars {
         for (Loop loop : func.loopInfo.TopLevelLoops) {
             run(loop, scevInfo);
         }
+        for (Loop loop : func.loopInfo.TopLevelLoops) {
+            brPredction(loop);
+        }
     }
 
     // TODO: 判断tripCount的方式太朴素了 考虑优化
@@ -92,7 +95,7 @@ public class IndVars {
             BasicBlock exit = loop.getExit();
             for (var inst : exit.getPhiInstructions()) {
                 if (inst.isLCSSA && inst.getIncomingValueSize() == 1) {
-                Value val = inst.getIncomingValues().get(0);
+                    Value val = inst.getIncomingValues().get(0);
                     if (scevInfo.contains(val)) {
                         int res = SCEVExpr.calc(scevInfo.query(val), loop.tripCount);
                         inst.replaceAllUsesWith(new Constant.ConstantInt(res));
@@ -125,5 +128,26 @@ public class IndVars {
             if (block != loop.getPreHeader())
                 return phiInst.getOptionalValue(block);
         throw new RuntimeException("getNext: no next value");
+    }
+
+    private static void brPredction(Loop loop) {
+        for (Loop child : loop.children) {
+            brPredction(child);
+        }
+        int tripCount = loop.tripCount;
+        if (tripCount == -1) tripCount = 1000;
+        float pro = 1 / (1 + tripCount);
+        for (BasicBlock exiting : loop.exitings) {
+            Instruction.Terminator terminator = exiting.getTerminator();
+            if (!(terminator instanceof Instruction.Branch branch)) continue;
+            if (loop.exits.contains(branch.getThenBlock())) branch.setProbability(pro);
+            else branch.setProbability(1 - pro);
+        }
+        for (BasicBlock entering : loop.enterings) {
+            Instruction.Terminator terminator = entering.getTerminator();
+            if (!(terminator instanceof Instruction.Branch branch)) continue;
+            if (branch.getThenBlock().equals(loop.preHeader)) branch.setProbability(1 - pro);
+            else branch.setProbability(pro);
+        }
     }
 }
