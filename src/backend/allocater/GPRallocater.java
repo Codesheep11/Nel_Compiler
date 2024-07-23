@@ -62,6 +62,19 @@ public class GPRallocater {
 
     private static HashSet<Reg.PhyReg> curUsedRegs = new HashSet<>();
 
+    private static class RegNode {
+        public Reg reg;
+        public int degree;
+
+        public RegNode(Reg reg) {
+            this.reg = reg;
+            this.degree = getDegree(curCG.get(reg));
+        }
+    }
+
+    private static PriorityQueue<RegNode> regQueue = new PriorityQueue<>(Comparator.comparingInt(o -> o.degree));
+
+
     private static void clear() {
         curUsedRegs.clear();
         curCG.clear();
@@ -89,6 +102,10 @@ public class GPRallocater {
             }
             if (Select()) break;
             ReWrite();
+            for (Reg reg : conflictGraph.keySet()) {
+                if (reg.preColored) continue;
+                reg.phyReg = null;
+            }
         }
         Allocater.UsedRegs.get(func.name).addAll(curUsedRegs);
     }
@@ -129,10 +146,6 @@ public class GPRallocater {
                 //错误的，定义点也可能会溢出，比如call多个load或者多个arg
                 //非 ssa 在使用点使用新的虚拟寄存器
 //                System.out.println("def: " + def);
-                if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).rs1.equals(reg)) {
-                    LS.LSType type = ((LS) def).type;
-                    if (type == LS.LSType.ld || type == LS.LSType.lw) continue;
-                }
                 RiscvInstruction store;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
@@ -143,7 +156,6 @@ public class GPRallocater {
             }
             for (RiscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
-                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1.equals(reg)) continue;
                 RiscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
@@ -159,10 +171,6 @@ public class GPRallocater {
      * 初始化两个队列，并将所有非预着色虚拟寄存器的物理寄存器置空
      **/
     public static void MoveInit() {
-        for (Reg reg : conflictGraph.keySet()) {
-            if (reg.preColored) continue;
-            reg.phyReg = null;
-        }
         //维护moveList
         for (RiscvBlock block : curFunc.blocks) {
             for (RiscvInstruction ins : block.riscvInstructions) {
@@ -346,19 +354,26 @@ public class GPRallocater {
         while (change) {
             change = false;
             //先进行传送无关节点的删除
-            boolean simplify = true;
-            while (simplify) {
-                simplify = false;
-                for (Reg node : curCG.keySet()) {
-                    //mv相关指令不在这里处理
-                    if (moveNodes.contains(node)) continue;
-                    if (getDegree(curCG.get(node)) < K) {
-                        simplify = true;
-                        DeleteNode(node);
-                        if (!node.preColored) outNodes.add(node);
-                        break;
+            regQueue.clear();
+            for (Reg node : curCG.keySet()) {
+                if (!moveNodes.contains(node)) regQueue.add(new RegNode(node));
+            }
+            while (!regQueue.isEmpty()) {
+                RegNode cur = regQueue.remove();
+                if (!curCG.containsKey(cur.reg)) continue;
+                if (cur.degree != getDegree(curCG.get(cur.reg))) continue;
+                Reg node = cur.reg;
+//                System.out.println("simplify: " + node + " " + getDegree(curCG.get(node)));
+                if (getDegree(curCG.get(node)) < K) {
+                    HashSet<Reg> neighbors = new HashSet<>(curCG.get(node));
+                    DeleteNode(node);
+                    for (Reg neighbor : neighbors) {
+                        if (!moveNodes.contains(neighbor)) regQueue.add(new RegNode(neighbor));
+                        if (neighbor.equals(node)) System.out.println("error");
                     }
+                    if (!node.preColored) outNodes.add(node);
                 }
+                else break;
             }
             //如果没有可以删除的低度数传送无关节点，尝试删除一条move来合并一对move相关节点
             boolean merge = true;

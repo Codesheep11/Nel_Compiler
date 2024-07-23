@@ -44,6 +44,7 @@ public class LivenessAnalyze {
         Use.clear();
         Def.clear();
         RegUse.clear();
+        callSaved.clear();
     }
 
     public static void RunOnFunc(RiscvFunction function) {

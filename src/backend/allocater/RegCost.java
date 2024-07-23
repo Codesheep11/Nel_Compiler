@@ -19,7 +19,7 @@ public class RegCost {
     public static ArrayList<Reg> getSpillArray() {
         ArrayList<Reg> regs = new ArrayList<>(RegCostMap.keySet());
         regs.sort((r1, r2) -> RegCostMap.get(r1) - RegCostMap.get(r2));
-        if (regs.size() > 20) regs = new ArrayList<>(regs.subList(0, 2 * regs.size() / 3));
+        if (regs.size() > 20) regs = new ArrayList<>(regs.subList(0, regs.size() / 2));
         return regs;
     }
 
@@ -28,7 +28,7 @@ public class RegCost {
         for (RiscvInstruction ri : LivenessAnalyze.RegUse.get(reg)) {
             int loopDepth = ri.block.loopDepth + 1;
             if (ri instanceof LS ls) {
-                if (ls.isSpilled) return;
+                if (ls.isSpilled && ls.rs1.equals(reg)) cost += 5 * 2000 * loopDepth;
                 else cost += 5 * 100 * loopDepth;
             }
             else cost += 1 * 100 * loopDepth;
