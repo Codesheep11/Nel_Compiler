@@ -490,7 +490,8 @@ public class CodeGen {
         if (!branchInstr.getCond().getType().isInt1Ty()) {
             throw new RuntimeException("cond is not int1");
         }
-        nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock())));
+        double prob = branchInstr.getProbability();
+        nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock()),prob));
         nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getElseBlock())));
     }
 

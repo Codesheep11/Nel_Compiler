@@ -11,7 +11,7 @@ public class B extends RiscvInstruction {
     public BType type;
 
     // 默认概率对半开
-    private double yesProb = 0.5;
+    private final double yesProb;
 
     public double getYesProb() {
         return yesProb;
@@ -55,7 +55,7 @@ public class B extends RiscvInstruction {
 
     public RiscvBlock targetBlock;
 
-    public B(RiscvBlock block, BType type, Operand rs1, Operand rs2, RiscvBlock targetBlock) {
+    public B(RiscvBlock block, BType type, Operand rs1, Operand rs2, RiscvBlock targetBlock, double yesProb) {
         super(block);
         this.type = type;
         this.rs1 = rs1;
@@ -63,6 +63,7 @@ public class B extends RiscvInstruction {
         this.targetBlock = targetBlock;
         block.succBlock.add(targetBlock);
         targetBlock.preBlock.add(block);
+        this.yesProb = yesProb;
     }
 
     @Override
@@ -120,6 +121,6 @@ public class B extends RiscvInstruction {
 
     @Override
     public RiscvInstruction myCopy(RiscvBlock newBlock) {
-        return new B(newBlock, type, rs1, rs2, targetBlock);
+        return new B(newBlock, type, rs1, rs2, targetBlock, yesProb);
     }
 }

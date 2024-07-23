@@ -2,9 +2,6 @@ package backend.Opt;
 
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
-import backend.riscv.RiscvInstruction.B;
-import backend.riscv.RiscvInstruction.J;
-import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
 import utils.Pair;
 
@@ -16,7 +13,9 @@ public class BlockReSort {
      * 重排序原则：尽量减少j指令，且尽量把块都放一起
      * 比如可以将j的指令重排
      **/
-    private static final String blockPlacementAlgo = "Pettis-Hansen";
+    private static final String blockPlacementAlgo = "P";
+
+    private static final int buff = 128;
 
 
     static class CostT {
@@ -41,8 +40,6 @@ public class BlockReSort {
 
     static class BlockSeq extends ArrayList<Integer> {
     }
-
-
 
 
     static BlockSeq solvePettisHansen(List<Integer> weights, List<Double> freq, List<BranchEdge> edges) {
@@ -326,8 +323,16 @@ public class BlockReSort {
                 edges.add(new BranchEdge(blockIdx, idxMap.get(pair.first), pair.second));
             }
         }
-        BlockSeq seq;
-        seq = solvePettisHansen(weights, freq, edges);
+        BlockSeq seq = new BlockSeq();
+        if (blockPlacementAlgo.equals("P")) {
+            seq = solvePettisHansen(weights, freq, edges);
+        } else if (blockPlacementAlgo.equals("B")) {
+            solveBruteForce(seq, edges, freq, weights, buff);
+        } else if (blockPlacementAlgo.equals("G")) {
+            solveGA(seq, edges, freq, weights, buff);
+        } else {
+            throw new RuntimeException("wrong type");
+        }
 
         if (seq.get(0) != 0) throw new AssertionError("Entry block is not at the beginning");
 

@@ -1,7 +1,5 @@
 package backend.Opt;
 
-import backend.operand.Address;
-import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
@@ -97,7 +95,8 @@ public class CalculateOpt {
                     //slt ,置1，bne r,zero,不为0则跳转,所以就是小于则跳转
                     Reg reg = (Reg) ((R3) now).rd;
                     if (VirRegMap.bUseReg.get(reg) <= 1) {
-                        newList.add(new B(block, B.BType.blt, ((R3) now).rs1, (((R3) now).rs2), ((B) next).targetBlock));
+                        double prob = ((B) next).getYesProb();
+                        newList.add(new B(block, B.BType.blt, ((R3) now).rs1, (((R3) now).rs2), ((B) next).targetBlock, prob));
                         i++;
                         // 将next忽略
                         modified = true;
@@ -118,7 +117,8 @@ public class CalculateOpt {
                         assert next instanceof R2;
                         Reg reg = (Reg) ((R2) next).rd;
                         if (VirRegMap.bUseReg.get(reg) <= 1) {
-                            newList.add(new B(block, type, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock));
+                            double prob = ((B) farNext).getYesProb();
+                            newList.add(new B(block, type, ((R3) now).rs1, ((R3) now).rs2, ((B) farNext).targetBlock, prob));
                             i = i + 2;
                             modified = true;
                         }
@@ -134,6 +134,7 @@ public class CalculateOpt {
             block.riscvInstructions.addLast(ri);
         }
     }
+
     public static void ConstValueReUse(RiscvBlock riscvBlock) {
         final int range = 10;
         HashMap<Integer, Pair<Reg, Integer>> map = new HashMap<>();

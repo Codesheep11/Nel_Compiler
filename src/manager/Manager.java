@@ -96,7 +96,6 @@ public class Manager {
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
-        BlockReSort.blockSort(riscvmodule);
         BlockInline.run(riscvmodule);
         SimplifyCFG.run(riscvmodule);
 //        AfterRAScheduler.postRASchedule(riscvmodule);

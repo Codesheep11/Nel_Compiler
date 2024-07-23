@@ -28,8 +28,7 @@ public class GenCFG {
         for (RiscvBlock block : blocks) {
             result.put(block, new BackCFGNode());
         }
-        for (int i = 0; i < blocks.size(); i++) {
-            RiscvBlock block = blocks.get(i);
+        for (RiscvBlock block : blocks) {
             BackCFGNode backCFGNode = result.get(block);
             // 首先看看是否有前面的b，有的话需要单独建立一个表
             double prob = 1.0;
@@ -43,33 +42,14 @@ public class GenCFG {
                     prob *= (1 - ((B) instruction).getYesProb());
                 }
             }
-            if (block.getLast() instanceof B) {
-                // 由于不是ret，因此不可能是最后一个
-                RiscvBlock next = blocks.get(i + 1);
-                Pair<RiscvBlock, Double> lastTar = new Pair<>(next, prob);
-                backCFGNode.suc.add(lastTar);
-                BackCFGNode lastOther = result.get(next);
-                lastOther.pre.add(block);
-            } else if (block.getLast() instanceof J) {
-                // J类，直接当成1
-                // 由于没有jr，所以不考虑这个带来的问题
-                if (((J) block.getLast()).type == J.JType.ret) {
-                    continue;
-                }
-                Pair<RiscvBlock, Double> tar = new Pair<>(((J) block.getLast()).targetBlock, prob);
-                backCFGNode.suc.add(tar);
-                BackCFGNode other = result.get(((J) block.getLast()).targetBlock);
-                other.pre.add(block);
-            } else {
-                //直接到下一个基本快的,否则是ret,那也不用考虑了，和正常指令一样
-                RiscvBlock next = i + 1 < blocks.size() ? blocks.get(i + 1) : null;
-                if (next != null) {
-                    Pair<RiscvBlock, Double> tar = new Pair<>(next, prob);
-                    backCFGNode.suc.add(tar);
-                    BackCFGNode other = result.get(next);
-                    other.pre.add(block);
-                }
+            if (!(block.getLast() instanceof J myj)) throw new RuntimeException("wrong!");
+            if (myj.type == J.JType.ret) {
+                continue;
             }
+            Pair<RiscvBlock, Double> tar = new Pair<>(myj.targetBlock, prob);
+            backCFGNode.suc.add(tar);
+            BackCFGNode other = result.get(myj.targetBlock);
+            other.pre.add(block);
         }
         //debug(result);
         return result;

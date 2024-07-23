@@ -360,7 +360,7 @@ public class Instruction extends User {
         private BasicBlock thenBlock;
         private BasicBlock elseBlock;
 
-        private float probability = 0.5f;
+        private double probability = 0.5f;
 
         public Branch(BasicBlock parentBlock, Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
         {
@@ -406,7 +406,7 @@ public class Instruction extends User {
             this.probability = probability;
         }
 
-        public float getProbability() {
+        public double getProbability() {
             return probability;
         }
 
