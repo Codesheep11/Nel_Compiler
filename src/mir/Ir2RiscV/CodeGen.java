@@ -145,6 +145,7 @@ public class CodeGen {
             }
         }
         if (function.isExternal()) return;
+        for (Loop loop : function.loopInfo.TopLevelLoops) setBlockLoopDepth(loop);
         for (RiscvInstruction riscvInstruction : paramPassing) {
             nowBlock.riscvInstructions.addLast(riscvInstruction);
         }
@@ -161,6 +162,13 @@ public class CodeGen {
                 rb.riscvInstructions.insertBefore(ld, rb.riscvInstructions.getLast());
             }
         }
+    }
+
+    private void setBlockLoopDepth(Loop loop) {
+        for (BasicBlock block : loop.nowLevelBB) {
+            blockMap.get(block).loopDepth = loop.getDepth();
+        }
+        for (Loop child : loop.children) setBlockLoopDepth(child);
     }
 
     /**
@@ -490,8 +498,15 @@ public class CodeGen {
         if (!branchInstr.getCond().getType().isInt1Ty()) {
             throw new RuntimeException("cond is not int1");
         }
-        nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock())));
-        nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getElseBlock())));
+        double prob = branchInstr.getProbability();
+        // 如果概率跳转概率比50大，那么就应当反转，让j尽可能大
+        if (prob >= 0.5) {
+            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.beq, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getElseBlock()), 1 - prob));
+            nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getThenBlock())));
+        } else {
+            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock()), prob));
+            nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getElseBlock())));
+        }
     }
 
     /**

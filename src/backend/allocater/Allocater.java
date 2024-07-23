@@ -64,7 +64,6 @@ public class Allocater {
      */
     public static void SaveReg4Call(RiscvFunction func) {
         for (J call : func.calls) {
-            call.getDef();
             for (Reg reg : Out.get(call)) {
                 if (!In.get(call).contains(reg)) continue;
                 //a0若来自于函数返回值，一定不需要保存

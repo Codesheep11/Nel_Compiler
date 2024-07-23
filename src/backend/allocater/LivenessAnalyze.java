@@ -1,13 +1,21 @@
 package backend.allocater;
 
+import backend.StackManager;
+import backend.operand.Address;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
+import backend.riscv.RiscvInstruction.J;
+import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
+import mir.Ir2RiscV.CodeGen;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+
+import static backend.operand.Reg.PhyReg.*;
+import static backend.operand.Reg.PhyReg.sp;
 
 public class LivenessAnalyze {
 
@@ -23,6 +31,8 @@ public class LivenessAnalyze {
 
     public static HashMap<Reg, HashSet<RiscvInstruction>> RegUse = new HashMap<>();
 
+    public static HashSet<Reg> callSaved = new HashSet<>();
+
 
     private static void clear() {
         BlockIn.clear();
@@ -34,6 +44,7 @@ public class LivenessAnalyze {
         Use.clear();
         Def.clear();
         RegUse.clear();
+        callSaved.clear();
     }
 
     public static void RunOnFunc(RiscvFunction function) {
@@ -110,6 +121,17 @@ public class LivenessAnalyze {
                     inSet.removeAll(Def.get(ins));
                     inSet.addAll(Use.get(ins));
                     In.put(ins, inSet);
+                }
+            }
+        }
+        for (J call : function.calls) {
+            if (CodeGen.ansRis.getFunction(call.funcName).isExternal) {
+                //此处只考虑VirtualReg，不考虑预着色寄存器,因为这里只为着色服务
+                for (Reg reg : Out.get(call)) {
+                    if (reg.preColored) continue;
+                    if (!In.get(call).contains(reg)) continue;
+                    if (reg.phyReg == zero || reg.phyReg == sp) continue;
+                    callSaved.add(reg);
                 }
             }
         }
