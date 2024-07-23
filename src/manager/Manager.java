@@ -97,6 +97,7 @@ public class Manager {
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
+        BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
 //        AfterRAScheduler.postRASchedule(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);

@@ -42,7 +42,7 @@ public class BlockReSort {
     }
 
 
-    static BlockSeq solvePettisHansen(List<Integer> weights, List<Double> freq, List<BranchEdge> edges) {
+    private static BlockSeq solvePettisHansen(List<Integer> weights, List<Double> freq, List<BranchEdge> edges) {
         int blockCount = weights.size();
 
         // Stage1: chain decomposition
@@ -181,7 +181,7 @@ public class BlockReSort {
         return new CostT(cost);
     }
 
-    public static void solveBruteForce(BlockSeq seq, List<BranchEdge> edges, List<Double> freq, List<Integer> weights, int bufferSize) {
+    private static void solveBruteForce(BlockSeq seq, List<BranchEdge> edges, List<Double> freq, List<Integer> weights, int bufferSize) {
         List<Integer> invMap = new ArrayList<>(Collections.nCopies(seq.size(), 0));
         BlockSeq best = new BlockSeq();
         best.addAll(seq);  // 正确初始化 best
@@ -234,7 +234,7 @@ public class BlockReSort {
         return bestCost;
     }
 
-    public static void solveGA(BlockSeq seq, List<BranchEdge> edges, List<Double> freq, List<Integer> weights, int bufferSize) {
+    private static void solveGA(BlockSeq seq, List<BranchEdge> edges, List<Double> freq, List<Integer> weights, int bufferSize) {
         Random urbg = new Random(998244353L);
 
         final int popSize = 20;
