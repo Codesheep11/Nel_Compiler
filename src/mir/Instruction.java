@@ -347,7 +347,7 @@ public class Instruction extends User {
     /**
      * 终结符, ValueType: Void
      */
-    public static abstract class Terminator extends Instruction{
+    public static abstract class Terminator extends Instruction {
         public Terminator(BasicBlock parentBlock, Type type, InstType instType) {
             super(parentBlock, type, instType);
         }
@@ -360,14 +360,18 @@ public class Instruction extends User {
         private BasicBlock thenBlock;
         private BasicBlock elseBlock;
 
-        public Branch(BasicBlock parentBlock,
-                      Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
+        private double probability = 0.5f;
+
+        public Branch(BasicBlock parentBlock, Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
         {
             super(parentBlock, Type.VoidType.VOID_TYPE, InstType.BRANCH);
             this.cond = cond;
             this.thenBlock = thenBlock;
             this.elseBlock = elseBlock;
-
+            if (cond instanceof Icmp icmp) {
+                if (icmp.getCondCode() == Icmp.CondCode.EQ) probability = 0.2f;
+                else if (icmp.getCondCode() == Icmp.CondCode.NE) probability = 0.8f;
+            }
             assert cond.getType().isInt1Ty();
 
             addOperand(cond);
@@ -396,6 +400,14 @@ public class Instruction extends User {
             if (elseBlock.equals(oldBlock)) {
                 elseBlock = newBlock;
             }
+        }
+
+        public void setProbability(float probability) {
+            this.probability = probability;
+        }
+
+        public double getProbability() {
+            return probability;
         }
 
         @Override

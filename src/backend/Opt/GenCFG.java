@@ -9,12 +9,27 @@ import utils.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 class BackCFGNode {
     // pair后面跟的是概率
-    public ArrayList<Pair<RiscvBlock, Double>> suc = new ArrayList<>();
-    public ArrayList<RiscvBlock> pre = new ArrayList<>();
+    public HashMap<RiscvBlock, Double> suc = new HashMap<>();
+    public HashMap<RiscvBlock, Double> pre = new HashMap<>();
+
+    public static void connect(HashMap<RiscvBlock, BackCFGNode> result, RiscvBlock src, RiscvBlock dst, double prob) {
+        // 首先为了防止一个合并后的块有多个跳转,需要搜索一下
+        if (result.get(src).suc.containsKey(dst)) {
+            result.get(src).suc.put(dst, result.get(src).suc.get(dst) + prob);
+        } else {
+            result.get(src).suc.put(dst, prob);
+        }
+        if (result.get(dst).pre.containsKey(src)) {
+            result.get(dst).pre.put(src, result.get(dst).pre.get(src) + prob);
+        } else {
+            result.get(dst).pre.put(src, prob);
+        }
+    }
 }
 
 public class GenCFG {
@@ -28,48 +43,22 @@ public class GenCFG {
         for (RiscvBlock block : blocks) {
             result.put(block, new BackCFGNode());
         }
-        for (int i = 0; i < blocks.size(); i++) {
-            RiscvBlock block = blocks.get(i);
-            BackCFGNode backCFGNode = result.get(block);
+        for (RiscvBlock block : blocks) {
             // 首先看看是否有前面的b，有的话需要单独建立一个表
             double prob = 1.0;
             for (RiscvInstruction instruction : block.riscvInstructions) {
-                if (instruction instanceof B) {
-                    Pair<RiscvBlock, Double> tar = new Pair<>(
-                            ((B) instruction).targetBlock, ((B) instruction).getYesProb() * prob);
-                    backCFGNode.suc.add(tar);
-                    BackCFGNode other = result.get(((B) instruction).targetBlock);
-                    other.pre.add(block);
-                    prob *= (1 - ((B) instruction).getYesProb());
+                if (instruction instanceof B b) {
+                    RiscvBlock target = b.targetBlock;
+                    BackCFGNode.connect(result, block, target, b.getYesProb());
+                    prob *= (1 - b.getYesProb());
                 }
             }
-            if (block.getLast() instanceof B) {
-                // 由于不是ret，因此不可能是最后一个
-                RiscvBlock next = blocks.get(i + 1);
-                Pair<RiscvBlock, Double> lastTar = new Pair<>(next, prob);
-                backCFGNode.suc.add(lastTar);
-                BackCFGNode lastOther = result.get(next);
-                lastOther.pre.add(block);
-            } else if (block.getLast() instanceof J) {
-                // J类，直接当成1
-                // 由于没有jr，所以不考虑这个带来的问题
-                if (((J) block.getLast()).type == J.JType.ret) {
-                    continue;
-                }
-                Pair<RiscvBlock, Double> tar = new Pair<>(((J) block.getLast()).targetBlock, prob);
-                backCFGNode.suc.add(tar);
-                BackCFGNode other = result.get(((J) block.getLast()).targetBlock);
-                other.pre.add(block);
-            } else {
-                //直接到下一个基本快的,否则是ret,那也不用考虑了，和正常指令一样
-                RiscvBlock next = i + 1 < blocks.size() ? blocks.get(i + 1) : null;
-                if (next != null) {
-                    Pair<RiscvBlock, Double> tar = new Pair<>(next, prob);
-                    backCFGNode.suc.add(tar);
-                    BackCFGNode other = result.get(next);
-                    other.pre.add(block);
-                }
+            if (!(block.getLast() instanceof J myj)) throw new RuntimeException("wrong!");
+            if (myj.type == J.JType.ret) {
+                continue;
             }
+            RiscvBlock target = myj.targetBlock;
+            BackCFGNode.connect(result, block, target, prob);
         }
         //debug(result);
         return result;
@@ -78,8 +67,8 @@ public class GenCFG {
     public static void debug(HashMap<RiscvBlock, BackCFGNode> cfg) {
         for (RiscvBlock block : cfg.keySet()) {
             System.out.println(block.name);
-            for (Pair<RiscvBlock, Double> pair : cfg.get(block).suc) {
-                System.out.println(pair.first.name + " -- " + pair.second);
+            for (Map.Entry<RiscvBlock, Double> pair : cfg.get(block).suc.entrySet()) {
+                System.out.println(pair.getKey().name + " -- " + pair.getValue());
             }
         }
     }
@@ -88,13 +77,14 @@ public class GenCFG {
         int[] p = IntStream.range(0, n).toArray();
 
         for (int i = 0; i < n; ++i) {
-            int x = -1;
+            int x = Integer.MAX_VALUE;
             double maxv = EPS;
             for (int j = i; j < n; ++j) {
                 double pivot = Math.abs(mat[i * n + j]);
                 if (pivot > maxv) {
                     maxv = pivot;
                     x = j;
+                    //break;//fixme 是否保留?
                 }
             }
             if (maxv == EPS) {
@@ -166,9 +156,9 @@ public class GenCFG {
 
         for (RiscvBlock block : func.blocks) {
             int u = nodeMap.get(block);
-            for (Pair<RiscvBlock, Double> pair : cfg.get(block).suc) {
-                double prob = pair.second;
-                a[nodeMap.get(pair.first) * n + u] -= prob;
+            for (Map.Entry<RiscvBlock, Double> pair : cfg.get(block).suc.entrySet()) {
+                double prob = pair.getValue();
+                a[nodeMap.get(pair.getKey()) * n + u] -= prob;
             }
         }
 
