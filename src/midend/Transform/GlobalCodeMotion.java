@@ -40,7 +40,6 @@ public class GlobalCodeMotion {
         GlobalCodeMotion gcm = new GlobalCodeMotion();
         gcm.entry = function.getEntry();
         gcm.currentFunc = function;
-        AnalysisManager.refreshDG(function);
         gcm.dginfo = AnalysisManager.getDG(function);
         gcm.GCMEarly4Block(function.getEntry());
         gcm.scheduledSet.clear();

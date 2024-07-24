@@ -109,13 +109,23 @@ public class DominanceGraph {
                     continue;
                 }
                 HashSet<BasicBlock> dom = _domSet.get(block);
-                HashSet<BasicBlock> new_dom = new HashSet<>(blocks);
+//                HashSet<BasicBlock> new_dom = new HashSet<>(blocks);
+                HashSet<BasicBlock> new_dom = null;
                 // 取支配交集
                 for (BasicBlock preBlock : block.getPreBlocks()) {
-                    HashSet<BasicBlock> preDom = _domSet.get(preBlock);
-                    new_dom.retainAll(preDom);
+                    if (new_dom == null) {
+                        new_dom = new HashSet<>(_domSet.get(preBlock));
+                    }
+                    else {
+                        new_dom.retainAll(_domSet.get(preBlock));
+                    }
+//                    HashSet<BasicBlock> preDom = _domSet.get(preBlock);
+//                    new_dom.retainAll(preDom);
                 }
                 // 加入自身
+                if (new_dom == null) {
+                    new_dom = new HashSet<>(blocks);
+                }
                 new_dom.add(block);
                 // 更新并 标记修改
                 if (!dom.equals(new_dom)) {

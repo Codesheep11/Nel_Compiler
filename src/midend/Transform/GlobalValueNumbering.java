@@ -1,5 +1,6 @@
 package midend.Transform;
 
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import manager.CentralControl;
 import mir.Module;
@@ -34,7 +35,7 @@ public class GlobalValueNumbering {
 
 
     public static void runOnFunc(Function function) {
-        function.buildDominanceGraph();
+        AnalysisManager.refreshDG(function);
         GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
     }
 
@@ -185,7 +186,7 @@ public class GlobalValueNumbering {
                         default -> {
                         }
                     }
-                    instruction.replaceAllUsesWith(new Constant.ConstantBool(result ? 1 : 0));
+                    instruction.replaceAllUsesWith(Constant.ConstantBool.get(result ? 1 : 0));
                     return true;
                 } else if (condition instanceof Instruction.Fcmp) {
                     float val1 = (float) op1.getConstValue();
@@ -201,7 +202,7 @@ public class GlobalValueNumbering {
                         default -> {
                         }
                     }
-                    instruction.replaceAllUsesWith(new Constant.ConstantBool(result ? 1 : 0));
+                    instruction.replaceAllUsesWith(Constant.ConstantBool.get(result ? 1 : 0));
                     return true;
                 }
             }
