@@ -360,7 +360,7 @@ public class Instruction extends User {
         private BasicBlock thenBlock;
         private BasicBlock elseBlock;
 
-        private double probability = 0.4f;
+        private double probability = 0.5f;
 
         public Branch(BasicBlock parentBlock, Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
         {

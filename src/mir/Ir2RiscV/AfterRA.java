@@ -6,14 +6,11 @@ import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
-import backend.riscv.RiscvGlobalVar;
 import backend.riscv.RiscvInstruction.*;
 import backend.riscv.RiscvModule;
 import manager.Manager;
-import utils.Pair;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 
 public class AfterRA {

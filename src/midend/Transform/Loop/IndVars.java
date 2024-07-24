@@ -134,7 +134,7 @@ public class IndVars {
         for (Loop child : loop.children) {
             brPredction(child);
         }
-        double pro = 0.1;
+        double pro = 0.0;
         for (BasicBlock exiting : loop.exitings) {
             Instruction.Terminator terminator = exiting.getTerminator();
             if (!(terminator instanceof Instruction.Branch branch)) continue;
