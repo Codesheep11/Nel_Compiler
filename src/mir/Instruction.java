@@ -360,7 +360,7 @@ public class Instruction extends User {
         private BasicBlock thenBlock;
         private BasicBlock elseBlock;
 
-        private double probability = 0.5f;
+        private double probability = 0.4f;
 
         public Branch(BasicBlock parentBlock, Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
         {
@@ -402,7 +402,7 @@ public class Instruction extends User {
             }
         }
 
-        public void setProbability(float probability) {
+        public void setProbability(double probability) {
             this.probability = probability;
         }
 

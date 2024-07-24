@@ -29,7 +29,7 @@ public class BlockInline {
         }
     }
 
-    private static final int MAX_LEN = 10;
+    private static final int MAX_LEN = 20;
 
     public static boolean preSimplify(RiscvFunction func) {
         boolean modify = false;
