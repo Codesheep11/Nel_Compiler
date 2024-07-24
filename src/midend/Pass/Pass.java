@@ -1,6 +1,4 @@
 package midend.Pass;
 
-public interface Pass {
+public class Pass {
 }
-
-

@@ -2,7 +2,6 @@ package manager;
 
 import backend.Opt.BlockReSort;
 import backend.Opt.CalculateOpt;
-import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -96,7 +95,7 @@ public class Manager {
             Allocater.run(riscvmodule);
             afterRegAssign = true;
             if (arg.opt) {
-                SimplifyCFG.run(riscvmodule);
+                backend.Opt.SimplifyCFG.run(riscvmodule);
             }
             outputRiscv(arg.outPath, riscvmodule);
         } catch (
@@ -120,7 +119,7 @@ public class Manager {
 
     private void DeadCodeEliminate() {
         DeadLoopEliminate.run(module);
-        SimplfyCFG.run(module);
+        SimplifyCFG.run(module);
         DeadCodeEliminate.run(module);
     }
 

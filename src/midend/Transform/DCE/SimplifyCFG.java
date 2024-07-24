@@ -1,6 +1,7 @@
 package midend.Transform.DCE;
 
-import midend.Util.Print;
+import midend.Pass.FunctionPass;
+import midend.Pass.Pass;
 import mir.*;
 import mir.Module;
 
@@ -11,8 +12,10 @@ import java.util.*;
  * 如果一个基本块只有一个前驱，并且该前驱只有一个后继，则将该基本块合并到其前驱中。 1
  * 对于只有一个前驱的基本块，删除其PHI节点。1
  * 删除仅包含无条件分支的基本块。
+ *
  */
-public class SimplfyCFG {
+public class SimplifyCFG extends FunctionPass {
+
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
@@ -144,4 +147,18 @@ public class SimplfyCFG {
     }
 
 
+    @Override
+    public Boolean doInitialization(Module module) {
+        return null;
+    }
+
+    @Override
+    public Boolean runOnFunc(Module module) {
+        return null;
+    }
+
+    @Override
+    public Boolean doFinalization(Module module) {
+        return null;
+    }
 }

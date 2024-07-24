@@ -7,7 +7,7 @@ import utils.Pair;
 
 import java.util.*;
 
-public class Reassociate {
+public class ReAssociate {
     private static HashMap<Value, ArrayList<Pair<Integer, Value>>> map = new HashMap<>();
     private static HashMap<Value, Integer> number = new HashMap<>();
 
