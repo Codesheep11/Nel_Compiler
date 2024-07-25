@@ -16,14 +16,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
- * 分析信息管理器
  *
- * @author Srchycz
- * TODO: 增加标记机制 实现懒更新以提升性能
  */
 public class AnalysisManager {
 
     public AnalysisManager() {
+
     }
 
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();

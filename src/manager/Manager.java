@@ -1,9 +1,6 @@
 package manager;
 
-import backend.Opt.BlockInline;
-import backend.Opt.BlockReSort;
-import backend.Opt.CalculateOpt;
-import backend.Opt.SimplifyCFG;
+import backend.Opt.*;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -14,6 +11,7 @@ import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.FuncAnalysis;
+import midend.Analysis.I32RangeAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
@@ -82,10 +80,13 @@ public class Manager {
         DeadCodeEliminate();
         ArrayPasses();
         Branch2MinMax.run(module);
+        I32RangeAnalysis.run(module);
+        RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
         BitwiseOperation.run(module);
         FuncAnalysis.run(module);
+        LoopInfo.run(module);
         Scheduler.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);
@@ -98,8 +99,10 @@ public class Manager {
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
+        MemoryOpt.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
+//        ShortInstrConvert.run(riscvmodule);
 //        AfterRAScheduler.postRASchedule(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }

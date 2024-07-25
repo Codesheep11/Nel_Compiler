@@ -1,7 +1,9 @@
 package midend.Analysis.Alias;
 
 import midend.Analysis.AnalysisManager;
+import midend.Analysis.Manager.ModuleAnalysisManager;
 import mir.Constant;
+import mir.Module;
 import mir.Value;
 
 import java.util.HashSet;
@@ -11,7 +13,7 @@ import java.util.Vector;
 /**
  *
  */
-public class AliasAnalysis extends AnalysisManager {
+public class AliasAnalysis extends ModuleAnalysisManager {
 
     private static class Attribute {
         // todo : fill details
@@ -33,12 +35,34 @@ public class AliasAnalysis extends AnalysisManager {
         MustAlias,
     }
 
+    public enum ModRefInfo {
+        NoModRef,
+        Ref,
+        Mod,
+        ModRef,
+    }
+
+    /**
+     * 返回 V1, V2 指向内存的情况
+     * @param v1 指针
+     * @param v2 指针
+     * @return AliasResult
+     */
     public AliasResult alias(Value v1, Value v2){
         // required Pointer
         assert (v1.getType().isPointerTy() && v2.getType().isPointerTy()) ||
                 (v1 instanceof Constant) || (v2 instanceof Constant);
 
         return AliasResult.NoAlias;
+    }
+
+    /***
+     * 高级调用，直接查询访存情况
+     * @param value 指针
+     * @return ModRefInfo
+     */
+    public ModRefInfo getModRefInfo(Value value){
+        return ModRefInfo.NoModRef;
     }
 
 }

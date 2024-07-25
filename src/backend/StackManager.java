@@ -76,7 +76,7 @@ public class StackManager {
         HashMap<String, Address> funcMap = offsetMap.get(funcName);
         int offset = funcSizeMap.get(funcName);
         if (!funcMap.containsKey(regName)) {
-            offset += byteSize;
+            offset = byteSize == 8 ? ((offset + 7) / 8 * 8 + byteSize) : offset + byteSize;
             funcMap.put(regName, new Address(regName, offset, byteSize, funcName));
             funcSizeMap.replace(funcName, offset);
         }
@@ -108,9 +108,10 @@ public class StackManager {
         prepareFunc(funcName);
         HashMap<Value, Integer> funcMap = llvm2Offset.get(funcName);
         int offset = funcSizeMap.get(funcName);
-        funcMap.put(pointer, offset + size);
-        funcSizeMap.replace(funcName, offset + size);
-        llvm2Offset.get(funcName).put(pointer, offset + size);
+        offset = offset % 8 == 0 ? (offset + size) : ((offset + 7) / 8 * 8 + size);
+        funcMap.put(pointer, offset);
+        funcSizeMap.replace(funcName, offset);
+        llvm2Offset.get(funcName).put(pointer, offset);
     }
 
     public void bindingValue(String funcName, Value before, Value after) {

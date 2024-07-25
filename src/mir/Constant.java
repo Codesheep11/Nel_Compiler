@@ -62,6 +62,11 @@ public abstract class Constant extends User {
             return String.valueOf(boolValue);
         }
 
+        @Override
+        public void delete() {
+            throw new RuntimeException("Cannot delete constant bool");
+        }
+
     }
 
     /**
@@ -112,6 +117,11 @@ public abstract class Constant extends User {
         @Override
         public int hashCode() {
             return intValue;
+        }
+
+        @Override
+        public void delete() {
+            throw new RuntimeException("Cannot delete constant int");
         }
 
     }

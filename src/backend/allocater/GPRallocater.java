@@ -17,8 +17,8 @@ public class GPRallocater {
 
     public static RiscvFunction curFunc; //当前分配的函数
 
-    public static HashMap<Reg, HashSet<Reg>> conflictGraph = new HashMap<>();
-    public static HashMap<Reg, HashSet<Reg>> curCG = new HashMap<>();
+    public static LinkedHashMap<Reg, LinkedHashSet<Reg>> conflictGraph = new LinkedHashMap<>();
+    public static LinkedHashMap<Reg, LinkedHashSet<Reg>> curCG = new LinkedHashMap<>();
 
     public static ArrayList<Reg> outNodes = new ArrayList<>();
     public static LinkedHashSet<Reg> spillNodes = new LinkedHashSet<>();
@@ -260,7 +260,7 @@ public class GPRallocater {
      * @param v 加入的寄存器节点
      */
     private static void AddNode(Reg v) {
-        curCG.putIfAbsent(v, new HashSet<>());
+        curCG.putIfAbsent(v, new LinkedHashSet<>());
         for (Reg t : conflictGraph.get(v)) {
             if (curCG.containsKey(t)) {
                 curCG.get(v).add(t);
@@ -299,7 +299,7 @@ public class GPRallocater {
         //如果找不到高度数的非预着色节点，说明图中剩余高度数节点全为预着色节点,则全部清空
         if (maxReg == null) {
             if (!curCG.isEmpty()) {
-                HashSet<Reg> PreRegs = new HashSet<>(curCG.keySet());
+                ArrayList<Reg> PreRegs = new ArrayList<>(curCG.keySet());
                 for (Reg reg : PreRegs) {
                     DeleteNode(reg);
                 }
@@ -314,8 +314,8 @@ public class GPRallocater {
 
     private static void FreezeMoveNode(Reg node) {
 //        System.out.println("freeze: " + node);
-        HashSet<R2> freezeMoves = new HashSet<>();
-        HashSet<Reg> TryFreezeReg = new HashSet<>();
+        LinkedHashSet<R2> freezeMoves = new LinkedHashSet<>();
+        LinkedHashSet<Reg> TryFreezeReg = new LinkedHashSet<>();
         for (R2 mv : moveList) {
             Reg rd = (Reg) mv.rd;
             Reg rs = (Reg) mv.rs;
@@ -331,7 +331,7 @@ public class GPRallocater {
         }
     }
 
-    private static int getDegree(HashSet<Reg> nodes) {
+    private static int getDegree(LinkedHashSet<Reg> nodes) {
         int size = 0;
         HashSet<Reg.PhyReg> regs = new HashSet<>();
         for (Reg reg : nodes) {
@@ -362,7 +362,7 @@ public class GPRallocater {
                 Reg node = cur.reg;
 //                System.out.println("simplify: " + node + " " + getDegree(curCG.get(node)));
                 if (getDegree(curCG.get(node)) < K) {
-                    HashSet<Reg> neighbors = new HashSet<>(curCG.get(node));
+                    LinkedHashSet<Reg> neighbors = new LinkedHashSet<>(curCG.get(node));
                     DeleteNode(node);
                     for (Reg neighbor : neighbors) {
                         if (!moveNodes.contains(neighbor)) regQueue.add(new RegNode(neighbor));
@@ -459,7 +459,7 @@ public class GPRallocater {
         if (r1.phyReg == Reg.PhyReg.zero || r2.phyReg == Reg.PhyReg.zero) return false;
         if (curCG.get(r1).contains(r2)) return false;
         //合并策略1：如果两个节点的合并节点度数小于K，则可以合并
-        HashSet<Reg> neighbors = new HashSet<>();
+        LinkedHashSet<Reg> neighbors = new LinkedHashSet<>();
         neighbors.addAll(curCG.get(r1));
         neighbors.addAll(curCG.get(r2));
         if (getDegree(neighbors) < K) {
@@ -497,21 +497,30 @@ public class GPRallocater {
      */
     public static void buildConflictGraph() {
         LivenessAnalyze.RunOnFunc(curFunc);
+        for (Reg reg : RegUse.keySet()) {
+            if (reg.regType == Reg.RegType.GPR) {
+                conflictGraph.put(reg, new LinkedHashSet<>());
+            }
+        }
         for (RiscvBlock block : curFunc.blocks) {
             for (RiscvInstruction ins : block.riscvInstructions) {
-                for (Reg reg : ins.getReg()) {
-                    if (reg.regType == Reg.RegType.GPR) conflictGraph.putIfAbsent(reg, new HashSet<>());
-                }
                 for (Reg def : Def.get(ins)) {
                     if (def.regType == Reg.RegType.GPR) {
                         for (Reg out : Out.get(ins)) {
-                            if (out.regType == Reg.RegType.GPR) addConflict(def, out);
+                            if (out.regType == Reg.RegType.GPR) {
+                                addConflict(def, out);
+                            }
                         }
                     }
                 }
                 for (Reg o1 : Out.get(ins)) {
-                    for (Reg o2 : Out.get(ins)) addConflict(o1, o2);
-
+                    if (o1.regType == Reg.RegType.GPR) {
+                        for (Reg o2 : Out.get(ins)) {
+                            if (o2.regType == Reg.RegType.GPR) {
+                                addConflict(o1, o2);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -524,9 +533,9 @@ public class GPRallocater {
         }
 
         //深拷贝删除图
-        curCG = new HashMap<>();
+        curCG = new LinkedHashMap<>();
         for (Reg reg : conflictGraph.keySet()) {
-            curCG.put(reg, new HashSet<>(conflictGraph.get(reg)));
+            curCG.put(reg, new LinkedHashSet<>(conflictGraph.get(reg)));
         }
 //        System.out.println(conflictGraph);
     }
@@ -540,9 +549,6 @@ public class GPRallocater {
     private static void addConflict(Reg reg1, Reg reg2) {
         if (reg1.equals(reg2)) return;
         if ((reg1).regType != Reg.RegType.GPR || reg2.regType != Reg.RegType.GPR) return;
-        if (conflictGraph.containsKey(reg1) && conflictGraph.get(reg1).contains(reg2)) return;
-        conflictGraph.putIfAbsent(reg1, new HashSet<>());
-        conflictGraph.putIfAbsent(reg2, new HashSet<>());
         conflictGraph.get(reg1).add(reg2);
         conflictGraph.get(reg2).add(reg1);
     }
