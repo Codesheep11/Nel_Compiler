@@ -11,11 +11,14 @@ public final class DGinfo {
 
     private final HashMap<BasicBlock, _DG_Block_Info> map;
 
+    private boolean domFrontierBuilt;
+
     public DGinfo(Function function) {
         map = new HashMap<>();
         for (BasicBlock block : function.getBlocks()) {
             map.put(block, new _DG_Block_Info(block));
         }
+        this.domFrontierBuilt = false;
     }
 
     @SuppressWarnings("InnerClassMayBeStatic")
@@ -72,6 +75,9 @@ public final class DGinfo {
     }
 
     public HashSet<BasicBlock> getDomFrontiers(BasicBlock block) {
+        if (!domFrontierBuilt) {
+            buildDominanceFrontier();
+        }
         return map.get(block).domFrontiers;
     }
 
@@ -88,6 +94,20 @@ public final class DGinfo {
      */
     public _DG_Block_Info getInfo(BasicBlock block) {
         return map.get(block);
+    }
+
+    private void buildDominanceFrontier() {
+        // 枚举控制图的边
+        for (BasicBlock a : map.keySet()) {
+            for (BasicBlock b : a.getSucBlocks()) {
+                BasicBlock x = a;
+                while (x != null && !strictlyDominate(x, b)) {
+                    map.get(x).domFrontiers.add(b);
+                    x = getIDom(x);
+                }
+            }
+        }
+        domFrontierBuilt = true;
     }
 
     public void printDominators() {

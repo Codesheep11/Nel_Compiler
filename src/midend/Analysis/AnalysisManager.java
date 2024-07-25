@@ -20,7 +20,10 @@ import java.util.HashSet;
  * @author Srchycz
  * TODO: 增加标记机制 实现懒更新以提升性能
  */
-public final class AnalysisManager {
+public class AnalysisManager {
+
+    public AnalysisManager() {
+    }
 
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
@@ -189,7 +192,4 @@ public final class AnalysisManager {
         }
     }
     // endregion
-
-    private AnalysisManager() {
-    }
 }

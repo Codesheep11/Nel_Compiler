@@ -14,7 +14,6 @@ import static midend.Util.FuncInfo.clear;
 
 public class FuncAnalysis {
 
-
     public static void run(Module module) {
         if (!FuncAnalysisOpen) FuncAnalysisOpen = true;
         Function main = module.getFunctions().get("main");

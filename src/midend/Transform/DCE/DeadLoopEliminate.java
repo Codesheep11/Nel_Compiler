@@ -1,13 +1,12 @@
 package midend.Transform.DCE;
 
-import midend.Transform.Loop.LoopInfo;
 import midend.Analysis.AnalysisManager;
 import midend.Transform.Loop.LoopInfo;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
 
-import java.util.ArrayList;
+
 import java.util.HashSet;
 
 public class DeadLoopEliminate {
