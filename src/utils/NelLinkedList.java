@@ -59,7 +59,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         return (Type) (tail.prev);
     }
 
-    public void insertBefore(Type newNode, Type node) {
+    public void insertBefore(NelLinkNode newNode, NelLinkNode node) {
         newNode.setParent(this);
         newNode.setPrev(node.prev);
         newNode.setNext(node);
@@ -69,7 +69,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         ++modCount;
     }
 
-    public void insertAfter(Type newNode, Type node) {
+    public void insertAfter(NelLinkNode newNode, NelLinkNode node) {
         newNode.setParent(this);
         newNode.setNext(node.next);
         newNode.setPrev(node);
@@ -250,21 +250,13 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
             parent = null;
         }
 
-//        public void replaceWith(NelLinkNode newNode) {
-//            if (parent == null) {
-//                throw new IllegalStateException("Node has no parent!");
-//            }
-//            if (prev == null || next == null) {
-//                throw new IllegalStateException("Node is not in the list!");
-//            }
-//            newNode.setParent(this.parent);
-//            newNode.setNext(this.next);
-//            newNode.setPrev(this.prev);
-//            this.prev.setNext(newNode);
-//            this.next.setPrev(newNode);
-//            this.parent.modCount++;
-//            this.parent = null;
-//        }
+        public void addNext(NelLinkNode newNode) {
+            parent.insertAfter(newNode, this);
+        }
+
+        public void addPrev(NelLinkNode newNode) {
+            parent.insertBefore(newNode, this);
+        }
 
         public int getIndex() {
             int idx = 0;

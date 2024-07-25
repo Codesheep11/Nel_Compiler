@@ -1,6 +1,7 @@
 package mir;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 
 public abstract class Constant extends User {
@@ -33,9 +34,15 @@ public abstract class Constant extends User {
      * 用 java int 存储
      */
     public static class ConstantBool extends Constant {
+        private static final ConstantBool _CONST_TRUE = new ConstantBool(1);
+        private static final ConstantBool _CONST_FALSE = new ConstantBool(0);
+
+        public static ConstantBool get(int val) {
+            return val == 0 ? _CONST_FALSE : _CONST_TRUE;
+        }
         int boolValue;//0 or 1
 
-        public ConstantBool(int val) {
+        private ConstantBool(int val) {
             super(Type.BasicType.I1_TYPE);
             boolValue = val;
         }
@@ -55,6 +62,11 @@ public abstract class Constant extends User {
             return String.valueOf(boolValue);
         }
 
+        @Override
+        public void delete() {
+            throw new RuntimeException("Cannot delete constant bool");
+        }
+
     }
 
     /**
@@ -62,9 +74,15 @@ public abstract class Constant extends User {
      * 用 java int 存储
      */
     public static class ConstantInt extends Constant {
+        private static final HashMap<Integer, ConstantInt> intPool = new HashMap<>();
+
+        public static ConstantInt get(int val) {
+            return intPool.computeIfAbsent(val, ConstantInt::new);
+        }
+
         private final int intValue;//当前int具体的值
 
-        public ConstantInt(int intValue) {
+        private ConstantInt(int intValue) {
             super(Type.BasicType.I32_TYPE);
             this.intValue = intValue;
         }
@@ -99,6 +117,11 @@ public abstract class Constant extends User {
         @Override
         public int hashCode() {
             return intValue;
+        }
+
+        @Override
+        public void delete() {
+            throw new RuntimeException("Cannot delete constant int");
         }
 
     }
@@ -152,7 +175,7 @@ public abstract class Constant extends User {
             ArrayList<Constant> array = new ArrayList<>();
             if (eleType.isArrayTy())
                 for (int i = 0; i < size; i++) array.add(new ConstantArray((Type.ArrayType) eleType));
-            else if (eleType.isInt32Ty()) for (int i = 0; i < size; i++) array.add(new ConstantInt(0));
+            else if (eleType.isInt32Ty()) for (int i = 0; i < size; i++) array.add(ConstantInt.get(0));
             else if (eleType.isFloatTy()) for (int i = 0; i < size; i++) array.add(new ConstantFloat(0));
             else throw new RuntimeException("Type is illegal!");
             constArray = array;

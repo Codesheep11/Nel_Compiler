@@ -1,7 +1,6 @@
 package backend.riscv.RiscvInstruction;
 
 import backend.operand.Address;
-import backend.operand.Imm;
 import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
@@ -12,7 +11,7 @@ public class R3 extends RiscvInstruction {
     public R3Type type;
 
     public enum R3Type {
-        add, addi, addw, addiw, subw, divw, mulw, remw, andw, andiw, orw, oriw, xorw, xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti,
+        add, addi, addw, addiw, subw, divw, mulw, remw, and, andi, or, ori, xorw, xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti,
         fadd, fsub, fmul, fdiv, min, max, feq, fle, flt,
         sh1add, sh2add, sh3add;// 这三个的最后一个参数才是需要位移的
 
@@ -51,28 +50,28 @@ public class R3 extends RiscvInstruction {
                     return "remw";
                 }
                 // 字余
-                case andw -> {
-                    return "andw";
+                case and -> {
+                    return "and";
                 }
                 // 字与
-                case andiw -> {
-                    return "andiw";
+                case andi -> {
+                    return "andi";
                 }
                 // 与立即数,注意范围限制
-                case orw -> {
-                    return "orw";
+                case or -> {
+                    return "or";
                 }
                 // 或字
-                case oriw -> {
-                    return "oriw";
+                case ori -> {
+                    return "ori";
                 }
                 // 或立即数
                 case xorw -> {
-                    return "xorw";
+                    return "xor";
                 }
                 // 异或,现在看来不需要
                 case xoriw -> {
-                    return "xoriw";
+                    return "xori";
                 }
                 // 异或,现在看来不需要
                 case sllw -> {
@@ -225,14 +224,6 @@ public class R3 extends RiscvInstruction {
             if (add.getOffset() >= 2048 || add.getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
                 Li li = new Li(block, tmp, add);
-                block.riscvInstructions.insertBefore(li, this);
-                this.rs2 = tmp;
-                this.type = R3Type.add;
-            }
-        } else if (rs2 instanceof Imm imm) {
-            if (imm.getVal() >= 2048 | imm.getVal() <= -2048) {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-                Li li = new Li(block, tmp, imm);
                 block.riscvInstructions.insertBefore(li, this);
                 this.rs2 = tmp;
                 this.type = R3Type.add;

@@ -61,6 +61,7 @@ public class Manager {
     }
 
     private void O1() throws IOException {
+//        DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -83,6 +84,7 @@ public class Manager {
         RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
+        BitwiseOperation.run(module);
         FuncAnalysis.run(module);
         LoopInfo.run(module);
         Scheduler.run(module);
@@ -180,8 +182,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }
@@ -199,6 +200,7 @@ public class Manager {
     }
 
     private void O0() throws IOException {
+        DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();

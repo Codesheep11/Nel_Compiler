@@ -9,6 +9,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+/**
+ * 数据迭代求DG <br>
+ * 由于时空开销较大 已弃用 <br>
+ * 保留以防万一 <br>
+ */
+@Deprecated
 public class DominanceGraph {
     private static Function parentFunction;
     private static BasicBlock entry;
@@ -104,13 +110,23 @@ public class DominanceGraph {
                     continue;
                 }
                 HashSet<BasicBlock> dom = _domSet.get(block);
-                HashSet<BasicBlock> new_dom = new HashSet<>(blocks);
+//                HashSet<BasicBlock> new_dom = new HashSet<>(blocks);
+                HashSet<BasicBlock> new_dom = null;
                 // 取支配交集
                 for (BasicBlock preBlock : block.getPreBlocks()) {
-                    HashSet<BasicBlock> preDom = _domSet.get(preBlock);
-                    new_dom.retainAll(preDom);
+                    if (new_dom == null) {
+                        new_dom = new HashSet<>(_domSet.get(preBlock));
+                    }
+                    else {
+                        new_dom.retainAll(_domSet.get(preBlock));
+                    }
+//                    HashSet<BasicBlock> preDom = _domSet.get(preBlock);
+//                    new_dom.retainAll(preDom);
                 }
                 // 加入自身
+                if (new_dom == null) {
+                    new_dom = new HashSet<>(blocks);
+                }
                 new_dom.add(block);
                 // 更新并 标记修改
                 if (!dom.equals(new_dom)) {
