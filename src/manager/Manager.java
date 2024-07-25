@@ -100,8 +100,10 @@ public class Manager {
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
+        MemoryOpt.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
+//        ShortInstrConvert.run(riscvmodule);
 //        AfterRAScheduler.postRASchedule(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }
@@ -181,8 +183,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

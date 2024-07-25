@@ -402,7 +402,7 @@ public class Instruction extends User {
             }
         }
 
-        public void setProbability(float probability) {
+        public void setProbability(double probability) {
             this.probability = probability;
         }
 

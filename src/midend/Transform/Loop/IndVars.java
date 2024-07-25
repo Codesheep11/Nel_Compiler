@@ -1,8 +1,8 @@
 package midend.Transform.Loop;
 
 import midend.Analysis.AnalysisManager;
-import mir.*;
 import mir.Module;
+import mir.*;
 import mir.result.SCEVinfo;
 
 /**
@@ -134,9 +134,7 @@ public class IndVars {
         for (Loop child : loop.children) {
             brPredction(child);
         }
-        int tripCount = loop.tripCount;
-        if (tripCount == -1) tripCount = 1000;
-        float pro = 1 / (1 + tripCount);
+        double pro = 0.0;
         for (BasicBlock exiting : loop.exitings) {
             Instruction.Terminator terminator = exiting.getTerminator();
             if (!(terminator instanceof Instruction.Branch branch)) continue;
