@@ -14,6 +14,7 @@ import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.FuncAnalysis;
+import midend.Analysis.I32RangeAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
@@ -24,6 +25,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.GlobalVariable;
 import mir.*;
 import mir.Ir2RiscV.AfterRA;
@@ -80,9 +82,12 @@ public class Manager {
         DeadCodeEliminate();
         ArrayPasses();
         Branch2MinMax.run(module);
+        I32RangeAnalysis.run(module);
+        RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
         FuncAnalysis.run(module);
+        LoopInfo.run(module);
         Scheduler.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);
