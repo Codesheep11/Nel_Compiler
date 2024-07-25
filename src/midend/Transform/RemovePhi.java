@@ -6,7 +6,6 @@ import mir.Module;
 import mir.result.CFGinfo;
 
 import java.util.ArrayList;
-import java.util.Collection;
 
 public class RemovePhi {
     private static int idx = 0;
@@ -15,6 +14,10 @@ public class RemovePhi {
 
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) {
+                continue;
+            }
+            cfGinfo = AnalysisManager.getCFG(function);
             if (function.isExternal()) continue;
             cfGinfo = AnalysisManager.getCFG(function);
             removePhiAddPhiCopy(function);

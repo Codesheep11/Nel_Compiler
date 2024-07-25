@@ -33,6 +33,9 @@ public class LoopInfo {
 
     public void runLoopAnalysis() {
         clearBlocksLoopInfo();
+//        function.buildControlFlowGraph();
+        AnalysisManager.refreshCFG(function);
+        function.buildDominanceGraph();
         AnalysisManager.refreshCFG(function);
         AnalysisManager.refreshDG(function);
 
