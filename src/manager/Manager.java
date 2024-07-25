@@ -1,9 +1,6 @@
 package manager;
 
-import backend.Opt.BlockInline;
-import backend.Opt.BlockReSort;
-import backend.Opt.CalculateOpt;
-import backend.Opt.SimplifyCFG;
+import backend.Opt.*;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -183,7 +180,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }
