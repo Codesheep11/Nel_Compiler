@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 public class BitwiseOperation {
 
-    private static final int MUL_COST = 5;
+    private static final int MUL_COST = 0; // 经测试, 乘法效率已经足够高
 
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
@@ -51,7 +51,7 @@ public class BitwiseOperation {
                         return;
                     }
                     if (val > 0 && (val & (val - 1)) == 0) {
-                        Instruction.Shl shl = new Instruction.Shl(parentBlock, type, op1, new Constant.ConstantInt(log2(val)));
+                        Instruction.Shl shl = new Instruction.Shl(parentBlock, type, op1, Constant.ConstantInt.get(log2(val)));
                         shl.remove();
                         inst.addNext(shl);
                         inst.replaceAllUsesWith(shl);
@@ -63,7 +63,7 @@ public class BitwiseOperation {
                         ArrayList<Instruction> recs = new ArrayList<>();
                         for (int i = 0; (1 << i) <= val; ++ i) {
                             if ((val & (1 << i)) != 0) {
-                                Instruction.Shl shl = new Instruction.Shl(parentBlock, type, op1, new Constant.ConstantInt(i));
+                                Instruction.Shl shl = new Instruction.Shl(parentBlock, type, op1, Constant.ConstantInt.get(i));
                                 recs.add(shl);
                                 shl.remove();
                             }
@@ -92,32 +92,32 @@ public class BitwiseOperation {
             }
             case DIV -> {
                 // TODO: 需要保证 op1 非负
-                Instruction.Div divInst = (Instruction.Div) inst;
-                Value op1 = divInst.getOperand_1();
-                Value op2 = divInst.getOperand_2();
-                if (op2 instanceof Constant.ConstantInt constant) {
-                    int val = constant.getIntValue();
-                    if (val == 1) {
-                        inst.replaceAllUsesWith(op1);
-                        inst.delete();
-                        return;
-                    }
-                    // 无法确定op1范围
-                    if (val > 0 && (val & (val - 1)) == 0) {
-                        Instruction.LShr sign = new Instruction.LShr(parentBlock, type, op1, Constant.ConstantInt.get(31));
-                        sign.remove();
-                        Instruction.AShr ashr = new Instruction.AShr(parentBlock, type, op1, Constant.ConstantInt.get(log2(val)));
-                        ashr.remove();
-                        Instruction.Add add = new Instruction.Add(parentBlock, type, ashr, sign);
-                        add.remove();
-                        inst.addNext(sign);
-                        sign.addNext(ashr);
-                        ashr.addNext(add);
-                        inst.replaceAllUsesWith(add);
-                        inst.delete();
-                        return;
-                    }
-                }
+//                Instruction.Div divInst = (Instruction.Div) inst;
+//                Value op1 = divInst.getOperand_1();
+//                Value op2 = divInst.getOperand_2();
+//                if (op2 instanceof Constant.ConstantInt constant) {
+//                    int val = constant.getIntValue();
+//                    if (val == 1) {
+//                        inst.replaceAllUsesWith(op1);
+//                        inst.delete();
+//                        return;
+//                    }
+//                    // 无法确定op1范围
+//                    if (val > 0 && (val & (val - 1)) == 0) {
+//                        Instruction.LShr sign = new Instruction.LShr(parentBlock, type, op1, Constant.ConstantInt.get(31));
+//                        sign.remove();
+//                        Instruction.AShr ashr = new Instruction.AShr(parentBlock, type, op1, Constant.ConstantInt.get(log2(val)));
+//                        ashr.remove();
+//                        Instruction.Add add = new Instruction.Add(parentBlock, type, ashr, sign);
+//                        add.remove();
+//                        inst.addNext(sign);
+//                        sign.addNext(ashr);
+//                        ashr.addNext(add);
+//                        inst.replaceAllUsesWith(add);
+//                        inst.delete();
+//                        return;
+//                    }
+//                }
             }
             case REM -> {
                 return;

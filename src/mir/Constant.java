@@ -77,7 +77,7 @@ public abstract class Constant extends User {
 
         private final int intValue;//当前int具体的值
 
-        public ConstantInt(int intValue) {
+        private ConstantInt(int intValue) {
             super(Type.BasicType.I32_TYPE);
             this.intValue = intValue;
         }
@@ -165,7 +165,7 @@ public abstract class Constant extends User {
             ArrayList<Constant> array = new ArrayList<>();
             if (eleType.isArrayTy())
                 for (int i = 0; i < size; i++) array.add(new ConstantArray((Type.ArrayType) eleType));
-            else if (eleType.isInt32Ty()) for (int i = 0; i < size; i++) array.add(new ConstantInt(0));
+            else if (eleType.isInt32Ty()) for (int i = 0; i < size; i++) array.add(ConstantInt.get(0));
             else if (eleType.isFloatTy()) for (int i = 0; i < size; i++) array.add(new ConstantFloat(0));
             else throw new RuntimeException("Type is illegal!");
             constArray = array;

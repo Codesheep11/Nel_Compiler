@@ -19,12 +19,12 @@ public final class DGinfo {
     }
 
     @SuppressWarnings("InnerClassMayBeStatic")
-    private final class _DG_Block_Info {
-        BasicBlock idom; // 支配图-直接支配块 (支配树父亲)
-        final HashSet<BasicBlock> dominators; // 支配图-支配块集合 (指的是支配该块的所有块, 即支配树上的父节点)
-        final HashSet<BasicBlock> domFrontiers; // 支配图-支配边界
-        final ArrayList<BasicBlock> domTreeChildren; // 支配图-支配树孩子(直接支配)
-        int domDepth; // 支配图-深度
+    public final class _DG_Block_Info {
+        public BasicBlock idom; // 支配图-直接支配块 (支配树父亲)
+        public final HashSet<BasicBlock> dominators; // 支配图-支配块集合 (指的是支配该块的所有块, 即支配树上的父节点)
+        public final HashSet<BasicBlock> domFrontiers; // 支配图-支配边界
+        public final ArrayList<BasicBlock> domTreeChildren; // 支配图-支配树孩子(直接支配)
+        public int domDepth; // 支配图-深度
 
         public _DG_Block_Info(BasicBlock block) {
             this.block = block;
@@ -81,6 +81,13 @@ public final class DGinfo {
 
     public int getDomDepth(BasicBlock block) {
         return map.get(block).domDepth;
+    }
+
+    /**
+     * 仅限构造DG类使用以降低时间开销
+     */
+    public _DG_Block_Info getInfo(BasicBlock block) {
+        return map.get(block);
     }
 
     public void printDominators() {

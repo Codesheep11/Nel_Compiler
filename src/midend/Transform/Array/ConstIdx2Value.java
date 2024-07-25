@@ -32,7 +32,7 @@ public class ConstIdx2Value {
             Instruction.Load loadInst = (Instruction.Load) load;
             Instruction.GetElementPtr address = (Instruction.GetElementPtr) loadInst.getAddr();
             if (gv.getConstValue() instanceof Constant.ConstantZeroInitializer) {
-                Constant constValue = new Constant.ConstantInt(0);
+                Constant constValue = Constant.ConstantInt.get(0);
                 loadInst.replaceAllUsesWith(constValue);
                 delList.add(loadInst);
             }

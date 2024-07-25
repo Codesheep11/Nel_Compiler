@@ -147,7 +147,7 @@ public class GlobalValueNumbering {
                         default -> {
                         }
                     }
-                    instruction.replaceAllUsesWith(new Constant.ConstantInt(result));
+                    instruction.replaceAllUsesWith(Constant.ConstantInt.get(result));
                     return true;
                 }
 //                else if (instruction.getType().isFloatTy()) {
