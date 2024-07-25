@@ -96,7 +96,7 @@ public class Manager {
         MemoryOpt.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
-        ShortInstrConvert.run(riscvmodule);
+//        ShortInstrConvert.run(riscvmodule);
 //        AfterRAScheduler.postRASchedule(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }
