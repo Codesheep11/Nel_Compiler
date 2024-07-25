@@ -6,8 +6,14 @@ import mir.*;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+/**
+ * 死参数消除，
+ */
 public class DeadArgEliminate {
 
+    /**
+     *  
+     */
     public static void run() {
         ArrayList<Function> funcs = FuncInfo.getFuncTopoSort();
         for (Function function : funcs) {
@@ -35,9 +41,9 @@ public class DeadArgEliminate {
                 if (!hasUse) removeList.add(arg);
             }
         }
+
         for (Function.Argument arg : removeList) {
             int idx = function.getFuncRArguments().indexOf(arg);
-//            System.out.println("Arg: " + arg.getDescriptor() + " " + idx);
             LinkedList<Instruction.Call> calls = new LinkedList<>();
             for (Use use : function.getUses()) {
                 User user = use.getUser();

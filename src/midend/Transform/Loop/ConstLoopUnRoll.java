@@ -2,9 +2,8 @@ package midend.Transform.Loop;
 
 import midend.Analysis.AnalysisManager;
 import midend.Transform.DCE.DeadLoopEliminate;
-import midend.Transform.DCE.SimplfyCFG;
+import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.GlobalValueNumbering;
-import midend.Util.Print;
 import mir.*;
 import mir.Module;
 import mir.result.SCEVinfo;
@@ -39,9 +38,9 @@ public class ConstLoopUnRoll {
                 modified |= tryUnrollLoop(loop);
             }
             DeadLoopEliminate.runOnFunc(function);
-            SimplfyCFG.runOnFunc(function);
+            SimplifyCFGPass.runOnFunc(function);
             GlobalValueNumbering.runOnFunc(function);
-            SimplfyCFG.runOnFunc(function);
+            SimplifyCFGPass.runOnFunc(function);
         } while (modified);
     }
 
