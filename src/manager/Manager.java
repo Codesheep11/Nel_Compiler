@@ -11,7 +11,7 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
-import midend.Analysis.AnalysisManager;
+import midend.Analysis.Manager.ModuleAnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.GlobalVarLocalize;
 import midend.Transform.Array.ConstIdx2Value;
@@ -58,7 +58,7 @@ public class Manager {
         try {
             arg.opt = true;
             FrontEnd();
-            AnalysisManager.buildCFG(module);
+            ModuleAnalysisManager.buildCFG(module);
             FuncAnalysis.run(module);
             if (arg.opt) {
                 Mem2Reg.run(module);

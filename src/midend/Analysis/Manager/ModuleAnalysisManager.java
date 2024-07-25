@@ -1,4 +1,4 @@
-package midend.Analysis;
+package midend.Analysis.Manager;
 
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
@@ -15,12 +15,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
- * 分析信息管理器
  *
- * @author Srchycz
- * TODO: 增加标记机制 实现懒更新以提升性能
  */
-public final class AnalysisManager {
+public class ModuleAnalysisManager {
+
+    public ModuleAnalysisManager() {
+    }
 
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
@@ -106,7 +106,4 @@ public final class AnalysisManager {
         return dgMap.get(block.getParentFunction()).getDomDepth(block);
     }
     // endregion
-
-    private AnalysisManager() {
-    }
 }

@@ -1,11 +1,28 @@
 package midend.Analysis.Alias;
 
+import midend.Analysis.Manager.ModuleAnalysisManager;
 import midend.Util.MemoryLocation;
 import mir.Constant;
 import mir.Value;
+import utils.Pair;
 
-public class AliasAnalysis {
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Vector;
 
+/**
+ *
+ */
+public class AliasAnalysis extends ModuleAnalysisManager {
+
+    private static class Attribute {
+        // todo : fill details
+    }
+
+    private static HashSet<Map.Entry<Value, Value>> mDistinctPairs;
+    private static Vector<HashSet<Value>> mDistinctGroups;
+    // todo: check this into
+    private static Map<Value, Vector<Attribute>> mPointerAttributes;
     // when alias, two points to the same Memory Object
     public enum AliasResult {
         NoAlias ,
@@ -23,8 +40,7 @@ public class AliasAnalysis {
         assert (v1.getType().isPointerTy() && v2.getType().isPointerTy()) ||
                 (v1 instanceof Constant) || (v2 instanceof Constant);
 
-
-
         return AliasResult.NoAlias;
     }
+
 }

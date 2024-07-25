@@ -1,12 +1,10 @@
 package mir;
 
 import backend.operand.Address;
-import midend.Analysis.AnalysisManager;
+import midend.Analysis.Manager.ModuleAnalysisManager;
 import midend.Analysis.ScalarEvolution;
 import midend.Transform.Loop.LoopInfo;
 import midend.Util.CloneInfo;
-import midend.Util.ControlFlowGraph;
-import midend.Util.DominanceGraph;
 import mir.result.SCEVinfo;
 import utils.NelLinkedList;
 
@@ -185,7 +183,7 @@ public class Function extends Value {
      */
     @Deprecated
     public void buildControlFlowGraph() {
-        AnalysisManager.refreshCFG(this);
+        ModuleAnalysisManager.refreshCFG(this);
     }
 
     /**
@@ -195,7 +193,7 @@ public class Function extends Value {
      */
     @Deprecated
     public void buildDominanceGraph() {
-        AnalysisManager.refreshDG(this);
+        ModuleAnalysisManager.refreshDG(this);
     }
 
     public void buildSCEVInfo() {
