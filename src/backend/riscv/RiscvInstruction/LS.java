@@ -40,13 +40,14 @@ public class LS extends RiscvInstruction {
         }
     }
 
-    public Operand rs1, rs2, addr;
+    public Reg rs1, rs2;
+    public Operand addr;
 
 
     //标记是否是因为寄存器分配阶段由于寄存器溢出而产生的访存指令
     public boolean isSpilled = false;
 
-    public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand addr, LSType type) {
+    public LS(RiscvBlock block, Reg rs1, Reg rs2, Operand addr, LSType type) {
         super(block);
         this.rs1 = rs1;
         this.rs2 = rs2;
@@ -54,7 +55,7 @@ public class LS extends RiscvInstruction {
         this.type = type;
     }
 
-    public LS(RiscvBlock block, Operand rs1, Operand rs2, Operand addr, LSType type, boolean isSpilled) {
+    public LS(RiscvBlock block, Reg rs1, Reg rs2, Operand addr, LSType type, boolean isSpilled) {
         super(block);
         this.rs1 = rs1;
         this.rs2 = rs2;
@@ -66,9 +67,9 @@ public class LS extends RiscvInstruction {
     @Override
     public HashSet<Reg> getUse() {
         HashSet<Reg> use = new HashSet<>();
-        if (rs2 instanceof Reg) use.add((Reg) rs2);
+        if (rs2 != null) use.add(rs2);
         if (type == LSType.sw || type == LSType.sd || type == LSType.fsw) {
-            if (rs1 instanceof Reg) use.add((Reg) rs1);
+            if (rs1 != null) use.add(rs1);
         }
         return use;
     }
@@ -77,7 +78,7 @@ public class LS extends RiscvInstruction {
     public HashSet<Reg> getDef() {
         HashSet<Reg> def = new HashSet<>();
         if (type == LSType.lw || type == LSType.ld || type == LSType.flw) {
-            if (rs1 instanceof Reg) def.add((Reg) rs1);
+            if (rs1 != null) def.add(rs1);
         }
         return def;
     }
@@ -135,7 +136,7 @@ public class LS extends RiscvInstruction {
 
     @Override
     public Reg getRegByIdx(int idx) {
-        return idx == 0 ? (Reg) rs1 : (Reg) rs2;
+        return idx == 0 ? rs1 : rs2;
     }
 
     @Override

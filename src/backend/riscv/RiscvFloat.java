@@ -34,6 +34,7 @@ public class RiscvFloat extends RiscvGlobalVar {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append(".align 2\n");
         sb.append(name).append(":\n");
         if (floatBits == 0) {
             sb.append("\t" + ".zero 4");

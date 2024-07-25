@@ -26,7 +26,7 @@ public class RiscvString extends RiscvGlobalVar {
 
     @Override
     public String toString() {
-        return name + ":\n\t" +
+        return ".align 3\n"+name + ":\n\t" +
                 ".string " + data + "\n";
     }
 
