@@ -59,6 +59,7 @@ public class RiscvArray extends RiscvGlobalVar {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append(".align 4\n");
         sb.append(name).append(":");
         int index = indexOfLastNotZero();
         for (int i = 0; i <= index; i++) {

@@ -1,10 +1,7 @@
 package manager;
 
-import backend.Opt.BlockInline;
-import backend.Opt.BlockReSort;
-import backend.Opt.CalculateOpt;
+import backend.Opt.*;
 import backend.Opt.Scheduler.AfterRAScheduler;
-import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -97,6 +94,7 @@ public class Manager {
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
+        MemoryOpt.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
 //        AfterRAScheduler.postRASchedule(riscvmodule);
