@@ -9,9 +9,7 @@ import backend.riscv.RiscvModule;
 import mir.Ir2RiscV.VirRegMap;
 import utils.Pair;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 public class CalculateOpt {
     public static void runBeforeRA(RiscvModule riscvModule) {
@@ -19,8 +17,8 @@ public class CalculateOpt {
             if (function.isExternal) continue;
             for (RiscvBlock block : function.blocks) {
                 uselessLoadRemove(block);
-                ConstValueReUse(block);
-                ConstPointerReUse(block);
+                PreRAConstValueReUse(block);
+                PreRAConstPointerReUse(block);
                 icmpBranchToBranch(block);
             }
         }
@@ -28,7 +26,7 @@ public class CalculateOpt {
 
     // 重要依据，这些拉取的常数和全局的不会跨过块
 
-    public static void uselessLoadRemove(RiscvBlock block) {
+    private static void uselessLoadRemove(RiscvBlock block) {
         HashSet<RiscvInstruction> needRemove = new HashSet<>();
         for (RiscvInstruction instr : block.riscvInstructions) {
             if (instr == block.riscvInstructions.getFirst()) continue;
@@ -85,7 +83,7 @@ public class CalculateOpt {
 
     // 将icmp和branch合并
     // 这里的原本的B可能是bne也可能是beq,需要特殊判定
-    public static void icmpBranchToBranch(RiscvBlock block) {
+    private static void icmpBranchToBranch(RiscvBlock block) {
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
         for (int i = 0; i < block.riscvInstructions.size(); i++) {
             RiscvInstruction now = block.riscvInstructions.get(i);
@@ -143,7 +141,7 @@ public class CalculateOpt {
         }
     }
 
-    public static void ConstValueReUse(RiscvBlock riscvBlock) {
+    private static void PreRAConstValueReUse(RiscvBlock riscvBlock) {
         final int range = 10;
         HashMap<Integer, Pair<Reg, Integer>> map = new HashMap<>();
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
@@ -191,7 +189,7 @@ public class CalculateOpt {
         }
     }
 
-    public static void ConstPointerReUse(RiscvBlock riscvBlock) {
+    private static void PreRAConstPointerReUse(RiscvBlock riscvBlock) {
         final int range = 10;
         HashMap<RiscvGlobalVar, Pair<Reg, Integer>> map = new HashMap<>();
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
@@ -235,6 +233,84 @@ public class CalculateOpt {
         riscvBlock.riscvInstructions.clear();
         for (RiscvInstruction ri : newList) {
             riscvBlock.riscvInstructions.addLast(ri);
+        }
+    }
+
+    // 在块内联后使用,此时已经分配好了寄存器
+    // 在地址opt后，此时已经解决了全局指针的复用，也就是只需要解决全局的li即可
+    // 还有同寄存器mv
+    public static void runAftBin(RiscvModule riscvModule) {
+        for (RiscvFunction function : riscvModule.funcList) {
+            if (function.isExternal) continue;
+            for (RiscvBlock block : function.blocks) {
+                AftBinConstValueReuse(block);
+                removeSameMv(block);
+            }
+        }
+    }
+
+    private static void removeSameMv(RiscvBlock riscvBlock) {
+        Iterator<RiscvInstruction> iterator = riscvBlock.riscvInstructions.iterator();
+        while (iterator.hasNext()) {
+            RiscvInstruction ri = iterator.next();
+            if (ri instanceof R2 r2 && r2.type == R2.R2Type.mv) {
+                if (r2.rd.equals(r2.rs)) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    private static final HashMap<Reg, Integer> re2Int = new HashMap<>();
+
+    private static void mvCopy(Reg bef, Reg aft) {
+        if (bef.equals(aft)) return;
+        if (!re2Int.containsKey(bef)) return;
+        int val = re2Int.get(bef);
+        re2Int.put(aft, val);
+    }
+
+    private static Reg liFind(Reg bestReg, int value) {
+        if (re2Int.containsKey(bestReg) && re2Int.get(bestReg) == value) return bestReg;
+        else {
+            for (Map.Entry<Reg, Integer> entry : re2Int.entrySet()) {
+                if (entry.getValue() == value) {
+                    return entry.getKey();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static void AftBinConstValueReuse(RiscvBlock block) {
+        ArrayList<Pair<Li, R2>> needReplace = new ArrayList<>();
+        for (RiscvInstruction ri : block.riscvInstructions) {
+            if (ri instanceof R2 r2 && ((R2) ri).type == R2.R2Type.mv) {
+                if (r2.rd.equals(r2.rs)) continue;
+                re2Int.remove((Reg) r2.rd);
+                mvCopy((Reg) r2.rs, (Reg) r2.rd);
+            } else if (ri instanceof Li li) {
+                Reg same = liFind(li.reg, li.getVal());
+                if (same == null) {
+                    re2Int.put(li.reg, li.getVal());
+                } else {
+                    needReplace.add(new Pair<>(li, new R2(block, li.reg, same, R2.R2Type.mv)));
+                    mvCopy(same, li.reg);
+                }
+            } else if (ri instanceof J) {
+                re2Int.clear();
+            } else {
+                for (int i = 0; i < ri.getOperandNum(); i++) {
+                    if (ri.isDef(i)) {
+                        Reg reg = ri.getRegByIdx(i);
+                        re2Int.remove(reg);
+                    }
+                }
+            }
+        }
+        for (Pair<Li, R2> pair : needReplace) {
+            block.riscvInstructions.insertBefore(pair.second, pair.first);
+            pair.first.remove();
         }
     }
 }

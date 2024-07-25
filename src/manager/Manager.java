@@ -1,9 +1,6 @@
 package manager;
 
-import backend.Opt.BlockInline;
-import backend.Opt.BlockReSort;
-import backend.Opt.CalculateOpt;
-import backend.Opt.SimplifyCFG;
+import backend.Opt.*;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -101,6 +98,7 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
+        CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
 //        ShortInstrConvert.run(riscvmodule);
