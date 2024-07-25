@@ -9,7 +9,6 @@ import java.util.HashSet;
 
 public class FuncInfo {
 
-
     public static boolean FuncAnalysisOpen = false;
 
     public static Function main;
