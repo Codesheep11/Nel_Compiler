@@ -4,23 +4,22 @@ import mir.*;
 import mir.Module;
 import mir.result.DGinfo;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Math.*;
 import static java.lang.Math.max;
 
+
 public class I32RangeAnalysis {
 
-    public static HashMap<Function, HashMap<Instruction, I32Range>> I32RangeBufferMap = new HashMap<>();
+    public static HashMap<Function, HashMap<BasicBlock, HashMap<Instruction, I32Range>>> I32RangeBufferMap = new HashMap<>();
 
-    //    public static HashMap<GlobalVariable, I32Range> GlobalRangeBufferMap = new HashMap<>();
     public static HashMap<Function, HashMap<BasicBlock, Boolean>> dirtyMap = new HashMap<>();
 
     public static class I32Range {
         private int minValue;
         private int maxValue;
-
-        private static I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
         private I32Range(int min, int max) {
             this.minValue = min;
@@ -35,8 +34,26 @@ public class I32RangeAnalysis {
             return minValue;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof I32Range or) {
+                return this.minValue == or.minValue && this.maxValue == or.maxValue;
+            }
+            return false;
+        }
+
+        private static I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+
+        private static HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
+
+
         public static I32Range Any() {
             return Any;
+        }
+
+        public static I32Range gerConstRange(int c) {
+            if (!ConstantRangePool.containsKey(c)) ConstantRangePool.put(c, new I32Range(c, c));
+            return ConstantRangePool.get(c);
         }
     }
 
@@ -63,185 +80,288 @@ public class I32RangeAnalysis {
     }
 
     public static void runOnBasicBlock(BasicBlock bb) {
+//        System.out.println("runOnBasicBlock " + bb.getLabel());
         Function func = bb.getParentFunction();
-        DGinfo dgInfo = AnalysisManager.getDG(func);
-        BasicBlock idom = dgInfo.getIDom(bb);
-        if (!dirtyMap.get(func).get(bb)) return;
-        if (dirtyMap.get(func).get(idom)) runOnBasicBlock(idom);
+        if (!func.getEntry().equals(bb)) {
+            DGinfo dgInfo = AnalysisManager.getDG(func);
+            BasicBlock idom = dgInfo.getIDom(bb);
+            if (!dirtyMap.get(func).get(bb)) return;
+            if (dirtyMap.get(func).get(idom)) runOnBasicBlock(idom);
+        }
+        I32RangeBufferMap.get(func).putIfAbsent(bb, new HashMap<>());
         for (Instruction inst : bb.getInstructions()) {
-            if (inst.getType().isInt32Ty()) {
-
-            }
+            if (inst.getType().isInt32Ty()) calculateI32Range(inst);
         }
         dirtyMap.get(func).put(bb, false);
     }
 
-    private static I32Range calculateI32Range(Value value, I32ValueRangeAnalyzer helper) {
-        I32Range result;
-        if (value instanceof Constant) {
-            if (value instanceof Constant constInt) {
-                result = new I32Range(constInt.getValue(), constInt.getValue());
-            }
-            else {
-                throw new RuntimeException("Unexpected type of i32 constant.");
-            }
-        }
-        else if (value instanceof IntegerArithmeticInst integerArithmeticInst) {
-            I32ValueRange range1 = I32ValueRange.of(integerArithmeticInst.getOperand1(), integerArithmeticInst.getBasicBlock(), helper);
-            I32ValueRange range2 = I32ValueRange.of(integerArithmeticInst.getOperand2(), integerArithmeticInst.getBasicBlock(), helper);
-            if (integerArithmeticInst instanceof IntegerAddInst) {
+    /**
+     * 对于给定的Inst 计算 I32Range
+     *
+     * @param inst
+     * @return
+     */
+    private static I32Range calculateI32Range(Instruction inst) {
+//        System.out.println(value);
+        if (!inst.getType().isInt32Ty())
+            throw new RuntimeException("Value is not I32 Type!");
+        BasicBlock bb = inst.getParentBlock();
+        Function func = bb.getParentFunction();
+        HashMap<Instruction, I32Range> bbMap = I32RangeBufferMap.get(func).get(bb);
+        I32Range result = null;
+        if (inst instanceof Instruction.BinaryOperation binaryOperation) {
+            I32Range r1 = getOperandRange(binaryOperation.getOperand_1());
+            I32Range r2 = getOperandRange(binaryOperation.getOperand_2());
+            if (inst instanceof Instruction.Add) {
                 int minValue;
                 try {
-                    minValue = addExact(range1.minValue, range2.minValue);
+                    minValue = addExact(r1.minValue, r2.minValue);
                 } catch (ArithmeticException e) {
                     minValue = Integer.MIN_VALUE;
                 }
                 int maxValue;
                 try {
-                    maxValue = addExact(range1.maxValue, range2.maxValue);
+                    maxValue = addExact(r1.maxValue, r2.maxValue);
                 } catch (ArithmeticException e) {
                     maxValue = Integer.MAX_VALUE;
                 }
-                result = new I32ValueRange(minValue, maxValue);
+                result = new I32Range(minValue, maxValue);
             }
-            else if (integerArithmeticInst instanceof IntegerSubInst) {
+            else if (inst instanceof Instruction.Sub) {
                 int minValue;
                 try {
-                    minValue = subtractExact(range1.minValue, range2.maxValue);
+                    minValue = subtractExact(r1.minValue, r2.maxValue);
                 } catch (ArithmeticException e) {
                     minValue = Integer.MIN_VALUE;
                 }
                 int maxValue;
                 try {
-                    maxValue = subtractExact(range1.maxValue, range2.minValue);
+                    maxValue = subtractExact(r1.maxValue, r2.minValue);
                 } catch (ArithmeticException e) {
                     maxValue = Integer.MAX_VALUE;
                 }
-                result = new I32ValueRange(minValue, maxValue);
+                result = new I32Range(minValue, maxValue);
             }
-            else if (integerArithmeticInst instanceof IntegerMultiplyInst) {
-                int minValue, maxValue;
+            else if (inst instanceof Instruction.Mul) {
+                int minValue;
                 try {
-                    var endpointValues = new int[4];
-                    endpointValues[0] = multiplyExact(range1.minValue, range2.maxValue);
-                    endpointValues[1] = multiplyExact(range1.maxValue, range2.minValue);
-                    endpointValues[2] = multiplyExact(range1.minValue, range2.minValue);
-                    endpointValues[3] = multiplyExact(range1.maxValue, range2.maxValue);
-                    minValue = Integer.MAX_VALUE;
-                    maxValue = Integer.MIN_VALUE;
-                    for (int endpointValue : endpointValues) {
-                        minValue = min(minValue, endpointValue);
-                        maxValue = max(maxValue, endpointValue);
-                    }
+                    minValue = Math.min(
+                            Math.min(
+                                    multiplyExact(r1.minValue, r2.maxValue),
+                                    multiplyExact(r1.minValue, r2.minValue)),
+                            Math.min(
+                                    multiplyExact(r1.maxValue, r2.minValue),
+                                    multiplyExact(r1.maxValue, r2.maxValue)));
                 } catch (ArithmeticException e) {
                     minValue = Integer.MIN_VALUE;
+                }
+                int maxValue;
+                try {
+                    maxValue = Math.max(
+                            Math.max(
+                                    multiplyExact(r1.minValue, r2.maxValue),
+                                    multiplyExact(r1.minValue, r2.minValue)),
+                            Math.max(
+                                    multiplyExact(r1.maxValue, r2.minValue),
+                                    multiplyExact(r1.maxValue, r2.maxValue)));
+                } catch (ArithmeticException e) {
                     maxValue = Integer.MAX_VALUE;
                 }
-                result = new I32ValueRange(minValue, maxValue);
+                result = new I32Range(minValue, maxValue);
             }
-            else if (integerArithmeticInst instanceof IntegerSignedDivideInst) {
+            else if (inst instanceof Instruction.Div) {
                 int minValue = Integer.MAX_VALUE;
                 int maxValue = Integer.MIN_VALUE;
-                if (range1.maxValue >= 0) {
-                    int minPositiveDividend = max(range1.minValue, 0);
-                    if (range2.maxValue > 0) {
-                        int minPositiveDivisor = max(range2.minValue, 1);
-                        maxValue = max(maxValue, range1.maxValue / minPositiveDivisor);
-                        minValue = min(minValue, minPositiveDividend / range2.maxValue);
+                if (r1.maxValue >= 0) {
+                    int minPositiveDividend = Math.max(r1.minValue, 0);
+                    if (r2.maxValue > 0) {
+                        int minPositiveDivisor = Math.max(r2.minValue, 1);
+                        maxValue = Math.max(maxValue, r1.maxValue / minPositiveDivisor);
+                        minValue = Math.min(minValue, minPositiveDividend / r2.maxValue);
                     }
-                    if (range2.minValue < 0) {
-                        int maxNegativeDivisor = min(range2.maxValue, -1);
-                        maxValue = max(maxValue, minPositiveDividend / range2.minValue);
-                        minValue = min(minValue, range1.maxValue / maxNegativeDivisor);
-                    }
-                }
-                if (range1.minValue <= 0) {
-                    int maxNegativeDividend = min(range1.maxValue, 0);
-                    if (range2.maxValue > 0) {
-                        int minPositiveDivisor = max(range2.minValue, 1);
-                        maxValue = max(maxValue, maxNegativeDividend / range2.maxValue);
-                        minValue = min(minValue, range1.minValue / minPositiveDivisor);
-                    }
-                    if (range2.minValue < 0) {
-                        int maxNegativeDivisor = min(range2.maxValue, -1);
-                        maxValue = max(maxValue, range1.minValue / maxNegativeDivisor);
-                        minValue = min(minValue, maxNegativeDividend / range2.minValue);
+                    if (r2.minValue < 0) {
+                        int maxNegativeDivisor = Math.min(r2.maxValue, -1);
+                        maxValue = Math.max(maxValue, minPositiveDividend / r2.minValue);
+                        minValue = Math.min(minValue, r1.maxValue / maxNegativeDivisor);
                     }
                 }
-                result = new I32ValueRange(minValue, maxValue);
+                if (r1.minValue <= 0) {
+                    int maxNegativeDividend = Math.min(r1.maxValue, 0);
+                    if (r2.maxValue > 0) {
+                        int minPositiveDivisor = Math.max(r2.minValue, 1);
+                        maxValue = Math.max(maxValue, maxNegativeDividend / r2.maxValue);
+                        minValue = Math.min(minValue, r1.minValue / minPositiveDivisor);
+                    }
+                    if (r2.minValue < 0) {
+                        int maxNegativeDivisor = Math.min(r2.maxValue, -1);
+                        maxValue = Math.max(maxValue, r1.minValue / maxNegativeDivisor);
+                        minValue = Math.min(minValue, maxNegativeDividend / r2.minValue);
+                    }
+                }
+                result = new I32Range(minValue, maxValue);
             }
-            else if (integerArithmeticInst instanceof IntegerSignedRemainderInst) {
-                var maxModulus = max(abs(range2.minValue), abs(range2.maxValue));
+            else if (inst instanceof Instruction.Rem) {
+                var maxM = max(abs(r2.minValue), abs(r2.maxValue));
                 int minValue, maxValue;
-                if (range1.minValue < 0) {
-                    minValue = max(-(maxModulus - 1), range1.minValue);
+                if (r1.minValue < 0) {
+                    minValue = max(-(maxM - 1), r1.minValue);
                 }
                 else {
                     minValue = 0;
                 }
-                if (range1.maxValue > 0) {
-                    maxValue = min(maxModulus - 1, range1.maxValue);
+                if (r1.maxValue > 0) {
+                    maxValue = min(maxM - 1, r1.maxValue);
                 }
                 else {
                     maxValue = 0;
                 }
-                result = new I32ValueRange(minValue, maxValue);
+                result = new I32Range(minValue, maxValue);
+            }
+            else if (inst instanceof Instruction.Shl) {
+                int minValue;
+                try {
+                    minValue = Math.min(Math.min(r1.minValue << r2.minValue, r1.minValue << r2.maxValue), Math.min(r1.maxValue << r2.minValue, r1.maxValue << r2.maxValue));
+                } catch (ArithmeticException e) {
+                    minValue = Integer.MIN_VALUE;
+                }
+                int maxValue;
+                try {
+                    maxValue = Math.max(Math.max(r1.minValue << r2.minValue, r1.minValue << r2.maxValue), Math.max(r1.maxValue << r2.minValue, r1.maxValue << r2.maxValue));
+                } catch (ArithmeticException e) {
+                    maxValue = Integer.MAX_VALUE;
+                }
+                result = new I32Range(minValue, maxValue);
+            }
+            else if (inst instanceof Instruction.AShr) {
+                int minValue;
+                try {
+                    minValue = Math.min(Math.min(r1.minValue >> r2.minValue, r1.minValue >> r2.maxValue), Math.min(r1.maxValue >> r2.minValue, r1.maxValue >> r2.maxValue));
+                } catch (ArithmeticException e) {
+                    minValue = Integer.MIN_VALUE;
+                }
+                int maxValue;
+                try {
+                    maxValue = Math.max(Math.max(r1.minValue >> r2.minValue, r1.minValue >> r2.maxValue), Math.max(r1.maxValue >> r2.minValue, r1.maxValue >> r2.maxValue));
+                } catch (ArithmeticException e) {
+                    maxValue = Integer.MAX_VALUE;
+                }
+                result = new I32Range(minValue, maxValue);
+            }
+            else if (inst instanceof Instruction.And) {
+                int minValue = Math.min(Math.min(r1.minValue & r2.minValue, r1.minValue & r2.maxValue), Math.min(r1.maxValue & r2.minValue, r1.maxValue & r2.maxValue));
+                int maxValue = r1.maxValue & r2.maxValue;
+                result = new I32Range(minValue, maxValue);
+            }
+            else if (inst instanceof Instruction.Or) {
+                int minValue = r1.minValue | r2.minValue;
+                int maxValue = Math.max(Math.max(r1.minValue | r2.minValue, r1.minValue | r2.maxValue), Math.max(r1.maxValue | r2.minValue, r1.maxValue | r2.maxValue));
+                result = new I32Range(minValue, maxValue);
+            }
+            else if (inst instanceof Instruction.Xor) {
+                int minValue = Math.min(Math.min(r1.minValue ^ r2.minValue, r1.minValue ^ r2.maxValue), Math.min(r1.maxValue ^ r2.minValue, r1.maxValue ^ r2.maxValue));
+                int maxValue = Math.max(Math.max(r1.minValue ^ r2.minValue, r1.minValue ^ r2.maxValue), Math.max(r1.maxValue ^ r2.minValue, r1.maxValue ^ r2.maxValue));
+                result = new I32Range(minValue, maxValue);
             }
             else {
-                throw new RuntimeException("Unexpected type of integer arithmetic instruction.");
+                result = I32Range.Any();
             }
         }
-        else if (value instanceof SignedMinInst || value instanceof SignedMaxInst) {
-            if (value instanceof SignedMinInst minInst) {
-                I32ValueRange range1 = I32ValueRange.of(minInst.getOperand1(), minInst.getBasicBlock(), helper);
-                I32ValueRange range2 = I32ValueRange.of(minInst.getOperand2(), minInst.getBasicBlock(), helper);
-                result = new I32ValueRange(min(range1.minValue, range2.minValue), min(range1.maxValue, range2.maxValue));
+        else if (inst instanceof Instruction.Call call) {
+            Function callee = call.getDestFunction();
+            if (callee.isExternal()) {
+                if (callee.getName().equals("getch")) result = new I32Range(-128, 127);
+                else if (callee.getName().equals("getarray") || callee.getName().equals("getfarray"))
+                    result = new I32Range(0, Integer.MAX_VALUE);
+                else result = I32Range.Any();
             }
             else {
-                var maxInst = (SignedMaxInst) value;
-                I32ValueRange range1 = I32ValueRange.of(maxInst.getOperand1(), maxInst.getBasicBlock(), helper);
-                I32ValueRange range2 = I32ValueRange.of(maxInst.getOperand2(), maxInst.getBasicBlock(), helper);
-                result = new I32ValueRange(max(range1.minValue, range2.minValue), max(range1.maxValue, range2.maxValue));
+                result = I32Range.Any();
             }
         }
-        else if (value instanceof BitCastInst || value instanceof LoadInst ||
-                value instanceof Function.FormalParameter || value instanceof FloatToSignedIntegerInst ||
-                value instanceof TruncInst)
-        {
-            result = new I32ValueRange(Integer.MIN_VALUE, Integer.MAX_VALUE);
-        }
-        else if (value instanceof CallInst callInst) {
-            if (callInst.getCallee() instanceof ExternalFunction externalFunction) {
-                result = switch (externalFunction.getFunctionName()) {
-                    case "getch" -> new I32ValueRange(-128, 127);
-                    case "getarray", "getfarray" -> new I32ValueRange(0, Integer.MAX_VALUE);
-                    default -> new I32ValueRange(Integer.MIN_VALUE, Integer.MAX_VALUE);
-                };
-            }
-            else {
-                result = new I32ValueRange(Integer.MIN_VALUE, Integer.MAX_VALUE);
-            }
-        }
-        else if (value instanceof PhiInst phiInst) {
-            // 为了避免循环求值，phi指令不会递归求解，当入口值未知时，暂时忽略它
+        else if (inst instanceof Instruction.Phi phi) {
             int minValue = Integer.MAX_VALUE;
             int maxValue = Integer.MIN_VALUE;
-            for (BasicBlock entryBlock : phiInst.getEntrySet()) {
-                var entryValue = phiInst.getValue(entryBlock);
-                // 在入口值未知时，首先试图寻找定义值，此行为在 getEntryRange->getValueRangeAtBlock 中实现。
-                // 如果定义值也不存在，则认为这是第一次进行搜索，可以暂时忽略，以提升算法效果。此后定义值应当总是存在。
-                if (helper != null && helper.hasValueRangeSolved(entryValue)) {
-                    I32ValueRange entryRange = getEntryRange(helper, phiInst.getBasicBlock(), entryBlock, entryValue);
-                    minValue = min(minValue, entryRange.minValue);
-                    maxValue = max(maxValue, entryRange.maxValue);
+            for (BasicBlock pre : phi.getPreBlocks()) {
+                Value preValue = phi.getOptionalValue(pre);
+                if (!dirtyMap.get(func).get(pre)) {
+                    I32Range ir = getOperandRange(preValue);
+                    minValue = min(minValue, ir.minValue);
+                    maxValue = max(maxValue, ir.maxValue);
+                }
+                else {
+                    minValue = Integer.MIN_VALUE;
+                    maxValue = Integer.MAX_VALUE;
+                    break;
                 }
             }
-            result = new I32ValueRange(minValue, maxValue);
+            result = new I32Range(minValue, maxValue);
         }
         else {
-            throw new RuntimeException("Unexpected type of i32 value.");
+            result = I32Range.Any();
         }
-        return result;
+        if (result.equals(I32Range.Any())) return I32Range.Any();
+        else {
+            bbMap.put(inst, result);
+            return result;
+        }
+    }
+
+    /**
+     * 仅被calculateI32Range调用
+     *
+     * @param value
+     * @return
+     */
+    private static I32Range getOperandRange(Value value) {
+        if (!value.getType().isInt32Ty())
+            throw new RuntimeException("Value is not I32 Type!");
+        if (value instanceof Constant.ConstantInt)
+            return I32Range.gerConstRange(((Constant.ConstantInt) value).getIntValue());
+        if (value instanceof Function.Argument) return I32Range.Any();
+        if (value instanceof Instruction) {
+            BasicBlock bb = ((Instruction) value).getParentBlock();
+            Function func = bb.getParentFunction();
+            if (I32RangeBufferMap.get(func).get(bb).containsKey(value))
+                return I32RangeBufferMap.get(func).get(bb).get(value);
+            return I32Range.Any();
+        }
+        return null;
+    }
+
+    public static I32Range getInstRange(Instruction inst) {
+        BasicBlock bb = inst.getParentBlock();
+        Function func = bb.getParentFunction();
+        if (dirtyMap.get(func).get(bb)) runOnBasicBlock(bb);
+        if (I32RangeBufferMap.get(func).get(bb).containsKey(inst))
+            return I32RangeBufferMap.get(func).get(bb).get(inst);
+        return I32Range.Any();
+    }
+
+    public static I32Range getValueRange(Value value) {
+        if (!value.getType().isInt32Ty())
+            throw new RuntimeException("Value is not I32 Type!");
+        if (value instanceof Constant.ConstantInt)
+            return I32Range.gerConstRange(((Constant.ConstantInt) value).getIntValue());
+        if (value instanceof Function.Argument) return I32Range.Any();
+        if (value instanceof Instruction inst) return getInstRange(inst);
+        return null;
+    }
+
+    public static void setDirtyBB(BasicBlock bb) {
+        Function func = bb.getParentFunction();
+        HashMap<BasicBlock, Boolean> funcDirty = dirtyMap.get(func);
+        DGinfo dGinfo = AnalysisManager.getDG(func);
+        ArrayList<BasicBlock> queue = new ArrayList<>();
+        queue.add(bb);
+        while (!queue.isEmpty()) {
+            BasicBlock cur = queue.remove(0);
+            funcDirty.put(bb, true);
+            I32RangeBufferMap.get(func).putIfAbsent(bb, new HashMap<>());
+            I32RangeBufferMap.get(func).get(bb).clear();
+            for (BasicBlock child : dGinfo.getDomTreeChildren(cur)) {
+                queue.add(child);
+            }
+        }
     }
 
 }
