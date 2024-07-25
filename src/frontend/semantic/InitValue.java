@@ -117,7 +117,7 @@ public abstract class InitValue {
             Type.BasicType basicType = ((Type.ArrayType) type).getBasicEleType();
             Flatten flatten = new Flatten();
             if (basicType.isInt32Ty()) {
-                flatten.add(new Flatten.Slice(new Constant.ConstantInt(0), size));
+                flatten.add(new Flatten.Slice(Constant.ConstantInt.get(0), size));
             }
             else {
                 flatten.add(new Flatten.Slice(new Constant.ConstantFloat(0), size));
@@ -232,7 +232,7 @@ public abstract class InitValue {
                 if (that != flatten.slices.get(flatten.slices.indexOf(this) + 1)) {
                     return false;
                 }
-                return this.value.equals(that.value) && this.value.equals(new Constant.ConstantInt(0));
+                return this.value.equals(that.value) && this.value.equals(Constant.ConstantInt.get(0));
             }
 
             public void merge(Slice that) {

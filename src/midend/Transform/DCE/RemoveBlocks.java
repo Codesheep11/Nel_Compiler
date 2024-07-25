@@ -1,5 +1,6 @@
 package midend.Transform.DCE;
 
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
 
@@ -18,23 +19,27 @@ public class RemoveBlocks {
     }
 
     public static void runOnFunc(Function function) {
-        removeEmptyBlocks(function);
-//        Print.outputLLVM(function, "debug.txt");
-        function.buildControlFlowGraph();
-        removeDeadBlocks(function);
-        function.buildControlFlowGraph();
+        if (removeEmptyBlocks(function)) {
+            AnalysisManager.dirtyDG(function);
+        }
+        AnalysisManager.refreshCFG(function);
+        if (removeDeadBlocks(function)) {
+            AnalysisManager.dirtyCFG(function);
+            AnalysisManager.dirtyDG(function);
+        }
         updatePhi(function);
     }
 
-    public static void removeEmptyBlocks(Function function) {
+    public static boolean removeEmptyBlocks(Function function) {
         ArrayList<BasicBlock> removeList = new ArrayList<>();
         for (BasicBlock block : function.getBlocks()) {
             if (block.getInstructions().isEmpty()) removeList.add(block);
         }
         for (BasicBlock block : removeList) block.delete();
+        return !removeList.isEmpty();
     }
 
-    public static void removeDeadBlocks(Function function) {
+    public static boolean removeDeadBlocks(Function function) {
         vis.clear();
         ArrayList<BasicBlock> removeList = new ArrayList<>();
         depthFirstSearch(function.getEntry());
@@ -42,6 +47,7 @@ public class RemoveBlocks {
             if (!vis.contains(block)) removeList.add(block);
         }
         for (BasicBlock block : removeList) block.delete();
+        return !removeList.isEmpty();
     }
 
     private static void updatePhi(Function function) {

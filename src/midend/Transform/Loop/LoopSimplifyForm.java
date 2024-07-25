@@ -10,21 +10,19 @@ import java.util.LinkedHashMap;
 /**
  * 循环简化
  * <p>
- * 事实上该类不是优化类, 它用于辅助其他优化类的工作 <br>
+ * 用于辅助其他优化类的工作 <br>
  * PostCondition: <br>
  * 1. 循环的preHeader唯一 <br>
  * 2. 循环的latch唯一 <br>
  * 3. 所有 exit 块被 header支配 <br>
  *
- * @author Sychycz
+ * @author Srchycz
  */
 public class LoopSimplifyForm {
 
     private static int count = 0;
 
     /**
-     * just for test <br>
-     * 请勿将该函数作为优化 API 调用
      *
      * @param module 模块
      */
@@ -35,29 +33,38 @@ public class LoopSimplifyForm {
         }
     }
 
-    public static void runOnFunc(Function function) {
+    public static boolean runOnFunc(Function function) {
+        boolean modified = false;
         for (Loop loop : function.loopInfo.TopLevelLoops)
-            runOnLoop(loop);
+            modified |= runOnLoop(loop);
+        if (modified) {
+            AnalysisManager.dirtyCFG(function);
+            AnalysisManager.dirtyDG(function);
+        }
+        return modified;
     }
 
-    public static void runOnLoop(Loop loop) {
+    private static boolean runOnLoop(Loop loop) {
+        boolean modified = false;
         for (Loop child : loop.children) {
             runOnLoop(child);
         }
-        simplifyPreHeader(loop);
-        simplifyLatch(loop);
-        CanonicalizeExits(loop);
+        modified |= simplifyPreHeader(loop);
+        modified |= simplifyLatch(loop);
+        modified |= CanonicalizeExits(loop);
+        return modified;
     }
 
-    private static void simplifyPreHeader(Loop loop) {
+    private static boolean simplifyPreHeader(Loop loop) {
         if (loop.enterings.size() <= 1) {
             if (loop.enterings.size() == 1) loop.preHeader = loop.enterings.iterator().next();
-            else if (loop.enterings.size() == 0) {
+            else {
                 Function parentFunction = loop.header.getParentFunction();
                 loop.preHeader = new BasicBlock(getNewLabel(parentFunction, "preHeader"), parentFunction);
                 new Instruction.Jump(loop.preHeader, loop.header);
+                return true;
             }
-            return;
+            return false;
         }
 
         // TODO: 可能需要修改 新建块的loop归属
@@ -78,11 +85,12 @@ public class LoopSimplifyForm {
             phi.addOptionalValue(newPreHeader, val);
         }
         new Instruction.Jump(newPreHeader, loop.header);
+        return true;
     }
 
-    private static void simplifyLatch(Loop loop) {
+    private static boolean simplifyLatch(Loop loop) {
         if (loop.latchs.size() <= 1)
-            return;
+            return false;
         Function parentFunction = loop.header.getParentFunction();
         BasicBlock newLatch = new BasicBlock(getNewLabel(parentFunction, "latch"), parentFunction);
         // 更新所有 latch 的后继 跳转指令
@@ -105,9 +113,11 @@ public class LoopSimplifyForm {
         loop.latchs.clear();
         loop.latchs.add(newLatch);
         loop.nowLevelBB.add(newLatch);
+        return true;
     }
 
-    private static void CanonicalizeExits(Loop loop) {
+    private static boolean CanonicalizeExits(Loop loop) {
+        boolean modified = false;
         HashSet<BasicBlock> newExits = new HashSet<>();
         Function parentFunction = loop.header.getParentFunction();
         for (BasicBlock exit : loop.exits) {
@@ -131,12 +141,14 @@ public class LoopSimplifyForm {
                 newExits.add(newExit);
                 Loop loop1 = exit.loop;
                 if (loop1 != null) loop1.nowLevelBB.add(newExit);
+                modified = true;
             }
             else {
                 newExits.add(exit);
             }
         }
         loop.exits = newExits;
+        return modified;
     }
 
     /**

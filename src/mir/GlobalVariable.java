@@ -21,7 +21,7 @@ public class GlobalVariable extends Constant {
 
     public static Constant getUndef(Type type) {
         if (type.isInt32Ty()) {
-            return new Constant.ConstantInt(0);
+            return Constant.ConstantInt.get(0);
         }
         if (type.isFloatTy()) {
             return new Constant.ConstantFloat(0);
@@ -39,7 +39,7 @@ public class GlobalVariable extends Constant {
         super(new Type.PointerType(type));
         label = "undef_" + undefTable.size();
         if (type.isInt32Ty()) {
-            value = new Constant.ConstantInt(0);
+            value = Constant.ConstantInt.get(0);
         }
         else if (type.isFloatTy()) {
             value = new Constant.ConstantFloat(0);

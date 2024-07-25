@@ -66,10 +66,10 @@ public class GepFold {
                         Value mul = null;
                         if (baseType.isArrayTy()) {
                             mul = new Instruction.Mul(block, offset.getType(),
-                                    new Constant.ConstantInt(((Type.ArrayType) baseType).getFlattenSize()), offset);
+                                    Constant.ConstantInt.get(((Type.ArrayType) baseType).getFlattenSize()), offset);
                             mul.remove();
                             block.getInstructions().insertBefore((Instruction) mul, gep);
-                            offsets.set(i, new Constant.ConstantInt(0));
+                            offsets.set(i, Constant.ConstantInt.get(0));
                         }
                         else mul = offset;
                         if (sum == null) sum = mul;

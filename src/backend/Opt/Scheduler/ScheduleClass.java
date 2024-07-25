@@ -338,7 +338,7 @@ public abstract class ScheduleClass {
             }
         } else if (instr instanceof R3 r3) {
             switch (r3.type) {
-                case add, addi, addw, addiw, subw, andw, andiw, orw, oriw, xorw,
+                case add, addi, addw, addiw, subw, and, andi, or, ori, xorw,
                         xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti, min, max -> {
                     return new RISCVScheduleClassIntegerArithmetic();
                 }

@@ -112,7 +112,7 @@ public class Reassociate {
                     if (pair.getKey() == 1) reductionStorage.add(pair.getValue());
                     else {
                         Instruction mul = new Instruction.Mul(block, pair.getValue().getType(),
-                                pair.getValue(), new Constant.ConstantInt(pair.getKey()));
+                                pair.getValue(), Constant.ConstantInt.get(pair.getKey()));
                         mul.remove();
                         block.getInstructions().insertBefore(mul, inst);
                         reductionStorage.add(mul);
