@@ -24,6 +24,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.GlobalVariable;
 import mir.*;
 import mir.Ir2RiscV.AfterRA;
@@ -62,6 +63,7 @@ public class Manager {
     }
 
     private void O1() throws IOException {
+//        DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -195,6 +197,7 @@ public class Manager {
     }
 
     private void O0() throws IOException {
+        DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();

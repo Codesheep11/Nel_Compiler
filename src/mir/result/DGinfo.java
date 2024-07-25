@@ -76,6 +76,7 @@ public final class DGinfo {
 
     public HashSet<BasicBlock> getDomFrontiers(BasicBlock block) {
         if (!domFrontierBuilt) {
+            domFrontierBuilt = true;
             buildDominanceFrontier();
         }
         return map.get(block).domFrontiers;

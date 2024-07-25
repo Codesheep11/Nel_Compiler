@@ -9,6 +9,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+/**
+ * 数据迭代求DG <br>
+ * 由于时空开销较大 已弃用 <br>
+ * 保留以防万一 <br>
+ */
+@Deprecated
 public class DominanceGraph {
     private static Function parentFunction;
     private static BasicBlock entry;

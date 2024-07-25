@@ -59,7 +59,6 @@ public class DominanceGraphLT {
             Node childNode = nodeMap.get(child);
             if (childNode.dfn == -1) {
                 childNode.parent = node;
-                childNode.semi = node;
                 dfs(childNode);
             }
         }
@@ -70,13 +69,14 @@ public class DominanceGraphLT {
             Node now = id[i];
             for (var v : now.bucket) {
                 WeightedDisjointSetUnion.get(v);
-                if (v.dsuNode.weight == now) {
+                if (v.dsuNode.weight.semi == now) {
                     v.idom = now;
                 } else {
                     v.idom = v.dsuNode.weight;
                 }
             }
             now.bucket.clear();
+            if (i == 1) continue;
             for (var pre : now.block.getPreBlocks()) {
                 Node u = nodeMap.get(pre);
                 if (u.dfn == -1) continue; // 存在不可达点
@@ -85,8 +85,8 @@ public class DominanceGraphLT {
                         now.semi = u;
                 } else if (u.dfn > now.dfn) {
                     WeightedDisjointSetUnion.get(u);
-                    if (u.dsuNode.weight.dfn < now.semi.dfn) {
-                        now.semi = u.dsuNode.weight;
+                    if (u.dsuNode.weight.semi.dfn < now.semi.dfn) {
+                        now.semi = u.dsuNode.weight.semi;
                     }
                 }
             }
@@ -108,8 +108,10 @@ public class DominanceGraphLT {
         now.hasDumped = true;
         BasicBlock nowBlock = now.block;
         DGinfo._DG_Block_Info nowInfo = dginfo.getInfo(nowBlock);
+
         nowInfo.domDepth = depth;
-        nowInfo.idom = now.idom.block;
+        if (nowBlock != entry)
+            nowInfo.idom = now.idom.block;
         parents.add(nowBlock);
         nowInfo.dominators.addAll(parents);
         for (var node : now.bucket) {

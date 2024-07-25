@@ -2,6 +2,7 @@ package midend.Analysis;
 
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
+import midend.Util.DominanceGraphLT;
 import mir.BasicBlock;
 import mir.Function;
 import mir.Instruction;
@@ -95,20 +96,20 @@ public class AnalysisManager {
     public static void buildDG(Module module) {
         for (Function function : module.getFuncSet()) {
             if (!function.isExternal()) {
-                dgMap.put(function, DominanceGraph.runOnFunc(function));
+                dgMap.put(function, DominanceGraphLT.runOnFunc(function));
                 dirtyDG.put(function, false);
             }
         }
     }
 
     public static void refreshDG(Function function) {
-        dgMap.put(function, DominanceGraph.runOnFunc(function));
+        dgMap.put(function, DominanceGraphLT.runOnFunc(function));
         dirtyDG.put(function, false);
     }
 
     public static DGinfo getDG(Function function) {
         if (!dgMap.containsKey(function) || dirtyDG.getOrDefault(function, true)) {
-            dgMap.put(function, DominanceGraph.runOnFunc(function));
+            dgMap.put(function, DominanceGraphLT.runOnFunc(function));
             dirtyDG.put(function, false);
         }
         return dgMap.get(function);
