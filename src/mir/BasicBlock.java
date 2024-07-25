@@ -31,7 +31,7 @@ public class BasicBlock extends Value {
      * 事实上 phi 指令被认为发生在前驱块到后继块的边上 <br>
      * 也许应该独立出来存储 <br>
      * <p>
-     * Warning: 不要将返回值改为 SyncLinkedList, 会破坏原有的链表关系！
+     * Warning: 不要将返回值改为 NelLinkedList, 会破坏原有的链表关系！
      */
     public ArrayList<Instruction.Phi> getPhiInstructions() {
         ArrayList<Instruction.Phi> phiInstructions = new ArrayList<>();

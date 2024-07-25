@@ -1,5 +1,6 @@
 package midend.Transform.DCE;
 
+import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
 import mir.Function;
 import mir.Module;
@@ -23,12 +24,6 @@ public class DeadCodeEliminate {
         InitUsefulVar(module);
         FindAllUsefulVar();
         DeleteUselessVar(module);
-        for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) {
-                continue;
-            }
-            function.buildControlFlowGraph();
-        }
     }
 
     public static void clear() {
@@ -85,8 +80,7 @@ public class DeadCodeEliminate {
             newUsefulVar.add(inst.getParentBlock());
             newUsefulVar.add(inst.getParentBlock().getParentFunction());
             newUsefulVar.addAll(inst.getOperands());
-        }
-        else if (value instanceof BasicBlock block) {
+        } else if (value instanceof BasicBlock block) {
             for (Instruction inst : block.getInstructions()) {
                 if (inst instanceof Instruction.Call call) {
                     Function callee = call.getDestFunction();
@@ -99,8 +93,7 @@ public class DeadCodeEliminate {
             for (Use use : block.getUses()) {
                 newUsefulVar.add(use.getUser());
             }
-        }
-        else if (value instanceof Function func) {
+        } else if (value instanceof Function func) {
             //倒序遍历找ret
             int blockLen = func.getBlocks().size();
             for (int i = blockLen - 1; i >= 0; i--) {
@@ -141,7 +134,12 @@ public class DeadCodeEliminate {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             if (!usefulVar.contains(function)) delList.add(function);
-            else uselessBBDelete(function);
+            else {
+                if (uselessBBDelete(function)) {
+                    AnalysisManager.dirtyCFG(function);
+                    AnalysisManager.dirtyDG(function);
+                }
+            }
         }
         for (Function func : delList) {
             func.delete();
@@ -157,24 +155,20 @@ public class DeadCodeEliminate {
         }
     }
 
-    private static void uselessBBDelete(Function function) {
+    private static boolean uselessBBDelete(Function function) {
         ArrayList<BasicBlock> delList = new ArrayList<>();
         for (BasicBlock block : function.getBlocks()) {
             if (!usefulVar.contains(block)) {
-//                System.out.println("uselessInstDelete: " + inst.getDescriptor());
-//                iterator.remove();
                 delList.add(block);
-            }
-            else uselessInstDelete(block);
+            } else uselessInstDelete(block);
         }
         delList.forEach(BasicBlock::delete);
+        return !delList.isEmpty();
     }
 
     private static void uselessInstDelete(BasicBlock block) {
         ArrayList<Instruction> delList = new ArrayList<>();
-        Iterator<Instruction> iterator = block.getInstructions().iterator();
-        while (iterator.hasNext()) {
-            Instruction inst = iterator.next();
+        for (Instruction inst : block.getInstructions()) {
             if (!usefulVar.contains(inst)) {
 //                System.out.println("uselessInstDelete: " + inst.getDescriptor());
                 delList.add(inst);

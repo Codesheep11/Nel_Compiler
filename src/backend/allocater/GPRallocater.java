@@ -185,8 +185,7 @@ public class GPRallocater {
             R2 move = it.next();
             if (conflictGraph.get(move.rd).contains(move.rs)) {
                 it.remove();
-            }
-            else {
+            } else {
                 moveNodes.add((Reg) move.rd);
                 moveNodes.add((Reg) move.rs);
             }
@@ -245,8 +244,7 @@ public class GPRallocater {
                     spillNodes.remove(node);
                 }
                 curUsedRegs.add(node.phyReg);
-            }
-            else {
+            } else {
                 spillNodes.add(node);
                 DeleteNode(node);
             }
@@ -339,8 +337,7 @@ public class GPRallocater {
         for (Reg reg : nodes) {
             if (reg.preColored) {
                 regs.add(reg.phyReg);
-            }
-            else size++;
+            } else size++;
         }
         regs.removeAll(unAllocateRegs);
         return regs.size() + size;
@@ -372,8 +369,7 @@ public class GPRallocater {
                         if (neighbor.equals(node)) System.out.println("error");
                     }
                     if (!node.preColored) outNodes.add(node);
-                }
-                else break;
+                } else break;
             }
             //如果没有可以删除的低度数传送无关节点，尝试删除一条move来合并一对move相关节点
             boolean merge = true;
@@ -389,8 +385,7 @@ public class GPRallocater {
                             if (r1.preColored) {
                                 newReg = r1;
                                 oldReg = r2;
-                            }
-                            else {
+                            } else {
                                 newReg = r2;
                                 oldReg = r1;
                             }
@@ -398,8 +393,7 @@ public class GPRallocater {
                             //合并节点
                             newReg.mergeReg(oldReg);
                             moveNodes.remove(oldReg);
-                        }
-                        else {
+                        } else {
                             newReg = r1;
                         }
                         //删除move指令

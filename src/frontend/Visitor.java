@@ -20,9 +20,9 @@ import java.util.Stack;
 
 public class Visitor {
     public Module module;
-    private SymTable globalSymTable = new SymTable();
+    private final SymTable globalSymTable = new SymTable();
     public ArrayList<String> globalStr = new ArrayList<>();
-    private ArrayList<GlobalVariable> globalVariables = new ArrayList<GlobalVariable>();
+    private final ArrayList<GlobalVariable> globalVariables = new ArrayList<>();
     private SymTable currentSymTable = globalSymTable;
     private BasicBlock currentBB = null;
     private BasicBlock currentEntry = null;
@@ -122,7 +122,7 @@ public class Visitor {
         }
         else {
             if (defType.isInt32Ty()) {
-                initValue = new InitValue.ValueInit(new Constant.ConstantInt(0), Type.BasicType.I32_TYPE);
+                initValue = new InitValue.ValueInit(Constant.ConstantInt.get(0), Type.BasicType.I32_TYPE);
             }
             else if (defType.isFloatTy()) {
                 initValue = new InitValue.ValueInit(new Constant.ConstantFloat(0), Type.BasicType.F32_TYPE);
@@ -173,9 +173,9 @@ public class Visitor {
                 for (Map.Entry<Integer, Value> entry : nZeros.entrySet()) {
                     ArrayList<Value> offsets = new ArrayList<>();
                     for (int i = 0; i < ((Type.ArrayType) defType).getDimensions(); i++) {
-                        offsets.add(new Constant.ConstantInt(0));
+                        offsets.add(Constant.ConstantInt.get(0));
                     }
-                    offsets.add(new Constant.ConstantInt(entry.getKey()));
+                    offsets.add(Constant.ConstantInt.get(entry.getKey()));
                     Value p = new Instruction.GetElementPtr(currentBB, address, eleType, offsets);
                     new Instruction.Store(currentBB, castType(entry.getValue(), eleType), p);
                 }
@@ -201,8 +201,8 @@ public class Visitor {
         }
         ArrayList<Value> params = new ArrayList<>();
         params.add(ptr);
-        params.add(new Constant.ConstantInt(0));
-        params.add(new Constant.ConstantInt(size));
+        params.add(Constant.ConstantInt.get(0));
+        params.add(Constant.ConstantInt.get(size));
         new Instruction.Call(currentBB, FuncInfo.ExternFunc.MEMSET, params);
         module.addFunction(FuncInfo.ExternFunc.MEMSET);
     }
@@ -237,7 +237,7 @@ public class Visitor {
                 return new Instruction.SItofp(currentBB, from);
             }
             else if (to.isInt1Ty()) {
-                return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.NE, from, new Constant.ConstantInt(0));
+                return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.NE, from, Constant.ConstantInt.get(0));
             }
         }
         else if (type.isInt1Ty()) {
@@ -258,13 +258,13 @@ public class Visitor {
         if (type.isFloatTy()) {
             if (to.isFloatTy()) return from;
             else if (to.isInt32Ty()) {
-                return new Constant.ConstantInt((int) ((float) from.getConstValue()));
+                return Constant.ConstantInt.get((int) ((float) from.getConstValue()));
             }
             else if (to.isInt1Ty()) {
                 if ((float) from.getConstValue() == 0)
-                    return new Constant.ConstantBool(0);
+                    return Constant.ConstantBool.get(0);
                 else
-                    return new Constant.ConstantBool(1);
+                    return Constant.ConstantBool.get(1);
             }
         }
         else if (type.isInt32Ty()) {
@@ -274,9 +274,9 @@ public class Visitor {
             }
             else if (to.isInt1Ty()) {
                 if ((int) from.getConstValue() == 0)
-                    return new Constant.ConstantBool(0);
+                    return Constant.ConstantBool.get(0);
                 else
-                    return new Constant.ConstantBool(1);
+                    return Constant.ConstantBool.get(1);
             }
         }
         else if (type.isInt1Ty()) {
@@ -285,7 +285,7 @@ public class Visitor {
                 return new Constant.ConstantFloat((float) ((int) from.getConstValue()));
             }
             else if (to.isInt32Ty()) {
-                return new Constant.ConstantInt((int) (from.getConstValue()));
+                return Constant.ConstantInt.get((int) (from.getConstValue()));
             }
         }
         throw new SemanticError("Unsupport cast type");
@@ -356,7 +356,7 @@ public class Visitor {
                 arrayInit.addElement(new InitValue.ZeroArrayInit(((Type.ArrayType) type).getEleType()));
             }
             else {
-                arrayInit.addElement(new InitValue.ValueInit(castConstantType(new Constant.ConstantInt(0), ((Type.ArrayType) type).getBasicEleType()),
+                arrayInit.addElement(new InitValue.ValueInit(castConstantType(Constant.ConstantInt.get(0), ((Type.ArrayType) type).getBasicEleType()),
                         ((Type.ArrayType) type).getBasicEleType()));
             }
         }
@@ -374,10 +374,10 @@ public class Visitor {
         Object val = calculator.evalConstExp(exp);
         if (type.isInt32Ty()) {
             if (val instanceof Integer) {
-                return new InitValue.ValueInit(new Constant.ConstantInt((int) val), Type.BasicType.I32_TYPE);
+                return new InitValue.ValueInit(Constant.ConstantInt.get((int) val), Type.BasicType.I32_TYPE);
             }
             else {
-                return new InitValue.ValueInit(new Constant.ConstantInt((int) ((float) val)), Type.BasicType.I32_TYPE);
+                return new InitValue.ValueInit(Constant.ConstantInt.get((int) ((float) val)), Type.BasicType.I32_TYPE);
             }
         }
         else {
@@ -430,7 +430,7 @@ public class Visitor {
             }
             val = visitMulExpSuffix(val, e);
             if (val instanceof Constant && ((Constant) val).isZero()) {
-                return new Constant.ConstantInt(0);
+                return Constant.ConstantInt.get(0);
             }
         } while (e.hasNext());
         return val;
@@ -456,7 +456,7 @@ public class Visitor {
                     return perfix;
                 }
                 if (val instanceof Constant && addExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue()
+                    perfix = Constant.ConstantInt.get((int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue()
                             + (int) castConstantType((Constant) addExpPerfix, Type.BasicType.I32_TYPE).getConstValue());
                 }
                 else {
@@ -480,7 +480,7 @@ public class Visitor {
                     return perfix;
                 }
                 if (val instanceof Constant && addExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) addExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
+                    perfix = Constant.ConstantInt.get((int) castConstantType((Constant) addExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
                             - (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue());
                 }
                 else {
@@ -503,11 +503,11 @@ public class Visitor {
                 Value perfix;
                 if (val instanceof Constant && ((Constant) val).isZero()) {
                     assert val.getType() instanceof Type.BasicType;
-                    return castConstantType(new Constant.ConstantInt(0), (Type.BasicType) val.getType());
+                    return castConstantType(Constant.ConstantInt.get(0), (Type.BasicType) val.getType());
                 }
                 if (mulExpPerfix instanceof Constant && ((Constant) mulExpPerfix).isZero()) {
                     assert mulExpPerfix.getType() instanceof Type.BasicType;
-                    return castConstantType(new Constant.ConstantInt(0), (Type.BasicType) mulExpPerfix.getType());
+                    return castConstantType(Constant.ConstantInt.get(0), (Type.BasicType) mulExpPerfix.getType());
                 }
                 if (val.getType() == Type.BasicType.F32_TYPE || mulExpPerfix.getType() == Type.BasicType.F32_TYPE) {
                     if (val instanceof Constant && mulExpPerfix instanceof Constant) {
@@ -520,7 +520,7 @@ public class Visitor {
                     return perfix;
                 }
                 if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue()
+                    perfix = Constant.ConstantInt.get((int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue()
                             * (int) castConstantType((Constant) mulExpPerfix, Type.BasicType.I32_TYPE).getConstValue());
                 }
                 else {
@@ -542,7 +542,7 @@ public class Visitor {
                     return perfix;
                 }
                 if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) mulExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
+                    perfix = Constant.ConstantInt.get((int) castConstantType((Constant) mulExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
                             / (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue());
                 }
                 else {
@@ -564,7 +564,7 @@ public class Visitor {
                     return perfix;
                 }
                 if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) mulExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
+                    perfix = Constant.ConstantInt.get((int) castConstantType((Constant) mulExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
                             % (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue());
                 }
                 else {
@@ -594,10 +594,10 @@ public class Visitor {
                         return new Constant.ConstantFloat(-(float) ((Constant) ret).getConstValue());
                     }
                     else if (ret.getType() == Type.BasicType.I32_TYPE) {
-                        return new Constant.ConstantInt(-(int) ((Constant) ret).getConstValue());
+                        return Constant.ConstantInt.get(-(int) ((Constant) ret).getConstValue());
                     }
                     else if (ret.getType() == Type.BasicType.I1_TYPE) {
-                        return new Constant.ConstantInt(-(int) ((Constant) ret).getConstValue());
+                        return Constant.ConstantInt.get(-(int) ((Constant) ret).getConstValue());
                     }
                     else {
                         throw new SemanticError("Bad Operand of Unary Exp");
@@ -607,10 +607,10 @@ public class Visitor {
                     return new Instruction.BinaryOperation.FSub(currentBB, Type.BasicType.F32_TYPE, new Constant.ConstantFloat(0), ret);
                 }
                 else if (ret.getType() == Type.BasicType.I32_TYPE) {
-                    return new Instruction.BinaryOperation.Sub(currentBB, Type.BasicType.I32_TYPE, new Constant.ConstantInt(0), ret);
+                    return new Instruction.BinaryOperation.Sub(currentBB, Type.BasicType.I32_TYPE, Constant.ConstantInt.get(0), ret);
                 }
                 else if (ret.getType() == Type.BasicType.I1_TYPE) {
-                    return new Instruction.BinaryOperation.Sub(currentBB, Type.BasicType.I1_TYPE, new Constant.ConstantInt(0), castType(ret, Type.BasicType.I32_TYPE));
+                    return new Instruction.BinaryOperation.Sub(currentBB, Type.BasicType.I1_TYPE, Constant.ConstantInt.get(0), castType(ret, Type.BasicType.I32_TYPE));
                 }
                 else {
                     throw new SemanticError("Bad Operand of Unary Exp");
@@ -619,13 +619,13 @@ public class Visitor {
             else if (exp.getUnaryOp().tokenType == TokenType.NOT) {
                 if (ret instanceof Constant) {
                     if (ret.getType() == Type.BasicType.F32_TYPE) {
-                        return new Constant.ConstantBool((float) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
+                        return Constant.ConstantBool.get((float) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
                     }
                     else if (ret.getType() == Type.BasicType.I32_TYPE) {
-                        return new Constant.ConstantBool((int) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
+                        return Constant.ConstantBool.get((int) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
                     }
                     else if (ret.getType() == Type.BasicType.I1_TYPE) {
-                        return new Constant.ConstantBool((int) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
+                        return Constant.ConstantBool.get((int) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
                     }
                     else {
                         throw new SemanticError("Bad Operand of Unary Exp");
@@ -635,10 +635,10 @@ public class Visitor {
                     return new Instruction.Fcmp(currentBB, Instruction.Fcmp.CondCode.EQ, ret, new Constant.ConstantFloat(0));
                 }
                 else if (ret.getType() == Type.BasicType.I32_TYPE) {
-                    return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.EQ, ret, new Constant.ConstantInt(0));
+                    return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.EQ, ret, Constant.ConstantInt.get(0));
                 }
                 else if (ret.getType() == Type.BasicType.I1_TYPE) {
-                    return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.EQ, castType(ret, Type.BasicType.I32_TYPE), new Constant.ConstantInt(0));
+                    return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.EQ, castType(ret, Type.BasicType.I32_TYPE), Constant.ConstantInt.get(0));
                 }
                 else {
                     throw new SemanticError("Bad Operand of Unary Exp");
@@ -662,7 +662,7 @@ public class Visitor {
         }
         ArrayList<Value> rParams = new ArrayList<>();
         if (ident.identifier.content.equals("starttime") || ident.identifier.content.equals("stoptime")) {
-            Constant.ConstantInt lineNo = new Constant.ConstantInt(ident.identifier.line);
+            Constant.ConstantInt lineNo = Constant.ConstantInt.get(ident.identifier.line);
             rParams.add(lineNo);
             return new Instruction.Call(currentBB, function, rParams);
         }
@@ -727,7 +727,7 @@ public class Visitor {
         //对于数组类型
         Value pointer = address;
         ArrayList<Value> offsets = new ArrayList<>();
-        offsets.add(new Constant.ConstantInt(0));
+        offsets.add(Constant.ConstantInt.get(0));
         boolean hasOffSet = false;
         for (Ast.AddExp exp :
                 lval.getExps()) {
@@ -767,8 +767,8 @@ public class Visitor {
         else if (contentType instanceof Type.ArrayType) {
             //返回数组的首地址
             ArrayList<Value> zeros = new ArrayList<>();
-            zeros.add(new Constant.ConstantInt(0));
-            zeros.add(new Constant.ConstantInt(0));
+            zeros.add(Constant.ConstantInt.get(0));
+            zeros.add(Constant.ConstantInt.get(0));
             return new Instruction.GetElementPtr(currentBB, pointer, ((Type.ArrayType) contentType).getEleType(), zeros);
         }
         else {
@@ -780,16 +780,16 @@ public class Visitor {
     private ArrayList<Value> flatOffsets(ArrayList<Value> offsets, Value pointer, Type eleTp) {
         ArrayList<Value> newOffsets = new ArrayList<>();
         for (int i = 0; i < offsets.size() - 1; i++) {
-            newOffsets.add(new Constant.ConstantInt(0));
+            newOffsets.add(Constant.ConstantInt.get(0));
         }
         assert pointer.getType() instanceof Type.PointerType;
         Type contentTp = ((Type.PointerType) pointer.getType()).getInnerType();
-        Value newOffset = new Constant.ConstantInt(0);
+        Value newOffset = Constant.ConstantInt.get(0);
         for (Value offset :
                 offsets) {
             if (contentTp == eleTp) {
                 if (newOffset instanceof Constant && offset instanceof Constant) {
-                    newOffset = new Constant.ConstantInt(((int) ((Constant) newOffset).getConstValue() + (int) ((Constant) offset).getConstValue()));
+                    newOffset = Constant.ConstantInt.get(((int) ((Constant) newOffset).getConstValue() + (int) ((Constant) offset).getConstValue()));
                 }
                 else {
                     newOffset = new Instruction.BinaryOperation.Add(currentBB, Type.BasicType.I32_TYPE, newOffset, offset);
@@ -800,20 +800,20 @@ public class Visitor {
                 Value value;
                 if (offset instanceof Constant) {
                     if (eleTp instanceof Type.ArrayType)
-                        value = new Constant.ConstantInt((int) ((Constant) offset).getConstValue() * ((Type.ArrayType) contentTp).getFlattenSize() /
+                        value = Constant.ConstantInt.get((int) ((Constant) offset).getConstValue() * ((Type.ArrayType) contentTp).getFlattenSize() /
                                 ((Type.ArrayType) eleTp).getFlattenSize());
                     else
-                        value = new Constant.ConstantInt((int) ((Constant) offset).getConstValue() * ((Type.ArrayType) contentTp).getFlattenSize());
+                        value = Constant.ConstantInt.get((int) ((Constant) offset).getConstValue() * ((Type.ArrayType) contentTp).getFlattenSize());
                 }
                 else {
                     if (eleTp instanceof Type.ArrayType)
                         value = new Instruction.BinaryOperation.Mul(currentBB, Type.BasicType.I32_TYPE, offset,
-                                new Constant.ConstantInt(((Type.ArrayType) contentTp).getFlattenSize() / ((Type.ArrayType) eleTp).getFlattenSize()));
+                                Constant.ConstantInt.get(((Type.ArrayType) contentTp).getFlattenSize() / ((Type.ArrayType) eleTp).getFlattenSize()));
                     else
-                        value = new Instruction.BinaryOperation.Mul(currentBB, Type.BasicType.I32_TYPE, offset, new Constant.ConstantInt(((Type.ArrayType) contentTp).getFlattenSize()));
+                        value = new Instruction.BinaryOperation.Mul(currentBB, Type.BasicType.I32_TYPE, offset, Constant.ConstantInt.get(((Type.ArrayType) contentTp).getFlattenSize()));
                 }
                 if (value instanceof Constant && newOffset instanceof Constant) {
-                    newOffset = new Constant.ConstantInt(((int) ((Constant) newOffset).getConstValue() + (int) ((Constant) value).getConstValue()));
+                    newOffset = Constant.ConstantInt.get(((int) ((Constant) newOffset).getConstValue() + (int) ((Constant) value).getConstValue()));
                 }
                 else {
                     newOffset = new Instruction.BinaryOperation.Add(currentBB, Type.BasicType.I32_TYPE, newOffset, value);
@@ -841,16 +841,16 @@ public class Visitor {
         else if (number.tokenType == TokenType.DEC_INT || number.tokenType == TokenType.HEX_INT || number.tokenType == TokenType.OCT_INT) {
             if (number.tokenType == TokenType.HEX_INT) {
                 if (number.content.contains("0x") || number.content.contains("0X")) {
-                    return new Constant.ConstantInt(Integer.parseInt(number.content.substring(2).toUpperCase(), 16));
+                    return Constant.ConstantInt.get(Integer.parseInt(number.content.substring(2).toUpperCase(), 16));
                 }
                 else {
-                    return new Constant.ConstantInt(Integer.parseInt(number.content.toUpperCase(), 16));
+                    return Constant.ConstantInt.get(Integer.parseInt(number.content.toUpperCase(), 16));
                 }
             }
             if (number.tokenType == TokenType.OCT_INT) {
-                return new Constant.ConstantInt(Integer.parseInt(number.content, 8));
+                return Constant.ConstantInt.get(Integer.parseInt(number.content, 8));
             }
-            return new Constant.ConstantInt(Integer.parseInt(number.content));
+            return Constant.ConstantInt.get(Integer.parseInt(number.content));
         }
         else {
             throw new SemanticError("NAN: " + number.content);
@@ -905,7 +905,7 @@ public class Visitor {
         }
         else {
             if (defType.isInt32Ty()) {
-                initValue = new InitValue.ValueInit(new Constant.ConstantInt(0), Type.BasicType.I32_TYPE);
+                initValue = new InitValue.ValueInit(Constant.ConstantInt.get(0), Type.BasicType.I32_TYPE);
             }
             else if (defType.isFloatTy()) {
                 initValue = new InitValue.ValueInit(new Constant.ConstantFloat(0), Type.BasicType.F32_TYPE);
@@ -971,7 +971,7 @@ public class Visitor {
             switch (funcToken.tokenType) {
                 case VOID -> new Instruction.Return(currentBB);
                 case FLOAT -> new Instruction.Return(currentBB, new Constant.ConstantFloat(0));
-                case INT -> new Instruction.Return(currentBB, new Constant.ConstantInt(0));
+                case INT -> new Instruction.Return(currentBB, Constant.ConstantInt.get(0));
                 default -> throw new SemanticError("Bad FuncType");
             }
         }
@@ -1123,14 +1123,14 @@ public class Visitor {
     private Value visitLOrExp(Ast.LOrExp lOrExp, BasicBlock thenBlock, BasicBlock followBlock) throws SemanticError {
         Iterator<Ast.LAndExp> iter = lOrExp.getlAndExps().iterator();
         Ast.LAndExp lAndExp = iter.next();
-        Constant.ConstantBool tmp = new Constant.ConstantBool(0);
+        Constant.ConstantBool tmp = Constant.ConstantBool.get(0);
         for (; iter.hasNext(); lAndExp = iter.next()) {
             BasicBlock nextCond = new BasicBlock(currentFunc.getBBName(), currentFunc);
             Value cond = visitLAndExp(lAndExp, nextCond);
             assert cond.getType().isInt1Ty();
             if (cond instanceof Constant.ConstantBool) {
                 if (!((Constant.ConstantBool) cond).isZero() || !tmp.isZero()) {
-                    tmp = new Constant.ConstantBool(1);
+                    tmp = Constant.ConstantBool.get(1);
                 }
             }
             new Instruction.Branch(currentBB, cond, thenBlock, nextCond);
@@ -1145,14 +1145,14 @@ public class Visitor {
     private Value visitLAndExp(Ast.LAndExp lAndExp, BasicBlock followBlock) throws SemanticError {
         Iterator<Ast.EqExp> iter = lAndExp.getEqExps().iterator();
         Ast.EqExp eqExp = iter.next();
-        Constant.ConstantBool tmp = new Constant.ConstantBool(1);
+        Constant.ConstantBool tmp = Constant.ConstantBool.get(1);
         for (; iter.hasNext(); eqExp = iter.next()) {
             BasicBlock nextCond = new BasicBlock(currentFunc.getBBName(), currentFunc);
             Value cond = visitEqExp(eqExp);
             assert cond.getType().isInt1Ty();
             if (cond instanceof Constant.ConstantBool) {
                 if (((Constant.ConstantBool) cond).isZero() || tmp.isZero()) {
-                    tmp = new Constant.ConstantBool(0);
+                    tmp = Constant.ConstantBool.get(0);
                 }
             }
             new Instruction.Branch(currentBB, cond, nextCond, followBlock);
@@ -1184,10 +1184,10 @@ public class Visitor {
                     if (last instanceof Constant && val instanceof Constant) {
                         last = switch (tokenIterator.next().tokenType) {
                             case EQ ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
                                             == (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             case NE ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
                                             != (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             default -> throw new SemanticError("Bad EqOp");
                         };
@@ -1205,10 +1205,10 @@ public class Visitor {
                     if (last instanceof Constant && val instanceof Constant) {
                         last = switch (tokenIterator.next().tokenType) {
                             case EQ ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
                                             == (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             case NE ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
                                             != (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             default -> throw new SemanticError("Bad EqOp");
                         };
@@ -1248,16 +1248,16 @@ public class Visitor {
                     if (last instanceof Constant && val instanceof Constant) {
                         last = switch (relOpIterator.next().tokenType) {
                             case LT ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
                                             < (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             case LE ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
                                             <= (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             case GT ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
                                             > (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             case GE ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
                                             >= (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             default -> throw new SemanticError("Bad RelOp");
                         };
@@ -1277,16 +1277,16 @@ public class Visitor {
                     if (last instanceof Constant && val instanceof Constant) {
                         last = switch (relOpIterator.next().tokenType) {
                             case LT ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
                                             < (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             case LE ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
                                             <= (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             case GT ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
                                             > (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             case GE ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
+                                    Constant.ConstantBool.get((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
                                             >= (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             default -> throw new SemanticError("Bad RelOp");
                         };
@@ -1413,7 +1413,7 @@ public class Visitor {
             }
             else {
                 Calculator calculator = new Calculator(currentSymTable);
-                dims.add(new Constant.ConstantInt(calculator.evalConsInt(varSuffix.getExp())));
+                dims.add(Constant.ConstantInt.get(calculator.evalConsInt(varSuffix.getExp())));
             }
         }
 

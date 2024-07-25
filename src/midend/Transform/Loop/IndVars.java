@@ -98,7 +98,7 @@ public class IndVars {
                     Value val = inst.getIncomingValues().get(0);
                     if (scevInfo.contains(val)) {
                         int res = SCEVExpr.calc(scevInfo.query(val), loop.tripCount);
-                        inst.replaceAllUsesWith(new Constant.ConstantInt(res));
+                        inst.replaceAllUsesWith(Constant.ConstantInt.get(res));
                     }
                 }
             }
