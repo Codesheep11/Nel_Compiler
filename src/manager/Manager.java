@@ -1,7 +1,9 @@
 package manager;
 
-import backend.Opt.*;
-import backend.Opt.ShortInstr.ShortInstrConvert;
+import backend.Opt.BlockInline;
+import backend.Opt.BlockReSort;
+import backend.Opt.CalculateOpt;
+import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -12,6 +14,7 @@ import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.FuncAnalysis;
+import midend.Analysis.I32RangeAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
@@ -22,8 +25,9 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import mir.Function;
+import midend.Util.Print;
 import mir.GlobalVariable;
+import mir.*;
 import mir.Ir2RiscV.AfterRA;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
@@ -78,9 +82,12 @@ public class Manager {
         DeadCodeEliminate();
         ArrayPasses();
         Branch2MinMax.run(module);
+        I32RangeAnalysis.run(module);
+        RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
         FuncAnalysis.run(module);
+        LoopInfo.run(module);
         Scheduler.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);
@@ -115,9 +122,9 @@ public class Manager {
 
     private void DeadCodeEliminate() {
         DeadLoopEliminate.run(module);
-        SimplfyCFG.run(module);
+        SimplifyCFGPass.run(module);
         GlobalValueNumbering.run(module);
-        SimplfyCFG.run(module);
+        SimplifyCFGPass.run(module);
         ArithReduce.run(module);
         DeadCodeEliminate.run(module);
     }

@@ -47,6 +47,7 @@ public class Function extends Value {
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
+
     private int countOfBB = 0;
 
     public Function(Type type, String name, Type... argumentTypes) {
@@ -175,7 +176,6 @@ public class Function extends Value {
     /**
      * 构建函数的控制流图 <br>
      * 建议使用AnalysisManager.refreshCFG(Function)来刷新CFG
-     *
      * @deprecated
      */
     @Deprecated
