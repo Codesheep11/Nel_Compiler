@@ -15,11 +15,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
- *
+ * Module
  */
 public class AnalysisManager {
 
     public AnalysisManager() {
+
     }
 
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
