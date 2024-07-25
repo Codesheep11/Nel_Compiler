@@ -1,10 +1,8 @@
 package midend.Analysis.Alias;
 
-import midend.Analysis.Manager.ModuleAnalysisManager;
-import midend.Util.MemoryLocation;
+import midend.Analysis.AnalysisManager;
 import mir.Constant;
 import mir.Value;
-import utils.Pair;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -13,7 +11,7 @@ import java.util.Vector;
 /**
  *
  */
-public class AliasAnalysis extends ModuleAnalysisManager {
+public class AliasAnalysis extends AnalysisManager {
 
     private static class Attribute {
         // todo : fill details

@@ -1,6 +1,6 @@
 package mir;
 
-import midend.Analysis.Manager.ModuleAnalysisManager;
+import midend.Analysis.AnalysisManager;
 import midend.Util.CloneInfo;
 import utils.NelLinkedList;
 
@@ -116,27 +116,27 @@ public class BasicBlock extends Value {
     }
 
     public ArrayList<BasicBlock> getPreBlocks() {
-        return ModuleAnalysisManager.getCFGPredecessors(this);
+        return AnalysisManager.getCFGPredecessors(this);
     }
 
     public ArrayList<BasicBlock> getSucBlocks() {
-        return ModuleAnalysisManager.getCFGSuccessors(this);
+        return AnalysisManager.getCFGSuccessors(this);
     }
 
     public HashSet<BasicBlock> getDomFrontiers() {
-        return ModuleAnalysisManager.getDomFrontiers(this);
+        return AnalysisManager.getDomFrontiers(this);
     }
 
     public ArrayList<BasicBlock> getDomTreeChildren() {
-        return ModuleAnalysisManager.getDomTreeChildren(this);
+        return AnalysisManager.getDomTreeChildren(this);
     }
 
     public HashSet<BasicBlock> getDomSet() {
-        return ModuleAnalysisManager.getDominators(this);
+        return AnalysisManager.getDominators(this);
     }
 
     public int getDomDepth() {
-        return ModuleAnalysisManager.getDomDepth(this);
+        return AnalysisManager.getDomDepth(this);
     }
 
     public int getLoopDepth() {

@@ -1,6 +1,6 @@
 package midend.Transform.Array;
 
-import midend.Analysis.Manager.ModuleAnalysisManager;
+import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -92,18 +92,18 @@ public class LocalArrayLift {
             }
             BasicBlock storeBB = store.getParentBlock();
             BasicBlock lastStoreBB = lastStoreInst.getParentBlock();
-            if (ModuleAnalysisManager.dominate(lastStoreBB, storeBB)) lastStoreInst = store;
-            else if (ModuleAnalysisManager.dominate(storeBB, lastStoreBB)) continue;
+            if (AnalysisManager.dominate(lastStoreBB, storeBB)) lastStoreInst = store;
+            else if (AnalysisManager.dominate(storeBB, lastStoreBB)) continue;
             else return;
         }
         stores.sort((i, j) -> {
-            if (ModuleAnalysisManager.dominate(i, j)) return 1;
-            if (ModuleAnalysisManager.dominate(j, i)) return -1;
+            if (AnalysisManager.dominate(i, j)) return 1;
+            if (AnalysisManager.dominate(j, i)) return -1;
             else throw new RuntimeException("store not in a root path!");
         });
         //确保所有load在最后一个store后面
         for (Instruction load : loads) {
-            if (!ModuleAnalysisManager.dominate(lastStoreInst, load)) return;
+            if (!AnalysisManager.dominate(lastStoreInst, load)) return;
         }
         //满足上述条件，记录数组信息，默认此处已经消除了冗余store
         HashMap<Integer, Constant> init = new HashMap<>();

@@ -1,6 +1,6 @@
 package midend.Transform;
 
-import midend.Analysis.Manager.ModuleAnalysisManager;
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import manager.CentralControl;
 import mir.Module;
@@ -40,8 +40,8 @@ public class GlobalCodeMotion {
         GlobalCodeMotion gcm = new GlobalCodeMotion();
         gcm.entry = function.getEntry();
         gcm.currentFunc = function;
-        ModuleAnalysisManager.refreshDG(function);
-        gcm.dginfo = ModuleAnalysisManager.getDG(function);
+        AnalysisManager.refreshDG(function);
+        gcm.dginfo = AnalysisManager.getDG(function);
         gcm.GCMEarly4Block(function.getEntry());
         gcm.scheduledSet.clear();
         gcm.GCMLate4Block();

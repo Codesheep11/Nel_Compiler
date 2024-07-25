@@ -3,7 +3,6 @@ package manager;
 import backend.Opt.BlockInline;
 import backend.Opt.BlockReSort;
 import backend.Opt.CalculateOpt;
-import backend.Opt.Scheduler.AfterRAScheduler;
 import backend.Opt.SimplifyCFG;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
@@ -14,7 +13,6 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
-import midend.Analysis.Manager.ModuleAnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
@@ -27,7 +25,6 @@ import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
 import mir.GlobalVariable;
-import midend.Util.Print;
 import mir.*;
 import mir.Ir2RiscV.AfterRA;
 import mir.Ir2RiscV.CodeGen;
@@ -118,9 +115,9 @@ public class Manager {
 
     private void DeadCodeEliminate() {
         DeadLoopEliminate.run(module);
-        SimplfyCFG.run(module);
+        SimplifyCFGPass.run(module);
         GlobalValueNumbering.run(module);
-        SimplfyCFG.run(module);
+        SimplifyCFGPass.run(module);
         ArithReduce.run(module);
         DeadCodeEliminate.run(module);
     }

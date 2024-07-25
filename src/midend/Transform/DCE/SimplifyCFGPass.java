@@ -1,7 +1,6 @@
 package midend.Transform.DCE;
 
 import midend.Pass.FunctionPass;
-import midend.Pass.Pass;
 import mir.*;
 import mir.Module;
 
@@ -14,7 +13,7 @@ import java.util.*;
  * 删除仅包含无条件分支的基本块。
  *
  */
-public class SimplifyCFG extends FunctionPass {
+public class SimplifyCFGPass extends FunctionPass {
 
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {

@@ -1,6 +1,6 @@
 package midend.Transform;
 
-import midend.Analysis.Manager.ModuleAnalysisManager;
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
 import mir.result.CFGinfo;
@@ -17,7 +17,7 @@ public class RemovePhi {
             if (function.isExternal()) {
                 continue;
             }
-            cfGinfo = ModuleAnalysisManager.getCFG(function);
+            cfGinfo = AnalysisManager.getCFG(function);
             if (function.isExternal()) continue;
             cfGinfo = AnalysisManager.getCFG(function);
             removePhiAddPhiCopy(function);

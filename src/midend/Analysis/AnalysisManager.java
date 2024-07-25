@@ -1,4 +1,4 @@
-package midend.Analysis.Manager;
+package midend.Analysis;
 
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
@@ -17,9 +17,9 @@ import java.util.HashSet;
 /**
  *
  */
-public class ModuleAnalysisManager {
+public class AnalysisManager {
 
-    public ModuleAnalysisManager() {
+    public AnalysisManager() {
     }
 
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
