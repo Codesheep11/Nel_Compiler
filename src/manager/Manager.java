@@ -14,6 +14,7 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
+import midend.Analysis.Manager.ModuleAnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;

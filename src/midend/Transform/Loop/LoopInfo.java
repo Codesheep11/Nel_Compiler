@@ -1,6 +1,6 @@
 package midend.Transform.Loop;
 
-import midend.Analysis.AnalysisManager;
+import midend.Analysis.Manager.ModuleAnalysisManager;
 import mir.BasicBlock;
 import mir.Function;
 import mir.Loop;
@@ -33,6 +33,9 @@ public class LoopInfo {
 
     public void runLoopAnalysis() {
         clearBlocksLoopInfo();
+//        function.buildControlFlowGraph();
+        ModuleAnalysisManager.refreshCFG(function);
+        function.buildDominanceGraph();
         AnalysisManager.refreshCFG(function);
         AnalysisManager.refreshDG(function);
 
@@ -88,7 +91,7 @@ public class LoopInfo {
         for (BasicBlock header : postOrderTravel) {
             backEdges.clear();
             for (BasicBlock pre : header.getPreBlocks()) {
-                if (AnalysisManager.dominate(header, pre)) {
+                if (ModuleAnalysisManager.dominate(header, pre)) {
 //                    System.out.println("backEdge: " + pre.getLabel() + " -> " + header.getLabel());
                     backEdges.add(pre);
                 }

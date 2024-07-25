@@ -1,9 +1,11 @@
 package mir;
 
 import backend.operand.Address;
-import midend.Analysis.AnalysisManager;
+import midend.Analysis.Manager.ModuleAnalysisManager;
+import midend.Analysis.ScalarEvolution;
 import midend.Transform.Loop.LoopInfo;
 import midend.Util.CloneInfo;
+import mir.result.SCEVinfo;
 import utils.NelLinkedList;
 
 import java.util.*;
@@ -47,6 +49,7 @@ public class Function extends Value {
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
+
     private int countOfBB = 0;
 
     public Function(Type type, String name, Type... argumentTypes) {
@@ -175,12 +178,11 @@ public class Function extends Value {
     /**
      * 构建函数的控制流图 <br>
      * 建议使用AnalysisManager.refreshCFG(Function)来刷新CFG
-     *
      * @deprecated
      */
     @Deprecated
     public void buildControlFlowGraph() {
-        AnalysisManager.refreshCFG(this);
+        ModuleAnalysisManager.refreshCFG(this);
     }
 
     /**
@@ -191,7 +193,7 @@ public class Function extends Value {
      */
     @Deprecated
     public void buildDominanceGraph() {
-        AnalysisManager.refreshDG(this);
+        ModuleAnalysisManager.refreshDG(this);
     }
 
 
