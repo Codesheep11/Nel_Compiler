@@ -62,7 +62,8 @@ public class Manager {
     }
 
     private void O1() throws IOException {
-//        DeadCodeEliminate.run(module);
+        AnalysisManager.buildCFG(module);
+        DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -80,6 +81,7 @@ public class Manager {
         ArrayPasses();
         DeadCodeEliminate();
         ArrayPasses();
+        Reassociate.run(module);
         Branch2MinMax.run(module);
         AnalysisManager.runI32Range(module);
         RangeFolding.run(module);
