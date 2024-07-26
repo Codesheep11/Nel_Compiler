@@ -24,7 +24,7 @@ public class CodeGen {
      * 全局和对应的riscv全局变量的映射,可以方便在后面使用的时候取到
      * 注意不能按照对象本身来定位，因为对象不一样但是可能对应的事一个东西
      */
-    private final HashMap<String, RiscvGlobalVar> gloMap = new HashMap<>();
+  public static final HashMap<String, RiscvGlobalVar> gloMap = new HashMap<>();
 
     public static final RiscvModule ansRis = new RiscvModule();
 
