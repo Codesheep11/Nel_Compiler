@@ -6,6 +6,7 @@ import mir.Module;
 import mir.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class RangeFolding {
     public static void run(Module module) {
@@ -24,6 +25,22 @@ public class RangeFolding {
     public static void runOnBlock(BasicBlock basicBlock) {
         ArrayList<Instruction> delList = new ArrayList<>();
         for (Instruction instr : basicBlock.getInstructionsSnap()) {
+            HashMap<Value, Constant> operand2Const = new HashMap<>();
+            for (Value operand : instr.getOperands()) {
+                if (!operand.getType().isInt32Ty()) continue;
+                if (operand instanceof Instruction || operand instanceof Function.Argument) {
+                    I32RangeAnalysis.I32Range range = AnalysisManager.getValueRange(operand, basicBlock);
+                    if (range.getMaxValue() == range.getMinValue()) {
+                        Constant constant = Constant.ConstantInt.get(range.getMaxValue());
+                        operand2Const.put(operand, constant);
+                    }
+                }
+            }
+            for (Value operand : operand2Const.keySet()) {
+                instr.replaceUseOfWith(operand, operand2Const.get(operand));
+            }
+        }
+        for (Instruction instr : basicBlock.getInstructionsSnap()) {
             if (instr.getType().isInt32Ty()) {
                 I32RangeAnalysis.I32Range range = AnalysisManager.getValueRange(instr, basicBlock);
                 if (range.getMaxValue() == range.getMinValue()) {
@@ -36,7 +53,19 @@ public class RangeFolding {
                 Instruction.Icmp.CondCode condCode = icmp.getCondCode();
                 I32RangeAnalysis.I32Range r1 = AnalysisManager.getValueRange(icmp.getSrc1(), basicBlock);
                 I32RangeAnalysis.I32Range r2 = AnalysisManager.getValueRange(icmp.getSrc2(), basicBlock);
-                if (condCode == Instruction.Icmp.CondCode.SGE) {
+                if (condCode == Instruction.Icmp.CondCode.EQ) {
+                    if (r1.getMinValue() > r2.getMaxValue() || r1.getMaxValue() < r2.getMinValue()) {
+                        delList.add(instr);
+                        instr.replaceAllUsesWith(Constant.ConstantBool.get(0));
+                    }
+                }
+                else if (condCode == Instruction.Icmp.CondCode.NE) {
+                    if (r1.getMinValue() > r2.getMaxValue() || r1.getMaxValue() < r2.getMinValue()) {
+                        delList.add(instr);
+                        instr.replaceAllUsesWith(Constant.ConstantBool.get(1));
+                    }
+                }
+                else if (condCode == Instruction.Icmp.CondCode.SGE) {
                     if (r1.getMinValue() >= r2.getMaxValue()) {
                         delList.add(instr);
                         instr.replaceAllUsesWith(Constant.ConstantBool.get(1));

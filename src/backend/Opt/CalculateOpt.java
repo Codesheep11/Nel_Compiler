@@ -18,7 +18,6 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 uselessLoadRemove(block);
                 PreRAConstValueReUse(block);
-                PreRAConstPointerReUse(block);
                 icmpBranchToBranch(block);
             }
         }
@@ -189,52 +188,6 @@ public class CalculateOpt {
         }
     }
 
-    private static void PreRAConstPointerReUse(RiscvBlock riscvBlock) {
-        final int range = 10;
-        HashMap<RiscvGlobalVar, Pair<Reg, Integer>> map = new HashMap<>();
-        ArrayList<RiscvInstruction> newList = new ArrayList<>();
-        for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
-            RiscvInstruction instr = riscvBlock.riscvInstructions.get(i);
-            for (int idx = 0; idx < instr.getOperandNum(); idx++) {
-                if (instr.isDef(idx) && !(instr instanceof La)) {
-                    int finalIdx = idx;
-                    map.keySet().removeIf(key -> map.get(key).first.equals(instr.getRegByIdx(finalIdx)));
-                }//删除所有重定义的
-            }
-            if (instr instanceof La) {
-                // 如果前面有记录这个值，那么就将这个li给删掉，然后将后面的所有使用这个的寄存器都换掉
-                if (map.containsKey((((La) instr).content))) {
-                    Reg now = map.get(((La) instr).content).first;
-                    Reg def = ((La) instr).reg;
-                    for (int j = i + 1; j < riscvBlock.riscvInstructions.size(); j++) {
-                        RiscvInstruction needReplace = riscvBlock.riscvInstructions.get(j);
-                        if (needReplace instanceof J) continue;
-                        needReplace.replaceUseReg(def, now);
-                    }
-                    map.get(((La) instr).content).second = range;// 刷新生存周期
-                    continue;
-                } else {
-                    map.keySet().removeIf(key -> map.get(key).first.equals(((La) instr).reg));
-                    map.put(((La) instr).content, new Pair<>(((La) instr).reg, range));
-                }
-            }
-            newList.add(instr);
-            HashSet<RiscvGlobalVar> needRemove = new HashSet<>();
-            for (RiscvGlobalVar key : map.keySet()) {
-                map.get(key).second--;
-                if (map.get(key).second == 0) {
-                    needRemove.add(key);
-                }
-            }
-            for (RiscvGlobalVar need : needRemove) {
-                map.remove(need);
-            }
-        }
-        riscvBlock.riscvInstructions.clear();
-        for (RiscvInstruction ri : newList) {
-            riscvBlock.riscvInstructions.addLast(ri);
-        }
-    }
 
     // 在块内联后使用,此时已经分配好了寄存器
     // 在地址opt后，此时已经解决了全局指针的复用，也就是只需要解决全局的li即可
