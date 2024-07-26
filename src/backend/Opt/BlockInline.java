@@ -29,7 +29,7 @@ public class BlockInline {
         }
     }
 
-    private static final int MAX_LEN = 50;
+    private static final int MAX_LEN = 20;
 
     public static boolean preSimplify(RiscvFunction func) {
         boolean modify = false;
@@ -70,23 +70,26 @@ public class BlockInline {
         boolean modify = false;
         for (RiscvBlock block : function.blocks) {
             // 如果最后一个是j指令并且长度比阈值小，那么就直接复制过来
-            // 问题,如果仅仅是一个短小的块,是否需要复制一堆到后面来?
             J j = (J) block.riscvInstructions.getLast();
             if (j.type == J.JType.j) {
                 RiscvBlock to = j.targetBlock;
-                if (to == block) continue;
-                // 判断是否这个块是个自指块，是的话就不能复制
-                if (to.riscvInstructions.getLast() instanceof J j1) {
-                    if (j1.type == J.JType.j) {
-                        if (j1.targetBlock == to) {
-                            continue;
-                        }
-                    }
-                }
                 if (to.riscvInstructions.size() <= MAX_LEN) {
-                    block.riscvInstructions.removeLast();
-                    for (RiscvInstruction ri : to.riscvInstructions) {
-                        block.riscvInstructions.addLast(ri.myCopy(block));
+                    // 判断是否这个块是个自指块
+                    if (to == block) {
+                        ArrayList<RiscvInstruction> tmp = new ArrayList<>();
+                        for (RiscvInstruction ri : block.riscvInstructions) {
+                            tmp.add(ri.myCopy(block));
+                        }
+                        block.riscvInstructions.removeLast();
+                        for (RiscvInstruction ri : tmp) {
+                            block.riscvInstructions.addLast(ri);
+                        }
+                    }// 不是自指块，那么指向了一个块
+                    else {
+                        block.riscvInstructions.removeLast();
+                        for (RiscvInstruction ri : to.riscvInstructions) {
+                            block.riscvInstructions.addLast(ri.myCopy(block));
+                        }
                     }
                     modify = true;
                 }

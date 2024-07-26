@@ -100,6 +100,7 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
+        CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
 //        ShortInstrConvert.run(riscvmodule);
