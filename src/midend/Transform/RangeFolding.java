@@ -1,6 +1,6 @@
 package midend.Transform;
 
-import backend.operand.Operand;
+import midend.Analysis.AnalysisManager;
 import midend.Analysis.I32RangeAnalysis;
 import mir.Module;
 import mir.*;
@@ -25,7 +25,7 @@ public class RangeFolding {
         ArrayList<Instruction> delList = new ArrayList<>();
         for (Instruction instr : basicBlock.getInstructionsSnap()) {
             if (instr.getType().isInt32Ty()) {
-                I32RangeAnalysis.I32Range range = I32RangeAnalysis.getValueRange(instr);
+                I32RangeAnalysis.I32Range range = AnalysisManager.getValueRange(instr, basicBlock);
                 if (range.getMaxValue() == range.getMinValue()) {
                     Constant constant = Constant.ConstantInt.get(range.getMaxValue());
                     instr.replaceAllUsesWith(constant);
@@ -34,8 +34,8 @@ public class RangeFolding {
             }
             if (instr instanceof Instruction.Icmp icmp) {
                 Instruction.Icmp.CondCode condCode = icmp.getCondCode();
-                I32RangeAnalysis.I32Range r1 = I32RangeAnalysis.getValueRange(icmp.getSrc1());
-                I32RangeAnalysis.I32Range r2 = I32RangeAnalysis.getValueRange(icmp.getSrc2());
+                I32RangeAnalysis.I32Range r1 = AnalysisManager.getValueRange(icmp.getSrc1(), basicBlock);
+                I32RangeAnalysis.I32Range r2 = AnalysisManager.getValueRange(icmp.getSrc2(), basicBlock);
                 if (condCode == Instruction.Icmp.CondCode.SGE) {
                     if (r1.getMinValue() >= r2.getMaxValue()) {
                         delList.add(instr);
