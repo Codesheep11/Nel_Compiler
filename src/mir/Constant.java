@@ -40,6 +40,7 @@ public abstract class Constant extends User {
         public static ConstantBool get(int val) {
             return val == 0 ? _CONST_FALSE : _CONST_TRUE;
         }
+
         int boolValue;//0 or 1
 
         private ConstantBool(int val) {
@@ -261,7 +262,7 @@ public abstract class Constant extends User {
                 eleType = ((Type.ArrayType) eleType).getEleType();
             }
             ret = ((ConstantArray) ret).getEle(v);
-            if (!(ret instanceof ConstantInt)) {
+            if (!(ret instanceof Constant)) {
                 throw new RuntimeException("Index out of bound");
             }
             return ret;
@@ -288,7 +289,7 @@ public abstract class Constant extends User {
                 ret = ((ConstantArray) ret).getEle(i);
                 eleType = ((Type.ArrayType) eleType).getEleType();
             }
-            if (!(((ConstantArray) ret).getEle(v) instanceof ConstantInt)) {
+            if (!(((ConstantArray) ret).getEle(v) instanceof Constant)) {
                 throw new RuntimeException("Index out of bound");
             }
             ((ConstantArray) ret).setEle(v, value);

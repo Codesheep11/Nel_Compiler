@@ -3,9 +3,7 @@ package midend.Analysis;
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
 import midend.Util.DominanceGraphLT;
-import mir.BasicBlock;
-import mir.Function;
-import mir.Instruction;
+import mir.*;
 import mir.Module;
 import mir.result.CFGinfo;
 import mir.result.DGinfo;
@@ -27,6 +25,7 @@ public class AnalysisManager {
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
     private static final HashMap<Function, SCEVinfo> scevMap = new HashMap<>();
+    private static final HashMap<Function, I32RangeAnalysis> rangeMap = new HashMap<>();
 
     private static final HashMap<Function, Boolean> dirtyLCSSA = new HashMap<>();
 
@@ -191,4 +190,17 @@ public class AnalysisManager {
         }
     }
     // endregion
+
+    // region Range
+    public static void runI32Range(Module module) {
+        for (Function function : module.getFuncSet()) {
+            if (!function.isExternal()) {
+                rangeMap.put(function, new I32RangeAnalysis(function));
+            }
+        }
+    }
+
+    public static I32RangeAnalysis.I32Range getValueRange(Value value, BasicBlock block) {
+        return rangeMap.get(block.getParentFunction()).getValueRange(value, block);
+    }
 }
