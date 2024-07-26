@@ -13,9 +13,17 @@ import static java.lang.Math.max;
 
 public class I32RangeAnalysis {
 
-    public static HashMap<Function, HashMap<BasicBlock, HashMap<Instruction, I32Range>>> I32RangeBufferMap = new HashMap<>();
+    /**
+     * 存储当前块定义的非Any的I32Range
+     */
+    public HashMap<BasicBlock, HashMap<Instruction, I32Range>> I32RangeBufferMap = new HashMap<>();
 
-    public static HashMap<Function, HashMap<BasicBlock, Boolean>> dirtyMap = new HashMap<>();
+    /**
+     * 基本块入口的I32Range
+     */
+    public HashMap<BasicBlock, HashMap<Value, I32Range>> BlockEntryRange = new HashMap<>();
+
+    private DGinfo DGinfo;
 
     public static class I32Range {
         private int minValue;
@@ -57,42 +65,127 @@ public class I32RangeAnalysis {
         }
     }
 
-    public static void run(Module module) {
-        for (Function func : module.getFuncSet()) {
-            if (func.isExternal()) continue;
-            runOnFunction(func);
-        }
+    public I32RangeAnalysis(Function function) {
+        DGinfo = AnalysisManager.getDG(function);
+        runAnalysis(function);
     }
 
-    private static void clearFunc(Function function) {
-        I32RangeBufferMap.put(function, new HashMap<>());
-        dirtyMap.put(function, new HashMap<>());
-        for (BasicBlock bb : function.getBlocks()) {
-            dirtyMap.get(function).put(bb, true);
-        }
-    }
-
-    public static void runOnFunction(Function function) {
-        clearFunc(function);
-        for (BasicBlock bb : function.getBlocks()) {
+    public void runAnalysis(Function function) {
+        for (BasicBlock bb : function.getDomTreeLayerSort()) {
+            calBlockEntryRange(bb);
             runOnBasicBlock(bb);
         }
+        updatePhi(function);
     }
 
-    public static void runOnBasicBlock(BasicBlock bb) {
+    private void runOnBasicBlock(BasicBlock bb) {
 //        System.out.println("runOnBasicBlock " + bb.getLabel());
-        Function func = bb.getParentFunction();
-        if (!func.getEntry().equals(bb)) {
-            DGinfo dgInfo = AnalysisManager.getDG(func);
-            BasicBlock idom = dgInfo.getIDom(bb);
-            if (!dirtyMap.get(func).get(bb)) return;
-            if (dirtyMap.get(func).get(idom)) runOnBasicBlock(idom);
-        }
-        I32RangeBufferMap.get(func).putIfAbsent(bb, new HashMap<>());
+//        Function func = bb.getParentFunction();
+        I32RangeBufferMap.put(bb, new HashMap<>());
         for (Instruction inst : bb.getInstructions()) {
             if (inst.getType().isInt32Ty()) calculateI32Range(inst);
         }
-        dirtyMap.get(func).put(bb, false);
+    }
+
+    private void calBlockEntryRange(BasicBlock block) {
+        HashMap<Value, I32Range> EntryMap = new HashMap<>();
+        BlockEntryRange.put(block, EntryMap);
+        if (block.equals(block.getParentFunction().getEntry())) return;
+
+        BasicBlock idom = DGinfo.getIDom(block);
+        for (Value key : BlockEntryRange.get(idom).keySet()) {
+            EntryMap.put(key, BlockEntryRange.get(idom).get(key));
+        }
+        if (block.getPreBlocks().size() == 1 && block.getPreBlocks().get(0).equals(idom)) {
+            Instruction.Terminator term = idom.getTerminator();
+            if (term instanceof Instruction.Branch branch) {
+                Value cond = branch.getCond();
+                boolean thenBlock = branch.getThenBlock().equals(block);
+                boolean elseBlock = branch.getElseBlock().equals(block);
+                if (cond instanceof Instruction.Icmp icmp) {
+                    Value src1 = icmp.getSrc1();
+                    Value src2 = icmp.getSrc2();
+                    Instruction.Icmp.CondCode condCode = icmp.getCondCode();
+                    if (src1 instanceof Constant.ConstantInt c1) {
+                        I32Range vr = getOperandRange(src2, idom);
+                        int num = c1.getIntValue();
+                        int min = vr.minValue;
+                        int max = vr.maxValue;
+                        if (condCode == Instruction.Icmp.CondCode.EQ && thenBlock) {
+                            EntryMap.put(src2, I32Range.gerConstRange(num));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.NE && elseBlock) {
+                            EntryMap.put(src2, I32Range.gerConstRange(num));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SGT && thenBlock) {
+                            EntryMap.put(src2, new I32Range(min, num - 1));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SGE && thenBlock) {
+                            EntryMap.put(src2, new I32Range(min, num));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SLT && thenBlock) {
+                            EntryMap.put(src2, new I32Range(num + 1, max));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SLE && thenBlock) {
+                            EntryMap.put(src2, new I32Range(num, max));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SGT && elseBlock) {
+                            EntryMap.put(src2, new I32Range(num, max));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SGE && elseBlock) {
+                            EntryMap.put(src2, new I32Range(num + 1, max));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SLT && elseBlock) {
+                            EntryMap.put(src2, new I32Range(min, num));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SLE && elseBlock) {
+                            EntryMap.put(src2, new I32Range(min, num - 1));
+                        }
+                    }
+                    if (src2 instanceof Constant.ConstantInt c2) {
+                        I32Range vr = getOperandRange(src1, idom);
+                        int num = c2.getIntValue();
+                        int min = vr.minValue;
+                        int max = vr.maxValue;
+                        if (condCode == Instruction.Icmp.CondCode.EQ && thenBlock) {
+                            EntryMap.put(src1, I32Range.gerConstRange(num));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.NE && elseBlock) {
+                            EntryMap.put(src1, I32Range.gerConstRange(num));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SGT && thenBlock) {
+                            EntryMap.put(src1, new I32Range(num + 1, max));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SGE && thenBlock) {
+                            EntryMap.put(src1, new I32Range(num, max));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SLT && thenBlock) {
+                            EntryMap.put(src1, new I32Range(min, num - 1));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SLE && thenBlock) {
+                            EntryMap.put(src1, new I32Range(min, num));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SGT && elseBlock) {
+                            EntryMap.put(src1, new I32Range(min, num));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SGE && elseBlock) {
+                            EntryMap.put(src1, new I32Range(min, num - 1));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SLT && elseBlock) {
+                            EntryMap.put(src1, new I32Range(num + 1, max));
+                        }
+                        else if (condCode == Instruction.Icmp.CondCode.SLE && elseBlock) {
+                            EntryMap.put(src1, new I32Range(num, max));
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    private void updatePhi(Function func) {
+        ArrayList<Instruction> queue = new ArrayList<>();
     }
 
     /**
@@ -101,17 +194,16 @@ public class I32RangeAnalysis {
      * @param inst
      * @return
      */
-    private static I32Range calculateI32Range(Instruction inst) {
+    private I32Range calculateI32Range(Instruction inst) {
 //        System.out.println(value);
         if (!inst.getType().isInt32Ty())
             throw new RuntimeException("Value is not I32 Type!");
         BasicBlock bb = inst.getParentBlock();
-        Function func = bb.getParentFunction();
-        HashMap<Instruction, I32Range> bbMap = I32RangeBufferMap.get(func).get(bb);
+        HashMap<Instruction, I32Range> bbMap = I32RangeBufferMap.get(bb);
         I32Range result = null;
         if (inst instanceof Instruction.BinaryOperation binaryOperation) {
-            I32Range r1 = getOperandRange(binaryOperation.getOperand_1());
-            I32Range r2 = getOperandRange(binaryOperation.getOperand_2());
+            I32Range r1 = getOperandRange(binaryOperation.getOperand_1(), bb);
+            I32Range r2 = getOperandRange(binaryOperation.getOperand_2(), bb);
             if (inst instanceof Instruction.Add) {
                 int minValue;
                 try {
@@ -283,16 +375,9 @@ public class I32RangeAnalysis {
             int maxValue = Integer.MIN_VALUE;
             for (BasicBlock pre : phi.getPreBlocks()) {
                 Value preValue = phi.getOptionalValue(pre);
-                if (!dirtyMap.get(func).get(pre)) {
-                    I32Range ir = getOperandRange(preValue);
-                    minValue = min(minValue, ir.minValue);
-                    maxValue = max(maxValue, ir.maxValue);
-                }
-                else {
-                    minValue = Integer.MIN_VALUE;
-                    maxValue = Integer.MAX_VALUE;
-                    break;
-                }
+                I32Range ir = getOperandRange(preValue, pre);
+                minValue = min(minValue, ir.minValue);
+                maxValue = max(maxValue, ir.maxValue);
             }
             result = new I32Range(minValue, maxValue);
         }
@@ -310,58 +395,44 @@ public class I32RangeAnalysis {
      * 仅被calculateI32Range调用
      *
      * @param value
+     * @param bb
      * @return
      */
-    private static I32Range getOperandRange(Value value) {
+    private I32Range getOperandRange(Value value, BasicBlock bb) {
         if (!value.getType().isInt32Ty())
             throw new RuntimeException("Value is not I32 Type!");
         if (value instanceof Constant.ConstantInt)
             return I32Range.gerConstRange(((Constant.ConstantInt) value).getIntValue());
+        if (!BlockEntryRange.containsKey(bb)) return I32Range.Any();
+        if (BlockEntryRange.get(bb).containsKey(value)) return BlockEntryRange.get(bb).get(value);
         if (value instanceof Function.Argument) return I32Range.Any();
         if (value instanceof Instruction) {
-            BasicBlock bb = ((Instruction) value).getParentBlock();
-            Function func = bb.getParentFunction();
-            if (I32RangeBufferMap.get(func).get(bb).containsKey(value))
-                return I32RangeBufferMap.get(func).get(bb).get(value);
+            BasicBlock instBB = ((Instruction) value).getParentBlock();
+            if (I32RangeBufferMap.get(instBB).containsKey(value))
+                return I32RangeBufferMap.get(instBB).get(value);
             return I32Range.Any();
         }
         return null;
     }
 
-    public static I32Range getInstRange(Instruction inst) {
+
+    private I32Range getInstRange(Instruction inst) {
         BasicBlock bb = inst.getParentBlock();
-        Function func = bb.getParentFunction();
-        if (dirtyMap.get(func).get(bb)) runOnBasicBlock(bb);
-        if (I32RangeBufferMap.get(func).get(bb).containsKey(inst))
-            return I32RangeBufferMap.get(func).get(bb).get(inst);
+        if (I32RangeBufferMap.get(bb).containsKey(inst))
+            return I32RangeBufferMap.get(bb).get(inst);
         return I32Range.Any();
     }
 
-    public static I32Range getValueRange(Value value) {
+    //对外接口
+    public I32Range getValueRange(Value value, BasicBlock cur) {
         if (!value.getType().isInt32Ty())
             throw new RuntimeException("Value is not I32 Type!");
         if (value instanceof Constant.ConstantInt)
             return I32Range.gerConstRange(((Constant.ConstantInt) value).getIntValue());
+        if (BlockEntryRange.get(cur).containsKey(value)) return BlockEntryRange.get(cur).get(value);
         if (value instanceof Function.Argument) return I32Range.Any();
         if (value instanceof Instruction inst) return getInstRange(inst);
         return null;
-    }
-
-    public static void setDirtyBB(BasicBlock bb) {
-        Function func = bb.getParentFunction();
-        HashMap<BasicBlock, Boolean> funcDirty = dirtyMap.get(func);
-        DGinfo dGinfo = AnalysisManager.getDG(func);
-        ArrayList<BasicBlock> queue = new ArrayList<>();
-        queue.add(bb);
-        while (!queue.isEmpty()) {
-            BasicBlock cur = queue.remove(0);
-            funcDirty.put(bb, true);
-            I32RangeBufferMap.get(func).putIfAbsent(bb, new HashMap<>());
-            I32RangeBufferMap.get(func).get(bb).clear();
-            for (BasicBlock child : dGinfo.getDomTreeChildren(cur)) {
-                queue.add(child);
-            }
-        }
     }
 
 }

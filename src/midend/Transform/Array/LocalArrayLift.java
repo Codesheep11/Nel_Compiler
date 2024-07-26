@@ -1,5 +1,6 @@
 package midend.Transform.Array;
 
+import frontend.syntaxChecker.Ast;
 import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
 import mir.*;
@@ -42,6 +43,7 @@ public class LocalArrayLift {
         clear();
         LocalArrayLift.func = func;
         FindAllLiftArray();
+        if (func.getName().equals("main")) FindOnceLiftArray();
         LiftArray();
     }
 
@@ -53,8 +55,7 @@ public class LocalArrayLift {
     private static void FindAllLiftArray() {
         for (BasicBlock bb : func.getBlocks()) {
             for (Instruction inst : bb.getInstructions()) {
-                if (inst instanceof Instruction.Alloc) {
-                    Instruction.Alloc alloc = (Instruction.Alloc) inst;
+                if (inst instanceof Instruction.Alloc alloc) {
                     CollectArrayInfo(alloc);
                 }
             }
@@ -118,6 +119,68 @@ public class LocalArrayLift {
         }
         arrayInitMap.put(alloc, init);
         delList.addAll(stores);
+    }
+
+    private static void FindOnceLiftArray() {
+        for (BasicBlock block : func.getBlocks()) {
+            if (block.getLoopDepth() != 0) continue;
+            for (Instruction inst : block.getInstructions()) {
+                if (inst instanceof Instruction.Alloc alloc) {
+                    CollectOnceArrayInfo(alloc);
+                }
+            }
+        }
+    }
+
+    private static void CollectOnceArrayInfo(Instruction.Alloc alloc) {
+        if (arrayInitMap.containsKey(alloc)) return;
+        arrayInitMap.put(alloc, new HashMap<>());
+        BasicBlock block = alloc.getParentBlock();
+        //收集当前基本快中所有常量和常下标store，遇到load和非常下标store则停止
+        ArrayList<Instruction> snap = block.getInstructionsSnap();
+        int beginIdx = snap.indexOf(alloc);
+        for (int i = beginIdx + 1; i < snap.size(); i++) {
+            Instruction inst = snap.get(i);
+            if (inst instanceof Instruction.Load load) {
+                if (getBaseAddr(load.getAddr()).equals(alloc)) break;
+            }
+            if (inst instanceof Instruction.Store store) {
+                Value addr = store.getAddr();
+                if (addr instanceof Instruction.GetElementPtr gep) {
+                    if (getBaseAddr(gep).equals(alloc)) {
+                        if (store.getValue() instanceof Constant && gep.getIdx() instanceof Constant) {
+                            arrayInitMap.get(alloc).put(((Constant.ConstantInt) gep.getIdx()).getIntValue(), (Constant) store.getValue());
+                            delList.add(store);
+                        }
+                        else break;
+                    }
+                }
+            }
+            else if (inst instanceof Instruction.Call call) {
+                if (call.getDestFunction().getName().equals("memset")) {
+                    Value arg = call.getParams().get(0);
+                    if (getBaseAddr(arg).equals(alloc)) {
+                        delList.add(call);
+                    }
+                }
+                else break;
+            }
+        }
+    }
+
+    private static Value getBaseAddr(Value inst) {
+        Value ret = inst;
+        while (ret instanceof Instruction.GetElementPtr || ret instanceof Instruction.BitCast) {
+            if (ret instanceof Instruction.GetElementPtr) {
+                Instruction.GetElementPtr gep = (Instruction.GetElementPtr) ret;
+                ret = gep.getBase();
+            }
+            if (ret instanceof Instruction.BitCast) {
+                Instruction.BitCast bitCast = (Instruction.BitCast) inst;
+                ret = bitCast.getSrc();
+            }
+        }
+        return ret;
     }
 
     private static void LiftArray() {

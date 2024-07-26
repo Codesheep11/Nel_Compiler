@@ -10,6 +10,7 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
+import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Analysis.I32RangeAnalysis;
 import midend.Transform.*;
@@ -80,7 +81,7 @@ public class Manager {
         DeadCodeEliminate();
         ArrayPasses();
         Branch2MinMax.run(module);
-        I32RangeAnalysis.run(module);
+        AnalysisManager.runI32Range(module);
         RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
@@ -183,7 +184,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }
