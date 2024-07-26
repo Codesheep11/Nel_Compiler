@@ -83,6 +83,7 @@ public class Manager {
         ArrayPasses();
         Reassociate.run(module);
         Branch2MinMax.run(module);
+        GlobalValueNumbering.run(module);
         AnalysisManager.runI32Range(module);
         RangeFolding.run(module);
         DeadCodeEliminate();
