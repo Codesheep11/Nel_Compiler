@@ -206,6 +206,7 @@ public class Manager {
     }
 
     private void O0() throws IOException {
+        AnalysisManager.buildCFG(module);
         DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
