@@ -83,6 +83,7 @@ public class Manager {
         ArrayPasses();
         Reassociate.run(module);
         Branch2MinMax.run(module);
+        GlobalValueNumbering.run(module);
         AnalysisManager.runI32Range(module);
         RangeFolding.run(module);
         DeadCodeEliminate();
@@ -205,6 +206,7 @@ public class Manager {
     }
 
     private void O0() throws IOException {
+        AnalysisManager.buildCFG(module);
         DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
