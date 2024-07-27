@@ -7,7 +7,6 @@ import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -32,21 +31,22 @@ public class DeadCodeRemove {
             if (ri instanceof J j && j.type == J.JType.call) {
                 for (Reg reg : lastDefandUnuse.keySet()) {
                     int ord = reg.phyReg.ordinal();
-                    if (!((ord >= 10 && ord <= 17) || (ord >= 42 && ord <= 49))) {
-                        // 如果不是传参
+                    if ((ord >= 7 && ord <= 9) || (ord >= 28 && ord <= 31)) {
+                        // 如果是t这种暂时寄存器
                         needRemove.add(lastDefandUnuse.get(reg));
                     }
                 }
-            }
-            for (int i = ri.getOperandNum() - 1; i >= 0; i--) {
-                // 由于def都在第一个,所以应当倒序查找
-                if (ri.isUse(i)) {
-                    lastDefandUnuse.remove(ri.getRegByIdx(i));
-                } else if (ri.isDef(i)) {
-                    if (lastDefandUnuse.containsKey(ri.getRegByIdx(i))) {
-                        needRemove.add(lastDefandUnuse.get(ri.getRegByIdx(i)));
+            } else {
+                for (int i = ri.getOperandNum() - 1; i >= 0; i--) {
+                    // 由于def都在第一个,所以应当倒序查找
+                    if (ri.isUse(i)) {
+                        lastDefandUnuse.remove(ri.getRegByIdx(i));
+                    } else if (ri.isDef(i)) {
+                        if (lastDefandUnuse.containsKey(ri.getRegByIdx(i))) {
+                            needRemove.add(lastDefandUnuse.get(ri.getRegByIdx(i)));
+                        }
+                        lastDefandUnuse.put(ri.getRegByIdx(i), ri);
                     }
-                    lastDefandUnuse.put(ri.getRegByIdx(i), ri);
                 }
             }
         }
