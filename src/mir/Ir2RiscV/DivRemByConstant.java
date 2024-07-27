@@ -197,7 +197,7 @@ public class DivRemByConstant {
 
     private static void SignRem(Reg ans, Reg src, int divisor, Value value, BasicBlock par) {
         I32RangeAnalysis.I32Range ir = AnalysisManager.getValueRange(value, par);
-        if (ir.getMinValue() >= 0) {{
+        if (ir.getMinValue() >= 0 && isPowerOf2(divisor)) {
             int mask = divisor - 1;
             if (mask >= 2047 || mask <= -2047) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
@@ -205,7 +205,7 @@ public class DivRemByConstant {
                 block.riscvInstructions.addLast(new R3(block, ans, src, tmp, R3.R3Type.and));
             } else {
                 block.riscvInstructions.addLast(new R3(block, ans, src, new Imm(mask), R3.R3Type.andi));
-            }}
+            }
         } else {
             // 当作一个除法+乘法+减法优化
             // 如果是正数自然没问题,但是要是负数的话就会出错
