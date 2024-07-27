@@ -46,7 +46,7 @@ public class MemoryOpt {
     }
 
 
-    private static ArrayList<LSRecord> queryByOff(Reg bestReg, Operand base, int offset) {
+    private static ArrayList<LSRecord> queryByOff(Reg bestReg, Operand base, long offset) {
         ArrayList<LSRecord> ans = new ArrayList<>();
         for (LSRecord br : records) {
             if (br.offset == offset && br.getBase().equals(base)) {
@@ -81,11 +81,11 @@ public class MemoryOpt {
 
     private static class LSRecord {
         private final Reg reg;
-        private final int offset;
+        private final long offset;
 
         private final Operand base;
 
-        public LSRecord(Reg reg, int off, Operand base) {
+        public LSRecord(Reg reg, long off, Operand base) {
             this.reg = reg;
             this.offset = off;
             this.base = base;
@@ -95,7 +95,7 @@ public class MemoryOpt {
             return reg;
         }
 
-        public int getOffset() {
+        public long getOffset() {
             return offset;
         }
 
