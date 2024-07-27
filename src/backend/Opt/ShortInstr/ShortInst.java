@@ -45,10 +45,10 @@ public class ShortInst extends RiscvInstruction {
 
 
     public static class LwSp extends ShortInst {
-        private final int offest;
+        private final long offest;
         private final Reg rd;
 
-        public LwSp(RiscvBlock block, Reg rd, int offest) {
+        public LwSp(RiscvBlock block, Reg rd, long offest) {
             super(block);
             this.rd = rd;
             this.offest = offest;
@@ -61,10 +61,10 @@ public class ShortInst extends RiscvInstruction {
     }
 
     public static class SwSp extends ShortInst {
-        private final int offest;
+        private final long offest;
         private final Reg rd;
 
-        public SwSp(RiscvBlock block, Reg rd, int offest) {
+        public SwSp(RiscvBlock block, Reg rd, long offest) {
             super(block);
             this.rd = rd;
             this.offest = offest;
@@ -81,9 +81,9 @@ public class ShortInst extends RiscvInstruction {
 
         private final Reg reg;
 
-        private final int imm;
+        private final long imm;
 
-        public ShortLi(RiscvBlock block, Reg reg, int imm) {
+        public ShortLi(RiscvBlock block, Reg reg, long imm) {
             super(block);
             this.reg = reg;
             this.imm = imm;
@@ -96,11 +96,11 @@ public class ShortInst extends RiscvInstruction {
     }
 
     public static class ShortLw extends ShortInst {
-        private final int offset;
+        private final long offset;
         private final Reg base;
         private final Reg rd;
 
-        public ShortLw(RiscvBlock block, Reg base, Reg reg, int offset) {
+        public ShortLw(RiscvBlock block, Reg base, Reg reg, long offset) {
             super(block);
             this.base = base;
             this.rd = reg;
@@ -114,11 +114,11 @@ public class ShortInst extends RiscvInstruction {
     }
 
     public static class ShortSw extends ShortInst {
-        private final int offset;
+        private final long offset;
         private final Reg base;
         private final Reg rd;
 
-        public ShortSw(RiscvBlock block, Reg base, Reg reg, int offset) {
+        public ShortSw(RiscvBlock block, Reg base, Reg reg, long offset) {
             super(block);
             this.base = base;
             this.rd = reg;
@@ -133,9 +133,9 @@ public class ShortInst extends RiscvInstruction {
 
     public static class ShortAddi extends ShortInst {
         private final Reg baseAddr;
-        private final int imm;
+        private final long imm;
 
-        public ShortAddi(RiscvBlock block, Reg baseAddr, int imm) {
+        public ShortAddi(RiscvBlock block, Reg baseAddr, long imm) {
             super(block);
             this.baseAddr = baseAddr;
             this.imm = imm;
@@ -148,9 +148,9 @@ public class ShortInst extends RiscvInstruction {
     }
 
     public static class ShortAddi16Sp extends ShortInst {
-        private final int imm;
+        private final long imm;
 
-        public ShortAddi16Sp(RiscvBlock block, int imm) {
+        public ShortAddi16Sp(RiscvBlock block, long imm) {
             super(block);
             this.imm = imm;
         }

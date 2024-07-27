@@ -1,5 +1,7 @@
 package backend.Opt;
 
+import backend.allocater.LivenessAnalyze;
+import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
@@ -15,11 +17,49 @@ public class CalculateOpt {
     public static void runBeforeRA(RiscvModule riscvModule) {
         for (RiscvFunction function : riscvModule.funcList) {
             if (function.isExternal) continue;
+            LivenessAnalyze.RunOnFunc(function);
             for (RiscvBlock block : function.blocks) {
                 uselessLoadRemove(block);
                 PreRAConstValueReUse(block);
-                icmpBranchToBranch(block);
+                PreRAConstPointerReUse(block);
             }
+        }
+        for (RiscvFunction function : riscvModule.funcList) {
+            if (function.isExternal) continue;
+            for (RiscvBlock block : function.blocks) {
+                icmpBranchToBranch(block);
+                SraSll2And(block);
+            }
+        }
+    }
+
+    private static void SraSll2And(RiscvBlock block) {
+        ArrayList<Pair<Pair<R3, R3>, ArrayList<RiscvInstruction>>> needRemove = new ArrayList<>();
+        for (int i = 0; i < block.riscvInstructions.size() - 1; i++) {
+            if (block.riscvInstructions.get(i) instanceof R3 r1 && r1.type == R3.R3Type.sraiw) {
+                if (block.riscvInstructions.get(i + 1) instanceof R3 r2 && r2.type == R3.R3Type.slliw) {
+                    if (((Imm) r1.rs2).getVal() == ((Imm) r2.rs2).getVal()) {
+                        if (r1.rd.equals(r2.rs1)) {
+                            int ans = -(1 << ((Imm) r2.rs2).getVal());
+                            var pair = new Pair<>(new Pair<>(r1, r2), new ArrayList<RiscvInstruction>());
+                            if (ans <= -2047) {
+                                pair.second.add(new Li(block, (Reg) r2.rd, new Imm(ans)));
+                                pair.second.add(new R3(block, r2.rd, r1.rs1, r2.rd, R3.R3Type.and));
+                            } else {
+                                pair.second.add(new R3(block, r2.rd, r1.rs1, new Imm(ans), R3.R3Type.andi));
+                            }
+                            needRemove.add(pair);
+                        }
+                    }
+                }
+            }
+        }
+        for (var pair : needRemove) {
+            for (RiscvInstruction ri:pair.second){
+                block.riscvInstructions.insertBefore(ri, pair.first.first);
+            }
+            pair.first.first.remove();
+            pair.first.second.remove();
         }
     }
 
@@ -142,7 +182,7 @@ public class CalculateOpt {
 
     private static void PreRAConstValueReUse(RiscvBlock riscvBlock) {
         final int range = 10;
-        HashMap<Integer, Pair<Reg, Integer>> map = new HashMap<>();
+        HashMap<Long, Pair<Reg, Integer>> map = new HashMap<>();
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
         for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
             RiscvInstruction instr = riscvBlock.riscvInstructions.get(i);
@@ -154,15 +194,11 @@ public class CalculateOpt {
             }
             if (instr instanceof Li) {
                 // 如果前面有记录这个值，那么就将这个li给删掉，然后将后面的所有使用这个的寄存器都换掉
-                int value = ((Li) instr).getVal();
+                long value = ((Li) instr).getVal();
                 if (map.containsKey(value)) {
                     Reg now = map.get(value).first;
                     Reg def = ((Li) instr).reg;
-                    for (int j = i + 1; j < riscvBlock.riscvInstructions.size(); j++) {
-                        RiscvInstruction needReplace = riscvBlock.riscvInstructions.get(j);
-                        if (needReplace instanceof J) continue;
-                        needReplace.replaceUseReg(def, now);
-                    }
+                    now.mergeReg(def);
                     map.get(value).second = range;// 刷新生存周期
                     continue;
                 } else {
@@ -171,14 +207,14 @@ public class CalculateOpt {
                 }
             }
             newList.add(instr);
-            HashSet<Integer> needRemove = new HashSet<>();
-            for (Integer key : map.keySet()) {
+            HashSet<Long> needRemove = new HashSet<>();
+            for (Long key : map.keySet()) {
                 map.get(key).second--;
                 if (map.get(key).second == 0) {
                     needRemove.add(key);
                 }
             }
-            for (Integer need : needRemove) {
+            for (Long need : needRemove) {
                 map.remove(need);
             }
         }
@@ -188,6 +224,48 @@ public class CalculateOpt {
         }
     }
 
+    private static void PreRAConstPointerReUse(RiscvBlock riscvBlock) {
+        final int range = 10;
+        HashMap<RiscvGlobalVar, Pair<Reg, Integer>> map = new HashMap<>();
+        ArrayList<RiscvInstruction> newList = new ArrayList<>();
+        for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
+            RiscvInstruction instr = riscvBlock.riscvInstructions.get(i);
+            for (int idx = 0; idx < instr.getOperandNum(); idx++) {
+                if (instr.isDef(idx) && !(instr instanceof La)) {
+                    int finalIdx = idx;
+                    map.keySet().removeIf(key -> map.get(key).first.equals(instr.getRegByIdx(finalIdx)));
+                }//删除所有重定义的
+            }
+            if (instr instanceof La) {
+                // 如果前面有记录这个值，那么就将这个li给删掉，然后将后面的所有使用这个的寄存器都换掉
+                if (map.containsKey((((La) instr).content))) {
+                    Reg now = map.get(((La) instr).content).first;
+                    Reg def = ((La) instr).reg;
+                    now.mergeReg(def);
+                    map.get(((La) instr).content).second = range;// 刷新生存周期
+                    continue;
+                } else {
+                    map.keySet().removeIf(key -> map.get(key).first.equals(((La) instr).reg));
+                    map.put(((La) instr).content, new Pair<>(((La) instr).reg, range));
+                }
+            }
+            newList.add(instr);
+            HashSet<RiscvGlobalVar> needRemove = new HashSet<>();
+            for (RiscvGlobalVar key : map.keySet()) {
+                map.get(key).second--;
+                if (map.get(key).second == 0) {
+                    needRemove.add(key);
+                }
+            }
+            for (RiscvGlobalVar need : needRemove) {
+                map.remove(need);
+            }
+        }
+        riscvBlock.riscvInstructions.clear();
+        for (RiscvInstruction ri : newList) {
+            riscvBlock.riscvInstructions.addLast(ri);
+        }
+    }
 
     // 在块内联后使用,此时已经分配好了寄存器
     // 在地址opt后，此时已经解决了全局指针的复用，也就是只需要解决全局的li即可
@@ -202,6 +280,7 @@ public class CalculateOpt {
         }
     }
 
+
     private static void removeSameMv(RiscvBlock riscvBlock) {
         Iterator<RiscvInstruction> iterator = riscvBlock.riscvInstructions.iterator();
         while (iterator.hasNext()) {
@@ -214,19 +293,19 @@ public class CalculateOpt {
         }
     }
 
-    private static final HashMap<Reg, Integer> re2Int = new HashMap<>();
+    private static final HashMap<Reg, Long> re2Int = new HashMap<>();
 
     private static void mvCopy(Reg bef, Reg aft) {
         if (bef.equals(aft)) return;
         if (!re2Int.containsKey(bef)) return;
-        int val = re2Int.get(bef);
+        long val = re2Int.get(bef);
         re2Int.put(aft, val);
     }
 
-    private static Reg liFind(Reg bestReg, int value) {
+    private static Reg liFind(Reg bestReg, long value) {
         if (re2Int.containsKey(bestReg) && re2Int.get(bestReg) == value) return bestReg;
         else {
-            for (Map.Entry<Reg, Integer> entry : re2Int.entrySet()) {
+            for (Map.Entry<Reg, Long> entry : re2Int.entrySet()) {
                 if (entry.getValue() == value) {
                     return entry.getKey();
                 }
