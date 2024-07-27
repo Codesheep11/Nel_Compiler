@@ -12,7 +12,6 @@ import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
-import midend.Analysis.I32RangeAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
@@ -23,11 +22,11 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
+import mir.Function;
 import mir.GlobalVariable;
-import mir.*;
 import mir.Ir2RiscV.AfterRA;
 import mir.Ir2RiscV.CodeGen;
+import mir.Ir2RiscV.DivRemByConstant;
 import mir.Module;
 
 import java.io.*;
@@ -88,7 +87,6 @@ public class Manager {
         RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
-        BitwiseOperation.run(module);
         FuncAnalysis.run(module);
         LoopInfo.run(module);
         Scheduler.run(module);
@@ -98,6 +96,7 @@ public class Manager {
         }
         RemovePhi.run(module);
         CodeGen codeGen = new CodeGen();
+        DivRemByConstant.isO1 = true;
         RiscvModule riscvmodule = codeGen.genCode(module);
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
@@ -105,6 +104,7 @@ public class Manager {
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
+        DeadCodeRemove.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
 //        ShortInstrConvert.run(riscvmodule);
@@ -187,8 +187,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

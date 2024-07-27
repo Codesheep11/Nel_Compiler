@@ -24,7 +24,7 @@ public class CodeGen {
      * 全局和对应的riscv全局变量的映射,可以方便在后面使用的时候取到
      * 注意不能按照对象本身来定位，因为对象不一样但是可能对应的事一个东西
      */
-  public static final HashMap<String, RiscvGlobalVar> gloMap = new HashMap<>();
+    public static final HashMap<String, RiscvGlobalVar> gloMap = new HashMap<>();
 
     public static final RiscvModule ansRis = new RiscvModule();
 
@@ -481,9 +481,7 @@ public class CodeGen {
             }
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_offset, new Imm(shift), R3.R3Type.slliw));
         } else {
-            Reg reg_for_size = new Reg(Reg.RegType.GPR, 32);
-            nowBlock.riscvInstructions.addLast(new Li(nowBlock, reg_for_size, new Imm(size)));
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_size, reg_for_offset, R3.R3Type.mulw));
+            MulPlaner.MulConst(tmp_offset, reg_for_offset, size);
         }
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, tmp_offset, R3.R3Type.add));
     }
@@ -507,10 +505,12 @@ public class CodeGen {
         double prob = branchInstr.getProbability();
         // 如果概率跳转概率比50大，那么就应当反转，让j尽可能大
         if (prob >= 0.5) {
-            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.beq, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getElseBlock()), 1 - prob));
+            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.beq, reg, Reg.getPreColoredReg
+                    (Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getElseBlock()), 1 - prob));
             nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getThenBlock())));
         } else {
-            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock()), prob));
+            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg
+                    (Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock()), prob));
             nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getElseBlock())));
         }
     }
@@ -731,17 +731,24 @@ public class CodeGen {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fSub);
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fsub));
     }
-    //TODO 乘除优化
 
     private void solveMul(Instruction.Mul mul) {
         if (!mul.getOperand_1().getType().isInt32Ty() ||
                 !mul.getOperand_2().getType().isInt32Ty()) {
             throw new RuntimeException("not all oper of mul is i32");
         }
-        Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
-        Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(mul);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+        if (mul.getOperand_2() instanceof Constant.ConstantInt c) {
+            Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
+            MulPlaner.MulConst(ans, op1, c.getIntValue());
+        } else if (mul.getOperand_1() instanceof Constant.ConstantInt c) {
+            Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
+            MulPlaner.MulConst(ans, op2, c.getIntValue());
+        } else {
+            Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
+            Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+        }
     }
 
     private void solveDiv(Instruction.Div div) {
@@ -750,8 +757,11 @@ public class CodeGen {
             throw new RuntimeException("not all oper of div is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(div.getOperand_1());
-        Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(div);
+        if (div.getOperand_2() instanceof Constant.ConstantInt co) {
+            if (DivRemByConstant.Div(ans, op1, co.getIntValue(), div.getOperand_1(), div.getParentBlock())) return;
+        }
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
     }
 
@@ -778,9 +788,14 @@ public class CodeGen {
             throw new RuntimeException("not all oper of rem is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_1());
-        Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(rem);
+        if (rem.getOperand_2() instanceof Constant.ConstantInt co) {
+            if (DivRemByConstant.Rem(ans, op1,
+                    co.getIntValue(), rem.getOperand_1(), rem.getParentBlock())) return;
+        }
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
+
     }
 
     /**

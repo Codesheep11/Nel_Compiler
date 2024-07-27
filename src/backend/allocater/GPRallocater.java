@@ -422,6 +422,7 @@ public class GPRallocater {
             conflictGraph.get(neighbor).add(newReg);
         }
         conflictGraph.remove(oldReg);
+        if(callSaved.contains(oldReg))callSaved.add(newReg);
     }
 
     private static void TryThrowMoveNode(Reg node) {

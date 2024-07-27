@@ -12,7 +12,7 @@ public class R3 extends RiscvInstruction {
 
     public enum R3Type {
         add, addi, addw, addiw, subw, divw, mulw, remw, and, andi, or, ori, xorw, xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti,
-        fadd, fsub, fmul, fdiv, min, max, feq, fle, flt,
+        fadd, fsub, fmul, fdiv, min, max, feq, fle, flt, mul, srai, srli,
         sh1add, sh2add, sh3add;// 这三个的最后一个参数才是需要位移的
 
         @Override
@@ -138,6 +138,15 @@ public class R3 extends RiscvInstruction {
                 case sh3add -> {
                     return "sh3add";
                 }
+                case mul -> {
+                    return "mul";
+                }
+                case srai -> {
+                    return "srai";
+                }
+                case srli -> {
+                    return "srli";
+                }
                 default -> {
                     throw new AssertionError();
                 }
@@ -219,14 +228,14 @@ public class R3 extends RiscvInstruction {
     }
 
     public void replaceMe() {
-        if (type != R3Type.addi) return;
+        if (type != R3Type.addi && type != R3Type.addiw) return;
         if (rs2 instanceof Address add) {
             if (add.getOffset() >= 2048 || add.getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
                 Li li = new Li(block, tmp, add);
                 block.riscvInstructions.insertBefore(li, this);
                 this.rs2 = tmp;
-                this.type = R3Type.add;
+                this.type = type == R3Type.addi ? R3Type.add : R3Type.addw;
             }
         }
     }
