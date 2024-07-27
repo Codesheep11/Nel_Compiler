@@ -9,6 +9,7 @@ import backend.riscv.RiscvModule;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class DeadCodeRemove {
     // 对于一个def,如果它的值在下一次def前还没用到,那么就直接删除
@@ -25,7 +26,7 @@ public class DeadCodeRemove {
 
     private static void runOnBlock(RiscvBlock block) {
         lastDefandUnuse.clear();
-        ArrayList<RiscvInstruction> needRemove = new ArrayList<>();
+        HashSet<RiscvInstruction> needRemove = new HashSet<>();
         for (RiscvInstruction ri : block.riscvInstructions) {
             // 如果是call的话，应该将所有没使用的定义，不是X10-X16之间的全部删除
             if (ri instanceof J j && j.type == J.JType.call) {

@@ -6,14 +6,12 @@ import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvInstruction.Li;
 import backend.riscv.RiscvInstruction.R2;
 import backend.riscv.RiscvInstruction.R3;
-import backend.riscv.RiscvInstruction.RiscvInstruction;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.I32RangeAnalysis;
 import mir.BasicBlock;
 import mir.Value;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 
 public class DivRemByConstant {
 
@@ -199,7 +197,7 @@ public class DivRemByConstant {
         I32RangeAnalysis.I32Range ir = AnalysisManager.getValueRange(value, par);
         if (ir.getMinValue() >= 0 && isPowerOf2(divisor)) {
             int mask = divisor - 1;
-            if (mask >= 2047 || mask <= -2047) {
+            if (mask >= 2047) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
                 block.riscvInstructions.addLast(new Li(block, tmp, new Imm(mask)));
                 block.riscvInstructions.addLast(new R3(block, ans, src, tmp, R3.R3Type.and));
@@ -208,20 +206,16 @@ public class DivRemByConstant {
             }
         } else {
             // 当作一个除法+乘法+减法优化
-            // 如果是正数自然没问题,但是要是负数的话就会出错
+            // 问题:如果被除数是负数?也是负数即可
+            // 如果除数是负数?
             Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
             Reg store = Reg.getVirtualReg(Reg.RegType.GPR, 32);
             boolean ret = SignDiv(store, src, divisor);
             if (!ret) {// 如果失败,补偿一个divw
-                block.riscvInstructions.addLast(new Li(block, tmp, new Imm(divisor)));
                 block.riscvInstructions.addLast(new R3(block, store, src, tmp, R3.R3Type.divw));
-                block.riscvInstructions.addLast(new R3(block, tmp, store, tmp, R3.R3Type.mulw));
-                block.riscvInstructions.addLast(new R3(block, ans, src, tmp, R3.R3Type.subw));
-            } else {
-                block.riscvInstructions.addLast(new Li(block, tmp, new Imm(divisor)));
-                block.riscvInstructions.addLast(new R3(block, tmp, store, tmp, R3.R3Type.mulw));
-                block.riscvInstructions.addLast(new R3(block, ans, src, tmp, R3.R3Type.subw));
             }
+            MulPlaner.MulConst(tmp, store, divisor);
+            block.riscvInstructions.addLast(new R3(block, ans, src, tmp, R3.R3Type.subw));
         }
     }
 }

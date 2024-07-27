@@ -1,6 +1,7 @@
 package backend.Opt;
 
 import backend.allocater.LivenessAnalyze;
+import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
@@ -27,7 +28,38 @@ public class CalculateOpt {
             if (function.isExternal) continue;
             for (RiscvBlock block : function.blocks) {
                 icmpBranchToBranch(block);
+                SraSll2And(block);
             }
+        }
+    }
+
+    private static void SraSll2And(RiscvBlock block) {
+        ArrayList<Pair<Pair<R3, R3>, ArrayList<RiscvInstruction>>> needRemove = new ArrayList<>();
+        for (int i = 0; i < block.riscvInstructions.size() - 1; i++) {
+            if (block.riscvInstructions.get(i) instanceof R3 r1 && r1.type == R3.R3Type.sraiw) {
+                if (block.riscvInstructions.get(i + 1) instanceof R3 r2 && r2.type == R3.R3Type.slliw) {
+                    if (((Imm) r1.rs2).getVal() == ((Imm) r2.rs2).getVal()) {
+                        if (r1.rd.equals(r2.rs1)) {
+                            int ans = -(1 << ((Imm) r2.rs2).getVal());
+                            var pair = new Pair<>(new Pair<>(r1, r2), new ArrayList<RiscvInstruction>());
+                            if (ans <= -2047) {
+                                pair.second.add(new Li(block, (Reg) r2.rd, new Imm(ans)));
+                                pair.second.add(new R3(block, r2.rd, r1.rs1, r2.rd, R3.R3Type.and));
+                            } else {
+                                pair.second.add(new R3(block, r2.rd, r1.rs1, new Imm(ans), R3.R3Type.andi));
+                            }
+                            needRemove.add(pair);
+                        }
+                    }
+                }
+            }
+        }
+        for (var pair : needRemove) {
+            for (RiscvInstruction ri:pair.second){
+                block.riscvInstructions.insertBefore(ri, pair.first.first);
+            }
+            pair.first.first.remove();
+            pair.first.second.remove();
         }
     }
 
@@ -247,6 +279,7 @@ public class CalculateOpt {
             }
         }
     }
+
 
     private static void removeSameMv(RiscvBlock riscvBlock) {
         Iterator<RiscvInstruction> iterator = riscvBlock.riscvInstructions.iterator();

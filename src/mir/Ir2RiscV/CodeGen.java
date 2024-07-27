@@ -481,9 +481,7 @@ public class CodeGen {
             }
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_offset, new Imm(shift), R3.R3Type.slliw));
         } else {
-            Reg reg_for_size = new Reg(Reg.RegType.GPR, 32);
-            nowBlock.riscvInstructions.addLast(new Li(nowBlock, reg_for_size, new Imm(size)));
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_size, reg_for_offset, R3.R3Type.mulw));
+            MulPlaner.MulConst(tmp_offset, reg_for_offset, size);
         }
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, tmp_offset, R3.R3Type.add));
     }
@@ -733,17 +731,24 @@ public class CodeGen {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fSub);
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fsub));
     }
-    //TODO 乘除优化
 
     private void solveMul(Instruction.Mul mul) {
         if (!mul.getOperand_1().getType().isInt32Ty() ||
                 !mul.getOperand_2().getType().isInt32Ty()) {
             throw new RuntimeException("not all oper of mul is i32");
         }
-        Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
-        Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(mul);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+        if (mul.getOperand_2() instanceof Constant.ConstantInt c) {
+            Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
+            MulPlaner.MulConst(ans, op1, c.getIntValue());
+        } else if (mul.getOperand_1() instanceof Constant.ConstantInt c) {
+            Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
+            MulPlaner.MulConst(ans, op2, c.getIntValue());
+        } else {
+            Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
+            Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+        }
     }
 
     private void solveDiv(Instruction.Div div) {
