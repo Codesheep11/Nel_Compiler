@@ -76,7 +76,7 @@ public class Li extends RiscvInstruction {
         return new Li(newBlock, reg, imm);
     }
 
-    public int getVal() {
+    public long getVal() {
         if (imm instanceof Address) {
             return -((Address) imm).getOffset();
         } else if (imm instanceof Imm) {
