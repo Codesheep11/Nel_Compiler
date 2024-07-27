@@ -104,7 +104,7 @@ public class Manager {
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
-        DeadCodeRemove.run(riscvmodule);
+//        DeadCodeRemove.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
 //        ShortInstrConvert.run(riscvmodule);
