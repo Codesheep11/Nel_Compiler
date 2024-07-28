@@ -46,6 +46,9 @@ public class LoopUnSwitching {
     private static boolean collectBranch(Loop loop) {
         ArrayList<Instruction.Branch> branches = new ArrayList<>();
         for (BasicBlock block : loop.nowLevelBB) {
+            if (block.getInstructions().size() == 0) {
+                System.out.println("empty block " + block.getLabel());
+            }
             if (block.getLastInst() instanceof Instruction.Branch branch) {
                 // 常量条件 - 可被其他优化处理
                 if (branch.getCond() instanceof Constant)
@@ -93,7 +96,8 @@ public class LoopUnSwitching {
                 cond.delete();
                 if ((i & (1 << (branches.size() - 1 - j))) == 0) {
                     new Instruction.Jump(condBlock, (BasicBlock) info.getReflectedValue(trueBlocks.get(j)));
-                } else {
+                }
+                else {
                     new Instruction.Jump(condBlock, (BasicBlock) info.getReflectedValue(falseBlocks.get(j)));
                 }
             }
@@ -122,11 +126,13 @@ public class LoopUnSwitching {
                         if (infos.get(0).containValue(entry.getValue())) {
                             infos.forEach(info ->
                                     newMap.put((BasicBlock) info.getReflectedValue(entry.getKey()), info.getReflectedValue(entry.getValue())));
-                        } else {
+                        }
+                        else {
                             infos.forEach(info ->
                                     newMap.put((BasicBlock) info.getReflectedValue(entry.getKey()), entry.getValue()));
                         }
-                    } else {
+                    }
+                    else {
                         newMap.put(entry.getKey(), entry.getValue());
                     }
                 }
@@ -178,11 +184,13 @@ public class LoopUnSwitching {
                         if (trueinfo.containValue(entry.getValue())) {
                             newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), trueinfo.getReflectedValue(entry.getValue()));
                             newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), falseinfo.getReflectedValue(entry.getValue()));
-                        } else {
+                        }
+                        else {
                             newMap.put((BasicBlock) trueinfo.getReflectedValue(entry.getKey()), entry.getValue());
                             newMap.put((BasicBlock) falseinfo.getReflectedValue(entry.getKey()), entry.getValue());
                         }
-                    } else {
+                    }
+                    else {
                         newMap.put(entry.getKey(), entry.getValue());
                     }
                 }

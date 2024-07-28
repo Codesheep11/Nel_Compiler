@@ -2,6 +2,7 @@ package manager;
 
 import backend.Opt.*;
 import backend.allocater.Allocater;
+import backend.operand.Reg;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
 import frontend.exception.SemanticError;
@@ -22,6 +23,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.AfterRA;
@@ -62,14 +64,14 @@ public class Manager {
 
     private void O1() throws IOException {
         AnalysisManager.buildCFG(module);
-        DeadCodeEliminate.run(module);
+//        DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
         FuncPasses();
-        GlobalVarLocalize.run(module);
+//        GlobalVarLocalize.run(module);
         GlobalValueNumbering.run(module);
-        DeadCodeEliminate.run(module);
+        DeadCodeEliminate();
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
@@ -130,14 +132,17 @@ public class Manager {
         GlobalValueNumbering.run(module);
         SimplifyCFGPass.run(module);
         ArithReduce.run(module);
+        DeadRetEliminate.run(module);
         DeadCodeEliminate.run(module);
+        SimplifyCFGPass.run(module);
     }
 
     private void FuncPasses() {
-        FunctionInline.run(module);
+        FuncAnalysis.run(module);
+        TailCall2Loop.run(module);
+//        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
-        TailCall2Loop.run(module);
         FuncAnalysis.run(module);
     }
 
@@ -154,6 +159,7 @@ public class Manager {
     private void LoopBuildAndNormalize() {
         LCSSA.remove(module);
         LoopInfo.run(module);
+        Print.output(module, "debug.txt");
         LoopSimplifyForm.run(module);
         LCSSA.run(module);
     }
@@ -187,7 +193,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

@@ -1,6 +1,9 @@
 package midend.Transform.Function;
 
+import midend.Analysis.AnalysisManager;
+import midend.Transform.DCE.RemoveBlocks;
 import midend.Util.CloneInfo;
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 import utils.NelLinkedList;
@@ -101,9 +104,8 @@ public class FunctionInline {
 
     private static void topologySort() {
         for (Function function : inNum.keySet()) {
-            if (inNum.get(function) == 0 && !function.getName().equals("main")
-                    && !function.isExternal() && funcSize.get(function) <= INLINE_SIZE_THRESHOLD)
-            {
+//            if (inNum.get(function) == 0 && !function.getName().equals("main") && !function.isExternal() && funcSize.get(function) <= INLINE_SIZE_THRESHOLD)
+            if (inNum.get(function) == 0 && !function.getName().equals("main") && !function.isExternal()) {
                 queue.add(function);
             }
         }
@@ -139,7 +141,9 @@ public class FunctionInline {
         for (Instruction.Call call : callers) {
 //            System.out.println("inline " + function.getName() + " to " + call.getParentBlock().getParentFunction().getName() + " " + idx);
             transCallToFunc(function, call, idx, callers);
-            call.getParentBlock().getParentFunction().buildControlFlowGraph();
+            Function curFunc = call.getParentBlock().getParentFunction();
+//            System.out.println("inline " + function.getName() + " to " + curFunc.getName() + " " + idx);
+            AnalysisManager.refreshCFG(curFunc);
             idx++;
         }
         for (BasicBlock bb : function.getBlocks()) {
@@ -167,6 +171,7 @@ public class FunctionInline {
         Function inFunction = ((Instruction.Call) cloneInfo.getReflectedValue(call)).getParentBlock().getParentFunction();
         // 拆分前的 call Block
         BasicBlock beforeCallBB = call.getParentBlock();
+        ArrayList<BasicBlock> afterCallBBs = beforeCallBB.getSucBlocks();
 //        CallbbCut.add(beforeCallBB);
         Instruction inst = null;
         for (Instruction tmp : beforeCallBB.getInstructions()) {
@@ -183,13 +188,11 @@ public class FunctionInline {
 
         BasicBlock afterCallBB = new BasicBlock(inFunction.getName() + "_after_call_" + function.getName() + "_" + idx, inFunction);
 //        CallbbCut.add(afterCallBB);
-        for (BasicBlock suc : beforeCallBB.getSucBlocks()) {
-            for (Instruction instr : suc.getInstructions()) {
-                if (instr instanceof Instruction.Phi) {
-                    Instruction.Phi phi = (Instruction.Phi) instr;
-                    phi.changePreBlock(beforeCallBB, afterCallBB);
-                }
-                else break;
+//        Print.output(inFunction,"debug.txt");
+        for (BasicBlock suc : afterCallBBs) {
+            for (Instruction instr : suc.getPhiInstructions()) {
+                Instruction.Phi phi = (Instruction.Phi) instr;
+                phi.changePreBlock(beforeCallBB, afterCallBB);
             }
         }
         LinkedList<Instruction> instrs = new LinkedList<>();

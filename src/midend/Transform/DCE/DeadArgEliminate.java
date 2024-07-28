@@ -1,5 +1,7 @@
 package midend.Transform.DCE;
 
+import midend.Analysis.AnalysisManager;
+import midend.Analysis.FuncAnalysis;
 import midend.Util.FuncInfo;
 import mir.*;
 
@@ -12,10 +14,10 @@ import java.util.LinkedList;
 public class DeadArgEliminate {
 
     /**
-     *  
+     *
      */
     public static void run() {
-        ArrayList<Function> funcs = FuncInfo.getFuncTopoSort();
+        ArrayList<Function> funcs = FuncAnalysis.getFuncTopoSort();
         for (Function function : funcs) {
             if (function.isExternal()) continue;
             run(function);
@@ -29,7 +31,7 @@ public class DeadArgEliminate {
         for (int i = 0; i < function.getFuncRArguments().size(); i++) {
             Function.Argument arg = function.getFuncRArguments().get(i);
             if (arg.use_empty()) removeList.add(arg);
-            else if (FuncInfo.isRecurse.get(function)) {
+            else if (AnalysisManager.getFuncInfo(function).isRecursive) {
                 boolean hasUse = false;
                 for (Use use : arg.getUses()) {
                     User user = use.getUser();

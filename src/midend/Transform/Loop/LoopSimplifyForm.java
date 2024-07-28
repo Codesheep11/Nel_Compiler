@@ -29,19 +29,16 @@ public class LoopSimplifyForm {
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
+            if (function.getName().equals("detect_item")) {
+                function.loopInfo.printLoopInfo();
+            }
             runOnFunc(function);
         }
     }
 
-    public static boolean runOnFunc(Function function) {
-        boolean modified = false;
+    public static void runOnFunc(Function function) {
         for (Loop loop : function.loopInfo.TopLevelLoops)
-            modified |= runOnLoop(loop);
-        if (modified) {
-            AnalysisManager.dirtyCFG(function);
-            AnalysisManager.dirtyDG(function);
-        }
-        return modified;
+            runOnLoop(loop);
     }
 
     private static boolean runOnLoop(Loop loop) {

@@ -1,6 +1,8 @@
 package midend.Transform.Function;
 
 
+import midend.Analysis.AnalysisManager;
+import midend.Transform.DCE.RemoveBlocks;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -18,18 +20,20 @@ public class TailCall2Loop {
 
     public static void run(Module module) {
         for (Function func : module.getFuncSet()) {
+            FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
             if (func.isExternal()) continue;
-            if (FuncInfo.isStateless.get(func) && !FuncInfo.hasMemoryAlloc.get(func)
-                    && FuncInfo.isRecurse.get(func)) RunOnFunc(func);
+            if (funcInfo.isRecursive && !funcInfo.hasMemoryAlloc && !funcInfo.hasSideEffect && !funcInfo.hasMemoryWrite)
+                RunOnFunc(func);
         }
     }
 
     private static void RunOnFunc(Function func) {
+        System.out.println("TailCall2Loop");
         curFunc = func;
         Instruction.Call tailCall = Recurse2TailRecurse();
-        if (tailCall != null) {
+        while (tailCall != null) {
             TransCall2Loop(tailCall);
-//            func.buildControlFlowGraph();
+            tailCall = Recurse2TailRecurse();
         }
     }
 

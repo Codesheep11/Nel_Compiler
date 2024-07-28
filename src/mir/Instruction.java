@@ -2,6 +2,7 @@ package mir;
 
 import frontend.Recorder;
 import manager.Manager;
+import midend.Analysis.AnalysisManager;
 import midend.Util.CloneInfo;
 import midend.Util.FuncInfo;
 
@@ -111,8 +112,9 @@ public class Instruction extends User {
             case SHL, AND, OR, XOR, ASHR, LSHR -> false; // 目前判断 gvn 位运算平均收益为负
             case CALL -> {
                 Function func = ((Call) this).getDestFunction();
-                yield FuncInfo.hasReturn.get(func) && !func.isExternal() &&
-                        FuncInfo.isStateless.get(func) && !FuncInfo.hasReadIn.get(func) && !FuncInfo.hasPutOut.get(func);
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
+                yield funcInfo.hasReturn && !func.isExternal() && funcInfo.isStateless
+                        && !funcInfo.hasReadIn && !funcInfo.hasPutOut;
             }
             default -> true;
         };
@@ -159,7 +161,8 @@ public class Instruction extends User {
         return switch (instType) {
             case CALL -> {
                 Function callee = ((Call) this).getDestFunction();
-                yield !FuncInfo.hasSideEffect.get(callee) && FuncInfo.isStateless.get(callee) && FuncInfo.hasReturn.get(callee);
+                FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
+                yield !calleeInfo.hasSideEffect && calleeInfo.isStateless && calleeInfo.hasReturn;
             }
             case STORE -> false;
             default -> true;
@@ -248,7 +251,6 @@ public class Instruction extends User {
             super(parentBlock, destFunction.getRetType(), InstType.CALL);
             this.destFunction = destFunction;
             this.params = params;
-            FuncInfo.isLeaf.put(parentBlock.getParentFunction(), false);
 
             addOperand(destFunction);
             for (Value param : params) {
@@ -261,7 +263,6 @@ public class Instruction extends User {
             this.destFunction = destFunction;
             this.params = params;
             this.strIdx = strIdx;
-            FuncInfo.isLeaf.put(parentBlock.getParentFunction(), false);
 
             addOperand(destFunction);
             for (Value param : params) {

@@ -77,9 +77,11 @@ public class LocalArrayLift {
                 if (idx instanceof Constant && val instanceof Constant) stores.add(useInst);
                 else return;
             }
-            else if (useInst instanceof Instruction.Call) {
-                if (((Instruction.Call) useInst).getDestFunction().getName().equals("memset")) stores.add(useInst);
-                else if (FuncInfo.hasSideEffect.get(((Instruction.Call) useInst).getDestFunction())) return;
+            else if (useInst instanceof Instruction.Call call) {
+                Function callee = call.getDestFunction();
+                FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
+                if (callee.getName().equals("memset")) stores.add(useInst);
+                else if (calleeInfo.hasSideEffect) return;
             }
             else if (useInst instanceof Instruction.GetElementPtr || useInst instanceof Instruction.BitCast)
                 use.addAll(useInst.getUsers());
