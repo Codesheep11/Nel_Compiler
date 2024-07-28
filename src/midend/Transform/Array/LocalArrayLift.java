@@ -189,11 +189,12 @@ public class LocalArrayLift {
         //对于每一个要提升的数组，生成全局变量
         for (Instruction.Alloc alloc : arrayInitMap.keySet()) {
             Type.ArrayType arrayType = (Type.ArrayType) ((Type.PointerType) alloc.getType()).getInnerType();
-            Constant.ConstantArray constant = new Constant.ConstantArray(arrayType);
+            Constant constant = new Constant.ConstantArray(arrayType);
             HashMap<Integer, Constant> idxMap = arrayInitMap.get(alloc);
             for (int idx : idxMap.keySet()) {
-                constant.setIdxEle(idx, idxMap.get(idx));
+                ((Constant.ConstantArray) constant).setIdxEle(idx, idxMap.get(idx));
             }
+            if (constant.isZero()) constant = new Constant.ConstantZeroInitializer(arrayType);
             GlobalVariable gv = new GlobalVariable(constant, "_lift_array_" + count++);
 //            System.out.println(gv.label);
             module.addGlobalValue(gv);

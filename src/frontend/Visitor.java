@@ -680,8 +680,13 @@ public class Visitor {
         for (int i = 0; i < funcRParams.getParams().size(); i++) {
             if (fParams.get(i) instanceof Type.BasicType)
                 rParams.add(castType(visitExp(funcRParams.getParams().get(i)), (Type.BasicType) fParams.get(i)));
-            else
-                rParams.add(visitExp(funcRParams.getParams().get(i)));
+            else {
+                Value rParam = visitExp(funcRParams.getParams().get(i));
+                if (!rParam.getType().equals( function.getArgumentsTP().get(i))) {
+                    rParam = new Instruction.BitCast(currentBB, rParam, function.getArgumentsTP().get(i));
+                }
+                rParams.add(rParam);
+            }
         }
 
 
@@ -729,8 +734,7 @@ public class Visitor {
         ArrayList<Value> offsets = new ArrayList<>();
         offsets.add(Constant.ConstantInt.get(0));
         boolean hasOffSet = false;
-        for (Ast.AddExp exp :
-                lval.getExps()) {
+        for (Ast.AddExp exp : lval.getExps()) {
             Value offset = castType(visitExp(exp), Type.BasicType.I32_TYPE);
             hasOffSet = true;
 
