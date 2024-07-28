@@ -50,7 +50,7 @@ public class I32RangeAnalysis {
             return false;
         }
 
-        private static I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+        private static final I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
         private static HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
 

@@ -1,5 +1,6 @@
 package midend.Transform;
 
+import midend.Analysis.AnalysisManager;
 import midend.Analysis.I32RangeAnalysis;
 import mir.*;
 import mir.Module;
@@ -108,7 +109,7 @@ public class BitwiseOperation {
                         inst.delete();
                         return;
                     }
-                    I32RangeAnalysis.I32Range op1Range = I32RangeAnalysis.getValueRange(op1);
+                    I32RangeAnalysis.I32Range op1Range = AnalysisManager.getValueRange(op1, divInst.getParentBlock());
                     if (op1Range.getMinValue() >= 0) {
                         int absVal = Math.abs(val);
                         if ((absVal & (absVal - 1)) == 0) {
@@ -124,50 +125,7 @@ public class BitwiseOperation {
                             }
                             inst.replaceAllUsesWith(res);
                             inst.delete();
-                            return;
-                        } else {
-                            long magic = (1L << 32) / val;
-                            Instruction.Mul mul = new Instruction.Mul(parentBlock, type, op1, Constant.ConstantInt.get((int) magic));
-                            mul.remove();
-                            inst.addNext(mul);
-                            Instruction.LShr lshr = new Instruction.LShr(parentBlock, type, mul, Constant.ConstantInt.get(32));
-                            lshr.remove();
-                            mul.addNext(lshr);
-                            if (val < 0) {
-                                Instruction.Sub sub = new Instruction.Sub(parentBlock, type, op1, lshr);
-                                sub.remove();
-                                lshr.addNext(sub);
-                                inst.replaceAllUsesWith(sub);
-                            } else {
-                                inst.replaceAllUsesWith(lshr);
-                            }
-                            inst.delete();
-                            return;
                         }
-                    } else {
-                        // 无法确定op1范围
-//                        int absVal = Math.abs(val);
-//                        if ((absVal & (absVal - 1)) == 0) {
-//                            Instruction.And and = new Instruction.And(parentBlock, type, op1, Constant.ConstantInt.get(absVal - 1));
-//                            and.remove();
-//                            inst.addNext(and);
-//                            Instruction.Add add = new Instruction.Add(parentBlock, type, op1, and);
-//                            add.remove();
-//                            and.addNext(add);
-//                            Instruction.AShr ashr = new Instruction.AShr(parentBlock, type, add, Constant.ConstantInt.get(log2(absVal)));
-//                            ashr.remove();
-//                            add.addNext(ashr);
-//                            if (val < 0) {
-//                                Instruction.Sub sub = new Instruction.Sub(parentBlock, type, Constant.ConstantInt.get(0), ashr);
-//                                sub.remove();
-//                                ashr.addNext(sub);
-//                                inst.replaceAllUsesWith(sub);
-//                            } else {
-//                                inst.replaceAllUsesWith(ashr);
-//                            }
-//                            inst.delete();
-//                            return;
-//                        }
                     }
                 }
             }
@@ -182,7 +140,7 @@ public class BitwiseOperation {
                         inst.delete();
                         return;
                     }
-                    I32RangeAnalysis.I32Range op1Range = I32RangeAnalysis.getValueRange(op1);
+                    I32RangeAnalysis.I32Range op1Range = AnalysisManager.getValueRange(op1, remInst.getParentBlock());
                     if (op1Range.getMinValue() >= 0) {
                         if (val > 0 && (val & (val - 1)) == 0) {
                             Instruction.And and = new Instruction.And(parentBlock, type, op1, Constant.ConstantInt.get(val - 1));

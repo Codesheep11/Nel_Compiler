@@ -90,6 +90,26 @@ public final class DGinfo {
         return map.get(block).domDepth;
     }
 
+    public BasicBlock getLCA(BasicBlock a, BasicBlock b) {
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+        while (map.get(a).domDepth > map.get(b).domDepth) {
+            a = getIDom(a);
+        }
+        while (map.get(a).domDepth < map.get(b).domDepth) {
+            b = getIDom(b);
+        }
+        while (a != b) {
+            a = getIDom(a);
+            b = getIDom(b);
+        }
+        return a;
+    }
+
     /**
      * 仅限构造DG类使用以降低时间开销
      */
