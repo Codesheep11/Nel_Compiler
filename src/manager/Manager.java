@@ -64,12 +64,12 @@ public class Manager {
 
     private void O1() throws IOException {
         AnalysisManager.buildCFG(module);
-//        DeadCodeEliminate.run(module);
+        DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
         FuncPasses();
-//        GlobalVarLocalize.run(module);
+        GlobalVarLocalize.run(module);
         GlobalValueNumbering.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
@@ -140,7 +140,7 @@ public class Manager {
     private void FuncPasses() {
         FuncAnalysis.run(module);
         TailCall2Loop.run(module);
-//        FunctionInline.run(module);
+        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         FuncAnalysis.run(module);
@@ -159,8 +159,8 @@ public class Manager {
     private void LoopBuildAndNormalize() {
         LCSSA.remove(module);
         LoopInfo.run(module);
-        Print.output(module, "debug.txt");
         LoopSimplifyForm.run(module);
+        LoopInfo.run(module);
         LCSSA.run(module);
     }
 

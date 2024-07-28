@@ -28,7 +28,7 @@ public class TailCall2Loop {
     }
 
     private static void RunOnFunc(Function func) {
-        System.out.println("TailCall2Loop");
+//        System.out.println("TailCall2Loop");
         curFunc = func;
         Instruction.Call tailCall = Recurse2TailRecurse();
         while (tailCall != null) {
