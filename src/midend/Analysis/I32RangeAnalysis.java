@@ -50,6 +50,11 @@ public class I32RangeAnalysis {
             return false;
         }
 
+        @Override
+        public String toString() {
+            return "[" + minValue + ", " + maxValue + "]";
+        }
+
         private static I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
         private static HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
@@ -75,7 +80,7 @@ public class I32RangeAnalysis {
             calBlockEntryRange(bb);
             runOnBasicBlock(bb);
         }
-        updatePhi(function);
+        Update(function);
     }
 
     private void runOnBasicBlock(BasicBlock bb) {
@@ -184,8 +189,34 @@ public class I32RangeAnalysis {
 
     }
 
-    private void updatePhi(Function func) {
+    private void Update(Function func) {
         ArrayList<Instruction> queue = new ArrayList<>();
+        for (BasicBlock bb : func.getDomTreeLayerSort()) {
+            for (Instruction.Phi phi : bb.getPhiInstructions()) {
+                if (phi.getType().isInt32Ty()) {
+                    I32Range ir = getOperandRange(phi, bb);
+                    I32Range ret = calculateI32Range(phi);
+                    if (!ir.equals(ret)) {
+                        for (Instruction user : phi.getUsers()) {
+                            if (user.getType().isInt32Ty())
+                                queue.add(user);
+                        }
+                    }
+                }
+            }
+        }
+        //todo:归纳变量不收敛
+//        while (!queue.isEmpty()) {
+//            Instruction inst = queue.remove(0);
+////            System.out.println(inst);
+//            I32Range ir = getInstRange(inst);
+//            I32Range ret = calculateI32Range(inst);
+//            if (!ir.equals(ret)) {
+//                System.out.println("Update " + inst + " " + ir + " " + ret);
+//                for (Instruction user : inst.getUsers())
+//                    if (user.getType().isInt32Ty()) queue.add(user);
+//            }
+//        }
     }
 
     /**
@@ -408,8 +439,9 @@ public class I32RangeAnalysis {
         if (value instanceof Function.Argument) return I32Range.Any();
         if (value instanceof Instruction) {
             BasicBlock instBB = ((Instruction) value).getParentBlock();
-            if (I32RangeBufferMap.get(instBB).containsKey(value))
-                return I32RangeBufferMap.get(instBB).get(value);
+            if (I32RangeBufferMap.containsKey(instBB))
+                if (I32RangeBufferMap.get(instBB).containsKey(value))
+                    return I32RangeBufferMap.get(instBB).get(value);
             return I32Range.Any();
         }
         return null;

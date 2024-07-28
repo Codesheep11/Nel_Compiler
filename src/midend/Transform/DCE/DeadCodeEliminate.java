@@ -1,6 +1,7 @@
 package midend.Transform.DCE;
 
 import midend.Analysis.AnalysisManager;
+import midend.Analysis.FuncAnalysis;
 import midend.Util.FuncInfo;
 import mir.Function;
 import mir.Module;
@@ -123,10 +124,11 @@ public class DeadCodeEliminate {
     }
 
     public static boolean isUsefulCall(Function callee) {
-        if (!FuncInfo.FuncAnalysisOpen) return true;
+        if (!FuncAnalysis.FuncAnalysisOpen) return true;
+        FuncInfo funcInfo = AnalysisManager.getFuncInfo(callee);
         return usefulVar.contains(callee)
                 || (callee.isExternal() && !callee.getName().equals("memset"))
-                || FuncInfo.hasReadIn.get(callee) || FuncInfo.hasPutOut.get(callee);
+                || funcInfo.hasReadIn || funcInfo.hasPutOut;
     }
 
     private static void DeleteUselessVar(Module module) {
@@ -160,7 +162,8 @@ public class DeadCodeEliminate {
         for (BasicBlock block : function.getBlocks()) {
             if (!usefulVar.contains(block)) {
                 delList.add(block);
-            } else uselessInstDelete(block);
+            }
+            else uselessInstDelete(block);
         }
         delList.forEach(BasicBlock::delete);
         return !delList.isEmpty();
