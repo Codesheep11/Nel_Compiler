@@ -7,6 +7,7 @@ import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.*;
 import backend.riscv.RiscvInstruction.*;
+import midend.Analysis.FuncAnalysis;
 import midend.Util.FuncInfo;
 import mir.Module;
 import mir.*;
@@ -61,7 +62,7 @@ public class CodeGen {
             VirRegMap.VRM.clean(function);
             visitFunction(function);
         }
-        FuncInfo.getFuncTopoSort().forEach(func -> ansRis.TopoSort.add(ansRis.getFunction(func.getName())));
+        FuncAnalysis.getFuncTopoSort().forEach(func -> ansRis.TopoSort.add(ansRis.getFunction(func.getName())));
         for (RiscvFunction rf : ansRis.funcList) {
             if (RiscvModule.isMain(rf)) {
                 rf.isMain = true;
@@ -87,7 +88,7 @@ public class CodeGen {
             blockMap.put(block, riscvBlock);
         }
         Address offset = null;
-        if (!function.isExternal() && FuncInfo.callGraph.get(function).size() != 0) {
+        if (!function.isExternal() && FuncAnalysis.callGraph.get(function).size() != 0) {
             offset = StackManager.getInstance().getRegOffset(nowFunc.name, "ra", 8);
             blockMap.get(function.getEntry()).addInstrucion(new LS(blockMap.get(function.getEntry()),
                     Reg.getPreColoredReg(Reg.PhyReg.ra, 64),

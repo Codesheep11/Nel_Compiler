@@ -9,7 +9,7 @@ import java.util.LinkedList;
 public class Value extends NelLinkedList.NelLinkNode {
 
     protected String name;
-    protected final Type type;
+    protected Type type;
 
     /**
      * 维护了集合性质，乱序，不重地维护了双向边关系
@@ -66,6 +66,12 @@ public class Value extends NelLinkedList.NelLinkNode {
 
     public Type getType() {
         return type;
+    }
+
+    public void setType(Type type) {
+        if (!(this instanceof Instruction.Call))
+            throw new RuntimeException("Cannot change the type of a Value");
+        this.type = type;
     }
 
     /*
