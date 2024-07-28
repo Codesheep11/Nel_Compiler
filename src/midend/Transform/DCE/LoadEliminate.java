@@ -1,5 +1,6 @@
 package midend.Transform.DCE;
 
+import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Function;
@@ -150,7 +151,8 @@ public class LoadEliminate {
     private static void handleCall(Instruction.Call call) {
         Function callee = call.getDestFunction();
         //传入数组写
-        if (FuncInfo.hasSideEffect.get(callee)) {
+        FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
+        if (calleeInfo.hasSideEffect) {
             for (Value arg : call.getParams()) {
                 if (arg.getType().isPointerTy()) {
                     Value baseAddr = getBaseAddr(arg);
@@ -161,7 +163,7 @@ public class LoadEliminate {
         }
         //全局变量写
         //todo:之后考虑重构到具体的全局变量
-        if (!FuncInfo.isStateless.get(callee)) {
+        if (calleeInfo.hasMemoryWrite) {
             Global2Store.clear();
             Global2Load.clear();
             for (Value key : Address2Idx2Store.keySet()) {

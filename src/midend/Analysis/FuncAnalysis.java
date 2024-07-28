@@ -8,22 +8,37 @@ import mir.Module;
 import java.util.*;
 
 import static midend.Util.FuncInfo.ExternFunc.*;
-import static midend.Util.FuncInfo.FuncAnalysisOpen;
-import static midend.Util.FuncInfo.clear;
 
 
 public class FuncAnalysis {
 
+    public static boolean FuncAnalysisOpen = false;
+
+    public static HashMap<Function, HashSet<Function>> callGraph = new HashMap<>();
+
+    public static Function main;
+
+    private static boolean topoSortFlag = false;
+
+    private static ArrayList<Function> funcTopoSort = new ArrayList<>();
+
     public static void run(Module module) {
         if (!FuncAnalysisOpen) FuncAnalysisOpen = true;
-        Function main = module.getFunctions().get("main");
-        clear();
+        main = module.getFunctions().get("main");
+        callGraph.clear();
+        topoSortFlag = false;
+        funcTopoSort.clear();
         for (Function callee : module.getFuncSet()) {
-            for (Use use : callee.getUses()) {
-                Instruction.Call call = (Instruction.Call) use.getUser();
-                Function caller = call.getParentBlock().getParentFunction();
-//                System.out.println(caller.getName() + " -> " + callee.getName());
-                FuncInfo.addCall(caller, callee);
+            AnalysisManager.setFuncInfo(callee);
+            for (Instruction user : callee.getUsers()) {
+                if (user instanceof Instruction.Call call) {
+                    Function caller = call.getParentBlock().getParentFunction();
+                    addCall(caller, callee);
+                }
+            }
+            if (callee.getUsers().size() != 0) {
+                FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
+                calleeInfo.isLeaf = true;
             }
         }
         HashSet<Value> visited = new HashSet<>();
@@ -32,8 +47,8 @@ public class FuncAnalysis {
         visited.add(main);
         while (!queue.isEmpty()) {
             Function func = queue.poll();
-            if (!FuncInfo.callGraph.containsKey(func)) FuncInfo.callGraph.put(func, new HashSet<>());
-            for (Function callee : FuncInfo.callGraph.get(func)) {
+            if (!callGraph.containsKey(func)) callGraph.put(func, new HashSet<>());
+            for (Function callee : callGraph.get(func)) {
                 if (!visited.contains(callee)) {
                     queue.add(callee);
                     visited.add(callee);
@@ -42,29 +57,12 @@ public class FuncAnalysis {
         }
         ArrayList<Function> deleteList = new ArrayList<>();
         for (Function func : module.getFuncSet()) {
-            if (!visited.contains(func)) {
-                deleteList.add(func);
-            }
+            if (!visited.contains(func)) deleteList.add(func);
         }
         for (Function func : deleteList) {
             func.delete();
             module.removeFunction(func);
         }
-
-        for (Function func : module.getFuncSet()) {
-            if (func.getName().equals("main")) FuncInfo.main = func;
-            FuncInfo.hasMemoryRead.put(func, false);
-            FuncInfo.hasMemoryWrite.put(func, false);
-            FuncInfo.hasMemoryAlloc.put(func, false);
-            FuncInfo.hasReadIn.put(func, false);
-            FuncInfo.hasPutOut.put(func, false);
-            FuncInfo.hasReturn.put(func, false);
-            FuncInfo.hasSideEffect.put(func, false);
-            FuncInfo.isStateless.put(func, true);
-            FuncInfo.isRecurse.put(func, false);
-        }
-
-
         ExternFuncInit();
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
@@ -73,57 +71,76 @@ public class FuncAnalysis {
         TransAttribute();
     }
 
+    public static void addCall(Function caller, Function callee) {
+        if (!callGraph.containsKey(caller)) {
+            callGraph.put(caller, new HashSet<>());
+        }
+        callGraph.get(caller).add(callee);
+    }
+
     public static void ExternFuncInit() {
-        if (FuncInfo.callGraph.containsKey(GETINT)) FuncInfo.hasReadIn.put(GETINT, true);
-        if (FuncInfo.callGraph.containsKey(PUTINT)) FuncInfo.hasPutOut.put(PUTINT, true);
-        if (FuncInfo.callGraph.containsKey(GETCH)) FuncInfo.hasReadIn.put(GETCH, true);
-        if (FuncInfo.callGraph.containsKey(GETFLOAT)) FuncInfo.hasReadIn.put(GETFLOAT, true);
-        if (FuncInfo.callGraph.containsKey(PUTCH)) FuncInfo.hasPutOut.put(PUTCH, true);
-        if (FuncInfo.callGraph.containsKey(PUTFLOAT)) FuncInfo.hasPutOut.put(PUTFLOAT, true);
-        if (FuncInfo.callGraph.containsKey(STARTTIME)) FuncInfo.hasPutOut.put(STARTTIME, true);
-        if (FuncInfo.callGraph.containsKey(STOPTIME)) FuncInfo.hasPutOut.put(STOPTIME, true);
-        if (FuncInfo.callGraph.containsKey(GETARRAY)) FuncInfo.hasReadIn.put(GETARRAY, true);
-        if (FuncInfo.callGraph.containsKey(GETFARRAY)) FuncInfo.hasReadIn.put(GETFARRAY, true);
-        if (FuncInfo.callGraph.containsKey(PUTARRAY)) FuncInfo.hasPutOut.put(PUTARRAY, true);
-        if (FuncInfo.callGraph.containsKey(PUTFARRAY)) FuncInfo.hasPutOut.put(PUTFARRAY, true);
-        if (FuncInfo.callGraph.containsKey(PUTF)) FuncInfo.hasPutOut.put(PUTF, true);
-        if (FuncInfo.callGraph.containsKey(MEMSET)) FuncInfo.hasSideEffect.put(MEMSET, true);
+        if (callGraph.containsKey(GETINT)) AnalysisManager.getFuncInfo(GETINT).hasReadIn = true;
+        if (callGraph.containsKey(PUTINT)) AnalysisManager.getFuncInfo(PUTINT).hasPutOut = true;
+        if (callGraph.containsKey(GETCH)) AnalysisManager.getFuncInfo(GETCH).hasReadIn = true;
+        if (callGraph.containsKey(GETFLOAT)) AnalysisManager.getFuncInfo(GETFLOAT).hasReadIn = true;
+        if (callGraph.containsKey(PUTCH)) AnalysisManager.getFuncInfo(PUTCH).hasPutOut = true;
+        if (callGraph.containsKey(PUTFLOAT)) AnalysisManager.getFuncInfo(PUTFLOAT).hasPutOut = true;
+        if (callGraph.containsKey(STARTTIME)) AnalysisManager.getFuncInfo(STARTTIME).hasReadIn = true;
+        if (callGraph.containsKey(STOPTIME)) AnalysisManager.getFuncInfo(STOPTIME).hasReadIn = true;
+        if (callGraph.containsKey(GETARRAY)) AnalysisManager.getFuncInfo(GETARRAY).hasReadIn = true;
+        if (callGraph.containsKey(GETFARRAY)) AnalysisManager.getFuncInfo(GETFARRAY).hasReadIn = true;
+        if (callGraph.containsKey(PUTARRAY)) AnalysisManager.getFuncInfo(PUTARRAY).hasPutOut = true;
+        if (callGraph.containsKey(PUTFARRAY)) AnalysisManager.getFuncInfo(PUTFARRAY).hasPutOut = true;
+        if (callGraph.containsKey(PUTF)) AnalysisManager.getFuncInfo(PUTF).hasPutOut = true;
+        if (callGraph.containsKey(MEMSET)) {
+            AnalysisManager.getFuncInfo(MEMSET).hasMemoryWrite = true;
+            AnalysisManager.getFuncInfo(MEMSET).hasSideEffect = true;
+        }
     }
 
     private static void BuildAttribute(Function function) {
+        FuncInfo funcInfo = AnalysisManager.getFuncInfo(function);
         boolean hasMemoryRead = false;
         boolean hasMemoryWrite = false;
         boolean hasMemoryAlloc = false;
         boolean hasReturn = !(function.getRetType() instanceof Type.VoidType);
-        boolean isRecurse = false;
+        boolean isRecursive = false;
         boolean hasSideEffect = false;
         for (BasicBlock bb : function.getBlocks()) {
             for (Instruction inst : bb.getInstructions()) {
                 if (inst instanceof Instruction.Load load) {
-                    if (GlobalVarLocalize.isGlobalAddr(load.getAddr()) != null) hasMemoryRead = true;
+                    Value val = GlobalVarLocalize.isGlobalAddr(load.getAddr());
+                    if (val != null) {
+                        funcInfo.usedGlobalVariables.add((GlobalVariable) val);
+                        hasMemoryRead = true;
+                    }
                 }
                 else if (inst instanceof Instruction.Store store) {
-                    if (GlobalVarLocalize.isGlobalAddr(store.getAddr()) != null) hasMemoryWrite = true;
+                    Value val = GlobalVarLocalize.isGlobalAddr(store.getAddr());
+                    if (val != null) {
+                        funcInfo.usedGlobalVariables.add((GlobalVariable) val);
+                        hasMemoryWrite = true;
+                    }
                     else if (isSideEffect(store.getAddr(), function)) hasSideEffect = true;
                 }
                 else if (inst instanceof Instruction.Call call) {
                     Function callee = call.getDestFunction();
                     if (Objects.equals(callee.getName(), function.getName())) {
-                        isRecurse = true;
+                        isRecursive = true;
                     }
                 }
                 else if (inst instanceof Instruction.Alloc) {
                     hasMemoryAlloc = true;
                 }
-                if (hasMemoryRead && hasMemoryWrite && isRecurse && hasSideEffect && hasMemoryAlloc) break;
+                if (hasMemoryRead && hasMemoryWrite && isRecursive && hasSideEffect && hasMemoryAlloc) break;
             }
         }
-        FuncInfo.hasMemoryRead.put(function, hasMemoryRead);
-        FuncInfo.hasMemoryWrite.put(function, hasMemoryWrite);
-        FuncInfo.hasMemoryAlloc.put(function, hasMemoryAlloc);
-        FuncInfo.hasReturn.put(function, hasReturn);
-        FuncInfo.isRecurse.put(function, isRecurse);
-        FuncInfo.hasSideEffect.put(function, hasSideEffect);
+        funcInfo.hasMemoryRead = hasMemoryRead;
+        funcInfo.hasMemoryWrite = hasMemoryWrite;
+        funcInfo.hasMemoryAlloc = hasMemoryAlloc;
+        funcInfo.hasReturn = hasReturn;
+        funcInfo.isRecursive = isRecursive;
+        funcInfo.hasSideEffect = hasSideEffect;
     }
 
     /**
@@ -134,7 +151,7 @@ public class FuncAnalysis {
      * @return
      */
     public static boolean isSideEffect(Value addr, Function function) {
-        if (addr instanceof Instruction.GetElementPtr gep) {
+        while (addr instanceof Instruction.GetElementPtr gep) {
             addr = gep.getBase();
         }
         if (addr instanceof Function.Argument) return true;
@@ -149,31 +166,43 @@ public class FuncAnalysis {
      * 属性传播
      */
     public static void TransAttribute() {
-        ArrayList<Function> funcTopoSort = FuncInfo.getFuncTopoSort();
+        ArrayList<Function> funcTopoSort = getFuncTopoSort();
         for (Function func : funcTopoSort) {
 //            System.out.println(func.getName());
-            boolean hasMemoryRead = FuncInfo.hasMemoryRead.get(func);
-            boolean hasMemoryWrite = FuncInfo.hasMemoryWrite.get(func);
-            boolean hasMemoryAlloc = FuncInfo.hasMemoryAlloc.get(func);
-            boolean hasReadIn = FuncInfo.hasReadIn.get(func);
-            boolean hasPutOut = FuncInfo.hasPutOut.get(func);
-            boolean hasSideEffect = FuncInfo.hasSideEffect.get(func);
-            for (Function callee : FuncInfo.callGraph.get(func)) {
-                hasMemoryRead |= FuncInfo.hasMemoryRead.get(callee);
-                hasMemoryWrite |= FuncInfo.hasMemoryWrite.get(callee);
-                hasMemoryAlloc |= FuncInfo.hasMemoryAlloc.get(callee);
-                hasReadIn |= FuncInfo.hasReadIn.get(callee);
-                hasPutOut |= FuncInfo.hasPutOut.get(callee);
-                hasSideEffect |= FuncInfo.hasSideEffect.get(callee);
+            FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
+            for (Function callee : callGraph.get(func)) {
+                FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
+                funcInfo.hasMemoryRead |= calleeInfo.hasMemoryRead;
+                funcInfo.hasMemoryWrite |= calleeInfo.hasMemoryWrite;
+                funcInfo.hasMemoryAlloc |= calleeInfo.hasMemoryAlloc;
+                funcInfo.hasReadIn |= calleeInfo.hasReadIn;
+                funcInfo.hasPutOut |= calleeInfo.hasPutOut;
+                funcInfo.hasSideEffect |= calleeInfo.hasSideEffect;
             }
-            FuncInfo.hasMemoryRead.put(func, hasMemoryRead);
-            FuncInfo.hasMemoryWrite.put(func, hasMemoryWrite);
-            FuncInfo.hasMemoryAlloc.put(func, hasMemoryAlloc);
-            FuncInfo.hasReadIn.put(func, hasReadIn);
-            FuncInfo.hasPutOut.put(func, hasPutOut);
-            FuncInfo.hasSideEffect.put(func, hasSideEffect);
-            FuncInfo.isStateless.put(func, (!hasMemoryRead) && (!hasMemoryWrite) && (!hasSideEffect));
+            funcInfo.isStateless = (!funcInfo.hasMemoryWrite) && (!funcInfo.hasSideEffect);
         }
 //        System.out.println("Function Analysis Done");
+    }
+
+    public static ArrayList<Function> getFuncTopoSort() {
+        if (!topoSortFlag) {
+            // 拓扑排序
+            HashSet<Function> vis = new HashSet<>();
+            dfs(main, vis, funcTopoSort);
+            topoSortFlag = true;
+        }
+        return funcTopoSort;
+    }
+
+    private static void dfs(Function func, HashSet<Function> vis, ArrayList<Function> res) {
+        vis.add(func);
+        if (callGraph.containsKey(func)) {
+            for (Function callee : callGraph.get(func)) {
+                if (!vis.contains(callee)) {
+                    dfs(callee, vis, res);
+                }
+            }
+        }
+        res.add(func);
     }
 }

@@ -33,38 +33,30 @@ public class LoopSimplifyForm {
         }
     }
 
-    public static boolean runOnFunc(Function function) {
-        boolean modified = false;
+    public static void runOnFunc(Function function) {
         for (Loop loop : function.loopInfo.TopLevelLoops)
-            modified |= runOnLoop(loop);
-        if (modified) {
-            AnalysisManager.dirtyCFG(function);
-            AnalysisManager.dirtyDG(function);
-        }
-        return modified;
+            runOnLoop(loop);
     }
 
-    private static boolean runOnLoop(Loop loop) {
-        boolean modified = false;
+    private static void runOnLoop(Loop loop) {
         for (Loop child : loop.children) {
             runOnLoop(child);
         }
-        modified |= simplifyPreHeader(loop);
-        modified |= simplifyLatch(loop);
-        modified |= CanonicalizeExits(loop);
-        return modified;
+        simplifyPreHeader(loop);
+        simplifyLatch(loop);
+        CanonicalizeExits(loop);
     }
 
-    private static boolean simplifyPreHeader(Loop loop) {
+    private static void simplifyPreHeader(Loop loop) {
         if (loop.enterings.size() <= 1) {
             if (loop.enterings.size() == 1) loop.preHeader = loop.enterings.iterator().next();
             else {
                 Function parentFunction = loop.header.getParentFunction();
                 loop.preHeader = new BasicBlock(getNewLabel(parentFunction, "preHeader"), parentFunction);
                 new Instruction.Jump(loop.preHeader, loop.header);
-                return true;
+                return;
             }
-            return false;
+            return;
         }
 
         // TODO: 可能需要修改 新建块的loop归属
@@ -85,12 +77,11 @@ public class LoopSimplifyForm {
             phi.addOptionalValue(newPreHeader, val);
         }
         new Instruction.Jump(newPreHeader, loop.header);
-        return true;
     }
 
-    private static boolean simplifyLatch(Loop loop) {
+    private static void simplifyLatch(Loop loop) {
         if (loop.latchs.size() <= 1)
-            return false;
+            return;
         Function parentFunction = loop.header.getParentFunction();
         BasicBlock newLatch = new BasicBlock(getNewLabel(parentFunction, "latch"), parentFunction);
         // 更新所有 latch 的后继 跳转指令
@@ -113,11 +104,9 @@ public class LoopSimplifyForm {
         loop.latchs.clear();
         loop.latchs.add(newLatch);
         loop.nowLevelBB.add(newLatch);
-        return true;
     }
 
-    private static boolean CanonicalizeExits(Loop loop) {
-        boolean modified = false;
+    private static void CanonicalizeExits(Loop loop) {
         HashSet<BasicBlock> newExits = new HashSet<>();
         Function parentFunction = loop.header.getParentFunction();
         for (BasicBlock exit : loop.exits) {
@@ -141,14 +130,12 @@ public class LoopSimplifyForm {
                 newExits.add(newExit);
                 Loop loop1 = exit.loop;
                 if (loop1 != null) loop1.nowLevelBB.add(newExit);
-                modified = true;
             }
             else {
                 newExits.add(exit);
             }
         }
         loop.exits = newExits;
-        return modified;
     }
 
     /**

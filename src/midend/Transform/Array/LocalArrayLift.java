@@ -77,9 +77,11 @@ public class LocalArrayLift {
                 if (idx instanceof Constant && val instanceof Constant) stores.add(useInst);
                 else return;
             }
-            else if (useInst instanceof Instruction.Call) {
-                if (((Instruction.Call) useInst).getDestFunction().getName().equals("memset")) stores.add(useInst);
-                else if (FuncInfo.hasSideEffect.get(((Instruction.Call) useInst).getDestFunction())) return;
+            else if (useInst instanceof Instruction.Call call) {
+                Function callee = call.getDestFunction();
+                FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
+                if (callee.getName().equals("memset")) stores.add(useInst);
+                else if (calleeInfo.hasSideEffect) return;
             }
             else if (useInst instanceof Instruction.GetElementPtr || useInst instanceof Instruction.BitCast)
                 use.addAll(useInst.getUsers());
@@ -187,11 +189,12 @@ public class LocalArrayLift {
         //对于每一个要提升的数组，生成全局变量
         for (Instruction.Alloc alloc : arrayInitMap.keySet()) {
             Type.ArrayType arrayType = (Type.ArrayType) ((Type.PointerType) alloc.getType()).getInnerType();
-            Constant.ConstantArray constant = new Constant.ConstantArray(arrayType);
+            Constant constant = new Constant.ConstantArray(arrayType);
             HashMap<Integer, Constant> idxMap = arrayInitMap.get(alloc);
             for (int idx : idxMap.keySet()) {
-                constant.setIdxEle(idx, idxMap.get(idx));
+                ((Constant.ConstantArray) constant).setIdxEle(idx, idxMap.get(idx));
             }
+            if (constant.isZero()) constant = new Constant.ConstantZeroInitializer(arrayType);
             GlobalVariable gv = new GlobalVariable(constant, "_lift_array_" + count++);
 //            System.out.println(gv.label);
             module.addGlobalValue(gv);
