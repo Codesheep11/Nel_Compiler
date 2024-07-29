@@ -222,8 +222,7 @@ public class Scheduler {
         if (instruction instanceof Instruction.Call call) {
             Function callee = call.getDestFunction();
             FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
-            if (calleeInfo.hasSideEffect || calleeInfo.hasMemoryWrite
-                    || !calleeInfo.isStateless || calleeInfo.hasPutOut || calleeInfo.hasReadIn)
+            if (!calleeInfo.isStateless || calleeInfo.hasPutOut || calleeInfo.hasReadIn)
                 return true;
         }
         return false;

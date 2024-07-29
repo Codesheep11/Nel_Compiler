@@ -105,7 +105,7 @@ public class FuncAnalysis {
         boolean hasMemoryAlloc = false;
         boolean isRecursive = false;
         boolean hasSideEffect = false;
-        boolean isStateless = false;
+        boolean isStateless = true;
         for (BasicBlock bb : function.getBlocks()) {
             for (Instruction inst : bb.getInstructions()) {
                 if (inst instanceof Instruction.Load load) {
