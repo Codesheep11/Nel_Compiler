@@ -2,7 +2,6 @@ package manager;
 
 import backend.Opt.*;
 import backend.allocater.Allocater;
-import backend.operand.Reg;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
 import frontend.exception.SemanticError;
@@ -23,7 +22,6 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.AfterRA;
@@ -70,9 +68,10 @@ public class Manager {
         DeadCodeEliminate();
         FuncPasses();
         GlobalVarLocalize.run(module);
-        GlobalValueNumbering.run(module);
-        DeadCodeEliminate();
+//        GlobalValueNumbering.run(module);
+        DeadCodeEliminate.run(module);
         LoopBuildAndNormalize();
+        GVN.run(module);
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
         DeadCodeEliminate();
@@ -85,6 +84,8 @@ public class Manager {
         Reassociate.run(module);
         Branch2MinMax.run(module);
         GlobalValueNumbering.run(module);
+        GVN.run(module);
+        GlobalCodeMotion.run(module);
         AnalysisManager.runI32Range(module);
         RangeFolding.run(module);
         DeadCodeEliminate();
@@ -129,7 +130,9 @@ public class Manager {
     private void DeadCodeEliminate() {
         DeadLoopEliminate.run(module);
         SimplifyCFGPass.run(module);
-        GlobalValueNumbering.run(module);
+//        GlobalValueNumbering.run(module);
+        GVN.run(module);
+        GlobalCodeMotion.run(module);
         SimplifyCFGPass.run(module);
         ArithReduce.run(module);
         DeadRetEliminate.run(module);

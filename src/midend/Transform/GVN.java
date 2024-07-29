@@ -15,18 +15,18 @@ import java.util.Iterator;
  *
  * @author Srchycz
  */
-public class GlobalValueNumbering {
+public class GVN {
 
 
-    private GlobalValueNumbering() {
+    private GVN() {
 
     }
 
     public static void run(Module module) {
-        if (!CentralControl._GVN_OPEN) return;
-        if (!CentralControl._GCM_OPEN) {
-            System.out.println("Warning: GVN 依赖于 GCM，请打开 GCM!");
-        }
+//        if (!CentralControl._GVN_OPEN) return;
+//        if (!CentralControl._GCM_OPEN) {
+//            System.out.println("Warning: GVN 依赖于 GCM，请打开 GCM!");
+//        }
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
             runOnFunc(func);
@@ -65,7 +65,7 @@ public class GlobalValueNumbering {
         }
         delList.forEach(Value::delete);
         for (BasicBlock child : block.getDomTreeChildren()) {
-            GVN4Block(child, new HashSet<>(records), new HashMap<>(recordInstructions));
+            GVN4Block(child, records, recordInstructions);
         }
     }
 
