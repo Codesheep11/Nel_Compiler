@@ -38,6 +38,9 @@ public class Instruction extends User {
         FDIV,
         REM,
         FREM,
+        // extend
+        MIN,
+        MAX,
         // bitwise operation
         SHL,
         LSHR,
@@ -1244,6 +1247,45 @@ public class Instruction extends User {
             return new Xor(block, resType, operand_1, operand_2);
         }
 
+    }
+
+
+    public static class Min extends BinaryOperation {
+
+        public Min(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.MIN, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call i32 @llvm.smin.%s(%s %s, %s %s)", getDescriptor(), resType.toString(),
+                    operand_1.getType(), operand_1.getDescriptor(),
+                    operand_2.getType(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public Min cloneToBB(BasicBlock block) {
+            return new Min(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class Max extends BinaryOperation {
+
+        public Max(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.MAX, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call i32 @llvm.smax.%s(%s %s, %s %s)", getDescriptor(), resType.toString(),
+                    operand_1.getType(), operand_1.getDescriptor(),
+                    operand_2.getType(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public Max cloneToBB(BasicBlock block) {
+            return new Max(block, resType, operand_1, operand_2);
+        }
     }
 
     public static class PhiCopy extends Instruction {

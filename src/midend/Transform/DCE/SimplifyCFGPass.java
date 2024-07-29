@@ -11,31 +11,33 @@ import java.util.*;
  * 如果一个基本块只有一个前驱，并且该前驱只有一个后继，则将该基本块合并到其前驱中。 1
  * 对于只有一个前驱的基本块，删除其PHI节点。1
  * 删除仅包含无条件分支的基本块。
- *
  */
 public class SimplifyCFGPass extends FunctionPass {
 
-    public static void run(Module module) {
+    public static boolean run(Module module) {
+        boolean modified = false;
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            runOnFunc(function);
+            modified |= runOnFunc(function);
         }
+        return modified;
     }
 
 
-    public static void runOnFunc(Function function) {
-        Br2Jump(function);
+    public static boolean runOnFunc(Function function) {
+        boolean modified = false;
+        modified |= Br2Jump(function);
         RemoveBlocks.runOnFunc(function);
         function.buildDominanceGraph();
-        MergeBlocks(function);
+        modified |= MergeBlocks(function);
         RemoveBlocks.runOnFunc(function);
-        ChangeTarget(function);
+        modified |= ChangeTarget(function);
         RemoveBlocks.runOnFunc(function);
-
+        return modified;
 //        Print.outputLLVM(function, "debug2.txt");
     }
 
-    private static void MergeBlocks(Function function) {
+    private static boolean MergeBlocks(Function function) {
         HashMap<BasicBlock, ArrayList<BasicBlock>> mergeMap = new HashMap<>();
         HashSet<BasicBlock> mergeBlocks = new HashSet<>();
         ArrayList<BasicBlock> domSort = function.getDomTreeLayerSort();
@@ -88,9 +90,11 @@ public class SimplifyCFGPass extends FunctionPass {
                 else block.getLastInst().delete();
             }
         }
+        return !mergeMap.isEmpty();
     }
 
-    private static void Br2Jump(Function function) {
+    private static boolean Br2Jump(Function function) {
+        boolean modified = false;
         for (BasicBlock block : function.getBlocks()) {
             Instruction.Terminator term = (Instruction.Terminator) block.getLastInst();
             if (term instanceof Instruction.Branch) {
@@ -98,28 +102,31 @@ public class SimplifyCFGPass extends FunctionPass {
                 if (br.getElseBlock().equals(br.getThenBlock())) {
                     new Instruction.Jump(block, br.getElseBlock());
                     br.delete();
-                    return;
+                    modified = true;
                 }
                 if (br.getCond() instanceof Constant.ConstantBool) {
                     if (((Constant.ConstantBool) br.getCond()).isZero()) {
                         new Instruction.Jump(block, br.getElseBlock());
                         br.delete();
+                        modified = true;
                     }
                     else {
                         new Instruction.Jump(block, br.getThenBlock());
                         br.delete();
+                        modified = true;
                     }
                 }
             }
         }
+        return modified;
     }
 
-    private static void ChangeTarget(Function function) {
+    private static boolean ChangeTarget(Function function) {
         ArrayList<BasicBlock> onlyJumpBlocks = new ArrayList<>();
         for (BasicBlock block : function.getBlocks()) {
             if (block.getFirstInst() instanceof Instruction.Jump) {
                 BasicBlock suc = block.getSucBlocks().get(0);
-                if (!(suc.getFirstInst() instanceof Instruction.Phi)) {
+                if (!(suc.getFirstInst() instanceof Instruction.Phi) && block.getPreBlocks().size() != 0) {
                     onlyJumpBlocks.add(block);
                 }
             }
@@ -141,6 +148,7 @@ public class SimplifyCFGPass extends FunctionPass {
                 }
             }
         }
+        return !onlyJumpBlocks.isEmpty();
     }
 
 
