@@ -68,6 +68,7 @@ public class Manager {
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
+        ConstEliminate();
         FuncPasses();
         GlobalVarLocalize.run(module);
         GlobalValueNumbering.run(module);
@@ -83,6 +84,7 @@ public class Manager {
         DeadCodeEliminate();
         ArrayPasses();
         Reassociate.run(module);
+        ConstEliminate();
         Branch2MinMax.run(module);
         GlobalValueNumbering.run(module);
         AnalysisManager.runI32Range(module);
@@ -137,6 +139,25 @@ public class Manager {
         SimplifyCFGPass.run(module);
     }
 
+    private void ConstEliminate() {
+        for (Function func : module.getFuncSet()) {
+            if (func.isExternal()) continue;
+            boolean modified;
+            do {
+                modified = false;
+                modified |= ConstantFolding.runOnFunc(func);
+//                System.out.println("ConstFoling "+modified);
+                modified |= SimplifyCFGPass.runOnFunc(func);
+//                System.out.println("SimplifyCFGPass "+modified);
+                AnalysisManager.refreshI32Range(func);
+                modified |= RangeFolding.runOnFunc(func);
+//                System.out.println("RangeFolding "+modified);
+//                System.out.println();
+            } while (modified);
+        }
+        DeadCodeEliminate.run(module);
+    }
+
     private void FuncPasses() {
         FuncAnalysis.run(module);
         TailCall2Loop.run(module);
@@ -186,7 +207,8 @@ public class Manager {
         for (GlobalVariable gv : globalVariables) {
             outputList.add(gv.toString());
         }
-
+        outputList.add("declare i32 @llvm.smax.i32(i32, i32)\n" +
+                "declare i32 @llvm.smin.i32(i32, i32)");
         //函数声明
         for (Map.Entry<String, Function> functionEntry : functions.entrySet()) {
             if (functionEntry.getValue().isExternal()) {
@@ -233,8 +255,6 @@ public class Manager {
         LoopInfo.run(module);
         LCSSA.remove(module);
         ArrayPasses();
-        DeadCodeEliminate();
-        Branch2MinMax.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
         FuncAnalysis.run(module);
