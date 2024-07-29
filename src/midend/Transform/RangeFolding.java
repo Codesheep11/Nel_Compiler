@@ -9,20 +9,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class RangeFolding {
-    public static void run(Module module) {
+    public static boolean run(Module module) {
+        boolean modified = false;
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            runOnFunc(function);
+            modified |= runOnFunc(function);
         }
+        return modified;
     }
 
-    public static void runOnFunc(Function function) {
+    public static boolean runOnFunc(Function function) {
+        boolean modified = false;
         for (BasicBlock basicBlock : function.getBlocks()) {
-            runOnBlock(basicBlock);
+            modified |= runOnBlock(basicBlock);
         }
+        return modified;
     }
 
-    public static void runOnBlock(BasicBlock basicBlock) {
+    public static boolean runOnBlock(BasicBlock basicBlock) {
         ArrayList<Instruction> delList = new ArrayList<>();
         for (Instruction instr : basicBlock.getInstructionsSnap()) {
             HashMap<Value, Constant> operand2Const = new HashMap<>();
@@ -116,5 +120,6 @@ public class RangeFolding {
             }
         }
         delList.forEach(Value::delete);
+        return !delList.isEmpty();
     }
 }
