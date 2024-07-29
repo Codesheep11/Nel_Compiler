@@ -196,18 +196,18 @@ public class CodeGen {
      * 参数有3种,指针,int32，float
      */
     private void solveCall(Instruction.Call callInstr) {
-        String min = "llvm.smin.i32";
-        String max = "llvm.smax.i32";
+//        String min = "llvm.smin.i32";
+//        String max = "llvm.smax.i32";
         // 开局拦截min和max
         String funcName = callInstr.getDestFunction().getName();
-        if (funcName.equals(min) || funcName.equals(max)) {
-            R3.R3Type type = funcName.equals(max) ? R3.R3Type.max : R3.R3Type.min;
-            Reg r1 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(0));
-            Reg r2 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(1));
-            Reg ans = VirRegMap.VRM.ensureRegForValue(callInstr);
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, r1, r2, type));
-            return;
-        }
+//        if (funcName.equals(min) || funcName.equals(max)) {
+//            R3.R3Type type = funcName.equals(max) ? R3.R3Type.max : R3.R3Type.min;
+//            Reg r1 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(0));
+//            Reg r2 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(1));
+//            Reg ans = VirRegMap.VRM.ensureRegForValue(callInstr);
+//            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, r1, r2, type));
+//            return;
+//        }
         J call = new J(nowBlock, J.JType.call, funcName);
         Type type = callInstr.getType();
         Reg reg = null;
@@ -938,6 +938,24 @@ public class CodeGen {
         }
     }
 
+    private void solveMin(Instruction.Min min) {
+        Value value1 = min.getOperand_1();
+        Value value2 = min.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(min);
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(value1);
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(value2);
+        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.min));
+    }
+
+    private void solveMax(Instruction.Max max) {
+        Value value1 = max.getOperand_1();
+        Value value2 = max.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(max);
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(value1);
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(value2);
+        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.max));
+    }
+
     private void visitBlock(BasicBlock block) {
         nowBlock = blockMap.get(block);
         for (Instruction instruction : block.getInstructions()) {
@@ -1004,7 +1022,14 @@ public class CodeGen {
                 solveOr((Instruction.Or) instruction);
             } else if (instruction instanceof Instruction.Xor) {
                 solveXor((Instruction.Xor) instruction);
-            } else {
+            }
+            else if (instruction instanceof Instruction.Min) {
+                solveMin((Instruction.Min) instruction);
+            }
+            else if (instruction instanceof Instruction.Max) {
+                solveMax((Instruction.Max) instruction);
+            }
+            else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
             }
         }
