@@ -23,9 +23,6 @@ public class IndVars {
         for (Loop loop : func.loopInfo.TopLevelLoops) {
             run(loop, scevInfo);
         }
-        for (Loop loop : func.loopInfo.TopLevelLoops) {
-            brPredction(loop);
-        }
     }
 
     // TODO: 判断tripCount的方式太朴素了 考虑优化
@@ -130,22 +127,4 @@ public class IndVars {
         throw new RuntimeException("getNext: no next value");
     }
 
-    private static void brPredction(Loop loop) {
-        for (Loop child : loop.children) {
-            brPredction(child);
-        }
-        double pro = 0.0;
-        for (BasicBlock exiting : loop.exitings) {
-            Instruction.Terminator terminator = exiting.getTerminator();
-            if (!(terminator instanceof Instruction.Branch branch)) continue;
-            if (loop.exits.contains(branch.getThenBlock())) branch.setProbability(pro);
-            else branch.setProbability(1 - pro);
-        }
-        for (BasicBlock entering : loop.enterings) {
-            Instruction.Terminator terminator = entering.getTerminator();
-            if (!(terminator instanceof Instruction.Branch branch)) continue;
-            if (branch.getThenBlock().equals(loop.preHeader)) branch.setProbability(1 - pro);
-            else branch.setProbability(pro);
-        }
-    }
 }
