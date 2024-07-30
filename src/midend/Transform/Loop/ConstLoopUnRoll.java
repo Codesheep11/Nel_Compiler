@@ -14,7 +14,7 @@ import java.util.Map;
 
 
 public class ConstLoopUnRoll {
-    private static final int MAXIMUM_LINE = 5000;
+    private static final int MAXIMUM_LINE = 10000;
 
     private static SCEVinfo scevInfo;
 
@@ -50,10 +50,10 @@ public class ConstLoopUnRoll {
         for (Loop child : loop.getChildrenSnap()) {
             modified |= tryUnrollLoop(child);
         }
-        // TODO: 或许可以优化展开后循环内的跳转
 //        if (!loop.children.isEmpty()) return false;
         if (loop.tripCount <= 0) return modified;
         if (loop.exits.size() > 1) return modified;
+        // 退出条件复杂
         ArrayList<BasicBlock> _pre = loop.getExit().getPreBlocks();
         if (_pre.size() > 1 || _pre.get(0) != loop.header) return modified;
         int loopSize = loop.getSize();
@@ -130,7 +130,7 @@ public class ConstLoopUnRoll {
                 reflectPhi.delete();
             }
         }
-        // 优化跳转 TODO:
+        // 优化跳转
         for (int i = 0; i < loop.tripCount; i++) {
             LoopCloneInfo now = infos.get(i);
             BasicBlock header = now.cpy.header;
