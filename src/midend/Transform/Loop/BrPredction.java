@@ -1,7 +1,7 @@
 package midend.Transform.Loop;
 
-import mir.*;
 import mir.Module;
+import mir.*;
 
 public class BrPredction {
     public static void run(Module module) {
@@ -27,12 +27,14 @@ public class BrPredction {
             if (!(terminator instanceof Instruction.Branch branch)) continue;
             if (loop.exits.contains(branch.getThenBlock())) branch.setProbability(pro);
             else branch.setProbability(1 - pro);
+//            System.out.println(exiting.getLabel() + " " + branch + " " + branch.getProbability());
         }
         for (BasicBlock entering : loop.enterings) {
             Instruction.Terminator terminator = entering.getTerminator();
             if (!(terminator instanceof Instruction.Branch branch)) continue;
-            if (branch.getThenBlock().equals(loop.preHeader)) branch.setProbability(1 - pro);
+            if (branch.getThenBlock().equals(loop.header)) branch.setProbability(1 - pro);
             else branch.setProbability(pro);
+//            System.out.println(entering.getLabel() + " " + branch + " " + branch.getProbability());
         }
     }
 }

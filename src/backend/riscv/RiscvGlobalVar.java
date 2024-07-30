@@ -63,4 +63,12 @@ public class RiscvGlobalVar extends Operand {
         }
         throw new RuntimeException("wrong global type:" + mirType);
     }
+
+    public String getContent() {
+        throw new RuntimeException("not specific");
+    }
+
+    public int size() {
+        throw new RuntimeException("no specific");
+    }
 }
