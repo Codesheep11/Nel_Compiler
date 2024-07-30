@@ -779,6 +779,17 @@ public class Instruction extends User {
                 };
             }
 
+            public CondCode swap() {
+                return switch (this) {
+                    case EQ -> EQ;
+                    case NE -> NE;
+                    case SGT -> SLT;
+                    case SGE -> SLE;
+                    case SLT -> SGT;
+                    case SLE -> SGE;
+                };
+            }
+
             CondCode(final String str) {
                 this.str = str;
             }
@@ -825,7 +836,7 @@ public class Instruction extends User {
             Value _temp = src2;
             src2 = src1;
             src1 = _temp;
-            condCode = condCode.inverse();
+            condCode = condCode.swap();
         }
 
 
