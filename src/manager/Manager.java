@@ -69,8 +69,10 @@ public class Manager {
         FuncAnalysis.run(module);
         DeadCodeEliminate();
         ConstEliminate();
+        Branch2MinMax.run(module);
         FuncPasses();
         GlobalVarLocalize.run(module);
+        FuncAnalysis.run(module);
         GlobalValueNumbering.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
@@ -100,6 +102,8 @@ public class Manager {
             return;
         }
         RemovePhi.run(module);
+        LoopInfo.run(module);
+        BrPredction.run(module);
         CodeGen codeGen = new CodeGen();
         DivRemByConstant.isO1 = true;
         RiscvModule riscvmodule = codeGen.genCode(module);
