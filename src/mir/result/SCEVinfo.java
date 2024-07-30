@@ -24,6 +24,8 @@ public final class SCEVinfo {
     }
 
     public boolean contains(Value value) {
-        return map.containsKey(value);
+        if (!map.containsKey(value))
+            return false;
+        return map.get(value) != null;
     }
 }
