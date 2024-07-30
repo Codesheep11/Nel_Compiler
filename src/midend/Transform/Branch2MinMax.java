@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 public class Branch2MinMax {
 
-    private static ArrayList<BasicBlock> visited = new ArrayList<>();
+    private static final ArrayList<BasicBlock> visited = new ArrayList<>();
 
     public static void run(Module module) {
         for (Function func : module.getFuncSet()) {
@@ -111,7 +111,6 @@ public class Branch2MinMax {
                 }
                 default -> throw new RuntimeException("Unexpected condCode: " + condCode);
             }
-            System.out.println("br2MinMax");
             inst.remove();
             phi.replaceAllUsesWith(inst);
             endBlock.addInstAfterPhi(inst);
