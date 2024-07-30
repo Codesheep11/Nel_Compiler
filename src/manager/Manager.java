@@ -78,6 +78,7 @@ public class Manager {
         LoopUnSwitching.run(module);
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
+        LoopUnroll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
         ArrayPasses();

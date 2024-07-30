@@ -24,7 +24,7 @@ public class IndVars {
             run(loop, scevInfo);
         }
         for (Loop loop : func.loopInfo.TopLevelLoops) {
-            brPredction(loop);
+            brPrediction(loop);
         }
     }
 
@@ -130,9 +130,9 @@ public class IndVars {
         throw new RuntimeException("getNext: no next value");
     }
 
-    private static void brPredction(Loop loop) {
+    private static void brPrediction(Loop loop) {
         for (Loop child : loop.children) {
-            brPredction(child);
+            brPrediction(child);
         }
         double pro = 0.0;
         for (BasicBlock exiting : loop.exitings) {
