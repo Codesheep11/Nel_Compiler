@@ -59,7 +59,7 @@ public class RiscvArray extends RiscvGlobalVar {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(".align 4\n");
+        sb.append(".align 2\n");
         sb.append(name).append(":");
         int index = indexOfLastNotZero();
         for (int i = 0; i <= index; i++) {
@@ -77,5 +77,25 @@ public class RiscvArray extends RiscvGlobalVar {
     public boolean hasInit() {
         int index = indexOfLastNotZero();
         return index != -1;
+    }
+
+    @Override
+    public String getContent() {
+        StringBuilder sb = new StringBuilder();
+        int index = indexOfLastNotZero();
+        for (int i = 0; i <= index; i++) {
+            sb.append("\n\t" + ".word ");
+            sb.append(values.get(i));
+        }
+        if (index != size - 1) {
+            sb.append("\n\t.zero ");
+            sb.append(4 * (size - index - 1));
+        }
+        return sb.append("\n").toString();
+    }
+
+    @Override
+    public int size() {
+        return size;
     }
 }

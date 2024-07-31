@@ -55,7 +55,7 @@ public class CalculateOpt {
             }
         }
         for (var pair : needRemove) {
-            for (RiscvInstruction ri:pair.second){
+            for (RiscvInstruction ri : pair.second) {
                 block.riscvInstructions.insertBefore(ri, pair.first.first);
             }
             pair.first.first.remove();
@@ -181,7 +181,7 @@ public class CalculateOpt {
     }
 
     private static void PreRAConstValueReUse(RiscvBlock riscvBlock) {
-        final int range = 10;
+        final int range = 16;
         HashMap<Long, Pair<Reg, Integer>> map = new HashMap<>();
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
         for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
@@ -198,7 +198,7 @@ public class CalculateOpt {
                 if (map.containsKey(value)) {
                     Reg now = map.get(value).first;
                     Reg def = ((Li) instr).reg;
-                    now.mergeReg(def);
+                    if (!now.equals(def)) now.mergeReg(def);
                     map.get(value).second = range;// 刷新生存周期
                     continue;
                 } else {
@@ -225,7 +225,7 @@ public class CalculateOpt {
     }
 
     private static void PreRAConstPointerReUse(RiscvBlock riscvBlock) {
-        final int range = 10;
+        final int range = 16;
         HashMap<RiscvGlobalVar, Pair<Reg, Integer>> map = new HashMap<>();
         ArrayList<RiscvInstruction> newList = new ArrayList<>();
         for (int i = 0; i < riscvBlock.riscvInstructions.size(); i++) {
@@ -241,7 +241,7 @@ public class CalculateOpt {
                 if (map.containsKey((((La) instr).content))) {
                     Reg now = map.get(((La) instr).content).first;
                     Reg def = ((La) instr).reg;
-                    now.mergeReg(def);
+                    if (!now.equals(def)) now.mergeReg(def);
                     map.get(((La) instr).content).second = range;// 刷新生存周期
                     continue;
                 } else {
@@ -285,7 +285,7 @@ public class CalculateOpt {
         Iterator<RiscvInstruction> iterator = riscvBlock.riscvInstructions.iterator();
         while (iterator.hasNext()) {
             RiscvInstruction ri = iterator.next();
-            if (ri instanceof R2 r2 && r2.type == R2.R2Type.mv) {
+            if (ri instanceof R2 r2 && (r2.type == R2.R2Type.mv || r2.type == R2.R2Type.fmv)) {
                 if (r2.rd.equals(r2.rs)) {
                     iterator.remove();
                 }
