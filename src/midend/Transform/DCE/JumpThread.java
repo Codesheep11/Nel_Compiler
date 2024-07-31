@@ -30,6 +30,8 @@ public class JumpThread {
 
     private static ArrayList<BasicBlock> workList = new ArrayList<>();
 
+    private static final int LIMIT_BLOCK_SIZE = 1;
+
     public static void run(Module module) {
         AnalysisManager.runI32Range(module);
         for (Function function : module.getFuncSet()) {
@@ -56,6 +58,8 @@ public class JumpThread {
 //        System.out.println("JumpThread runOnBlock: " + block.getLabel());
         Instruction.Terminator term = block.getTerminator();
         if (!(term instanceof Instruction.Branch branch)) return;
+        //todo: 简单版本，只考虑存在跳转指令的情况
+        if (block.getInstructions().size() > LIMIT_BLOCK_SIZE) return;
         if (block.getPreBlocks().size() < 2) return;
         if (!(branch.getCond() instanceof Instruction.Icmp icmp)) return;
         ArrayList<BasicBlock> trueTargets = new ArrayList<>();
@@ -184,10 +188,11 @@ public class JumpThread {
             if (!workList.contains(falseBlock)) workList.add(falseBlock);
         }
         if (!trueTargets.isEmpty() || !falseTargets.isEmpty()) {
-//            System.out.println("JumpThread: succeed " + block.getLabel());
+            System.out.println("JumpThread: succeed " + block.getLabel());
 //            Print.output(parentFunc, "debug1.txt");
             DeadCodeEliminate.run(module);
             SimplifyCFGPass.runOnFunc(parentFunc);
+//            Print.output(parentFunc, "debug2.txt");
 //            Print.output(block.getParentFunction(), "debug.txt");
             AnalysisManager.refreshI32Range(parentFunc);
             irAnalyzer = AnalysisManager.getI32Range(parentFunc);
