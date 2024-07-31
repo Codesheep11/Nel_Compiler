@@ -7,6 +7,7 @@ import backend.riscv.RiscvInstruction.Li;
 import backend.riscv.RiscvInstruction.R2;
 import backend.riscv.RiscvInstruction.R3;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
+import manager.Manager;
 import utils.Pair;
 
 import java.util.ArrayList;
@@ -27,9 +28,10 @@ public class MulPlaner {
         steps.clear();
         block = CodeGen.nowBlock;
         MulOp mulOp = makePlan(mulr);
-        if (mulOp instanceof MulFinal || !DivRemByConstant.isO1 || !doMulOpt) {
-            steps.add(new Li(block, ans, new Imm(mulr)));
-            steps.add(new R3(block, ans, src, ans, R3.R3Type.mulw));
+        if (mulOp instanceof MulFinal || !Manager.isO1 || !doMulOpt) {
+            Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
+            steps.add(new Li(block, tmp, new Imm(mulr)));
+            steps.add(new R3(block, ans, src, tmp, R3.R3Type.mulw));
         } else if (mulOp instanceof VariableMulOp) {
             // 说明这个就是它本身,就是*1
             steps.add(new R2(block, ans, src, R2.R2Type.mv));

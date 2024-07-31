@@ -1,8 +1,9 @@
 package manager;
 
 import backend.Opt.*;
+import backend.Opt.BackLoop.LoopConstLift;
+import backend.Opt.GPpooling.GlobalFloat2roPool;
 import backend.allocater.Allocater;
-import backend.operand.Reg;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
 import frontend.exception.SemanticError;
@@ -23,12 +24,10 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.AfterRA;
 import mir.Ir2RiscV.CodeGen;
-import mir.Ir2RiscV.DivRemByConstant;
 import mir.Module;
 
 import java.io.*;
@@ -44,6 +43,8 @@ public class Manager {
     private final ArrayList<String> outputList = new ArrayList<>();
 
     public static boolean afterRegAssign = false;
+
+    public static boolean isO1 = false;
 
     public Manager(Arg arg) {
         Manager.arg = arg;
@@ -63,6 +64,7 @@ public class Manager {
     }
 
     private void O1() throws IOException {
+        isO1 = true;
         AnalysisManager.buildCFG(module);
         DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
@@ -105,15 +107,15 @@ public class Manager {
         LoopInfo.run(module);
         BrPredction.run(module);
         CodeGen codeGen = new CodeGen();
-        DivRemByConstant.isO1 = true;
         RiscvModule riscvmodule = codeGen.genCode(module);
+        GlobalFloat2roPool.run(riscvmodule);
+        LoopConstLift.run(riscvmodule);
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
-//        DeadCodeRemove.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
 //        ShortInstrConvert.run(riscvmodule);
@@ -220,8 +222,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

@@ -1,5 +1,6 @@
 package backend.riscv;
 
+import backend.Opt.BackLoop.RiscLoop;
 import backend.operand.Reg;
 import backend.riscv.RiscvInstruction.J;
 import mir.Function;
@@ -32,24 +33,22 @@ public class RiscvFunction {
 
     public HashSet<RiscvBlock> exits = new HashSet<>();
 
+    public final ArrayList<RiscLoop>loops=new ArrayList<>();
+
     public RiscvFunction(Function irFunction) {
         this.name = irFunction.getName();
         if (irFunction.isExternal()) {
             isExternal = true;
-        }
-        else {
+        } else {
             isExternal = false;
         }
         if (irFunction.getRetType().equals(VOID_TYPE)) {
             retTypeCode = 0;
-        }
-        else if (irFunction.getRetType().isInt32Ty()) {
+        } else if (irFunction.getRetType().isInt32Ty()) {
             retTypeCode = 1;
-        }
-        else if (irFunction.getRetType().isFloatTy()) {
+        } else if (irFunction.getRetType().isFloatTy()) {
             retTypeCode = -1;
-        }
-        else {
+        } else {
             throw new RuntimeException("wrong ret type");
         }
     }
@@ -90,8 +89,8 @@ public class RiscvFunction {
     public static String funcNameWrap(String str) {
         return switch (str) {
             case "memset", "getint", "putint", "getch",
-                 "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
-                 "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main" -> str;
+                    "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
+                    "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main" -> str;
             default -> "f_" + str;
         };
     }
