@@ -24,6 +24,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.AfterRA;
@@ -92,7 +93,6 @@ public class Manager {
         ConstEliminate();
         Branch2MinMax.run(module);
         GlobalValueNumbering.run(module);
-        AnalysisManager.runI32Range(module);
         RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
@@ -222,7 +222,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }
