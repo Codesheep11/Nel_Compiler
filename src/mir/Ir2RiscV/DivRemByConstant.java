@@ -6,6 +6,7 @@ import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvInstruction.Li;
 import backend.riscv.RiscvInstruction.R2;
 import backend.riscv.RiscvInstruction.R3;
+import manager.Manager;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.I32RangeAnalysis;
 import mir.BasicBlock;
@@ -15,9 +16,10 @@ import java.math.BigInteger;
 
 public class DivRemByConstant {
 
-    public static boolean isO1 = false;
 
     private static RiscvBlock block;
+
+    private static final boolean doOpt=true;
 
     /**
      * 计算log2(x) 向下取整
@@ -34,7 +36,7 @@ public class DivRemByConstant {
     }
 
     public static boolean Div(Reg reg, Reg me, int val, Value value, BasicBlock par) {
-        if (!isO1) return false;
+        if (!Manager.isO1||!doOpt) return false;
         I32RangeAnalysis.I32Range ir = AnalysisManager.getValueRange(value, par);
         block = CodeGen.nowBlock;
         if (ir.getMinValue() >= 0 && val >= 0) {
@@ -45,7 +47,7 @@ public class DivRemByConstant {
     }
 
     public static boolean Rem(Reg reg, Reg me, int val, Value value, BasicBlock par) {
-        if (!isO1) return false;
+        if (!Manager.isO1||!doOpt) return false;
         block = CodeGen.nowBlock;
         SignRem(reg, me, val, value, par);
         return true;
@@ -83,7 +85,7 @@ public class DivRemByConstant {
                 Reg op1 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op2 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op3 = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 block.riscvInstructions.addLast(new Li(block, tmp, new Imm(high)));
                 block.riscvInstructions.addLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
                 block.riscvInstructions.addLast(new R3(block, op2, op1, new Imm(32 + sh), R3.R3Type.srai));
@@ -102,7 +104,7 @@ public class DivRemByConstant {
                 Reg op3 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op4 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op5 = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 block.riscvInstructions.addLast(new Li(block, tmp, new Imm(high)));
                 block.riscvInstructions.addLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
                 block.riscvInstructions.addLast(new R3(block, op2, op1, new Imm(32), R3.R3Type.srai));
@@ -155,7 +157,7 @@ public class DivRemByConstant {
                 Reg op1 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op2 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op3 = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 block.riscvInstructions.addLast(new Li(block, tmp, new Imm(high)));
                 block.riscvInstructions.addLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
                 block.riscvInstructions.addLast(new R3(block, op2, op1, new Imm(32 + sh), R3.R3Type.srai));
@@ -174,7 +176,7 @@ public class DivRemByConstant {
                 Reg op3 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op4 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op5 = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 block.riscvInstructions.addLast(new Li(block, tmp, new Imm(high)));
                 block.riscvInstructions.addLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
                 block.riscvInstructions.addLast(new R3(block, op2, op1, new Imm(32), R3.R3Type.srai));
@@ -198,7 +200,7 @@ public class DivRemByConstant {
         if (ir.getMinValue() >= 0 && isPowerOf2(divisor)) {
             int mask = divisor - 1;
             if (mask >= 2047) {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 block.riscvInstructions.addLast(new Li(block, tmp, new Imm(mask)));
                 block.riscvInstructions.addLast(new R3(block, ans, src, tmp, R3.R3Type.and));
             } else {
@@ -208,7 +210,7 @@ public class DivRemByConstant {
             // 当作一个除法+乘法+减法优化
             // 问题:如果被除数是负数?也是负数即可
             // 如果除数是负数?
-            Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+            Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
             Reg store = Reg.getVirtualReg(Reg.RegType.GPR, 32);
             boolean ret = SignDiv(store, src, divisor);
             if (!ret) {// 如果失败,补偿一个divw
