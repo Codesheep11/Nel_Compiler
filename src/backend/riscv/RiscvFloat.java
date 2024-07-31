@@ -1,5 +1,8 @@
 package backend.riscv;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class RiscvFloat extends RiscvGlobalVar {
     // 浮点数,初值按照bits存储
     private final int floatBits;
@@ -47,5 +50,41 @@ public class RiscvFloat extends RiscvGlobalVar {
     @Override
     public boolean hasInit() {
         return true;// 浮点数必须是已经初始化的，否则不会存起来
+    }
+
+    @Override
+    public String getContent() {
+        StringBuilder sb = new StringBuilder();
+        if (floatBits == 0) {
+            sb.append("\t" + ".zero 4");
+        } else {
+            sb.append("\t.word ").append(floatBits);
+        }
+        return sb.append("\n").toString();
+    }
+
+    @Override
+    public int size() {
+        return 4;
+    }
+
+    public static void main(String[] args) {
+        ArrayList<Integer> integers = new ArrayList<>(Arrays.asList(
+                1083808154,
+                1066192077,
+                1089680179,
+                1070386381,
+                1088212173,
+                1008981770,
+                1015222895,
+                1033610723,
+                1032671199,
+                1090519040
+        ));
+        for (int i : integers) {
+            System.out.println(i + " " + Float.intBitsToFloat(i));
+        }
+
+
     }
 }

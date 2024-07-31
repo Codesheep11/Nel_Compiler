@@ -3,9 +3,11 @@
 out/
 
 *.txt
+*.ll
 
 compiler2024-nel.iml
 /src/META-INF/MANIFEST.MF
 *.jar
 *.bat
 qodana.yaml
+新优化契机.md
