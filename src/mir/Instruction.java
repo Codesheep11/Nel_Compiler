@@ -779,6 +779,17 @@ public class Instruction extends User {
                 };
             }
 
+            public CondCode swap() {
+                return switch (this) {
+                    case EQ -> EQ;
+                    case NE -> NE;
+                    case SGT -> SLT;
+                    case SGE -> SLE;
+                    case SLT -> SGT;
+                    case SLE -> SGE;
+                };
+            }
+
             CondCode(final String str) {
                 this.str = str;
             }
@@ -788,7 +799,7 @@ public class Instruction extends User {
             }
         }
 
-        private final CondCode condCode;
+        private CondCode condCode;
 
         public CondCode getCondCode() {
             return condCode;
@@ -819,6 +830,13 @@ public class Instruction extends User {
 
         public Value getSrc2() {
             return src2;
+        }
+
+        public void swap() {
+            Value _temp = src2;
+            src2 = src1;
+            src1 = _temp;
+            condCode = condCode.swap();
         }
 
 
