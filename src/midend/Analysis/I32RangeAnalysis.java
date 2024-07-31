@@ -1,5 +1,6 @@
 package midend.Analysis;
 
+import midend.Transform.RangeFolding;
 import mir.*;
 import mir.Module;
 import mir.result.DGinfo;
@@ -105,88 +106,93 @@ public class I32RangeAnalysis {
             Instruction.Terminator term = idom.getTerminator();
             if (term instanceof Instruction.Branch branch) {
                 Value cond = branch.getCond();
-                boolean thenBlock = branch.getThenBlock().equals(block);
-                boolean elseBlock = branch.getElseBlock().equals(block);
                 if (cond instanceof Instruction.Icmp icmp) {
-                    Value src1 = icmp.getSrc1();
-                    Value src2 = icmp.getSrc2();
-                    Instruction.Icmp.CondCode condCode = icmp.getCondCode();
-                    if (src1 instanceof Constant.ConstantInt c1) {
-                        I32Range vr = getOperandRange(src2, idom);
-                        int num = c1.getIntValue();
-                        int min = vr.minValue;
-                        int max = vr.maxValue;
-                        if (condCode == Instruction.Icmp.CondCode.EQ && thenBlock) {
-                            EntryMap.put(src2, I32Range.gerConstRange(num));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.NE && elseBlock) {
-                            EntryMap.put(src2, I32Range.gerConstRange(num));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SGT && thenBlock) {
-                            EntryMap.put(src2, new I32Range(min, num - 1));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SGE && thenBlock) {
-                            EntryMap.put(src2, new I32Range(min, num));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SLT && thenBlock) {
-                            EntryMap.put(src2, new I32Range(num + 1, max));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SLE && thenBlock) {
-                            EntryMap.put(src2, new I32Range(num, max));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SGT && elseBlock) {
-                            EntryMap.put(src2, new I32Range(num, max));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SGE && elseBlock) {
-                            EntryMap.put(src2, new I32Range(num + 1, max));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SLT && elseBlock) {
-                            EntryMap.put(src2, new I32Range(min, num));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SLE && elseBlock) {
-                            EntryMap.put(src2, new I32Range(min, num - 1));
-                        }
-                    }
-                    if (src2 instanceof Constant.ConstantInt c2) {
-                        I32Range vr = getOperandRange(src1, idom);
-                        int num = c2.getIntValue();
-                        int min = vr.minValue;
-                        int max = vr.maxValue;
-                        if (condCode == Instruction.Icmp.CondCode.EQ && thenBlock) {
-                            EntryMap.put(src1, I32Range.gerConstRange(num));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.NE && elseBlock) {
-                            EntryMap.put(src1, I32Range.gerConstRange(num));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SGT && thenBlock) {
-                            EntryMap.put(src1, new I32Range(num + 1, max));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SGE && thenBlock) {
-                            EntryMap.put(src1, new I32Range(num, max));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SLT && thenBlock) {
-                            EntryMap.put(src1, new I32Range(min, num - 1));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SLE && thenBlock) {
-                            EntryMap.put(src1, new I32Range(min, num));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SGT && elseBlock) {
-                            EntryMap.put(src1, new I32Range(min, num));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SGE && elseBlock) {
-                            EntryMap.put(src1, new I32Range(min, num - 1));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SLT && elseBlock) {
-                            EntryMap.put(src1, new I32Range(num + 1, max));
-                        }
-                        else if (condCode == Instruction.Icmp.CondCode.SLE && elseBlock) {
-                            EntryMap.put(src1, new I32Range(num, max));
-                        }
-                    }
+                    addRange2Map(branch, icmp, block, EntryMap);
                 }
             }
         }
 
+    }
+
+    private void addRange2Map(Instruction.Branch branch, Instruction.Icmp icmp, BasicBlock block, HashMap<Value, I32Range> EntryMap) {
+        Value src1 = icmp.getSrc1();
+        Value src2 = icmp.getSrc2();
+        boolean thenBlock = branch.getThenBlock().equals(block);
+        boolean elseBlock = branch.getElseBlock().equals(block);
+        BasicBlock branchBlock = branch.getParentBlock();
+        Instruction.Icmp.CondCode condCode = icmp.getCondCode();
+        if (src1 instanceof Constant.ConstantInt c1) {
+            I32Range vr = getOperandRange(src2, branchBlock);
+            int num = c1.getIntValue();
+            int min = vr.minValue;
+            int max = vr.maxValue;
+            if (condCode == Instruction.Icmp.CondCode.EQ && thenBlock) {
+                EntryMap.put(src2, I32Range.gerConstRange(num));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.NE && elseBlock) {
+                EntryMap.put(src2, I32Range.gerConstRange(num));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SGT && thenBlock) {
+                EntryMap.put(src2, new I32Range(min, num - 1));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SGE && thenBlock) {
+                EntryMap.put(src2, new I32Range(min, num));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SLT && thenBlock) {
+                EntryMap.put(src2, new I32Range(num + 1, max));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SLE && thenBlock) {
+                EntryMap.put(src2, new I32Range(num, max));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SGT && elseBlock) {
+                EntryMap.put(src2, new I32Range(num, max));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SGE && elseBlock) {
+                EntryMap.put(src2, new I32Range(num + 1, max));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SLT && elseBlock) {
+                EntryMap.put(src2, new I32Range(min, num));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SLE && elseBlock) {
+                EntryMap.put(src2, new I32Range(min, num - 1));
+            }
+        }
+        if (src2 instanceof Constant.ConstantInt c2) {
+            I32Range vr = getOperandRange(src1, branchBlock);
+            int num = c2.getIntValue();
+            int min = vr.minValue;
+            int max = vr.maxValue;
+            if (condCode == Instruction.Icmp.CondCode.EQ && thenBlock) {
+                EntryMap.put(src1, I32Range.gerConstRange(num));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.NE && elseBlock) {
+                EntryMap.put(src1, I32Range.gerConstRange(num));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SGT && thenBlock) {
+                EntryMap.put(src1, new I32Range(num + 1, max));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SGE && thenBlock) {
+                EntryMap.put(src1, new I32Range(num, max));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SLT && thenBlock) {
+                EntryMap.put(src1, new I32Range(min, num - 1));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SLE && thenBlock) {
+                EntryMap.put(src1, new I32Range(min, num));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SGT && elseBlock) {
+                EntryMap.put(src1, new I32Range(min, num));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SGE && elseBlock) {
+                EntryMap.put(src1, new I32Range(min, num - 1));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SLT && elseBlock) {
+                EntryMap.put(src1, new I32Range(num + 1, max));
+            }
+            else if (condCode == Instruction.Icmp.CondCode.SLE && elseBlock) {
+                EntryMap.put(src1, new I32Range(num, max));
+            }
+        }
     }
 
     private void Update(Function func) {
@@ -465,6 +471,49 @@ public class I32RangeAnalysis {
         if (value instanceof Function.Argument) return I32Range.Any();
         if (value instanceof Instruction inst) return getInstRange(inst);
         return null;
+    }
+
+    public Value icmpFold(Instruction.Icmp icmp, BasicBlock block) {
+        BasicBlock parentBlock = icmp.getParentBlock();
+        if (parentBlock.getPreBlocks().contains(block)) {
+            //暂存
+            HashMap<Instruction, I32Range> storeBufferMap = I32RangeBufferMap.get(parentBlock);
+            HashMap<Value, I32Range> storeEntryMap = BlockEntryRange.get(parentBlock);
+
+            HashMap<Instruction, I32Range> BufferTemp = new HashMap<>();
+            HashMap<Value, I32Range> EntryTemp = new HashMap<>();
+            I32RangeBufferMap.put(parentBlock, BufferTemp);
+            BlockEntryRange.put(parentBlock, EntryTemp);
+
+            for (Value v : BlockEntryRange.get(block).keySet()) {
+                if (!parentBlock.getInstructionsSnap().contains(v))
+                    EntryTemp.put(v, BlockEntryRange.get(block).get(v));
+            }
+            if (block.getTerminator() instanceof Instruction.Branch branch) {
+                Value cond = branch.getCond();
+                if (cond instanceof Instruction.Icmp icmp1) {
+                    addRange2Map(branch, icmp1, parentBlock, EntryTemp);
+                }
+            }
+            BlockEntryRange.put(parentBlock, EntryTemp);
+            for (Instruction.Phi phi : parentBlock.getPhiInstructions()) {
+                if (!phi.getType().isInt32Ty()) continue;
+                I32Range ir = getOperandRange(phi.getOptionalValue(block), block);
+                BufferTemp.put(phi, ir);
+            }
+            for (Instruction inst : parentBlock.getMainInstructions()) {
+                if (inst.getType().isInt32Ty()) {
+                    I32Range ir = calculateI32Range(inst);
+                    BufferTemp.put(inst, ir);
+                }
+            }
+            //尝试折叠icmp
+            Value v = RangeFolding.icmpSimplify(icmp);
+            I32RangeBufferMap.put(parentBlock, storeBufferMap);
+            BlockEntryRange.put(parentBlock, storeEntryMap);
+            return v;
+        }
+        return icmp;
     }
 
 }

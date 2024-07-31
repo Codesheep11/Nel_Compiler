@@ -54,60 +54,10 @@ public class RangeFolding {
                 }
             }
             if (instr instanceof Instruction.Icmp icmp) {
-                Instruction.Icmp.CondCode condCode = icmp.getCondCode();
-                I32RangeAnalysis.I32Range r1 = AnalysisManager.getValueRange(icmp.getSrc1(), basicBlock);
-                I32RangeAnalysis.I32Range r2 = AnalysisManager.getValueRange(icmp.getSrc2(), basicBlock);
-                if (condCode == Instruction.Icmp.CondCode.EQ) {
-                    if (r1.getMinValue() > r2.getMaxValue() || r1.getMaxValue() < r2.getMinValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(0));
-                    }
-                }
-                else if (condCode == Instruction.Icmp.CondCode.NE) {
-                    if (r1.getMinValue() > r2.getMaxValue() || r1.getMaxValue() < r2.getMinValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(1));
-                    }
-                }
-                else if (condCode == Instruction.Icmp.CondCode.SGE) {
-                    if (r1.getMinValue() >= r2.getMaxValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(1));
-                    }
-                    else if (r1.getMaxValue() < r2.getMinValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(0));
-                    }
-                }
-                else if (condCode == Instruction.Icmp.CondCode.SGT) {
-                    if (r1.getMinValue() > r2.getMaxValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(1));
-                    }
-                    else if (r1.getMaxValue() <= r2.getMinValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(0));
-                    }
-                }
-                else if (condCode == Instruction.Icmp.CondCode.SLE) {
-                    if (r1.getMaxValue() <= r2.getMinValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(1));
-                    }
-                    else if (r1.getMinValue() > r2.getMaxValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(0));
-                    }
-                }
-                else if (condCode == Instruction.Icmp.CondCode.SLT) {
-                    if (r1.getMaxValue() < r2.getMinValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(1));
-                    }
-                    else if (r1.getMinValue() >= r2.getMaxValue()) {
-                        delList.add(instr);
-                        instr.replaceAllUsesWith(Constant.ConstantBool.get(0));
-                    }
+                Value v = icmpSimplify(icmp);
+                if (v instanceof Constant) {
+                    delList.add(icmp);
+                    instr.replaceAllUsesWith(v);
                 }
             }
             else if (instr instanceof Instruction.Rem rem) {
@@ -121,5 +71,55 @@ public class RangeFolding {
         }
         delList.forEach(Value::delete);
         return !delList.isEmpty();
+    }
+
+    public static Value icmpSimplify(Instruction.Icmp icmp) {
+        BasicBlock basicBlock = icmp.getParentBlock();
+        Instruction.Icmp.CondCode condCode = icmp.getCondCode();
+        I32RangeAnalysis.I32Range r1 = AnalysisManager.getValueRange(icmp.getSrc1(), basicBlock);
+        I32RangeAnalysis.I32Range r2 = AnalysisManager.getValueRange(icmp.getSrc2(), basicBlock);
+        if (condCode == Instruction.Icmp.CondCode.EQ) {
+            if (r1.getMinValue() > r2.getMaxValue() || r1.getMaxValue() < r2.getMinValue()) {
+                return Constant.ConstantBool.get(0);
+            }
+        }
+        else if (condCode == Instruction.Icmp.CondCode.NE) {
+            if (r1.getMinValue() > r2.getMaxValue() || r1.getMaxValue() < r2.getMinValue()) {
+                return Constant.ConstantBool.get(1);
+            }
+        }
+        else if (condCode == Instruction.Icmp.CondCode.SGE) {
+            if (r1.getMinValue() >= r2.getMaxValue()) {
+                return Constant.ConstantBool.get(1);
+            }
+            else if (r1.getMaxValue() < r2.getMinValue()) {
+                return Constant.ConstantBool.get(0);
+            }
+        }
+        else if (condCode == Instruction.Icmp.CondCode.SGT) {
+            if (r1.getMinValue() > r2.getMaxValue()) {
+                return Constant.ConstantBool.get(1);
+            }
+            else if (r1.getMaxValue() <= r2.getMinValue()) {
+                return Constant.ConstantBool.get(0);
+            }
+        }
+        else if (condCode == Instruction.Icmp.CondCode.SLE) {
+            if (r1.getMaxValue() <= r2.getMinValue()) {
+                return Constant.ConstantBool.get(1);
+            }
+            else if (r1.getMinValue() > r2.getMaxValue()) {
+                return Constant.ConstantBool.get(0);
+            }
+        }
+        else if (condCode == Instruction.Icmp.CondCode.SLT) {
+            if (r1.getMaxValue() < r2.getMinValue()) {
+                return Constant.ConstantBool.get(1);
+            }
+            else if (r1.getMinValue() >= r2.getMaxValue()) {
+                return Constant.ConstantBool.get(0);
+            }
+        }
+        return icmp;
     }
 }
