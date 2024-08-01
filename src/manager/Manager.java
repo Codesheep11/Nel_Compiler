@@ -24,6 +24,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.AfterRA;
@@ -82,7 +83,8 @@ public class Manager {
         LoopUnSwitching.run(module);
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
-        LoopUnroll.run(module);
+
+//        LoopUnroll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
         ArrayPasses();
@@ -94,8 +96,12 @@ public class Manager {
         GlobalValueNumbering.run(module);
         RangeFolding.run(module);
         DeadCodeEliminate();
+        LoopBuildAndNormalize();
+//        IntegerSumToMul.run(module);
+        LoopBuildAndNormalize();
+        LoopUnroll.run(module);
         GlobalValueNumbering.run(module);
-        AggressivePass();
+//        AggressivePass();
         DeadCodeEliminate();
         FuncAnalysis.run(module);
         Scheduler.run(module);

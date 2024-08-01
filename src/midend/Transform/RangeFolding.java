@@ -64,11 +64,12 @@ public class RangeFolding {
             else if (instr instanceof Instruction.Rem rem) {
                 I32RangeAnalysis.I32Range r1 = AnalysisManager.getValueRange(rem.getOperand_1(), basicBlock);
                 I32RangeAnalysis.I32Range r2 = AnalysisManager.getValueRange(rem.getOperand_2(), basicBlock);
-                if (r1.getMinValue() > r2.getMinValue() && r1.getMaxValue() < r2.getMaxValue()) {
+                if (r1.getMinValue() > 0 && r1.getMaxValue() < r2.getMinValue()) {
                     delList.add(instr);
                     instr.replaceAllUsesWith(rem.getOperand_1());
                 }
             }
+            // TODO: 增加对 min max的支持
         }
         delList.forEach(Value::delete);
         return !delList.isEmpty();

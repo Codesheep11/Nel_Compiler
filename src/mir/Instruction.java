@@ -24,6 +24,8 @@ public class Instruction extends User {
         SItofp,
         FPtosi,
         Zext,
+        Sext,
+        TRUNC,
         Icmp,
         Fcmp,
         GEP,
@@ -117,6 +119,7 @@ public class Instruction extends User {
         return switch (instType) {
             case ALLOC, LOAD, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
             case SHL, AND, OR, XOR, ASHR, LSHR -> false; // 目前判断 gvn 位运算平均收益为负
+            case Sext, TRUNC, FMADD -> false;
             case CALL -> {
                 Function func = ((Call) this).getDestFunction();
                 FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
@@ -226,8 +229,7 @@ public class Instruction extends User {
             Value retValue = getRetValue();
             if (retValue != null) {
                 return String.format("ret %s %s", retValue.getType().toString(), retValue.getDescriptor());
-            }
-            else {
+            } else {
                 return "ret void";
             }
         }
@@ -309,8 +311,7 @@ public class Instruction extends User {
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());
-            }
-            else {
+            } else {
                 return String.format("%s = call %s @%s(%s)", getDescriptor(), destFunction.getRetType().toString(), destFunction.name, paramsToString());
             }
         }
@@ -372,8 +373,7 @@ public class Instruction extends User {
 
         private double probability = 0.5f;
 
-        public Branch(BasicBlock parentBlock, Value cond, BasicBlock thenBlock, BasicBlock elseBlock)
-        {
+        public Branch(BasicBlock parentBlock, Value cond, BasicBlock thenBlock, BasicBlock elseBlock) {
             super(parentBlock, Type.VoidType.VOID_TYPE, InstType.BRANCH);
             this.cond = cond;
             this.thenBlock = thenBlock;
@@ -615,7 +615,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class SItofp extends Instruction implements TypeCast {
+    public static class SItofp extends TypeCast {
         private Value src;
 
         public Value getSrc() {
@@ -649,7 +649,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class FPtosi extends Instruction implements TypeCast {
+    public static class FPtosi extends TypeCast {
         private Value src;
 
         public Value getSrc() {
@@ -683,11 +683,14 @@ public class Instruction extends User {
     }
 
 
-    public interface TypeCast {
+    public abstract static class TypeCast extends Instruction {
+        public TypeCast(BasicBlock parentBlock, Type type, InstType instType) {
+            super(parentBlock, type, instType);
+        }
     }
 
     //zero extend I1 to I32
-    public static class Zext extends Instruction implements TypeCast {
+    public static class Zext extends TypeCast {
         private Value src;
 
         public Zext(BasicBlock parentBlock, Value src) {
@@ -720,7 +723,76 @@ public class Instruction extends User {
         }
     }
 
-    public static class BitCast extends Instruction implements TypeCast {
+    //zero extend I32 to I64
+    public static class Sext extends TypeCast {
+        private Value src;
+
+        public Sext(BasicBlock parentBlock, Value src, Type targetType) {
+            super(parentBlock, targetType, InstType.Sext);
+            assert src.getType().isInt1Ty();
+            this.src = src;
+            addOperand(src);
+        }
+
+        public Value getSrc() {
+            return src;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = sext %s %s to %s", getDescriptor(), src.getType(), src.getDescriptor(), getType());
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (src.equals(value)) {
+                src = v;
+            }
+        }
+
+        @Override
+        public Sext cloneToBB(BasicBlock block) {
+            return new Sext(block, src, getType());
+        }
+    }
+
+    //trunc I64 to I32
+    public static class Trunc extends TypeCast {
+        private Value src;
+
+        public Trunc(BasicBlock parentBlock, Value src, Type targetType) {
+            super(parentBlock, targetType, InstType.TRUNC);
+            assert src.getType().isInt1Ty();
+            this.src = src;
+            addOperand(src);
+        }
+
+        public Value getSrc() {
+            return src;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = trunc %s %s to %s", getDescriptor(), src.getType(), src.getDescriptor(), getType());
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (src.equals(value)) {
+                src = v;
+            }
+        }
+
+        @Override
+        public Trunc cloneToBB(BasicBlock block) {
+            return new Trunc(block, src, getType());
+        }
+    }
+
+
+    public static class BitCast extends TypeCast {
         private Value src;
 
         public BitCast(BasicBlock parentBlock, Value src, Type targetType) {
@@ -1717,8 +1789,7 @@ public class Instruction extends User {
                 Value val = optionalValues.get(value);
                 optionalValues.remove(value);
                 optionalValues.put((BasicBlock) v, val);
-            }
-            else {
+            } else {
                 for (BasicBlock block : optionalValues.keySet()) {
                     if (optionalValues.get(block).equals(value)) {
                         optionalValues.put(block, v);
