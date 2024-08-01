@@ -420,6 +420,15 @@ public class Instruction extends User {
             return probability;
         }
 
+        /**
+         * 交换then else块，可能会产生语义的修改！
+         */
+        public void swap() {
+            BasicBlock _tmp = thenBlock;
+            thenBlock = elseBlock;
+            elseBlock = _tmp;
+        }
+
         @Override
         public String toString() {
             return String.format("br i1 %s, label %%%s, label %%%s", cond.getDescriptor(), thenBlock.getLabel(), elseBlock.getLabel());
@@ -843,12 +852,20 @@ public class Instruction extends User {
             condCode = condCode.swap();
         }
 
+        public void reverse() {
+            condCode = condCode.inverse();
+        }
+
 
         @Override
         public String toString() {
             return String.format("%s = icmp %s %s %s, %s", getDescriptor(), condCode.toString(), src1.getType().toString(), src1.getDescriptor(), src2.getDescriptor());
         }
 
+        /**
+         * @param value 被替换的值
+         * @param v     新值
+         */
         @Override
         public void replaceUseOfWith(Value value, Value v) {
             super.replaceUseOfWith(value, v);

@@ -327,6 +327,16 @@ public class I32RangeAnalysis {
                 }
                 result = new I32Range(minValue, maxValue);
             }
+            else if (inst instanceof Instruction.Max) {
+                int minValue = Math.max(r1.minValue, r2.minValue);
+                int maxValue = Math.max(r1.maxValue, r2.maxValue);
+                result = new I32Range(minValue, maxValue);
+            }
+            else if (inst instanceof Instruction.Min) {
+                int minValue = Math.min(r1.minValue, r2.minValue);
+                int maxValue = Math.min(r1.maxValue, r2.maxValue);
+                result = new I32Range(minValue, maxValue);
+            }
             else if (inst instanceof Instruction.Shl) {
                 int minValue;
                 try {
