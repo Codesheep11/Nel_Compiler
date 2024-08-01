@@ -115,6 +115,8 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
+        UnknownBaseLSOpt.run(riscvmodule);
+        RegAftCallLoadOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
