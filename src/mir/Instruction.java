@@ -39,6 +39,11 @@ public class Instruction extends User {
         REM,
         FREM,
         // extend
+        FMADD,
+        FMSUB,
+        FNEG,
+        FNMADD,
+        FNMSUB,
         MIN,
         MAX,
         // bitwise operation
@@ -48,7 +53,6 @@ public class Instruction extends User {
         AND,
         OR,
         XOR,
-        NEG,//fixme
         PHICOPY,
         MOVE
     }
@@ -1303,6 +1307,198 @@ public class Instruction extends User {
         @Override
         public Max cloneToBB(BasicBlock block) {
             return new Max(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class Fmadd extends BinaryOperation {
+
+        private Value operand_3;
+
+        public Fmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FMADD, operand_1, operand_2);
+            this.operand_3 = operand_3;
+            addOperand(operand_3);
+        }
+
+        public Value getOperand_3() {
+            return operand_3;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand_1.equals(value)) {
+                operand_1 = v;
+            }
+            if (operand_2.equals(value)) {
+                operand_2 = v;
+            }
+            if (operand_3.equals(value)) {
+                operand_3 = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @llvm.fmuladd.f32(float %s, float %s, float %s)", getDescriptor(),
+                    operand_1.getDescriptor(), operand_2.getDescriptor(), operand_3.getDescriptor());
+        }
+
+        @Override
+        public Fmadd cloneToBB(BasicBlock block) {
+            return new Fmadd(block, resType, operand_1, operand_2, operand_3);
+        }
+    }
+
+    public static class Fmsub extends BinaryOperation {
+
+        private Value operand_3;
+
+        public Fmsub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FMSUB, operand_1, operand_2);
+            this.operand_3 = operand_3;
+            addOperand(operand_3);
+        }
+
+        public Value getOperand_3() {
+            return operand_3;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand_1.equals(value)) {
+                operand_1 = v;
+            }
+            if (operand_2.equals(value)) {
+                operand_2 = v;
+            }
+            if (operand_3.equals(value)) {
+                operand_3 = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @fmulsub(float %s, float %s, float %s)", getDescriptor(),
+                    operand_1.getDescriptor(), operand_2.getDescriptor(), operand_3.getDescriptor());
+        }
+
+        @Override
+        public Fmsub cloneToBB(BasicBlock block) {
+            return new Fmsub(block, resType, operand_1, operand_2, operand_3);
+        }
+    }
+
+    public static class Fneg extends Instruction {
+        private Value operand;
+
+        public Fneg(BasicBlock parentBlock, Type resType, Value operand) {
+            super(parentBlock, resType, InstType.FNEG);
+            this.operand = operand;
+            addOperand(operand);
+        }
+
+        public Value getOperand() {
+            return operand;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = fneg %s %s", getDescriptor(), operand.getType().toString(), operand.getDescriptor());
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand.equals(value)) {
+                operand = v;
+            }
+        }
+
+        @Override
+        public Fneg cloneToBB(BasicBlock block) {
+            return new Fneg(block, operand.getType(), operand);
+        }
+    }
+
+    public static class Fnmadd extends BinaryOperation {
+
+        private Value operand_3;
+
+        public Fnmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FNMADD, operand_1, operand_2);
+            this.operand_3 = operand_3;
+            addOperand(operand_3);
+        }
+
+        public Value getOperand_3() {
+            return operand_3;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand_1.equals(value)) {
+                operand_1 = v;
+            }
+            if (operand_2.equals(value)) {
+                operand_2 = v;
+            }
+            if (operand_3.equals(value)) {
+                operand_3 = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @fnmadd(float %s, float %s, float %s)", getDescriptor(),
+                    operand_1.getDescriptor(), operand_2.getDescriptor(), operand_3.getDescriptor());
+        }
+
+        @Override
+        public Fnmadd cloneToBB(BasicBlock block) {
+            return new Fnmadd(block, resType, operand_1, operand_2, operand_3);
+        }
+    }
+
+    public static class Fnmsub extends BinaryOperation {
+
+        private Value operand_3;
+
+        public Fnmsub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FNMSUB, operand_1, operand_2);
+            this.operand_3 = operand_3;
+            addOperand(operand_3);
+        }
+
+        public Value getOperand_3() {
+            return operand_3;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand_1.equals(value)) {
+                operand_1 = v;
+            }
+            if (operand_2.equals(value)) {
+                operand_2 = v;
+            }
+            if (operand_3.equals(value)) {
+                operand_3 = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @fnmsub(float %s, float %s, float %s)", getDescriptor(),
+                    operand_1.getDescriptor(), operand_2.getDescriptor(), operand_3.getDescriptor());
+        }
+
+        @Override
+        public Fmsub cloneToBB(BasicBlock block) {
+            return new Fmsub(block, resType, operand_1, operand_2, operand_3);
         }
     }
 

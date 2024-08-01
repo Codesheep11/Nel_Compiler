@@ -31,7 +31,7 @@ public class R2 extends RiscvInstruction {
                 // fabs 浮点数的绝对值,现在看来不需要
 
                 case fneg -> {
-                    return "fneg";
+                    return "fneg.s";
                 }
                 // f negative 浮点数取反
 

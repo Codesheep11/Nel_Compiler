@@ -929,6 +929,44 @@ public class CodeGen {
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.max));
     }
 
+    private void solveFmadd(Instruction.Fmadd fmadd) {
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fmadd.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fmadd.getOperand_2());
+        Reg op3 = VirRegMap.VRM.ensureRegForValue(fmadd.getOperand_3());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fmadd);
+        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fmadd));
+    }
+
+    private void solveFmsub(Instruction.Fmsub fmsub) {
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fmsub.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fmsub.getOperand_2());
+        Reg op3 = VirRegMap.VRM.ensureRegForValue(fmsub.getOperand_3());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fmsub);
+        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fmsub));
+    }
+
+    private void solveFnmadd(Instruction.Fnmadd fnmadd) {
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fnmadd.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fnmadd.getOperand_2());
+        Reg op3 = VirRegMap.VRM.ensureRegForValue(fnmadd.getOperand_3());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fnmadd);
+        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fnmadd));
+    }
+
+    private void solveFnmsub(Instruction.Fnmsub fnmsub) {
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fnmsub.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fnmsub.getOperand_2());
+        Reg op3 = VirRegMap.VRM.ensureRegForValue(fnmsub.getOperand_3());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fnmsub);
+        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fnmsub));
+    }
+
+    private void solveFneg(Instruction.Fneg fneg) {
+        Reg op = VirRegMap.VRM.ensureRegForValue(fneg.getOperand());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fneg);
+        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, op, R2.R2Type.fneg));
+    }
+
     private void visitBlock(BasicBlock block) {
         nowBlock = blockMap.get(block);
         for (Instruction instruction : block.getInstructions()) {
@@ -999,7 +1037,18 @@ public class CodeGen {
                 solveMin((Instruction.Min) instruction);
             } else if (instruction instanceof Instruction.Max) {
                 solveMax((Instruction.Max) instruction);
-            } else {
+            } else if (instruction instanceof Instruction.Fmadd) {
+                solveFmadd((Instruction.Fmadd) instruction);
+            } else if (instruction instanceof Instruction.Fmsub) {
+                solveFmsub((Instruction.Fmsub) instruction);
+            } else if (instruction instanceof Instruction.Fnmadd) {
+                solveFnmadd((Instruction.Fnmadd) instruction);
+            } else if (instruction instanceof Instruction.Fnmsub) {
+                solveFnmsub((Instruction.Fnmsub) instruction);
+            } else if (instruction instanceof Instruction.Fneg) {
+                solveFneg((Instruction.Fneg) instruction);
+            }
+            else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
             }
         }
