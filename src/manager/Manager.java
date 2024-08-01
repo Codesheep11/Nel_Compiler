@@ -77,6 +77,7 @@ public class Manager {
         FuncAnalysis.run(module);
         GlobalValueNumbering.run(module);
         DeadCodeEliminate();
+        Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
@@ -236,7 +237,7 @@ public class Manager {
                 "    %add = fadd float %mul, %c\n" +
                 "    %neg = fneg float %add\n" +
                 "    ret float %neg\n" +
-                "}" +
+                "}\n" +
                 "define float @fnmsub(float %a, float %b, float %c) {\n" +
                 "entry:\n" +
                 "    %mul = fmul float %a, %b\n" +
