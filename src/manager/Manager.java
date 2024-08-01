@@ -83,7 +83,6 @@ public class Manager {
         LoopUnSwitching.run(module);
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
-
 //        LoopUnroll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
@@ -97,9 +96,9 @@ public class Manager {
         RangeFolding.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-//        IntegerSumToMul.run(module);
-        LoopBuildAndNormalize();
+        IntegerSumToMul.run(module);
         LoopUnroll.run(module);
+        LCSSA.remove(module);
         GlobalValueNumbering.run(module);
 //        AggressivePass();
         DeadCodeEliminate();
