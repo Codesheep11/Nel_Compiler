@@ -24,7 +24,6 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.AfterRA;
@@ -96,8 +95,9 @@ public class Manager {
         RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
+        AggressivePass();
+        DeadCodeEliminate();
         FuncAnalysis.run(module);
-        LoopInfo.run(module);
         Scheduler.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);
@@ -184,6 +184,13 @@ public class Manager {
         ConstIdx2Value.run(module);
     }
 
+    /**
+     * 非常激进的优化，可能会导致误差错误
+     */
+    private void AggressivePass() {
+        FMAddSubPass.run(module);
+    }
+
     private void LoopBuildAndNormalize() {
         LCSSA.remove(module);
         LoopInfo.run(module);
@@ -215,7 +222,29 @@ public class Manager {
             outputList.add(gv.toString());
         }
         outputList.add("declare i32 @llvm.smax.i32(i32, i32)\n" +
-                "declare i32 @llvm.smin.i32(i32, i32)");
+                "declare i32 @llvm.smin.i32(i32, i32)\n" +
+                "declare float @llvm.fmuladd.f32(float, float, float)\n" +
+                "define float @fmulsub(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %sub = fsub float %mul, %c\n" +
+                "    ret float %sub\n" +
+                "}\n" +
+                "define float @fnmadd(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %add = fadd float %mul, %c\n" +
+                "    %neg = fneg float %add\n" +
+                "    ret float %neg\n" +
+                "}" +
+                "define float @fnmsub(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %sub = fsub float %mul, %c\n" +
+                "    %neg = fneg float %sub\n" +
+                "    ret float %neg\n" +
+                "}"
+        );
         //函数声明
         for (Map.Entry<String, Function> functionEntry : functions.entrySet()) {
             if (functionEntry.getValue().isExternal()) {
@@ -252,7 +281,7 @@ public class Manager {
         DeadCodeEliminate.run(module);
         LoopInfo.run(module);
         LoopSimplifyForm.run(module);
-        GlobalCodeMotion.run(module);
+//        GlobalCodeMotion.run(module);
         LCSSA.run(module);
         DeadCodeEliminate();
         LoopInfo.run(module);
