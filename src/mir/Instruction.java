@@ -729,7 +729,6 @@ public class Instruction extends User {
 
         public Sext(BasicBlock parentBlock, Value src, Type targetType) {
             super(parentBlock, targetType, InstType.Sext);
-            assert src.getType().isInt1Ty();
             this.src = src;
             addOperand(src);
         }
@@ -763,7 +762,6 @@ public class Instruction extends User {
 
         public Trunc(BasicBlock parentBlock, Value src, Type targetType) {
             super(parentBlock, targetType, InstType.TRUNC);
-            assert src.getType().isInt1Ty();
             this.src = src;
             addOperand(src);
         }
