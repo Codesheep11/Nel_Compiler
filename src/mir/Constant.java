@@ -230,7 +230,7 @@ public abstract class Constant extends User {
                 else if (ele instanceof ConstantZeroInitializer) {
                     //如果元素为未初始化数组，则直接返回展开的0
                     for (int i = 0; i < ((Type.ArrayType) eleType).getFlattenSize(); i++) {
-                        flatten.add(new ConstantInt(0));
+                        flatten.add(ConstantInt.get(0));
                     }
                 }
                 else {

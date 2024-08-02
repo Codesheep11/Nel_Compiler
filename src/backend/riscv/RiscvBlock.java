@@ -1,6 +1,5 @@
 package backend.riscv;
 
-import backend.Opt.ShortInstr.ShortInst;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import mir.BasicBlock;
 import utils.NelLinkedList;
@@ -24,6 +23,11 @@ public class RiscvBlock {
     public RiscvBlock(RiscvFunction rf, BasicBlock irBlock) {
         this.function = rf;
         this.name = irBlock.getLabel();
+    }
+
+    public RiscvBlock(RiscvFunction rf, String name) {
+        this.function = rf;
+        this.name = name;
     }
 
     public void addInstrucion(RiscvInstruction ri) {

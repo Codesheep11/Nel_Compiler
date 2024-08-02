@@ -373,7 +373,6 @@ public class Function extends Value {
         while (!stack.isEmpty()) {
             BasicBlock cur = stack.peek();
             boolean allChildrenVisited = true;
-
             for (BasicBlock child : cur.getDomTreeChildren()) {
                 if (!visited.contains(child)) {
                     stack.push(child);
@@ -381,14 +380,12 @@ public class Function extends Value {
                     allChildrenVisited = false;
                 }
             }
-
             if (allChildrenVisited) {
                 // 如果当前节点的所有子节点都已经访问过，则将当前节点从栈中弹出并加入后序遍历结果列表中
                 stack.pop();
                 postOrder.add(cur);
             }
         }
-
         // 返回支配树的后序遍历顺序的列表
         return postOrder;
     }

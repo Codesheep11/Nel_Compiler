@@ -202,6 +202,10 @@ public class AnalysisManager {
         }
     }
 
+    public static void refreshI32Range(Function function) {
+        rangeMap.put(function, new I32RangeAnalysis(function));
+    }
+
     public static I32RangeAnalysis getI32Range(Function function) {
         return rangeMap.get(function);
     }

@@ -103,9 +103,9 @@ public class FuncAnalysis {
         boolean hasMemoryRead = false;
         boolean hasMemoryWrite = false;
         boolean hasMemoryAlloc = false;
-        boolean hasReturn = !(function.getRetType() instanceof Type.VoidType);
         boolean isRecursive = false;
         boolean hasSideEffect = false;
+        boolean isStateless = true;
         for (BasicBlock bb : function.getBlocks()) {
             for (Instruction inst : bb.getInstructions()) {
                 if (inst instanceof Instruction.Load load) {
@@ -114,6 +114,7 @@ public class FuncAnalysis {
                         funcInfo.usedGlobalVariables.add((GlobalVariable) val);
                         hasMemoryRead = true;
                     }
+                    else if (isSideEffect(load.getAddr(), function)) isStateless = true;
                 }
                 else if (inst instanceof Instruction.Store store) {
                     Value val = GlobalVarLocalize.isGlobalAddr(store.getAddr());
@@ -138,9 +139,10 @@ public class FuncAnalysis {
         funcInfo.hasMemoryRead = hasMemoryRead;
         funcInfo.hasMemoryWrite = hasMemoryWrite;
         funcInfo.hasMemoryAlloc = hasMemoryAlloc;
-        funcInfo.hasReturn = hasReturn;
+        funcInfo.hasReturn = !(function.getRetType() instanceof Type.VoidType);
         funcInfo.isRecursive = isRecursive;
         funcInfo.hasSideEffect = hasSideEffect;
+        funcInfo.isStateless = isStateless && !hasMemoryWrite && !hasMemoryRead && !hasSideEffect;
     }
 
     /**
@@ -179,7 +181,7 @@ public class FuncAnalysis {
                 funcInfo.hasPutOut |= calleeInfo.hasPutOut;
                 funcInfo.hasSideEffect |= calleeInfo.hasSideEffect;
             }
-            funcInfo.isStateless = (!funcInfo.hasMemoryWrite) && (!funcInfo.hasSideEffect);
+            funcInfo.isStateless = funcInfo.isStateless && !funcInfo.hasMemoryWrite && !funcInfo.hasMemoryRead && !funcInfo.hasSideEffect;
         }
 //        System.out.println("Function Analysis Done");
     }
