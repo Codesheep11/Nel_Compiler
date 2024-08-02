@@ -55,6 +55,9 @@ public class RangeFolding {
                     delList.add(instr);
                 }
             }
+            else {
+                continue;
+            }
             if (instr instanceof Instruction.Icmp icmp) {
                 Value v = icmpSimplify(icmp);
                 if (v instanceof Constant) {

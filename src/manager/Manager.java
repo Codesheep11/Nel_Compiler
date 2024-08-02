@@ -115,7 +115,7 @@ public class Manager {
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
-//        BlockInline.run(riscvmodule);
+        BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
