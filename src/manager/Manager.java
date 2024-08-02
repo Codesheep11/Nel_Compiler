@@ -77,6 +77,7 @@ public class Manager {
         FuncAnalysis.run(module);
         GlobalValueNumbering.run(module);
         DeadCodeEliminate();
+        Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
@@ -92,12 +93,12 @@ public class Manager {
         ConstEliminate();
         Branch2MinMax.run(module);
         GlobalValueNumbering.run(module);
-        AnalysisManager.runI32Range(module);
         RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
+        AggressivePass();
+        DeadCodeEliminate();
         FuncAnalysis.run(module);
-        LoopInfo.run(module);
         Scheduler.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);
@@ -187,6 +188,13 @@ public class Manager {
         ConstIdx2Value.run(module);
     }
 
+    /**
+     * 非常激进的优化，可能会导致误差错误
+     */
+    private void AggressivePass() {
+        FMAddSubPass.run(module);
+    }
+
     private void LoopBuildAndNormalize() {
         LCSSA.remove(module);
         LoopInfo.run(module);
@@ -218,14 +226,37 @@ public class Manager {
             outputList.add(gv.toString());
         }
         outputList.add("declare i32 @llvm.smax.i32(i32, i32)\n" +
-                "declare i32 @llvm.smin.i32(i32, i32)");
+                "declare i32 @llvm.smin.i32(i32, i32)\n" +
+                "declare float @llvm.fmuladd.f32(float, float, float)\n" +
+                "define float @fmulsub(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %sub = fsub float %mul, %c\n" +
+                "    ret float %sub\n" +
+                "}\n" +
+                "define float @fnmadd(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %add = fadd float %mul, %c\n" +
+                "    %neg = fneg float %add\n" +
+                "    ret float %neg\n" +
+                "}\n" +
+                "define float @fnmsub(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %sub = fsub float %mul, %c\n" +
+                "    %neg = fneg float %sub\n" +
+                "    ret float %neg\n" +
+                "}"
+        );
         //函数声明
         for (Map.Entry<String, Function> functionEntry : functions.entrySet()) {
             if (functionEntry.getValue().isExternal()) {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }
@@ -254,7 +285,7 @@ public class Manager {
         DeadCodeEliminate.run(module);
         LoopInfo.run(module);
         LoopSimplifyForm.run(module);
-        GlobalCodeMotion.run(module);
+//        GlobalCodeMotion.run(module);
         LCSSA.run(module);
         DeadCodeEliminate();
         LoopInfo.run(module);
