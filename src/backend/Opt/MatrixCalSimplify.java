@@ -11,7 +11,7 @@ import backend.riscv.RiscvModule;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class PointerCalSimplify {
+public class MatrixCalSimplify {
     // 充分利用指针的局部性进行的优化
     // 因为其他指令,除了乘除，都是一条解决战斗,但是gep会是多条,而且计算内容基本相同
     // 为了减轻思考的难度,暂时进行一个类似模式匹配的操作:找sh2add，找addw，找addi
