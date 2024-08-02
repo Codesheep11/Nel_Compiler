@@ -61,15 +61,36 @@ public class RangeFolding {
                     instr.replaceAllUsesWith(v);
                 }
             }
-            else if (instr instanceof Instruction.Rem rem) {
-                I32RangeAnalysis.I32Range r1 = AnalysisManager.getValueRange(rem.getOperand_1(), basicBlock);
-                I32RangeAnalysis.I32Range r2 = AnalysisManager.getValueRange(rem.getOperand_2(), basicBlock);
-                if (r1.getMinValue() > 0 && r1.getMaxValue() < r2.getMinValue()) {
-                    delList.add(instr);
-                    instr.replaceAllUsesWith(rem.getOperand_1());
+            else if (instr instanceof Instruction.BinaryOperation binaryOperation) {
+                I32RangeAnalysis.I32Range r1 = AnalysisManager.getValueRange(binaryOperation.getOperand_1(), basicBlock);
+                I32RangeAnalysis.I32Range r2 = AnalysisManager.getValueRange(binaryOperation.getOperand_2(), basicBlock);
+                if (binaryOperation instanceof Instruction.Rem rem) {
+                    if (r1.getMinValue() > 0 && r1.getMaxValue() < r2.getMinValue()) {
+                        delList.add(instr);
+                        instr.replaceAllUsesWith(rem.getOperand_1());
+                    }
+                }
+                else if (binaryOperation instanceof Instruction.Min min) {
+                    if (r1.getMinValue() >= r2.getMaxValue()) {
+                        delList.add(instr);
+                        instr.replaceAllUsesWith(min.getOperand_2());
+                    }
+                    else if (r1.getMaxValue() <= r2.getMinValue()) {
+                        delList.add(instr);
+                        instr.replaceAllUsesWith(min.getOperand_1());
+                    }
+                }
+                else if (binaryOperation instanceof Instruction.Max max) {
+                    if (r1.getMinValue() >= r2.getMaxValue()) {
+                        delList.add(instr);
+                        instr.replaceAllUsesWith(max.getOperand_1());
+                    }
+                    else if (r1.getMaxValue() <= r2.getMinValue()) {
+                        delList.add(instr);
+                        instr.replaceAllUsesWith(max.getOperand_2());
+                    }
                 }
             }
-            // TODO: 增加对 min max的支持
         }
         delList.forEach(Value::delete);
         return !delList.isEmpty();
