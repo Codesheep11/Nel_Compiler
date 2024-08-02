@@ -24,6 +24,7 @@ public class RemovePhi {
             PhiCopy2move(function);
             AnalysisManager.refreshCFG(function);
             AnalysisManager.refreshDG(function);
+            AnalysisManager.refreshI32Range(function);
         }
     }
 

@@ -1,6 +1,7 @@
 package midend.Transform.DCE;
 
 import midend.Pass.FunctionPass;
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 
@@ -27,11 +28,14 @@ public class SimplifyCFGPass extends FunctionPass {
     public static boolean runOnFunc(Function function) {
         boolean modified = false;
         modified |= Br2Jump(function);
+//        System.out.println("Br2Jump " + modified);
         RemoveBlocks.runOnFunc(function);
         function.buildDominanceGraph();
         modified |= MergeBlocks(function);
+//        System.out.println("MergeBlocks " + modified);
         RemoveBlocks.runOnFunc(function);
         modified |= ChangeTarget(function);
+//        System.out.println("ChangeTarget " + modified);
         RemoveBlocks.runOnFunc(function);
         return modified;
 //        Print.outputLLVM(function, "debug2.txt");
@@ -124,8 +128,9 @@ public class SimplifyCFGPass extends FunctionPass {
     private static boolean ChangeTarget(Function function) {
         ArrayList<BasicBlock> onlyJumpBlocks = new ArrayList<>();
         for (BasicBlock block : function.getBlocks()) {
-            if (block.getFirstInst() instanceof Instruction.Jump) {
+            if (block.getFirstInst() instanceof Instruction.Jump ) {
                 BasicBlock suc = block.getSucBlocks().get(0);
+                if (suc.equals(block)) continue;
                 if (!(suc.getFirstInst() instanceof Instruction.Phi) && block.getPreBlocks().size() != 0) {
                     onlyJumpBlocks.add(block);
                 }

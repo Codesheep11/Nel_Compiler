@@ -2,6 +2,7 @@ package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.I32RangeAnalysis;
+import midend.Util.Print;
 import mir.Module;
 import mir.*;
 
@@ -53,6 +54,9 @@ public class RangeFolding {
                     instr.replaceAllUsesWith(constant);
                     delList.add(instr);
                 }
+            }
+            else {
+                continue;
             }
             if (instr instanceof Instruction.Icmp icmp) {
                 Value v = icmpSimplify(icmp);
