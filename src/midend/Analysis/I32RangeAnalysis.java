@@ -265,6 +265,9 @@ public class I32RangeAnalysis {
                 } catch (ArithmeticException e) {
                     minValue = Integer.MIN_VALUE;
                 }
+                if (((Instruction.Mul) inst).getOperand_1().equals(((Instruction.Mul) inst).getOperand_2())) {
+                    minValue = 0;
+                }
                 int maxValue;
                 try {
                     maxValue = Math.max(
