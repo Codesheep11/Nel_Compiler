@@ -3,6 +3,7 @@ package midend.Analysis;
 import midend.Util.ControlFlowGraph;
 import midend.Util.DominanceGraph;
 import midend.Util.DominanceGraphLT;
+import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
 import mir.result.CFGinfo;
@@ -26,6 +27,7 @@ public class AnalysisManager {
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
     private static final HashMap<Function, SCEVinfo> scevMap = new HashMap<>();
     private static final HashMap<Function, I32RangeAnalysis> rangeMap = new HashMap<>();
+    private static final HashMap<Function, FuncInfo> funcInfoMap = new HashMap<>();
 
     private static final HashMap<Function, Boolean> dirtyLCSSA = new HashMap<>();
 
@@ -205,7 +207,28 @@ public class AnalysisManager {
         }
     }
 
+    public static void refreshI32Range(Function function) {
+        rangeMap.put(function, new I32RangeAnalysis(function));
+    }
+
+    public static I32RangeAnalysis getI32Range(Function function) {
+        return rangeMap.get(function);
+    }
+
     public static I32RangeAnalysis.I32Range getValueRange(Value value, BasicBlock block) {
         return rangeMap.get(block.getParentFunction()).getValueRange(value, block);
+    }
+    // endregion
+
+    // region FuncInfo
+    public static FuncInfo getFuncInfo(Function function) {
+        if (!funcInfoMap.containsKey(function)) {
+            throw new RuntimeException("Function not found");
+        }
+        return funcInfoMap.get(function);
+    }
+
+    public static void setFuncInfo(Function function) {
+        funcInfoMap.put(function, new FuncInfo(function));
     }
 }

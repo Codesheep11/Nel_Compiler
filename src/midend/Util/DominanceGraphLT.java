@@ -35,7 +35,7 @@ public class DominanceGraphLT {
     }
 
     private static void build() {
-        RemoveBlocks.runOnFunc(parentFunction);
+//        RemoveBlocks.runOnFunc(parentFunction);
         clear();
         for (var block : parentFunction.getBlocks()) {
             nodeMap.put(block, new Node(block));

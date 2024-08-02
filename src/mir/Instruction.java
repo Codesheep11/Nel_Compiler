@@ -2,6 +2,7 @@ package mir;
 
 import frontend.Recorder;
 import manager.Manager;
+import midend.Analysis.AnalysisManager;
 import midend.Util.CloneInfo;
 import midend.Util.FuncInfo;
 
@@ -37,6 +38,14 @@ public class Instruction extends User {
         FDIV,
         REM,
         FREM,
+        // extend
+        FMADD,
+        FMSUB,
+        FNEG,
+        FNMADD,
+        FNMSUB,
+        MIN,
+        MAX,
         // bitwise operation
         SHL,
         LSHR,
@@ -44,7 +53,6 @@ public class Instruction extends User {
         AND,
         OR,
         XOR,
-        NEG,//fixme
         PHICOPY,
         MOVE
     }
@@ -111,8 +119,9 @@ public class Instruction extends User {
             case SHL, AND, OR, XOR, ASHR, LSHR -> false; // 目前判断 gvn 位运算平均收益为负
             case CALL -> {
                 Function func = ((Call) this).getDestFunction();
-                yield FuncInfo.hasReturn.get(func) && !func.isExternal() &&
-                        FuncInfo.isStateless.get(func) && !FuncInfo.hasReadIn.get(func) && !FuncInfo.hasPutOut.get(func);
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
+                yield funcInfo.hasReturn && !func.isExternal() && funcInfo.isStateless
+                        && !funcInfo.hasReadIn && !funcInfo.hasPutOut;
             }
             default -> true;
         };
@@ -159,7 +168,8 @@ public class Instruction extends User {
         return switch (instType) {
             case CALL -> {
                 Function callee = ((Call) this).getDestFunction();
-                yield !FuncInfo.hasSideEffect.get(callee) && FuncInfo.isStateless.get(callee) && FuncInfo.hasReturn.get(callee);
+                FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
+                yield !calleeInfo.hasSideEffect && calleeInfo.isStateless && calleeInfo.hasReturn;
             }
             case STORE -> false;
             default -> true;
@@ -248,7 +258,6 @@ public class Instruction extends User {
             super(parentBlock, destFunction.getRetType(), InstType.CALL);
             this.destFunction = destFunction;
             this.params = params;
-            FuncInfo.isLeaf.put(parentBlock.getParentFunction(), false);
 
             addOperand(destFunction);
             for (Value param : params) {
@@ -261,7 +270,6 @@ public class Instruction extends User {
             this.destFunction = destFunction;
             this.params = params;
             this.strIdx = strIdx;
-            FuncInfo.isLeaf.put(parentBlock.getParentFunction(), false);
 
             addOperand(destFunction);
             for (Value param : params) {
@@ -410,6 +418,15 @@ public class Instruction extends User {
 
         public double getProbability() {
             return probability;
+        }
+
+        /**
+         * 交换then else块，可能会产生语义的修改！
+         */
+        public void swap() {
+            BasicBlock _tmp = thenBlock;
+            thenBlock = elseBlock;
+            elseBlock = _tmp;
         }
 
         @Override
@@ -775,6 +792,17 @@ public class Instruction extends User {
                 };
             }
 
+            public CondCode swap() {
+                return switch (this) {
+                    case EQ -> EQ;
+                    case NE -> NE;
+                    case SGT -> SLT;
+                    case SGE -> SLE;
+                    case SLT -> SGT;
+                    case SLE -> SGE;
+                };
+            }
+
             CondCode(final String str) {
                 this.str = str;
             }
@@ -784,7 +812,7 @@ public class Instruction extends User {
             }
         }
 
-        private final CondCode condCode;
+        private CondCode condCode;
 
         public CondCode getCondCode() {
             return condCode;
@@ -817,12 +845,27 @@ public class Instruction extends User {
             return src2;
         }
 
+        public void swap() {
+            Value _temp = src2;
+            src2 = src1;
+            src1 = _temp;
+            condCode = condCode.swap();
+        }
+
+        public void reverse() {
+            condCode = condCode.inverse();
+        }
+
 
         @Override
         public String toString() {
             return String.format("%s = icmp %s %s %s, %s", getDescriptor(), condCode.toString(), src1.getType().toString(), src1.getDescriptor(), src2.getDescriptor());
         }
 
+        /**
+         * @param value 被替换的值
+         * @param v     新值
+         */
         @Override
         public void replaceUseOfWith(Value value, Value v) {
             super.replaceUseOfWith(value, v);
@@ -1243,6 +1286,237 @@ public class Instruction extends User {
             return new Xor(block, resType, operand_1, operand_2);
         }
 
+    }
+
+
+    public static class Min extends BinaryOperation {
+
+        public Min(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.MIN, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call i32 @llvm.smin.%s(%s %s, %s %s)", getDescriptor(), resType.toString(),
+                    operand_1.getType(), operand_1.getDescriptor(),
+                    operand_2.getType(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public Min cloneToBB(BasicBlock block) {
+            return new Min(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class Max extends BinaryOperation {
+
+        public Max(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.MAX, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call i32 @llvm.smax.%s(%s %s, %s %s)", getDescriptor(), resType.toString(),
+                    operand_1.getType(), operand_1.getDescriptor(),
+                    operand_2.getType(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public Max cloneToBB(BasicBlock block) {
+            return new Max(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class Fmadd extends BinaryOperation {
+
+        private Value operand_3;
+
+        public Fmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FMADD, operand_1, operand_2);
+            this.operand_3 = operand_3;
+            addOperand(operand_3);
+        }
+
+        public Value getOperand_3() {
+            return operand_3;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand_1.equals(value)) {
+                operand_1 = v;
+            }
+            if (operand_2.equals(value)) {
+                operand_2 = v;
+            }
+            if (operand_3.equals(value)) {
+                operand_3 = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @llvm.fmuladd.f32(float %s, float %s, float %s)", getDescriptor(),
+                    operand_1.getDescriptor(), operand_2.getDescriptor(), operand_3.getDescriptor());
+        }
+
+        @Override
+        public Fmadd cloneToBB(BasicBlock block) {
+            return new Fmadd(block, resType, operand_1, operand_2, operand_3);
+        }
+    }
+
+    public static class Fmsub extends BinaryOperation {
+
+        private Value operand_3;
+
+        public Fmsub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FMSUB, operand_1, operand_2);
+            this.operand_3 = operand_3;
+            addOperand(operand_3);
+        }
+
+        public Value getOperand_3() {
+            return operand_3;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand_1.equals(value)) {
+                operand_1 = v;
+            }
+            if (operand_2.equals(value)) {
+                operand_2 = v;
+            }
+            if (operand_3.equals(value)) {
+                operand_3 = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @fmulsub(float %s, float %s, float %s)", getDescriptor(),
+                    operand_1.getDescriptor(), operand_2.getDescriptor(), operand_3.getDescriptor());
+        }
+
+        @Override
+        public Fmsub cloneToBB(BasicBlock block) {
+            return new Fmsub(block, resType, operand_1, operand_2, operand_3);
+        }
+    }
+
+    public static class Fneg extends Instruction {
+        private Value operand;
+
+        public Fneg(BasicBlock parentBlock, Type resType, Value operand) {
+            super(parentBlock, resType, InstType.FNEG);
+            this.operand = operand;
+            addOperand(operand);
+        }
+
+        public Value getOperand() {
+            return operand;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = fneg %s %s", getDescriptor(), operand.getType().toString(), operand.getDescriptor());
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand.equals(value)) {
+                operand = v;
+            }
+        }
+
+        @Override
+        public Fneg cloneToBB(BasicBlock block) {
+            return new Fneg(block, operand.getType(), operand);
+        }
+    }
+
+    public static class Fnmadd extends BinaryOperation {
+
+        private Value operand_3;
+
+        public Fnmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FNMADD, operand_1, operand_2);
+            this.operand_3 = operand_3;
+            addOperand(operand_3);
+        }
+
+        public Value getOperand_3() {
+            return operand_3;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand_1.equals(value)) {
+                operand_1 = v;
+            }
+            if (operand_2.equals(value)) {
+                operand_2 = v;
+            }
+            if (operand_3.equals(value)) {
+                operand_3 = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @fnmadd(float %s, float %s, float %s)", getDescriptor(),
+                    operand_1.getDescriptor(), operand_2.getDescriptor(), operand_3.getDescriptor());
+        }
+
+        @Override
+        public Fnmadd cloneToBB(BasicBlock block) {
+            return new Fnmadd(block, resType, operand_1, operand_2, operand_3);
+        }
+    }
+
+    public static class Fnmsub extends BinaryOperation {
+
+        private Value operand_3;
+
+        public Fnmsub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FNMSUB, operand_1, operand_2);
+            this.operand_3 = operand_3;
+            addOperand(operand_3);
+        }
+
+        public Value getOperand_3() {
+            return operand_3;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand_1.equals(value)) {
+                operand_1 = v;
+            }
+            if (operand_2.equals(value)) {
+                operand_2 = v;
+            }
+            if (operand_3.equals(value)) {
+                operand_3 = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @fnmsub(float %s, float %s, float %s)", getDescriptor(),
+                    operand_1.getDescriptor(), operand_2.getDescriptor(), operand_3.getDescriptor());
+        }
+
+        @Override
+        public Fmsub cloneToBB(BasicBlock block) {
+            return new Fmsub(block, resType, operand_1, operand_2, operand_3);
+        }
     }
 
     public static class PhiCopy extends Instruction {

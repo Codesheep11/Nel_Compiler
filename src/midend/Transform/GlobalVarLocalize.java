@@ -1,5 +1,6 @@
 package midend.Transform;
 
+import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -91,7 +92,8 @@ public class GlobalVarLocalize {
 
     private static void FuncReplace(Function func, GlobalVariable gv) {
 //        System.out.println("FuncReplace " + gv);
-        if (FuncInfo.isRecurse.get(func)) return;
+        FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
+        if (funcInfo.isRecursive) return;
         //将全局变量转换成局部变量再mem2reg
         BasicBlock entry = func.getEntry();
         Instruction alloca = new Instruction.Alloc(entry, ((Type.PointerType) gv.getType()).getInnerType());

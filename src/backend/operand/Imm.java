@@ -2,18 +2,18 @@ package backend.operand;
 
 public class Imm extends Operand {
 
-    private int val;
+    private final long val;
 
-    public Imm(int imm) {
+    public Imm(long imm) {
         this.val = imm;
     }
 
     @Override
     public String toString() {
-        return Integer.toString(val);
+        return Long.toString(val);
     }
 
-    public int getVal() {
+    public long getVal() {
         return val;
     }
 

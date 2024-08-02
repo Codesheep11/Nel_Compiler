@@ -35,8 +35,6 @@ public class LoopInfo {
         clearBlocksLoopInfo();
 //        function.buildControlFlowGraph();
         AnalysisManager.refreshCFG(function);
-        function.buildDominanceGraph();
-        AnalysisManager.refreshCFG(function);
         AnalysisManager.refreshDG(function);
 
         LoopInfo4Func();
@@ -76,7 +74,7 @@ public class LoopInfo {
         }
     }
 
-    private void printLoopInfo() {
+    public void printLoopInfo() {
         System.out.println("LoopInfo:Function: " + function.getName());
         for (Loop loop : TopLevelLoops) {
             loop.LoopInfoPrint();
@@ -119,7 +117,8 @@ public class LoopInfo {
                 loop.addNowLevelBB(predBB);
                 if (predBB.equals(loop.header)) continue;
                 reverseCFGWorkList.addAll(predBB.getPreBlocks());
-            } else {
+            }
+            else {
                 while (subLoop.parent != null) {
                     subLoop = subLoop.parent;
                 }

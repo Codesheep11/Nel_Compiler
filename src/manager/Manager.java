@@ -1,6 +1,8 @@
 package manager;
 
 import backend.Opt.*;
+import backend.Opt.BackLoop.LoopConstLift;
+import backend.Opt.GPpooling.GlobalFloat2roPool;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -12,7 +14,6 @@ import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
-import midend.Analysis.I32RangeAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.ConstIdx2Value;
 import midend.Transform.Array.GepFold;
@@ -23,9 +24,8 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
+import mir.Function;
 import mir.GlobalVariable;
-import mir.*;
 import mir.Ir2RiscV.AfterRA;
 import mir.Ir2RiscV.CodeGen;
 import mir.Module;
@@ -43,6 +43,8 @@ public class Manager {
     private final ArrayList<String> outputList = new ArrayList<>();
 
     public static boolean afterRegAssign = false;
+
+    public static boolean isO1 = false;
 
     public Manager(Arg arg) {
         Manager.arg = arg;
@@ -62,43 +64,53 @@ public class Manager {
     }
 
     private void O1() throws IOException {
+        isO1 = true;
         AnalysisManager.buildCFG(module);
         DeadCodeEliminate.run(module);
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
+        ConstEliminate();
+        Branch2MinMax.run(module);
         FuncPasses();
         GlobalVarLocalize.run(module);
+        FuncAnalysis.run(module);
         GlobalValueNumbering.run(module);
-        DeadCodeEliminate.run(module);
+        DeadCodeEliminate();
+        Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
+        LoopUnroll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
         ArrayPasses();
         DeadCodeEliminate();
         ArrayPasses();
         Reassociate.run(module);
+        ConstEliminate();
         Branch2MinMax.run(module);
         GlobalValueNumbering.run(module);
-        AnalysisManager.runI32Range(module);
         RangeFolding.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
-        BitwiseOperation.run(module);
+        AggressivePass();
+        DeadCodeEliminate();
         FuncAnalysis.run(module);
-        LoopInfo.run(module);
         Scheduler.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);
             return;
         }
         RemovePhi.run(module);
+        LoopInfo.run(module);
+        BrPredction.run(module);
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
+        GlobalFloat2roPool.run(riscvmodule);
+        LoopConstLift.run(riscvmodule);
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
@@ -130,14 +142,36 @@ public class Manager {
         GlobalValueNumbering.run(module);
         SimplifyCFGPass.run(module);
         ArithReduce.run(module);
+        DeadRetEliminate.run(module);
+        DeadCodeEliminate.run(module);
+        SimplifyCFGPass.run(module);
+    }
+
+    private void ConstEliminate() {
+        for (Function func : module.getFuncSet()) {
+            if (func.isExternal()) continue;
+            boolean modified;
+            do {
+                modified = false;
+                modified |= ConstantFolding.runOnFunc(func);
+//                System.out.println("ConstFoling "+modified);
+                modified |= SimplifyCFGPass.runOnFunc(func);
+//                System.out.println("SimplifyCFGPass "+modified);
+                AnalysisManager.refreshI32Range(func);
+                modified |= RangeFolding.runOnFunc(func);
+//                System.out.println("RangeFolding "+modified);
+//                System.out.println();
+            } while (modified);
+        }
         DeadCodeEliminate.run(module);
     }
 
     private void FuncPasses() {
+        FuncAnalysis.run(module);
+        TailCall2Loop.run(module);
         FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
-        TailCall2Loop.run(module);
         FuncAnalysis.run(module);
     }
 
@@ -151,10 +185,18 @@ public class Manager {
         ConstIdx2Value.run(module);
     }
 
+    /**
+     * 非常激进的优化，可能会导致误差错误
+     */
+    private void AggressivePass() {
+        FMAddSubPass.run(module);
+    }
+
     private void LoopBuildAndNormalize() {
         LCSSA.remove(module);
         LoopInfo.run(module);
         LoopSimplifyForm.run(module);
+        LoopInfo.run(module);
         LCSSA.run(module);
     }
 
@@ -180,7 +222,30 @@ public class Manager {
         for (GlobalVariable gv : globalVariables) {
             outputList.add(gv.toString());
         }
-
+        outputList.add("declare i32 @llvm.smax.i32(i32, i32)\n" +
+                "declare i32 @llvm.smin.i32(i32, i32)\n" +
+                "declare float @llvm.fmuladd.f32(float, float, float)\n" +
+                "define float @fmulsub(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %sub = fsub float %mul, %c\n" +
+                "    ret float %sub\n" +
+                "}\n" +
+                "define float @fnmadd(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %add = fadd float %mul, %c\n" +
+                "    %neg = fneg float %add\n" +
+                "    ret float %neg\n" +
+                "}\n" +
+                "define float @fnmsub(float %a, float %b, float %c) {\n" +
+                "entry:\n" +
+                "    %mul = fmul float %a, %b\n" +
+                "    %sub = fsub float %mul, %c\n" +
+                "    %neg = fneg float %sub\n" +
+                "    ret float %neg\n" +
+                "}"
+        );
         //函数声明
         for (Map.Entry<String, Function> functionEntry : functions.entrySet()) {
             if (functionEntry.getValue().isExternal()) {
@@ -217,7 +282,7 @@ public class Manager {
         DeadCodeEliminate.run(module);
         LoopInfo.run(module);
         LoopSimplifyForm.run(module);
-        GlobalCodeMotion.run(module);
+//        GlobalCodeMotion.run(module);
         LCSSA.run(module);
         DeadCodeEliminate();
         LoopInfo.run(module);
@@ -227,8 +292,6 @@ public class Manager {
         LoopInfo.run(module);
         LCSSA.remove(module);
         ArrayPasses();
-        DeadCodeEliminate();
-        Branch2MinMax.run(module);
         DeadCodeEliminate();
         GlobalValueNumbering.run(module);
         FuncAnalysis.run(module);

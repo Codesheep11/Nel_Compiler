@@ -194,9 +194,11 @@ public class BasicBlock extends Value {
         ArrayList<String> outputList = new ArrayList<>();
         outputList.add(label + ":");
 
-        for (Instruction instruction :
-                instructions) {
-            outputList.add("\t" + instruction.toString());
+        for (Instruction instruction : instructions) {
+            String out = "\t" + instruction.toString();
+//            if (instruction.getType().isInt32Ty())
+//                out += "; " + AnalysisManager.getValueRange(instruction, instruction.parentBlock);
+            outputList.add(out);
         }
         return outputList;
     }

@@ -39,21 +39,21 @@ public class ShortInstrConvert {
                 } else if (r3.type == R3.R3Type.addi) {
                     // 判断移动栈帧
                     if (((Reg) r3.rs1).phyReg == Reg.PhyReg.sp && ((Reg) r3.rd).phyReg == Reg.PhyReg.sp) {
-                        int offset = r3.rs2 instanceof Address ad ? -ad.getOffset() : ((Imm) r3.rs2).getVal();
+                        long offset = r3.rs2 instanceof Address ad ? -ad.getOffset() : ((Imm) r3.rs2).getVal();
                         if (offset > -512 && offset < 496) {
                             needReplace.add(new Pair<>(instr, new ShortInst.ShortAddi16Sp(block, offset)));
                         }
                     }
                     // 如果两个操作数一样
                     else if (r3.rs1.equals(r3.rd)) {
-                        int offset = r3.rs2 instanceof Address ad ? -ad.getOffset() : ((Imm) r3.rs2).getVal();
+                        long offset = r3.rs2 instanceof Address ad ? -ad.getOffset() : ((Imm) r3.rs2).getVal();
                         if (offset > -32 && offset < 31) {
                             needReplace.add(new Pair<>(instr, new ShortInst.ShortAddi(block, (Reg) r3.rd, offset)));
                         }
                     }
                 }
             } else if (instr instanceof Li li) {
-                int imm = li.imm instanceof Address ad ? -ad.getOffset() : ((Imm) li.imm).getVal();
+                long imm = li.imm instanceof Address ad ? -ad.getOffset() : ((Imm) li.imm).getVal();
                 if (imm >= -32 && imm <= 31) {
                     needReplace.add(new Pair<>(instr, new ShortInst.ShortLi(block, li.reg, imm)));
                 }
@@ -62,7 +62,7 @@ public class ShortInstrConvert {
                     needReplace.add(new Pair<>(instr, new ShortInst.ShortMove(block, (Reg) mv.rd, (Reg) mv.rs)));
                 }
             } else if (instr instanceof LS ls) {
-                int offset = ls.addr instanceof Address ad ? -ad.getOffset() : ((Imm) ls.addr).getVal();
+                long offset = ls.addr instanceof Address ad ? -ad.getOffset() : ((Imm) ls.addr).getVal();
                 if (ls.rs2.phyReg == Reg.PhyReg.sp) {
                     if (offset > 0 && offset < 255) {
                         if (ls.type == LS.LSType.lw) {

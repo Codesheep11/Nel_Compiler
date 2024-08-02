@@ -81,7 +81,8 @@ public class DeadLoopEliminate {
         if (instr instanceof Instruction.Return) return true;
         if (instr instanceof Instruction.Call call) {
             Function callee = call.getDestFunction();
-            return FuncInfo.hasSideEffect.get(callee) || !FuncInfo.isStateless.get(callee) || FuncInfo.hasReadIn.get(callee) || FuncInfo.hasPutOut.get(callee);
+            FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
+            return calleeInfo.hasSideEffect || calleeInfo.hasMemoryWrite || calleeInfo.hasPutOut || calleeInfo.hasReadIn;
         }
         return false;
     }

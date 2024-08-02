@@ -1,13 +1,15 @@
 package mir.Ir2RiscV;
 
 
+import backend.Opt.BackLoop.RiscLoop;
 import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.*;
 import backend.riscv.RiscvInstruction.*;
-import midend.Util.FuncInfo;
+import manager.Manager;
+import midend.Analysis.FuncAnalysis;
 import mir.Module;
 import mir.*;
 
@@ -24,13 +26,13 @@ public class CodeGen {
      * 全局和对应的riscv全局变量的映射,可以方便在后面使用的时候取到
      * 注意不能按照对象本身来定位，因为对象不一样但是可能对应的事一个东西
      */
-  public static final HashMap<String, RiscvGlobalVar> gloMap = new HashMap<>();
+    public static final HashMap<String, RiscvGlobalVar> gloMap = new HashMap<>();
 
     public static final RiscvModule ansRis = new RiscvModule();
 
     // 为了给branch 和 jump指令进行block的存放
     // 因为branch和jump需要存的属性是riscvBlock,所以需要提前将所有llvm块和其翻译后的riscv块对应好
-    private final HashMap<BasicBlock, RiscvBlock> blockMap = new HashMap<>();
+    public final HashMap<BasicBlock, RiscvBlock> blockMap = new HashMap<>();
 
     public RiscvModule genCode(Module module) {
         Reg.initPreColoredRegs();
@@ -61,7 +63,7 @@ public class CodeGen {
             VirRegMap.VRM.clean(function);
             visitFunction(function);
         }
-        FuncInfo.getFuncTopoSort().forEach(func -> ansRis.TopoSort.add(ansRis.getFunction(func.getName())));
+        FuncAnalysis.getFuncTopoSort().forEach(func -> ansRis.TopoSort.add(ansRis.getFunction(func.getName())));
         for (RiscvFunction rf : ansRis.funcList) {
             if (RiscvModule.isMain(rf)) {
                 rf.isMain = true;
@@ -86,8 +88,9 @@ public class CodeGen {
             nowFunc.addBB(riscvBlock);
             blockMap.put(block, riscvBlock);
         }
+        if (Manager.isO1) RiscLoop.buildLoops(nowFunc, function, blockMap);
         Address offset = null;
-        if (!function.isExternal() && FuncInfo.callGraph.get(function).size() != 0) {
+        if (!function.isExternal() && FuncAnalysis.callGraph.get(function).size() != 0) {
             offset = StackManager.getInstance().getRegOffset(nowFunc.name, "ra", 8);
             blockMap.get(function.getEntry()).addInstrucion(new LS(blockMap.get(function.getEntry()),
                     Reg.getPreColoredReg(Reg.PhyReg.ra, 64),
@@ -195,25 +198,14 @@ public class CodeGen {
      * 参数有3种,指针,int32，float
      */
     private void solveCall(Instruction.Call callInstr) {
-        String min = "llvm.smin.i32";
-        String max = "llvm.smax.i32";
         // 开局拦截min和max
         String funcName = callInstr.getDestFunction().getName();
-        if (funcName.equals(min) || funcName.equals(max)) {
-            R3.R3Type type = funcName.equals(max) ? R3.R3Type.max : R3.R3Type.min;
-            Reg r1 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(0));
-            Reg r2 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(1));
-            Reg ans = VirRegMap.VRM.ensureRegForValue(callInstr);
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, r1, r2, type));
-            return;
-        }
         J call = new J(nowBlock, J.JType.call, funcName);
         Type type = callInstr.getType();
         Reg reg = null;
         if (!(type instanceof Type.VoidType)) {
             reg = VirRegMap.VRM.ensureRegForValue(callInstr);
         }
-
         ArrayList<Value> paras = callInstr.getParams();
         int count_int = 0;
         int count_float = 0;
@@ -443,7 +435,7 @@ public class CodeGen {
                 if (byte_off >= -2047 && byte_off <= 2047) {
                     nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, new Imm(byte_off), R3.R3Type.addi));
                 } else {
-                    Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
+                    Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                     nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(byte_off)));
                     nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, tmp, R3.R3Type.add));
                 }
@@ -481,9 +473,7 @@ public class CodeGen {
             }
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_offset, new Imm(shift), R3.R3Type.slliw));
         } else {
-            Reg reg_for_size = new Reg(Reg.RegType.GPR, 32);
-            nowBlock.riscvInstructions.addLast(new Li(nowBlock, reg_for_size, new Imm(size)));
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_size, reg_for_offset, R3.R3Type.mulw));
+            MulPlaner.MulConst(tmp_offset, reg_for_offset, size);
         }
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, tmp_offset, R3.R3Type.add));
     }
@@ -507,10 +497,12 @@ public class CodeGen {
         double prob = branchInstr.getProbability();
         // 如果概率跳转概率比50大，那么就应当反转，让j尽可能大
         if (prob >= 0.5) {
-            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.beq, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getElseBlock()), 1 - prob));
+            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.beq, reg, Reg.getPreColoredReg
+                    (Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getElseBlock()), 1 - prob));
             nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getThenBlock())));
         } else {
-            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock()), prob));
+            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg
+                    (Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock()), prob));
             nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getElseBlock())));
         }
     }
@@ -667,7 +659,7 @@ public class CodeGen {
             if (value >= -2047 && value <= 2047) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(value), R3.R3Type.addiw));
             } else {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(value)));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.addw));
             }
@@ -693,7 +685,7 @@ public class CodeGen {
             if (value >= -2047 && value <= 2047) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(-1 * value), R3.R3Type.addiw));
             } else {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(-1 * value)));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.addw));
             }
@@ -731,17 +723,24 @@ public class CodeGen {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fSub);
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fsub));
     }
-    //TODO 乘除优化
 
     private void solveMul(Instruction.Mul mul) {
         if (!mul.getOperand_1().getType().isInt32Ty() ||
                 !mul.getOperand_2().getType().isInt32Ty()) {
             throw new RuntimeException("not all oper of mul is i32");
         }
-        Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
-        Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(mul);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+        if (mul.getOperand_2() instanceof Constant.ConstantInt c) {
+            Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
+            MulPlaner.MulConst(ans, op1, c.getIntValue());
+        } else if (mul.getOperand_1() instanceof Constant.ConstantInt c) {
+            Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
+            MulPlaner.MulConst(ans, op2, c.getIntValue());
+        } else {
+            Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
+            Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+        }
     }
 
     private void solveDiv(Instruction.Div div) {
@@ -750,8 +749,11 @@ public class CodeGen {
             throw new RuntimeException("not all oper of div is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(div.getOperand_1());
-        Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(div);
+        if (div.getOperand_2() instanceof Constant.ConstantInt co) {
+            if (DivRemByConstant.Div(ans, op1, co.getIntValue(), div.getOperand_1(), div.getParentBlock())) return;
+        }
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
     }
 
@@ -778,9 +780,14 @@ public class CodeGen {
             throw new RuntimeException("not all oper of rem is i32");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_1());
-        Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(rem);
+        if (rem.getOperand_2() instanceof Constant.ConstantInt co) {
+            if (DivRemByConstant.Rem(ans, op1,
+                    co.getIntValue(), rem.getOperand_1(), rem.getParentBlock())) return;
+        }
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
         nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
+
     }
 
     /**
@@ -827,13 +834,7 @@ public class CodeGen {
         Reg op = VirRegMap.VRM.ensureRegForValue(value1);
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
-            if (val >= -2047 && val <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.slliw));
-            } else {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.sllw));
-            }
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.slliw));
         }
     }
 
@@ -847,7 +848,7 @@ public class CodeGen {
             if (val >= -2047 && val <= 2047) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.andi));
             } else {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.and));
             }
@@ -861,13 +862,7 @@ public class CodeGen {
         Reg op = VirRegMap.VRM.ensureRegForValue(value1);
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
-            if (val >= -2047 && val <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.srliw));
-            } else {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.srlw));
-            }
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.srliw));
         }
     }
 
@@ -878,13 +873,7 @@ public class CodeGen {
         Reg op = VirRegMap.VRM.ensureRegForValue(value1);
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
-            if (val >= -2047 && val <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.sraiw));
-            } else {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.sraw));
-            }
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.sraiw));
         }
     }
 
@@ -898,7 +887,7 @@ public class CodeGen {
             if (val >= -2047 && val <= 2047) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.xoriw));
             } else {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.xorw));
             }
@@ -915,11 +904,67 @@ public class CodeGen {
             if (val >= -2047 && val <= 2047) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.ori));
             } else {
-                Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
+                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.or));
             }
         }
+    }
+
+    private void solveMin(Instruction.Min min) {
+        Value value1 = min.getOperand_1();
+        Value value2 = min.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(min);
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(value1);
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(value2);
+        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.min));
+    }
+
+    private void solveMax(Instruction.Max max) {
+        Value value1 = max.getOperand_1();
+        Value value2 = max.getOperand_2();
+        Reg ans = VirRegMap.VRM.ensureRegForValue(max);
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(value1);
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(value2);
+        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.max));
+    }
+
+    private void solveFmadd(Instruction.Fmadd fmadd) {
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fmadd.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fmadd.getOperand_2());
+        Reg op3 = VirRegMap.VRM.ensureRegForValue(fmadd.getOperand_3());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fmadd);
+        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fmadd));
+    }
+
+    private void solveFmsub(Instruction.Fmsub fmsub) {
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fmsub.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fmsub.getOperand_2());
+        Reg op3 = VirRegMap.VRM.ensureRegForValue(fmsub.getOperand_3());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fmsub);
+        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fmsub));
+    }
+
+    private void solveFnmadd(Instruction.Fnmadd fnmadd) {
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fnmadd.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fnmadd.getOperand_2());
+        Reg op3 = VirRegMap.VRM.ensureRegForValue(fnmadd.getOperand_3());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fnmadd);
+        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fnmadd));
+    }
+
+    private void solveFnmsub(Instruction.Fnmsub fnmsub) {
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fnmsub.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fnmsub.getOperand_2());
+        Reg op3 = VirRegMap.VRM.ensureRegForValue(fnmsub.getOperand_3());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fnmsub);
+        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fnmsub));
+    }
+
+    private void solveFneg(Instruction.Fneg fneg) {
+        Reg op = VirRegMap.VRM.ensureRegForValue(fneg.getOperand());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fneg);
+        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, op, R2.R2Type.fneg));
     }
 
     private void visitBlock(BasicBlock block) {
@@ -988,7 +1033,22 @@ public class CodeGen {
                 solveOr((Instruction.Or) instruction);
             } else if (instruction instanceof Instruction.Xor) {
                 solveXor((Instruction.Xor) instruction);
-            } else {
+            } else if (instruction instanceof Instruction.Min) {
+                solveMin((Instruction.Min) instruction);
+            } else if (instruction instanceof Instruction.Max) {
+                solveMax((Instruction.Max) instruction);
+            } else if (instruction instanceof Instruction.Fmadd) {
+                solveFmadd((Instruction.Fmadd) instruction);
+            } else if (instruction instanceof Instruction.Fmsub) {
+                solveFmsub((Instruction.Fmsub) instruction);
+            } else if (instruction instanceof Instruction.Fnmadd) {
+                solveFnmadd((Instruction.Fnmadd) instruction);
+            } else if (instruction instanceof Instruction.Fnmsub) {
+                solveFnmsub((Instruction.Fnmsub) instruction);
+            } else if (instruction instanceof Instruction.Fneg) {
+                solveFneg((Instruction.Fneg) instruction);
+            }
+            else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
             }
         }

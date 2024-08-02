@@ -78,24 +78,23 @@ public class GPRallocater {
     private static void clear() {
         curUsedRegs.clear();
         curCG.clear();
-        conflictGraph.clear();
+//        conflictGraph.clear();
         outNodes.clear();
         spillNodes.clear();
-        moveList.clear();
-        moveNodes.clear();
     }
 
     public static void runOnFunc(RiscvFunction func) {
         curFunc = func;
         pass = 0;
+        buildConflictGraph();
+        MoveInit();
         while (true) {
             clear();
+            buildCurCG();
             //标记第几轮循环
 //            System.out.println(func.name + " GPR round: " + pass++);
 //            System.out.println(func);
             //建立冲突图
-            buildConflictGraph();
-            MoveInit();
             while (!curCG.isEmpty()) {
                 SimplifyCoalesce();
                 FreezeSpill();
@@ -118,6 +117,7 @@ public class GPRallocater {
     private static void ReWrite() {
         RegCost.buildSpillCost(spillNodes);
         ArrayList<Reg> spills = RegCost.getSpillArray();
+        ArrayList<Reg> newNodes = new ArrayList<>();
         for (Reg reg : spills) {
 //            System.out.println("spill: " + reg);
             ArrayList<RiscvInstruction> contains = new ArrayList<>(RegUse.get(reg));
@@ -132,6 +132,7 @@ public class GPRallocater {
             }
             for (RiscvInstruction ud : uds) {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 RiscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
@@ -148,6 +149,7 @@ public class GPRallocater {
 //                System.out.println("def: " + def);
                 RiscvInstruction store;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
@@ -158,11 +160,40 @@ public class GPRallocater {
                 //在使用点使用新的虚拟寄存器
                 RiscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 load = new LS(use.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
                 use.replaceUseReg(reg, tmp);
                 use.block.riscvInstructions.insertBefore(load, use);
+            }
+            DeleteNode(reg, conflictGraph);
+        }
+        LivenessAnalyze.RunOnFunc(curFunc);
+        for (Reg reg : newNodes) {
+            conflictGraph.put(reg, new LinkedHashSet<>());
+        }
+        conflictGraph.putIfAbsent(Reg.getPreColoredReg(Reg.PhyReg.sp, 64), new LinkedHashSet<>());
+        for (Reg reg : newNodes) {
+            for (RiscvInstruction ins : RegUse.get(reg)) {
+                for (Reg def : Def.get(ins)) {
+                    if (def.regType == Reg.RegType.GPR) {
+                        for (Reg out : Out.get(ins)) {
+                            if (out.regType == Reg.RegType.GPR) {
+                                addConflict(def, out);
+                            }
+                        }
+                    }
+                }
+                for (Reg o1 : Out.get(ins)) {
+                    if (o1.regType == Reg.RegType.GPR) {
+                        for (Reg o2 : Out.get(ins)) {
+                            if (o2.regType == Reg.RegType.GPR) {
+                                addConflict(o1, o2);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -170,7 +201,9 @@ public class GPRallocater {
     /**
      * 初始化两个队列，并将所有非预着色虚拟寄存器的物理寄存器置空
      **/
-    public static void MoveInit() {
+    private static void MoveInit() {
+        moveList.clear();
+        moveNodes.clear();
         //维护moveList
         for (RiscvBlock block : curFunc.blocks) {
             for (RiscvInstruction ins : block.riscvInstructions) {
@@ -185,7 +218,8 @@ public class GPRallocater {
             R2 move = it.next();
             if (conflictGraph.get(move.rd).contains(move.rs)) {
                 it.remove();
-            } else {
+            }
+            else {
                 moveNodes.add((Reg) move.rd);
                 moveNodes.add((Reg) move.rs);
             }
@@ -244,9 +278,10 @@ public class GPRallocater {
                     spillNodes.remove(node);
                 }
                 curUsedRegs.add(node.phyReg);
-            } else {
+            }
+            else {
                 spillNodes.add(node);
-                DeleteNode(node);
+                DeleteNode(node, curCG);
             }
         }
         if (spillNodes.isEmpty()) return true;
@@ -301,13 +336,13 @@ public class GPRallocater {
             if (!curCG.isEmpty()) {
                 ArrayList<Reg> PreRegs = new ArrayList<>(curCG.keySet());
                 for (Reg reg : PreRegs) {
-                    DeleteNode(reg);
+                    DeleteNode(reg, curCG);
                 }
             }
             return;
         }
 //        System.out.println("spill: " + maxReg);
-        DeleteNode(maxReg);
+        DeleteNode(maxReg, curCG);
         spillNodes.add(maxReg);
         outNodes.add(maxReg);
     }
@@ -337,7 +372,8 @@ public class GPRallocater {
         for (Reg reg : nodes) {
             if (reg.preColored) {
                 regs.add(reg.phyReg);
-            } else size++;
+            }
+            else size++;
         }
         regs.removeAll(unAllocateRegs);
         return regs.size() + size;
@@ -363,13 +399,14 @@ public class GPRallocater {
 //                System.out.println("simplify: " + node + " " + getDegree(curCG.get(node)));
                 if (getDegree(curCG.get(node)) < K) {
                     LinkedHashSet<Reg> neighbors = new LinkedHashSet<>(curCG.get(node));
-                    DeleteNode(node);
+                    DeleteNode(node, curCG);
                     for (Reg neighbor : neighbors) {
                         if (!moveNodes.contains(neighbor)) regQueue.add(new RegNode(neighbor));
                         if (neighbor.equals(node)) System.out.println("error");
                     }
                     if (!node.preColored) outNodes.add(node);
-                } else break;
+                }
+                else break;
             }
             //如果没有可以删除的低度数传送无关节点，尝试删除一条move来合并一对move相关节点
             boolean merge = true;
@@ -385,7 +422,8 @@ public class GPRallocater {
                             if (r1.preColored) {
                                 newReg = r1;
                                 oldReg = r2;
-                            } else {
+                            }
+                            else {
                                 newReg = r2;
                                 oldReg = r1;
                             }
@@ -393,7 +431,8 @@ public class GPRallocater {
                             //合并节点
                             newReg.mergeReg(oldReg);
                             moveNodes.remove(oldReg);
-                        } else {
+                        }
+                        else {
                             newReg = r1;
                         }
                         //删除move指令
@@ -422,6 +461,7 @@ public class GPRallocater {
             conflictGraph.get(neighbor).add(newReg);
         }
         conflictGraph.remove(oldReg);
+        if (callSaved.contains(oldReg)) callSaved.add(newReg);
     }
 
     private static void TryThrowMoveNode(Reg node) {
@@ -479,11 +519,11 @@ public class GPRallocater {
      *
      * @param node 删除的节点
      */
-    private static void DeleteNode(Reg node) {
-        for (Reg neighbor : curCG.get(node)) {
-            curCG.get(neighbor).remove(node);
+    private static void DeleteNode(Reg node, LinkedHashMap<Reg, LinkedHashSet<Reg>> graph) {
+        for (Reg neighbor : graph.get(node)) {
+            graph.get(neighbor).remove(node);
         }
-        curCG.remove(node);
+        graph.remove(node);
     }
 
 
@@ -497,6 +537,7 @@ public class GPRallocater {
      */
     public static void buildConflictGraph() {
         LivenessAnalyze.RunOnFunc(curFunc);
+        conflictGraph.clear();
         for (Reg reg : RegUse.keySet()) {
             if (reg.regType == Reg.RegType.GPR) {
                 conflictGraph.put(reg, new LinkedHashSet<>());
@@ -531,13 +572,15 @@ public class GPRallocater {
                 conflictGraph.get(reg).remove(reg);
             }
         }
+//        System.out.println(conflictGraph);
+    }
 
+    private static void buildCurCG() {
         //深拷贝删除图
         curCG = new LinkedHashMap<>();
         for (Reg reg : conflictGraph.keySet()) {
             curCG.put(reg, new LinkedHashSet<>(conflictGraph.get(reg)));
         }
-//        System.out.println(conflictGraph);
     }
 
     /**

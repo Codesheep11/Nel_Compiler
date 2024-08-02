@@ -57,6 +57,31 @@ public final class SCEVExpr {
         return sum;
     }
 
+    public boolean isNotNegative() {
+        if (type == SCEVType.Constant) {
+            return constant >= 0;
+        } else {
+            for (SCEVExpr operand : operands) {
+                if (!operand.isNotNegative()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    public int getInit() {
+        if (type == SCEVType.Constant) {
+            return constant;
+        } else {
+            return operands.get(0).getInit();
+        }
+    }
+
+    public int getStep() {
+        return calc(this, 1) - calc(this, 0);
+    }
+
 
 //    public String toString() {
 //        StringBuilder sb = new StringBuilder();

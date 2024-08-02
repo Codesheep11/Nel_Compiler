@@ -42,7 +42,7 @@ public class Function extends Value {
 
     }
 
-    private final Type retType; // 返回值类型
+    private Type retType; // 返回值类型
     private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
@@ -155,6 +155,10 @@ public class Function extends Value {
         return retType;
     }
 
+    public void setRetType(Type type) {
+        this.retType = type;
+    }
+
 
     public ArrayList<Type> getArgumentsTP() {
         ArrayList<Type> types = new ArrayList<>();
@@ -176,6 +180,7 @@ public class Function extends Value {
     /**
      * 构建函数的控制流图 <br>
      * 建议使用AnalysisManager.refreshCFG(Function)来刷新CFG
+     *
      * @deprecated
      */
     @Deprecated
@@ -208,7 +213,8 @@ public class Function extends Value {
             for (Instruction instr : block.getInstructions()) {
                 if (instr instanceof Instruction.Phi phi) {
                     phi.changePreBlocks(bbMap);
-                } else break;
+                }
+                else break;
             }
         }
 
@@ -248,16 +254,17 @@ public class Function extends Value {
                     //load = new Instruction.Load(retBB, alloc);
                     //load.remove();
                     //retBB.getInstructions().insertAfter(load, store);
-                    inst.remove();
+                    inst.delete();
                     //维护前驱后继
-                } else if (inst instanceof Instruction.Return) {
+                }
+                else if (inst instanceof Instruction.Return) {
                     Instruction jumpToRetBB = new Instruction.Jump(needFixBB, retBB);
                     jumpToRetBB.remove();
                     needFixBB.getInstructions().insertBefore(jumpToRetBB, inst);
                     //instr.insertBefore(jumpToRetBB);
 //                    retBB.getPreBlocks().add(needFixBB);
 //                    needFixBB.setSucBlocks(retSucc);
-                    inst.remove();
+                    inst.delete();
                 }
             }
         }
@@ -307,12 +314,14 @@ public class Function extends Value {
                 if (int_count > 8) {
                     sp_move -= 8;
                 }
-            } else if (arg.getType().isInt32Ty()) {
+            }
+            else if (arg.getType().isInt32Ty()) {
                 int_count++;
                 if (int_count > 8) {
                     sp_move -= 4;
                 }
-            } else if (arg.getType().isFloatTy()) {
+            }
+            else if (arg.getType().isFloatTy()) {
                 float_count++;
                 if (float_count > 8) {
                     sp_move -= 4;
@@ -364,7 +373,6 @@ public class Function extends Value {
         while (!stack.isEmpty()) {
             BasicBlock cur = stack.peek();
             boolean allChildrenVisited = true;
-
             for (BasicBlock child : cur.getDomTreeChildren()) {
                 if (!visited.contains(child)) {
                     stack.push(child);
@@ -372,14 +380,12 @@ public class Function extends Value {
                     allChildrenVisited = false;
                 }
             }
-
             if (allChildrenVisited) {
                 // 如果当前节点的所有子节点都已经访问过，则将当前节点从栈中弹出并加入后序遍历结果列表中
                 stack.pop();
                 postOrder.add(cur);
             }
         }
-
         // 返回支配树的后序遍历顺序的列表
         return postOrder;
     }
@@ -403,7 +409,8 @@ public class Function extends Value {
                 if (!rpot.contains(current)) {
                     rpot.add(current);
                 }
-            } else {
+            }
+            else {
                 visited.add(current);
                 for (BasicBlock succ : current.getSucBlocks()) {
                     if (!visited.contains(succ)) {

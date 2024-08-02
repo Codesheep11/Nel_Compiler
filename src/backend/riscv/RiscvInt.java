@@ -27,11 +27,27 @@ public class RiscvInt extends RiscvGlobalVar {
         } else {
             sb.append("\t.word ").append(data);
         }
-        return sb.toString()+"\n";
+        return sb.toString() + "\n";
     }
 
     @Override
     public boolean hasInit() {
         return data != 0;
+    }
+
+    @Override
+    public String getContent() {
+        StringBuilder sb = new StringBuilder();
+        if (data == 0) {
+            sb.append("\t" + ".zero 4");
+        } else {
+            sb.append("\t.word ").append(data);
+        }
+        return sb.append("\n").toString();
+    }
+
+    @Override
+    public int size() {
+        return 4;
     }
 }
