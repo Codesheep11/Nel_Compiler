@@ -1,7 +1,7 @@
 package manager;
 
-import backend.Opt.*;
 import backend.Opt.BackLoop.LoopConstLift;
+import backend.Opt.*;
 import backend.Opt.GPpooling.GlobalFloat2roPool;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
@@ -115,8 +115,9 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
+        PointerCalSimplify.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
-        RegAftCallLoadOpt.run(riscvmodule);
+        RegAftExternCallLoadOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);

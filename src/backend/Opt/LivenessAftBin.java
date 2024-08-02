@@ -52,7 +52,7 @@ public class LivenessAftBin {
     public static HashMap<RiscvBlock, HashSet<Reg>> BlockDef = new HashMap<>();
 
     private static final HashMap<RiscvInstruction, HashSet<Reg>> In = new HashMap<>();
-    private static final HashMap<RiscvInstruction, HashSet<Reg>> Out = new HashMap<>();
+    public static final HashMap<RiscvInstruction, HashSet<Reg>> Out = new HashMap<>();
     private static final HashMap<RiscvInstruction, HashSet<Reg>> Use = new HashMap<>();
     private static final HashMap<RiscvInstruction, HashSet<Reg>> Def = new HashMap<>();
 
