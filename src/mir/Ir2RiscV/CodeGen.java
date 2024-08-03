@@ -967,6 +967,20 @@ public class CodeGen {
         nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, op, R2.R2Type.fneg));
     }
 
+    private void solveSext(Instruction.Sext sext) {
+        Reg reg = VirRegMap.VRM.ensureRegForValue(sext.getSrc());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(sext);
+        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg,
+                Reg.getPreColoredReg(Reg.PhyReg.zero, 32), R3.R3Type.addw));
+    }
+
+    private void solveTrunc(Instruction.Trunc trunc) {
+        Reg reg = VirRegMap.VRM.ensureRegForValue(trunc.getSrc());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(trunc);
+        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg,
+                Reg.getPreColoredReg(Reg.PhyReg.zero, 32), R3.R3Type.addw));
+    }
+
     private void visitBlock(BasicBlock block) {
         nowBlock = blockMap.get(block);
         for (Instruction instruction : block.getInstructions()) {
@@ -1047,8 +1061,11 @@ public class CodeGen {
                 solveFnmsub((Instruction.Fnmsub) instruction);
             } else if (instruction instanceof Instruction.Fneg) {
                 solveFneg((Instruction.Fneg) instruction);
-            }
-            else {
+            } else if (instruction instanceof Instruction.Sext) {
+                solveSext((Instruction.Sext) instruction);
+            } else if (instruction instanceof Instruction.Trunc) {
+                solveTrunc((Instruction.Trunc) instruction);
+            } else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
             }
         }
