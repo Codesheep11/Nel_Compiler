@@ -2,7 +2,6 @@ package midend.Transform.DCE;
 
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
-import midend.Util.FuncInfo;
 import mir.*;
 
 import java.util.ArrayList;
@@ -16,16 +15,19 @@ public class DeadArgEliminate {
     /**
      *
      */
-    public static void run() {
+    public static boolean run() {
+        boolean modified = false;
         ArrayList<Function> funcs = FuncAnalysis.getFuncTopoSort();
         for (Function function : funcs) {
             if (function.isExternal()) continue;
-            run(function);
+            modified |= runOnFunc(function);
         }
+        return modified;
     }
 
-    private static void run(Function function) {
-        if (function.getFuncRArguments().isEmpty()) return;
+    private static boolean runOnFunc(Function function) {
+        boolean modified = false;
+        if (function.getFuncRArguments().isEmpty()) return false;
 //        System.out.println("DeadArgEliminate: " + function.getDescriptor());
         LinkedList<Function.Argument> removeList = new LinkedList<>();
         for (int i = 0; i < function.getFuncRArguments().size(); i++) {
@@ -43,7 +45,6 @@ public class DeadArgEliminate {
                 if (!hasUse) removeList.add(arg);
             }
         }
-
         for (Function.Argument arg : removeList) {
             int idx = function.getFuncRArguments().indexOf(arg);
             LinkedList<Instruction.Call> calls = new LinkedList<>();
@@ -71,6 +72,7 @@ public class DeadArgEliminate {
         for (int i = 0; i < function.getFuncRArguments().size(); i++) {
             function.getFuncRArguments().get(i).idx = i;
         }
+        return !removeList.isEmpty();
     }
 
     private static boolean isRecurseUser(User user, int idx) {

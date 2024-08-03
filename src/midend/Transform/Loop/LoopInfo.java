@@ -27,6 +27,7 @@ public class LoopInfo {
 
     public static void runOnFunc(Function function) {
         if (function.isExternal()) return;
+
         function.loopInfo = new LoopInfo(function);
     }
 
