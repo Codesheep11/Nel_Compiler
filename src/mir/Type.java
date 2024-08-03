@@ -64,6 +64,10 @@ public class Type {
         return this == BasicType.I32_TYPE;
     }
 
+    public boolean isInt() {
+        return this.isInt32Ty() || this.isInt64Ty();
+    }
+
     public boolean isFloatTy() {
         return this == BasicType.F32_TYPE || this == BasicType.F64_TYPE;
     }

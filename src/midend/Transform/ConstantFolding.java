@@ -114,6 +114,13 @@ public class ConstantFolding {
                 }
             }
         }
+        else if(instruction instanceof Instruction.Sext sext) {
+            if (sext.getSrc() instanceof Constant.ConstantInt) {
+                int val = (int) ((Constant.ConstantInt) sext.getSrc()).getConstValue();
+                instruction.replaceAllUsesWith(Constant.ConstantInt.get(val));
+                return true;
+            }
+        }
         return false;
     }
 }
