@@ -116,7 +116,7 @@ public class Instruction extends User {
     public boolean gvnable() {
         return switch (instType) {
             case ALLOC, LOAD, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
-            case SHL, AND, OR, XOR, ASHR, LSHR, MIN, MAX -> false; // 目前判断 gvn 位运算平均收益为负
+            case SHL, AND, OR, XOR, ASHR, LSHR -> false; // 目前判断 gvn 位运算平均收益为负
             case CALL -> {
                 Function func = ((Call) this).getDestFunction();
                 FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
@@ -1327,18 +1327,40 @@ public class Instruction extends User {
         }
     }
 
-    public static class Fmadd extends BinaryOperation {
+    public static class TripleOperation extends Instruction {
 
-        private Value operand_3;
+        protected Value operand_1;
+        protected Value operand_2;
+        protected Value operand_3;
 
-        public Fmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
-            super(parentBlock, resType, InstType.FMADD, operand_1, operand_2);
+
+        public TripleOperation(BasicBlock parentBlock, Type resType, InstType instType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, instType);
+            this.operand_1 = operand_1;
+            this.operand_2 = operand_2;
             this.operand_3 = operand_3;
+            addOperand(operand_1);
+            addOperand(operand_2);
             addOperand(operand_3);
+        }
+
+        public Value getOperand_1() {
+            return operand_1;
+        }
+
+        public Value getOperand_2() {
+            return operand_2;
         }
 
         public Value getOperand_3() {
             return operand_3;
+        }
+    }
+
+    public static class Fmadd extends TripleOperation {
+
+        public Fmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
+            super(parentBlock, resType, InstType.FMADD, operand_1, operand_2, operand_3);
         }
 
         @Override
@@ -1363,22 +1385,14 @@ public class Instruction extends User {
 
         @Override
         public Fmadd cloneToBB(BasicBlock block) {
-            return new Fmadd(block, resType, operand_1, operand_2, operand_3);
+            return new Fmadd(block, operand_1.getType(), operand_1, operand_2, operand_3);
         }
     }
 
-    public static class Fmsub extends BinaryOperation {
-
-        private Value operand_3;
+    public static class Fmsub extends TripleOperation {
 
         public Fmsub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
-            super(parentBlock, resType, InstType.FMSUB, operand_1, operand_2);
-            this.operand_3 = operand_3;
-            addOperand(operand_3);
-        }
-
-        public Value getOperand_3() {
-            return operand_3;
+            super(parentBlock, resType, InstType.FMSUB, operand_1, operand_2, operand_3);
         }
 
         @Override
@@ -1403,7 +1417,7 @@ public class Instruction extends User {
 
         @Override
         public Fmsub cloneToBB(BasicBlock block) {
-            return new Fmsub(block, resType, operand_1, operand_2, operand_3);
+            return new Fmsub(block, operand_1.getType(), operand_1, operand_2, operand_3);
         }
     }
 
@@ -1439,18 +1453,10 @@ public class Instruction extends User {
         }
     }
 
-    public static class Fnmadd extends BinaryOperation {
-
-        private Value operand_3;
+    public static class Fnmadd extends TripleOperation {
 
         public Fnmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
-            super(parentBlock, resType, InstType.FNMADD, operand_1, operand_2);
-            this.operand_3 = operand_3;
-            addOperand(operand_3);
-        }
-
-        public Value getOperand_3() {
-            return operand_3;
+            super(parentBlock, resType, InstType.FNMADD, operand_1, operand_2, operand_3);
         }
 
         @Override
@@ -1475,18 +1481,14 @@ public class Instruction extends User {
 
         @Override
         public Fnmadd cloneToBB(BasicBlock block) {
-            return new Fnmadd(block, resType, operand_1, operand_2, operand_3);
+            return new Fnmadd(block, operand_1.getType(), operand_1, operand_2, operand_3);
         }
     }
 
-    public static class Fnmsub extends BinaryOperation {
-
-        private Value operand_3;
+    public static class Fnmsub extends TripleOperation {
 
         public Fnmsub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
-            super(parentBlock, resType, InstType.FNMSUB, operand_1, operand_2);
-            this.operand_3 = operand_3;
-            addOperand(operand_3);
+            super(parentBlock, resType, InstType.FNMSUB, operand_1, operand_2, operand_3);
         }
 
         public Value getOperand_3() {
@@ -1515,7 +1517,7 @@ public class Instruction extends User {
 
         @Override
         public Fmsub cloneToBB(BasicBlock block) {
-            return new Fmsub(block, resType, operand_1, operand_2, operand_3);
+            return new Fmsub(block, operand_1.getType(), operand_1, operand_2, operand_3);
         }
     }
 
@@ -1679,6 +1681,15 @@ public class Instruction extends User {
             optionalValues.put(block, value);
         }
 
+        public BasicBlock getIncomingBlock(Value value) {
+            for (BasicBlock block : optionalValues.keySet()) {
+                if (optionalValues.get(block).equals(value)) {
+                    return block;
+                }
+            }
+            return null;
+        }
+
         public LinkedList<BasicBlock> getPreBlocks() {
             return new LinkedList<>(optionalValues.keySet());
         }
@@ -1761,6 +1772,8 @@ public class Instruction extends User {
                 }
                 i++;
             }
+            if (this.isLCSSA)
+                str.append(" ; [isLCSSA]");
             return str.toString();
         }
 

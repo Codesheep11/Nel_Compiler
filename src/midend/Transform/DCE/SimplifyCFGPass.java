@@ -1,5 +1,6 @@
 package midend.Transform.DCE;
 
+import midend.Analysis.AnalysisManager;
 import midend.Pass.FunctionPass;
 import midend.Util.Print;
 import mir.*;
@@ -27,16 +28,18 @@ public class SimplifyCFGPass extends FunctionPass {
 
     public static boolean runOnFunc(Function function) {
         boolean modified = false;
-        modified |= Br2Jump(function);
-//        System.out.println("Br2Jump " + modified);
-        RemoveBlocks.runOnFunc(function);
-        function.buildDominanceGraph();
-        modified |= MergeBlocks(function);
-//        System.out.println("MergeBlocks " + modified);
-        RemoveBlocks.runOnFunc(function);
-        modified |= ChangeTarget(function);
-//        System.out.println("ChangeTarget " + modified);
-        RemoveBlocks.runOnFunc(function);
+        boolean changed;
+        do{
+            changed = false;
+            changed |= Br2Jump(function);
+            RemoveBlocks.runOnFunc(function);
+            AnalysisManager.refreshDG(function);
+            changed |= MergeBlocks(function);
+            RemoveBlocks.runOnFunc(function);
+            changed |= ChangeTarget(function);
+            RemoveBlocks.runOnFunc(function);
+            modified |= changed;
+        } while (changed);
         return modified;
 //        Print.outputLLVM(function, "debug2.txt");
     }
