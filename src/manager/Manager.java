@@ -107,9 +107,9 @@ public class Manager {
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
+        AggressivePass();
         SCCP();
         DeadCodeEliminate();
-        AggressivePass();
         FuncAnalysis.run(module);
         LCSSA.remove(module);
         Scheduler.run(module);

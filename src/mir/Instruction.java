@@ -1679,6 +1679,15 @@ public class Instruction extends User {
             optionalValues.put(block, value);
         }
 
+        public BasicBlock getIncomingBlock(Value value) {
+            for (BasicBlock block : optionalValues.keySet()) {
+                if (optionalValues.get(block).equals(value)) {
+                    return block;
+                }
+            }
+            return null;
+        }
+
         public LinkedList<BasicBlock> getPreBlocks() {
             return new LinkedList<>(optionalValues.keySet());
         }
@@ -1761,6 +1770,8 @@ public class Instruction extends User {
                 }
                 i++;
             }
+            if (this.isLCSSA)
+                str.append(" ; [isLCSSA]");
             return str.toString();
         }
 

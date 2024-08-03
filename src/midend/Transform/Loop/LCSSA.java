@@ -59,10 +59,27 @@ public class LCSSA {
         exit.addInstFirst(phi);
         LinkedList<Instruction> users = new LinkedList<>();
         for (Instruction user : instr.getUsers()) {
-            //已经存在LCSSA
-            if (user.equals(phi)) continue;
-            if ((user instanceof Instruction.Phi p) && loop.exits.contains(p.getParentBlock())) continue;
+            //循环内部块
             if (loop.LoopContains(user.getParentBlock())) continue;
+            //本身
+            if (user.equals(phi)) continue;
+            //退出块的Phi
+            if ((user instanceof Instruction.Phi p) && loop.exits.contains(p.getParentBlock())) continue;
+            //不被其支配的普通指令
+            switch (user.getInstType()) {
+                case PHI -> {
+                    Instruction.Phi phiUser = (Instruction.Phi) user;
+                    BasicBlock incomingBlock = phiUser.getIncomingBlock(instr);
+                    if (!AnalysisManager.dominate(exit, incomingBlock)) {
+                        continue;
+                    }
+                }
+                default -> {
+                    if (!AnalysisManager.dominate(exit, user.getParentBlock())) {
+                        continue;
+                    }
+                }
+            }
             users.add(user);
         }
         for (Instruction user : users) {
