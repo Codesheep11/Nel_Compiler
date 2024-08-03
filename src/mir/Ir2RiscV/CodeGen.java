@@ -725,10 +725,6 @@ public class CodeGen {
     }
 
     private void solveMul(Instruction.Mul mul) {
-        if (!mul.getOperand_1().getType().isInt32Ty() ||
-                !mul.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of mul is i32");
-        }
         Reg ans = VirRegMap.VRM.ensureRegForValue(mul);
         if (mul.getOperand_2() instanceof Constant.ConstantInt c) {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
@@ -739,7 +735,11 @@ public class CodeGen {
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+            if (op1.bits == 32 && op2.bits == 32) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+            } else {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mul));
+            }
         }
     }
 
@@ -775,10 +775,6 @@ public class CodeGen {
      * 默认两端都是整数
      */
     private void solveRem(Instruction.Rem rem) {
-        if (!rem.getOperand_1().getType().isInt32Ty() ||
-                !rem.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of rem is i32");
-        }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(rem);
         if (rem.getOperand_2() instanceof Constant.ConstantInt co) {
@@ -786,7 +782,11 @@ public class CodeGen {
                     co.getIntValue(), rem.getOperand_1(), rem.getParentBlock())) return;
         }
         Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
+        if (op1.bits == 32 && op2.bits == 32) {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
+        } else {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.rem));
+        }
 
     }
 

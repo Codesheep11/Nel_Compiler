@@ -137,7 +137,7 @@ public class MatrixCalSimplify {
                                         new R3(block, last.shadd.rd, last.shadd.rd, new Imm(4 * (limm.getVal() - mimm.getVal())), R3.R3Type.addi),
                                         last.shadd
                                 );
-                                if (!outs.contains((Reg) last.addiw.rd) || last.shadd.rd.equals(last.addiw.rd)) {
+                                if (!outs.contains((Reg) last.addiw.rd)) {
                                     addi2Remove.add(last.addiw);
                                 }
                                 if (!outs.contains((Reg) last.addw.rd) || last.shadd.rd.equals(last.addw.rd)) {
@@ -162,7 +162,7 @@ public class MatrixCalSimplify {
                             new R3(block, last.shadd.rd, last.shadd.rd, new Imm(4 * imm.getVal()), R3.R3Type.addi),
                             last.shadd
                     );
-                    if (!outs.contains((Reg) last.addiw.rd) || last.shadd.rd.equals(last.addiw.rd)) {
+                    if (!outs.contains((Reg) last.addiw.rd)) {
                         addi2Remove.add(last.addiw);
                     }
                     if (!outs.contains((Reg) last.addw.rd) || last.shadd.rd.equals(last.addw.rd)) {
