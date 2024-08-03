@@ -3,7 +3,7 @@ package midend.Transform.Loop;
 import midend.Analysis.AnalysisManager;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
-import midend.Transform.GlobalValueNumbering;
+import midend.Transform.LocalValueNumbering;
 import mir.*;
 import mir.Module;
 import mir.result.SCEVinfo;
@@ -39,7 +39,7 @@ public class ConstLoopUnRoll {
             }
             DeadLoopEliminate.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
-            GlobalValueNumbering.runOnFunc(function);
+            LocalValueNumbering.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
         } while (modified);
     }

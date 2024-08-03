@@ -14,10 +14,10 @@ import java.util.HashSet;
  *
  * @author Srchycz
  */
-public class GlobalValueNumbering {
+public class LocalValueNumbering {
 
 
-    private GlobalValueNumbering() {
+    private LocalValueNumbering() {
 
     }
 
@@ -30,7 +30,6 @@ public class GlobalValueNumbering {
             if (func.isExternal()) continue;
             runOnFunc(func);
         }
-        GlobalCodeMotion.run(module);
     }
 
 
@@ -40,7 +39,7 @@ public class GlobalValueNumbering {
     }
 
     /**
-     * 对基本块进行全局值编号
+     * 对基本块进行全局值编号, 并依照支配树向下传递
      *
      * @param block 基本块
      */
@@ -65,14 +64,14 @@ public class GlobalValueNumbering {
         }
         delList.forEach(Value::delete);
         for (BasicBlock child : block.getDomTreeChildren()) {
-            GVN4Block(child, records, recordInstructions);
+            GVN4Block(child, new HashSet<>(records), new HashMap<>(recordInstructions));
         }
     }
 
     private static String generateExpressionKey(Instruction inst) {
         return switch (inst.getInstType()) {
             // 满足交换律的操作符
-            case FAdd, FMUL, ADD, MUL -> {
+            case FAdd, FMUL, ADD, MUL, MAX, MIN -> {
                 Instruction.BinaryOperation binaryOperation = (Instruction.BinaryOperation) inst;
                 String operand1 = binaryOperation.getOperand_1().getDescriptor();
                 String operand2 = binaryOperation.getOperand_2().getDescriptor();
@@ -124,5 +123,6 @@ public class GlobalValueNumbering {
             }
         };
     }
+
 }
 
