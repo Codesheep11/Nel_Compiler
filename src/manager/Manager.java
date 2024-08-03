@@ -158,7 +158,7 @@ public class Manager {
             modified |= SimplifyCFGPass.run(module);
             modified |= RemoveBlocks.run(module);
             modified |= LocalValueNumbering.run(module);
-//            ArithReduce.run(module);
+            ArithReduce.run(module);
             modified |= DeadArgEliminate.run();
             modified |= DeadRetEliminate.run(module);
             modified |= DeadCodeEliminate.run(module);
