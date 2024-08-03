@@ -639,10 +639,6 @@ public class CodeGen {
      */
 
     private void solveAdd(Instruction.Add add) {
-        if (!add.getOperand_1().getType().isInt32Ty() ||
-                !add.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of add is i32");
-        }
         Reg ans = VirRegMap.VRM.ensureRegForValue(add);
         if (add.getOperand_1() instanceof Constant.ConstantInt
                 || add.getOperand_2() instanceof Constant.ConstantInt) {
@@ -666,7 +662,11 @@ public class CodeGen {
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(add.getOperand_2());
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.addw));
+            if (op1.bits == 32 && op2.bits == 32) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.addw));
+            } else {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.add));
+            }
         }
     }
 
@@ -674,10 +674,6 @@ public class CodeGen {
      * 默认两端都是整数,并且不需要考虑地址的大减法
      */
     private void solveSub(Instruction.Sub sub) {
-        if (!sub.getOperand_1().getType().isInt32Ty() ||
-                !sub.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of sub is i32");
-        }
         Reg ans = VirRegMap.VRM.ensureRegForValue(sub);
         if (sub.getOperand_2() instanceof Constant.ConstantInt) {
             Reg op = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
@@ -692,7 +688,11 @@ public class CodeGen {
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_2());
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.subw));
+            if (op1.bits == 32 && op2.bits == 32) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.subw));
+            } else {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.sub));
+            }
         }
     }
 
@@ -754,7 +754,11 @@ public class CodeGen {
             if (DivRemByConstant.Div(ans, op1, co.getIntValue(), div.getOperand_1(), div.getParentBlock())) return;
         }
         Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
+        if (op1.bits == 32 && op2.bits == 32) {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
+        } else {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.div));
+        }
     }
 
     private void solveFMul(Instruction.FMul fmul) {
@@ -967,18 +971,22 @@ public class CodeGen {
         nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, op, R2.R2Type.fneg));
     }
 
+    /**
+     * 寄存器中的值会被自动符号扩展,因此不用考虑这个
+     **/
     private void solveSext(Instruction.Sext sext) {
         Reg reg = VirRegMap.VRM.ensureRegForValue(sext.getSrc());
         Reg ans = VirRegMap.VRM.ensureRegForValue(sext);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg,
-                Reg.getPreColoredReg(Reg.PhyReg.zero, 32), R3.R3Type.addw));
+        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
     }
 
+    /**
+     * 同样,如果之前是add的话,addw也会按符号扩展,不会出现其他情况
+     **/
     private void solveTrunc(Instruction.Trunc trunc) {
         Reg reg = VirRegMap.VRM.ensureRegForValue(trunc.getSrc());
         Reg ans = VirRegMap.VRM.ensureRegForValue(trunc);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg,
-                Reg.getPreColoredReg(Reg.PhyReg.zero, 32), R3.R3Type.addw));
+        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
     }
 
     private void visitBlock(BasicBlock block) {
