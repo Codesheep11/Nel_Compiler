@@ -143,17 +143,17 @@ public class IntegerSumToMul {
         Instruction.Sext sext_inc = new Instruction.Sext(transformBlock, sum_inc, Type.BasicType.I64_TYPE);
         Instruction.Sext sext_Count = new Instruction.Sext(transformBlock, tripCount, Type.BasicType.I64_TYPE);
         Instruction.Mul mul = new Instruction.Mul(transformBlock, sext_inc.getType(), sext_inc, sext_Count);
+        Instruction.Sext sext_initial = new Instruction.Sext(transformBlock, initial_sum, Type.BasicType.I64_TYPE);
+        Instruction.Add add_final = new Instruction.Add(transformBlock, sext_initial.getType(), sext_initial, mul);
         Instruction.Sext sext_mod = new Instruction.Sext(transformBlock, rem_mod, Type.BasicType.I64_TYPE);
-        Instruction.Rem rem = new Instruction.Rem(transformBlock, sext_mod.getType(), mul, sext_mod);
+        Instruction.Rem rem = new Instruction.Rem(transformBlock, sext_mod.getType(), add_final, sext_mod);
         Instruction.Trunc trunc = new Instruction.Trunc(transformBlock, rem, Type.BasicType.I32_TYPE);
-        Instruction.Add res = new Instruction.Add(transformBlock, initial_sum.getType(), initial_sum, trunc);
-        Instruction.Rem rem2 = new Instruction.Rem(transformBlock, res.getType(), res, rem_mod);
         new Instruction.Jump(transformBlock, loop.getExit());
         for (Instruction.Phi phi : loop.getExit().getPhiInstructions()) {
             Value val = phi.getOptionalValue(loop.header);
             if (val == sum) {
                 phi.removeOptionalValue(loop.header);
-                phi.addOptionalValue(transformBlock, rem2);
+                phi.addOptionalValue(transformBlock, trunc);
                 phi.addOptionalValue(cond_block, initial_sum);
             } else if (val == indvar) {
                 phi.removeOptionalValue(loop.header);
