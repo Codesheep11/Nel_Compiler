@@ -125,8 +125,7 @@ public class AnalysisManager {
         checkDG(block_a.getParentFunction());
         if (block_a.equals(block_b)) {
             return a.getIndex() < b.getIndex();
-        }
-        else return dominate(block_a, block_b);
+        } else return dominate(block_a, block_b);
     }
 
     public static boolean strictlyDominate(BasicBlock a, BasicBlock b) {
@@ -211,6 +210,7 @@ public class AnalysisManager {
     }
 
     public static I32RangeAnalysis.I32Range getValueRange(Value value, BasicBlock block) {
+        if (value.getType().isInt64Ty()) return I32RangeAnalysis.I32Range.Any();
         return rangeMap.get(block.getParentFunction()).getValueRange(value, block);
     }
     // endregion
