@@ -639,10 +639,6 @@ public class CodeGen {
      */
 
     private void solveAdd(Instruction.Add add) {
-        if (!add.getOperand_1().getType().isInt32Ty() ||
-                !add.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of add is i32");
-        }
         Reg ans = VirRegMap.VRM.ensureRegForValue(add);
         if (add.getOperand_1() instanceof Constant.ConstantInt
                 || add.getOperand_2() instanceof Constant.ConstantInt) {
@@ -666,7 +662,11 @@ public class CodeGen {
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(add.getOperand_2());
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.addw));
+            if (op1.bits == 32 && op2.bits == 32) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.addw));
+            } else {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.add));
+            }
         }
     }
 
@@ -674,10 +674,6 @@ public class CodeGen {
      * 默认两端都是整数,并且不需要考虑地址的大减法
      */
     private void solveSub(Instruction.Sub sub) {
-        if (!sub.getOperand_1().getType().isInt32Ty() ||
-                !sub.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of sub is i32");
-        }
         Reg ans = VirRegMap.VRM.ensureRegForValue(sub);
         if (sub.getOperand_2() instanceof Constant.ConstantInt) {
             Reg op = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
@@ -692,7 +688,11 @@ public class CodeGen {
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_2());
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.subw));
+            if (op1.bits == 32 && op2.bits == 32) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.subw));
+            } else {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.sub));
+            }
         }
     }
 
@@ -725,10 +725,6 @@ public class CodeGen {
     }
 
     private void solveMul(Instruction.Mul mul) {
-        if (!mul.getOperand_1().getType().isInt32Ty() ||
-                !mul.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of mul is i32");
-        }
         Reg ans = VirRegMap.VRM.ensureRegForValue(mul);
         if (mul.getOperand_2() instanceof Constant.ConstantInt c) {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
@@ -739,22 +735,26 @@ public class CodeGen {
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+            if (op1.bits == 32 && op2.bits == 32) {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+            } else {
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mul));
+            }
         }
     }
 
     private void solveDiv(Instruction.Div div) {
-        if (!div.getOperand_1().getType().isInt32Ty() ||
-                !div.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of div is i32");
-        }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(div.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(div);
         if (div.getOperand_2() instanceof Constant.ConstantInt co) {
             if (DivRemByConstant.Div(ans, op1, co.getIntValue(), div.getOperand_1(), div.getParentBlock())) return;
         }
         Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
+        if (op1.bits == 32 && op2.bits == 32) {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
+        } else {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.div));
+        }
     }
 
     private void solveFMul(Instruction.FMul fmul) {
@@ -775,10 +775,6 @@ public class CodeGen {
      * 默认两端都是整数
      */
     private void solveRem(Instruction.Rem rem) {
-        if (!rem.getOperand_1().getType().isInt32Ty() ||
-                !rem.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of rem is i32");
-        }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(rem);
         if (rem.getOperand_2() instanceof Constant.ConstantInt co) {
@@ -786,7 +782,11 @@ public class CodeGen {
                     co.getIntValue(), rem.getOperand_1(), rem.getParentBlock())) return;
         }
         Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
+        if (op1.bits == 32 && op2.bits == 32) {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
+        } else {
+            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.rem));
+        }
 
     }
 
@@ -967,6 +967,24 @@ public class CodeGen {
         nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, op, R2.R2Type.fneg));
     }
 
+    /**
+     * 寄存器中的值会被自动符号扩展,因此不用考虑这个
+     **/
+    private void solveSext(Instruction.Sext sext) {
+        Reg reg = VirRegMap.VRM.ensureRegForValue(sext.getSrc());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(sext);
+        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
+    }
+
+    /**
+     * 同样,如果之前是add的话,addw也会按符号扩展,不会出现其他情况
+     **/
+    private void solveTrunc(Instruction.Trunc trunc) {
+        Reg reg = VirRegMap.VRM.ensureRegForValue(trunc.getSrc());
+        Reg ans = VirRegMap.VRM.ensureRegForValue(trunc);
+        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
+    }
+
     private void visitBlock(BasicBlock block) {
         nowBlock = blockMap.get(block);
         for (Instruction instruction : block.getInstructions()) {
@@ -1047,8 +1065,11 @@ public class CodeGen {
                 solveFnmsub((Instruction.Fnmsub) instruction);
             } else if (instruction instanceof Instruction.Fneg) {
                 solveFneg((Instruction.Fneg) instruction);
-            }
-            else {
+            } else if (instruction instanceof Instruction.Sext) {
+                solveSext((Instruction.Sext) instruction);
+            } else if (instruction instanceof Instruction.Trunc) {
+                solveTrunc((Instruction.Trunc) instruction);
+            } else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
             }
         }
