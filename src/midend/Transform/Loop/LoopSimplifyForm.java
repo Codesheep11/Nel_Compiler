@@ -34,6 +34,8 @@ public class LoopSimplifyForm {
     }
 
     public static void runOnFunc(Function function) {
+        AnalysisManager.refreshCFG(function);
+        AnalysisManager.refreshDG(function);
         for (Loop loop : function.loopInfo.TopLevelLoops)
             runOnLoop(loop);
     }

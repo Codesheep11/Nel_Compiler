@@ -11,23 +11,23 @@ import java.util.LinkedList;
 public class RemoveBlocks {
     private static HashSet<BasicBlock> vis = new HashSet<>();
 
-    public static void run(Module module) {
+    public static boolean run(Module module) {
+        boolean modified = false;
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            runOnFunc(function);
+            modified |= runOnFunc(function);
         }
+        return modified;
     }
 
-    public static void runOnFunc(Function function) {
-        if (removeEmptyBlocks(function)) {
-            AnalysisManager.dirtyDG(function);
-        }
+    public static boolean runOnFunc(Function function) {
+        boolean modified = false;
+        modified |= removeEmptyBlocks(function);
         AnalysisManager.refreshCFG(function);
-        if (removeDeadBlocks(function)) {
-            AnalysisManager.dirtyCFG(function);
-            AnalysisManager.dirtyDG(function);
-        }
+        modified |= removeDeadBlocks(function);
+        AnalysisManager.refreshCFG(function);
         updatePhi(function);
+        return modified;
     }
 
     public static boolean removeEmptyBlocks(Function function) {
