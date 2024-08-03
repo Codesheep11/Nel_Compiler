@@ -744,10 +744,6 @@ public class CodeGen {
     }
 
     private void solveDiv(Instruction.Div div) {
-        if (!div.getOperand_1().getType().isInt32Ty() ||
-                !div.getOperand_2().getType().isInt32Ty()) {
-            throw new RuntimeException("not all oper of div is i32");
-        }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(div.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(div);
         if (div.getOperand_2() instanceof Constant.ConstantInt co) {
