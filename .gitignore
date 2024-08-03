@@ -3,6 +3,7 @@
 out/
 
 *.txt
+*.ll
 
 compiler2024-nel.iml
 /src/META-INF/MANIFEST.MF

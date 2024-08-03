@@ -56,6 +56,7 @@ public class LivenessAnalyze {
                 Use.put(ins, ins.getUse());
                 Def.put(ins, ins.getDef());
                 for (Reg reg : ins.getReg()) {
+//                    if(reg.phyReg == zero || reg.phyReg == sp || reg.phyReg == ra) continue;
                     RegUse.putIfAbsent(reg, new HashSet<>());
                     RegUse.get(reg).add(ins);
                 }
