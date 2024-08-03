@@ -640,6 +640,7 @@ public class CodeGen {
 
     private void solveAdd(Instruction.Add add) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(add);
+        boolean all32 = !add.getOperand_1().getType().isInt64Ty() && !add.getOperand_2().getType().isInt64Ty();
         if (add.getOperand_1() instanceof Constant.ConstantInt
                 || add.getOperand_2() instanceof Constant.ConstantInt) {
             // 有且仅有一个会是常数,否则会在中端消掉
@@ -653,16 +654,16 @@ public class CodeGen {
                 value = (int) ((Constant.ConstantInt) add.getOperand_2()).getConstValue();
             }
             if (value >= -2047 && value <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(value), R3.R3Type.addiw));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(value), all32 ? R3.R3Type.addiw : R3.R3Type.addi));
             } else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(value)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.addw));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, all32 ? R3.R3Type.addw : R3.R3Type.add));
             }
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(add.getOperand_2());
-            if (op1.bits == 32 && op2.bits == 32) {
+            if (all32) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.addw));
             } else {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.add));
@@ -675,20 +676,21 @@ public class CodeGen {
      */
     private void solveSub(Instruction.Sub sub) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(sub);
+        boolean all32 = !sub.getOperand_1().getType().isInt64Ty() && !sub.getOperand_2().getType().isInt64Ty();
         if (sub.getOperand_2() instanceof Constant.ConstantInt) {
             Reg op = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             int value = (int) ((Constant.ConstantInt) sub.getOperand_2()).getConstValue();
             if (value >= -2047 && value <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(-1 * value), R3.R3Type.addiw));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(-1 * value), all32 ? R3.R3Type.addiw : R3.R3Type.addi));
             } else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(-1 * value)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.addw));
+                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, all32 ? R3.R3Type.addw : R3.R3Type.add));
             }
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_2());
-            if (op1.bits == 32 && op2.bits == 32) {
+            if (all32) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.subw));
             } else {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.sub));
@@ -726,16 +728,17 @@ public class CodeGen {
 
     private void solveMul(Instruction.Mul mul) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(mul);
-        if (mul.getOperand_2() instanceof Constant.ConstantInt c) {
+        boolean all32 = !mul.getOperand_1().getType().isInt64Ty() && !mul.getOperand_2().getType().isInt64Ty();
+        if (mul.getOperand_2() instanceof Constant.ConstantInt c && all32) {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
             MulPlaner.MulConst(ans, op1, c.getIntValue());
-        } else if (mul.getOperand_1() instanceof Constant.ConstantInt c) {
+        } else if (mul.getOperand_1() instanceof Constant.ConstantInt c && all32) {
             Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
             MulPlaner.MulConst(ans, op2, c.getIntValue());
         } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
-            if (op1.bits == 32 && op2.bits == 32) {
+            if (all32) {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
             } else {
                 nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mul));
@@ -744,13 +747,15 @@ public class CodeGen {
     }
 
     private void solveDiv(Instruction.Div div) {
+        // 优化只支持全32位的情况
         Reg op1 = VirRegMap.VRM.ensureRegForValue(div.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(div);
-        if (div.getOperand_2() instanceof Constant.ConstantInt co) {
+        boolean all32 = !div.getOperand_1().getType().isInt64Ty() && !div.getOperand_2().getType().isInt64Ty();
+        if (div.getOperand_2() instanceof Constant.ConstantInt co && all32) {
             if (DivRemByConstant.Div(ans, op1, co.getIntValue(), div.getOperand_1(), div.getParentBlock())) return;
         }
         Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
-        if (op1.bits == 32 && op2.bits == 32) {
+        if (all32) {
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
         } else {
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.div));
@@ -777,12 +782,13 @@ public class CodeGen {
     private void solveRem(Instruction.Rem rem) {
         Reg op1 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(rem);
-        if (rem.getOperand_2() instanceof Constant.ConstantInt co) {
+        boolean all32 = !rem.getOperand_1().getType().isInt64Ty() && !rem.getOperand_2().getType().isInt64Ty();
+        if (rem.getOperand_2() instanceof Constant.ConstantInt co && all32) {
             if (DivRemByConstant.Rem(ans, op1,
                     co.getIntValue(), rem.getOperand_1(), rem.getParentBlock())) return;
         }
         Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
-        if (op1.bits == 32 && op2.bits == 32) {
+        if (all32) {
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
         } else {
             nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.rem));
