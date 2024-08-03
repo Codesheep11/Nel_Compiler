@@ -14,7 +14,7 @@ import java.util.HashSet;
  */
 public class ScalarEvolution {
 
-    private static HashSet<Instruction> visited = new HashSet<>();
+    private static final HashSet<Instruction> visited = new HashSet<>();
     public static SCEVinfo runOnFunc(Function func) {
         visited.clear();
         SCEVinfo res = new SCEVinfo();

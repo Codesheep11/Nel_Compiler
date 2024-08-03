@@ -63,6 +63,9 @@ public class Loop {
      * @return
      */
     public boolean defValue(Value value) {
+        if (value instanceof Constant.ConstantInt) return false;
+        if (value instanceof Constant.ConstantBool) return false;
+        if (value instanceof Constant.ConstantFloat) return false;
         if (!(value instanceof Instruction))
             throw new RuntimeException("defValue:" + value + "value is not an instruction\n");
         return LoopContains(((Instruction) value).getParentBlock());

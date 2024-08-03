@@ -22,6 +22,7 @@ public class CalculateOpt {
                 uselessLoadRemove(block);
                 PreRAConstValueReUse(block);
                 PreRAConstPointerReUse(block);
+                addZero2Mv(block);
             }
         }
         for (RiscvFunction function : riscvModule.funcList) {
@@ -78,6 +79,28 @@ public class CalculateOpt {
         }
         for (RiscvInstruction ri : needRemove) {
             ri.remove();
+        }
+    }
+
+    /**
+     * 警惕！：可能会出现位扩展不对的情况
+     **/
+    private static void addZero2Mv(RiscvBlock block) {
+        ArrayList<Pair<R3, R2>> needReplace = new ArrayList<>();
+        for (RiscvInstruction ri : block.riscvInstructions) {
+            if (ri instanceof R3 r3 && ((R3) ri).type == R3.R3Type.addw) {
+                if (((Reg) r3.rs2).phyReg == Reg.PhyReg.zero) {
+                    needReplace.add(new Pair<>(r3,
+                            new R2(block, ((R3) ri).rd, ((R3) ri).rs1, R2.R2Type.mv)));
+                } else if (((Reg) r3.rs1).phyReg == Reg.PhyReg.zero) {
+                    needReplace.add(new Pair<>(r3,
+                            new R2(block, ((R3) ri).rd, ((R3) ri).rs2, R2.R2Type.mv)));
+                }
+            }
+        }
+        for (var pair : needReplace) {
+            block.riscvInstructions.insertBefore(pair.second, pair.first);
+            pair.first.remove();
         }
     }
 
