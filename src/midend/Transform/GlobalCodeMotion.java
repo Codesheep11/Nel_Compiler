@@ -40,6 +40,7 @@ public class GlobalCodeMotion {
         GlobalCodeMotion gcm = new GlobalCodeMotion();
         gcm.entry = function.getEntry();
         gcm.currentFunc = function;
+        AnalysisManager.refreshDG(function);
         gcm.dginfo = AnalysisManager.getDG(function);
         gcm.GCMEarly4Block(function.getEntry());
         gcm.scheduledSet.clear();
@@ -109,7 +110,6 @@ public class GlobalCodeMotion {
         for (Use use : instr.getUses()) {
             User user = use.getUser();
             if (user instanceof Instruction instrUser) {
-//                System.out.println(instrUser);
                 scheduleLateAndBest(instrUser);
                 BasicBlock userBlock = instrUser.latest;
                 if (instrUser instanceof Instruction.Phi phi) {

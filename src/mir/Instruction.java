@@ -116,7 +116,7 @@ public class Instruction extends User {
     public boolean gvnable() {
         return switch (instType) {
             case ALLOC, LOAD, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
-            case SHL, AND, OR, XOR, ASHR, LSHR -> false; // 目前判断 gvn 位运算平均收益为负
+            case SHL, AND, OR, XOR, ASHR, LSHR, MIN, MAX -> false; // 目前判断 gvn 位运算平均收益为负
             case CALL -> {
                 Function func = ((Call) this).getDestFunction();
                 FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);

@@ -124,7 +124,7 @@ public class FunctionInline {
 
     /***
      * 内联一个具体的函数
-     * targes : 调用该函数的所有指令所在的基本块
+     * targets : 调用该函数的所有指令所在的基本块
      * callers : 调用该函数的所有指令
      * 一一对应的
      * @param function 要内联的函数
