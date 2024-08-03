@@ -91,6 +91,20 @@ public class LocalValueNumbering {
                 String operand2 = binaryOperation.getOperand_2().getDescriptor();
                 yield inst.getInstType().name() + "," + operand1 + "," + operand2;
             }
+            case FMADD, FMSUB, FNMADD, FNMSUB -> {
+                Instruction.Fmadd fmadd = (Instruction.Fmadd) inst;
+                String operand1 = fmadd.getOperand_1().getDescriptor();
+                String operand2 = fmadd.getOperand_2().getDescriptor();
+                String operand3 = fmadd.getOperand_3().getDescriptor();
+                if (operand1.compareTo(operand2) > 0) {
+                    // 交换顺序
+                    String temp = operand1;
+                    operand1 = operand2;
+                    operand2 = temp;
+                }
+                yield inst.getInstType().name() + "," + operand1 + "," + operand2 + "," + operand3;
+            }
+            case FNEG -> inst.getInstType().name() + "," + inst.getOperands().get(0).getDescriptor();
             case Fcmp, Icmp -> {
                 Instruction.Condition compare = (Instruction.Condition) inst;
                 String operand1 = compare.getSrc1().getDescriptor();
