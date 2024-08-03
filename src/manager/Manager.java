@@ -130,7 +130,7 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
-        MatrixCalSimplify.run(riscvmodule);
+//        MatrixCalSimplify.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
         RegAftExternCallLoadOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
