@@ -21,21 +21,19 @@ public class LocalValueNumbering {
 
     }
 
-    public static void run(Module module) {
-        if (!CentralControl._GVN_OPEN) return;
-        if (!CentralControl._GCM_OPEN) {
-            System.out.println("Warning: GVN 依赖于 GCM，请打开 GCM!");
-        }
+    public static boolean run(Module module) {
+        boolean modified = false;
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            runOnFunc(func);
+            modified |= runOnFunc(func);
         }
+        return modified;
     }
 
 
-    public static void runOnFunc(Function function) {
+    public static boolean runOnFunc(Function function) {
         AnalysisManager.refreshDG(function);
-        GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
+        return GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
     }
 
     /**
@@ -43,7 +41,8 @@ public class LocalValueNumbering {
      *
      * @param block 基本块
      */
-    private static void GVN4Block(BasicBlock block, HashSet<String> records, HashMap<String, Instruction> recordInstructions) {
+    private static boolean GVN4Block(BasicBlock block, HashSet<String> records, HashMap<String, Instruction> recordInstructions) {
+        boolean modified = false;
         ArrayList<Instruction> delList = new ArrayList<>();
         for (Instruction inst : block.getInstructions()){
             // 尝试常量折叠
@@ -56,6 +55,7 @@ public class LocalValueNumbering {
                 if (records.contains(key)) {
                     inst.replaceAllUsesWith(recordInstructions.get(key));
                     delList.add(inst);
+                    modified = true;
                 } else {
                     records.add(key);
                     recordInstructions.put(key, inst);
@@ -64,8 +64,9 @@ public class LocalValueNumbering {
         }
         delList.forEach(Value::delete);
         for (BasicBlock child : block.getDomTreeChildren()) {
-            GVN4Block(child, new HashSet<>(records), new HashMap<>(recordInstructions));
+            modified |= GVN4Block(child, new HashSet<>(records), new HashMap<>(recordInstructions));
         }
+        return modified;
     }
 
     private static String generateExpressionKey(Instruction inst) {

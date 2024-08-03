@@ -61,8 +61,7 @@ public class LCSSA {
         for (Instruction user : instr.getUsers()) {
             //已经存在LCSSA
             if (user.equals(phi)) continue;
-            if ((user instanceof Instruction.Phi p) && p.getParentBlock().equals(exit))
-                continue;
+            if ((user instanceof Instruction.Phi p) && loop.exits.contains(p.getParentBlock())) continue;
             if (loop.LoopContains(user.getParentBlock())) continue;
             users.add(user);
         }
