@@ -70,35 +70,48 @@ public class Manager {
         Mem2Reg.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
-        ConstEliminate();
+        SCCP();
         Branch2MinMax.run(module);
         FuncPasses();
+        GepFold.run(module);
         GlobalVarLocalize.run(module);
         FuncAnalysis.run(module);
-        LocalValueNumbering.run(module);
         DeadCodeEliminate();
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
+        LCSSA.remove(module);
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
+        SCCP();
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
-        LoopUnroll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
         ArrayPasses();
         DeadCodeEliminate();
-        ConstEliminate();
+        SCCP();
         Reassociate.run(module);
-        ConstEliminate();
+        SCCP();
         Branch2MinMax.run(module);
-        LocalValueNumbering.run(module);
-        RangeFolding.run(module);
         DeadCodeEliminate();
-        LocalValueNumbering.run(module);
+        LoopBuildAndNormalize();
+        IntegerSumToMul.run(module);
+        LoopUnroll.run(module);
+        LCSSA.remove(module);
+        SCCP();
+        DeadCodeEliminate();
+        ArrayPasses();
+        ConstLoopUnRoll.run(module);
+        SCCP();
+        DeadCodeEliminate();
+        /*--------------------------------------------------------------------------*/
+        SCCP();
+        DeadCodeEliminate();
         AggressivePass();
+        SCCP();
         DeadCodeEliminate();
         FuncAnalysis.run(module);
+        LCSSA.remove(module);
         Scheduler.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);
@@ -107,6 +120,7 @@ public class Manager {
         RemovePhi.run(module);
         LoopInfo.run(module);
         BrPredction.run(module);
+        /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
         GlobalFloat2roPool.run(riscvmodule);
@@ -116,6 +130,9 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
+        MatrixCalSimplify.run(riscvmodule);
+        UnknownBaseLSOpt.run(riscvmodule);
+        RegAftExternCallLoadOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
@@ -137,18 +154,25 @@ public class Manager {
     }
 
     private void DeadCodeEliminate() {
-        DeadLoopEliminate.run(module);
-        SimplifyCFGPass.run(module);
-        RemoveBlocks.run(module);
-        LocalValueNumbering.run(module);
-        SimplifyCFGPass.run(module);
-        ArithReduce.run(module);
-        DeadRetEliminate.run(module);
-        DeadCodeEliminate.run(module);
-        SimplifyCFGPass.run(module);
+        boolean modified;
+        do {
+            modified = false;
+            modified |= DeadLoopEliminate.run(module);
+            modified |= SimplifyCFGPass.run(module);
+            modified |= RemoveBlocks.run(module);
+            modified |= LocalValueNumbering.run(module);
+            ArithReduce.run(module);
+            modified |= DeadArgEliminate.run();
+            modified |= DeadRetEliminate.run(module);
+            modified |= DeadCodeEliminate.run(module);
+        } while (modified);
     }
 
-    private void ConstEliminate() {
+    /**
+     * 稀疏条件常量传播
+     * Sparse Conditional Constant Propagation
+     */
+    private void SCCP() {
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
             boolean modified;
@@ -183,7 +207,7 @@ public class Manager {
         GepFold.run(module);
         LoadEliminate.run(module);
         StoreEliminate.run(module);
-        LocalValueNumbering.run(module);
+        SCCP();
         SroaPass.run(module);
         LocalArrayLift.run(module);
         ConstIdx2Value.run(module);

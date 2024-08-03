@@ -10,23 +10,29 @@ import mir.Module;
 import java.util.HashSet;
 
 public class DeadLoopEliminate {
-    public static void run(Module module) {
-        for (var function : module.getFuncSet()) {
+    private static boolean modified;
+
+    public static boolean run(Module module) {
+        boolean modified = false;
+        for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             LoopInfo.runOnFunc(function);
             runOnFunc(function);
         }
+        return modified;
     }
 
-    public static void runOnFunc(Function function) {
+    public static boolean runOnFunc(Function function) {
+        modified = false;
         AnalysisManager.refreshCFG(function);
-        if (function.loopInfo == null) return;
+        if (function.loopInfo == null) return false;
         HashSet<Loop> removes = new HashSet<>();
         for (Loop loop : function.loopInfo.TopLevelLoops) {
             if (runOnLoop(loop)) removes.add(loop);
         }
         removes.forEach(function.loopInfo.TopLevelLoops::remove);
         RemoveBlocks.runOnFunc(function);
+        return modified;
     }
 
     private static boolean runOnLoop(Loop loop) {
@@ -36,6 +42,7 @@ public class DeadLoopEliminate {
         }
         removes.forEach(loop.children::remove);
         if (loopCanRemove(loop)) {
+            modified = true;
             BasicBlock exit = loop.exits.iterator().next();
             BasicBlock preHead = loop.preHeader;
             BasicBlock head = loop.header;
