@@ -71,6 +71,15 @@ public class J extends RiscvInstruction {
 
     }
 
+    public boolean isExternel() {
+        if (type != JType.call) throw new RuntimeException("wrong type");
+        return switch (funcName) {
+            case "memset", "getint", "putint", "getch", "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray", "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main" ->
+                    true;
+            default -> false;
+        };
+    }
+
     @Override
     public HashSet<Reg> getUse() {
         HashSet<Reg> use = new HashSet<>();

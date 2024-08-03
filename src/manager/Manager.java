@@ -24,8 +24,6 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
-import mir.Constant;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.AfterRA;
@@ -130,6 +128,9 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
+        MatrixCalSimplify.run(riscvmodule);
+        UnknownBaseLSOpt.run(riscvmodule);
+        RegAftExternCallLoadOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
