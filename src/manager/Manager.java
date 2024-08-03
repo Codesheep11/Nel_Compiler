@@ -94,6 +94,8 @@ public class Manager {
         SCCP();
         Branch2MinMax.run(module);
         DeadCodeEliminate();
+        LoopBuildAndNormalize();
+        IntegerSumToMul.run(module);
         LoopUnroll.run(module);
         LCSSA.remove(module);
         SCCP();
