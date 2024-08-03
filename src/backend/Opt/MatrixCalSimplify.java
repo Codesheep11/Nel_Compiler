@@ -5,6 +5,7 @@ import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
+import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.R3;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
@@ -137,7 +138,7 @@ public class MatrixCalSimplify {
                                         new R3(block, last.shadd.rd, last.shadd.rd, new Imm(4 * (limm.getVal() - mimm.getVal())), R3.R3Type.addi),
                                         last.shadd
                                 );
-                                if (!outs.contains((Reg) last.addiw.rd)) {
+                                if (!outs.contains((Reg) last.addiw.rd) || last.addiw.next == last.addw) {
                                     addi2Remove.add(last.addiw);
                                 }
                                 if (!outs.contains((Reg) last.addw.rd) || last.shadd.rd.equals(last.addw.rd)) {
@@ -162,7 +163,7 @@ public class MatrixCalSimplify {
                             new R3(block, last.shadd.rd, last.shadd.rd, new Imm(4 * imm.getVal()), R3.R3Type.addi),
                             last.shadd
                     );
-                    if (!outs.contains((Reg) last.addiw.rd)) {
+                    if (!outs.contains((Reg) last.addiw.rd) || last.addiw.next == last.addw) {
                         addi2Remove.add(last.addiw);
                     }
                     if (!outs.contains((Reg) last.addw.rd) || last.shadd.rd.equals(last.addw.rd)) {
@@ -206,6 +207,23 @@ public class MatrixCalSimplify {
             }
         }
     }
+//
+//    private static void zeroSw2Sd(RiscvBlock block) {
+//        for (int i = 0; i < block.riscvInstructions.size() - 4; i++) {
+//            RiscvInstruction r1 = block.riscvInstructions.get(i);
+//            RiscvInstruction r2 = block.riscvInstructions.get(i + 1);
+//            RiscvInstruction r3 = block.riscvInstructions.get(i + 2);
+//            RiscvInstruction r4 = block.riscvInstructions.get(i + 3);
+//            if(r1 instanceof LS ls1&&ls1.type== LS.LSType.sw
+//            &&r2 instanceof R3 addi1&&addi1.type== R3.R3Type.addi
+//            &&r3 instanceof LS ls2&&ls2.type== LS.LSType.sw
+//            &&r4 instanceof R3 addi2&&addi2.type== R3.R3Type.addi)
+//            {
+//                if(ls1.rs1.phyReg== Reg.PhyReg.zero&&ls2.rs1.phyReg== Reg.PhyReg.zero&&
+//                )
+//            }
+//        }
+//    }
 
 
     public static void run(RiscvModule riscvModule) {
