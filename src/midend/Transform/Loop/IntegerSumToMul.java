@@ -35,7 +35,7 @@ public class IntegerSumToMul {
         if (!loop.children.isEmpty()) return false;
         if (loop.getAllBlocks().size() > 2) return false;
         if (loop.tripCount > 0) return false;
-        if (loop.exits.size() > 1) return false;
+        if (loop.exits.size() != 1) return false;
         // 退出条件复杂
         ArrayList<BasicBlock> _pre = loop.getExit().getPreBlocks();
         if (_pre.size() > 1 || _pre.get(0) != loop.header) return false;

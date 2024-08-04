@@ -79,9 +79,9 @@ public class Manager {
         DeadCodeEliminate();
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
-        LCSSA.remove(module);
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
+        LCSSA.remove(module);
         SCCP();
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
