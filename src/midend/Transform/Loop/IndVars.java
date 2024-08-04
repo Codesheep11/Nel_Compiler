@@ -3,7 +3,7 @@ package midend.Transform.Loop;
 import midend.Analysis.AnalysisManager;
 import mir.Module;
 import mir.*;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.SCEVinfo;
 
 /**
  * 邮电部诗人

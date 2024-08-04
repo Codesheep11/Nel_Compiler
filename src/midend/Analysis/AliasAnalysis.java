@@ -1,9 +1,6 @@
-package midend.Analysis.Alias;
+package midend.Analysis;
 
-import midend.Analysis.AnalysisManager;
-import midend.Analysis.Manager.ModuleAnalysisManager;
 import mir.Constant;
-import mir.Module;
 import mir.Value;
 
 import java.util.HashSet;
@@ -13,7 +10,7 @@ import java.util.Vector;
 /**
  *
  */
-public class AliasAnalysis extends ModuleAnalysisManager {
+public class AliasAnalysis {
 
     private static class Attribute {
         // todo : fill details
@@ -23,9 +20,10 @@ public class AliasAnalysis extends ModuleAnalysisManager {
     private static Vector<HashSet<Value>> mDistinctGroups;
     // todo: check this into
     private static Map<Value, Vector<Attribute>> mPointerAttributes;
+
     // when alias, two points to the same Memory Object
     public enum AliasResult {
-        NoAlias ,
+        NoAlias,
         /// The two locations may or may not alias. This is the least precise
         /// result.
         MayAlias,
@@ -44,11 +42,12 @@ public class AliasAnalysis extends ModuleAnalysisManager {
 
     /**
      * 返回 V1, V2 指向内存的情况
+     *
      * @param v1 指针
      * @param v2 指针
      * @return AliasResult
      */
-    public AliasResult alias(Value v1, Value v2){
+    public AliasResult alias(Value v1, Value v2) {
         // required Pointer
         assert (v1.getType().isPointerTy() && v2.getType().isPointerTy()) ||
                 (v1 instanceof Constant) || (v2 instanceof Constant);
@@ -61,7 +60,7 @@ public class AliasAnalysis extends ModuleAnalysisManager {
      * @param value 指针
      * @return ModRefInfo
      */
-    public ModRefInfo getModRefInfo(Value value){
+    public ModRefInfo getModRefInfo(Value value) {
         return ModRefInfo.NoModRef;
     }
 

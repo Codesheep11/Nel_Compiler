@@ -47,7 +47,7 @@ public class FunctionInline {
         for (Function function : funcCanInline) function.delete();
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            function.buildControlFlowGraph();
+            AnalysisManager.refreshCFG(function);
         }
     }
 

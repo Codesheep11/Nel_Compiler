@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * 移除冗余的store和Load语句
+ * 移除冗余的Load语句
  * 冗余的Load:
  * 1.在下次Store之前以及存在相同的Load地址
  * 2.可以识别到的Store的值

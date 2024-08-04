@@ -1,9 +1,8 @@
 package midend.Analysis;
 
 import mir.*;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.SCEVinfo;
 
-import java.util.HashMap;
 import java.util.HashSet;
 
 /**

@@ -1,10 +1,8 @@
 package midend.Util;
 
-import midend.Analysis.AnalysisManager;
-import midend.Transform.DCE.RemoveBlocks;
 import mir.BasicBlock;
 import mir.Function;
-import mir.result.DGinfo;
+import midend.Analysis.result.DGinfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +26,6 @@ public class DominanceGraphLT {
     private static Node[] id;
 
     public static DGinfo runOnFunc(Function function) {
-        AnalysisManager.refreshCFG(function);
         dginfo = new DGinfo(function);
         parentFunction = function;
         entry = parentFunction.getEntry();
@@ -81,11 +78,6 @@ public class DominanceGraphLT {
             if (i == 1) continue;
             for (var pre : now.block.getPreBlocks()) {
                 Node u = nodeMap.get(pre);
-                if (u == null) {
-                    System.err.println("null node");
-                    System.err.println(pre.getDescriptor());
-                    throw new RuntimeException();
-                }
                 if (u.dfn == -1) continue; // 存在不可达点
                 if (u.dfn < now.dfn) {
                     if (u.dfn < now.semi.dfn)

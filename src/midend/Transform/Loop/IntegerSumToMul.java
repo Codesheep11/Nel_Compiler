@@ -1,9 +1,9 @@
 package midend.Transform.Loop;
 
 import midend.Analysis.AnalysisManager;
+import midend.Analysis.result.SCEVinfo;
 import mir.*;
 import mir.Module;
-import mir.result.SCEVinfo;
 
 import java.util.ArrayList;
 

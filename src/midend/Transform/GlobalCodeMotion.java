@@ -5,7 +5,7 @@ import midend.Util.FuncInfo;
 import mir.*;
 import manager.CentralControl;
 import mir.Module;
-import mir.result.DGinfo;
+import midend.Analysis.result.DGinfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
