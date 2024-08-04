@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class GPpool extends RiscvGlobalVar {
-    private final HashMap<RiscvGlobalVar, Integer> gv2offset = new HashMap<>();
+    private final HashMap<RiscvFloat, Integer> gv2offset = new HashMap<>();
 
-    private final ArrayList<RiscvGlobalVar> glos = new ArrayList<>();
+    private final ArrayList<RiscvFloat> glos = new ArrayList<>();
     private int size = 0;
 
     public GPpool() {
@@ -16,17 +16,14 @@ public class GPpool extends RiscvGlobalVar {
 
     }
 
-    public void add(RiscvGlobalVar globalVar) {
-        if (globalVar instanceof RiscvArray || globalVar instanceof RiscvString
-                || globalVar instanceof RiscvInt) {
-            return;
-        }
+    public void add(RiscvFloat globalVar) {
         glos.add(globalVar);
     }
 
     public void init() {
         RiscvModule.gPpool = this;
-        for (RiscvGlobalVar rb : glos) {
+        glos.sort((a, b) -> a.getData().compareTo(b.getData()));
+        for (RiscvFloat rb : glos) {
             gv2offset.put(rb, size);
             size += rb.size();
         }
@@ -36,7 +33,7 @@ public class GPpool extends RiscvGlobalVar {
         return size != 0;
     }
 
-    public int queryOffset(RiscvGlobalVar globalVar) {
+    public int queryOffset(RiscvFloat globalVar) {
         if (gv2offset.containsKey(globalVar)) return gv2offset.get(globalVar);
         return -1;
     }
@@ -46,7 +43,7 @@ public class GPpool extends RiscvGlobalVar {
         if (glos.size() == 0) return "";
         StringBuilder sb = new StringBuilder();
         sb.append(".section .rodata\n.p2align 2\npool:\n");
-        for (RiscvGlobalVar rb : glos) {
+        for (RiscvFloat rb : glos) {
             sb.append(rb.getContent());
         }
         return sb.toString();
