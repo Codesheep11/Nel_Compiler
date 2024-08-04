@@ -110,7 +110,7 @@ public class Loop {
 
     public BasicBlock getExit() {
         if (exits.size() != 1) {
-            throw new RuntimeException("getExit: exits.size() != 1\n");
+            throw new RuntimeException("getExit: exits.size() != 1 size:" + exits.size() + "\n");
         }
         return exits.iterator().next();
     }
@@ -132,7 +132,7 @@ public class Loop {
     /**
      * 获得该循环的大小 (指令数)
      */
-    public int getSize(){
+    public int getSize() {
         int sum = 0;
         for (var block : nowLevelBB) {
             sum += block.getInstructions().size();
