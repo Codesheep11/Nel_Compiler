@@ -1,6 +1,7 @@
 package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
+import midend.Util.FuncInfo;
 import mir.*;
 import manager.CentralControl;
 import mir.Module;
@@ -217,7 +218,12 @@ public class GlobalCodeMotion {
 
     private boolean isPinned(Instruction inst) {
         return switch (inst.getInstType()) {
-            case PHI, PHICOPY, JUMP, BRANCH, RETURN, STORE, LOAD, CALL -> true;
+            case PHI, PHICOPY, JUMP, BRANCH, RETURN, STORE, LOAD -> true;
+            case CALL -> {
+                Function func = ((Instruction.Call) inst).getDestFunction();
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
+                yield func.isExternal() || !funcInfo.isStateless || funcInfo.hasReadIn || funcInfo.hasPutOut;
+            }
             default -> false;
         };
     }

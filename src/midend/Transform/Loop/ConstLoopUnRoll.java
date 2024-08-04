@@ -52,7 +52,7 @@ public class ConstLoopUnRoll {
         }
 //        if (!loop.children.isEmpty()) return false;
         if (loop.tripCount <= 0) return modified;
-        if (loop.exits.size() > 1) return modified;
+        if (loop.exits.size() != 1) return modified;
         // 退出条件复杂
         ArrayList<BasicBlock> _pre = loop.getExit().getPreBlocks();
         if (_pre.size() > 1 || _pre.get(0) != loop.header) return modified;

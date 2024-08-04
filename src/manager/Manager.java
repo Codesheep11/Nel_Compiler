@@ -24,6 +24,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Ir2RiscV.AfterRA;
@@ -79,9 +80,9 @@ public class Manager {
         DeadCodeEliminate();
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
-        LCSSA.remove(module);
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
+        LCSSA.remove(module);
         SCCP();
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
@@ -104,6 +105,9 @@ public class Manager {
         ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
+        LoopInfo.run(module);
+        GlobalCodeMotion.run(module);
+        LCSSA.remove(module);
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
@@ -130,7 +134,7 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         MemoryOpt.run(riscvmodule);
-        MatrixCalSimplify.run(riscvmodule);
+//        MatrixCalSimplify.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
         RegAftExternCallLoadOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
@@ -160,7 +164,7 @@ public class Manager {
             modified |= DeadLoopEliminate.run(module);
             modified |= SimplifyCFGPass.run(module);
             modified |= RemoveBlocks.run(module);
-            modified |= LocalValueNumbering.run(module);
+            modified |= GlobalValueNumbering.run(module);
             ArithReduce.run(module);
             modified |= DeadArgEliminate.run();
             modified |= DeadRetEliminate.run(module);
@@ -306,7 +310,7 @@ public class Manager {
         DeadCodeEliminate();
         FuncPasses();
         GlobalVarLocalize.run(module);
-        LocalValueNumbering.run(module);
+        GlobalValueNumbering.run(module);
         DeadCodeEliminate.run(module);
         LoopInfo.run(module);
         LoopSimplifyForm.run(module);
@@ -321,7 +325,7 @@ public class Manager {
         LCSSA.remove(module);
         ArrayPasses();
         DeadCodeEliminate();
-        LocalValueNumbering.run(module);
+        GlobalValueNumbering.run(module);
         FuncAnalysis.run(module);
         if (arg.LLVM) {
             outputLLVM(arg.outPath, module);

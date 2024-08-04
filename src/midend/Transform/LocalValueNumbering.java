@@ -92,10 +92,10 @@ public class LocalValueNumbering {
                 yield inst.getInstType().name() + "," + operand1 + "," + operand2;
             }
             case FMADD, FMSUB, FNMADD, FNMSUB -> {
-                Instruction.Fmadd fmadd = (Instruction.Fmadd) inst;
-                String operand1 = fmadd.getOperand_1().getDescriptor();
-                String operand2 = fmadd.getOperand_2().getDescriptor();
-                String operand3 = fmadd.getOperand_3().getDescriptor();
+                Instruction.TripleOperation tripleOp = (Instruction.TripleOperation) inst;
+                String operand1 = tripleOp.getOperand_1().getDescriptor();
+                String operand2 = tripleOp.getOperand_2().getDescriptor();
+                String operand3 = tripleOp.getOperand_3().getDescriptor();
                 if (operand1.compareTo(operand2) > 0) {
                     // 交换顺序
                     String temp = operand1;
