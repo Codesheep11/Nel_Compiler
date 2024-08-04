@@ -114,7 +114,7 @@ public class FuncAnalysis {
                         funcInfo.usedGlobalVariables.add((GlobalVariable) val);
                         hasMemoryRead = true;
                     }
-                    else if (isSideEffect(load.getAddr(), function)) isStateless = true;
+                    else if (isSideEffect(load.getAddr(), function)) isStateless = false;
                 }
                 else if (inst instanceof Instruction.Store store) {
                     Value val = GlobalVarLocalize.isGlobalAddr(store.getAddr());
@@ -134,6 +134,11 @@ public class FuncAnalysis {
                     hasMemoryAlloc = true;
                 }
                 if (hasMemoryRead && hasMemoryWrite && isRecursive && hasSideEffect && hasMemoryAlloc) break;
+            }
+        }
+        for (Function.Argument argument : function.getFuncRArguments()) {
+            if (argument.getType().isPointerTy()) {
+                isStateless = false;
             }
         }
         funcInfo.hasMemoryRead = hasMemoryRead;
