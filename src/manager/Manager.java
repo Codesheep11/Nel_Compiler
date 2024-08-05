@@ -81,7 +81,7 @@ public class Manager {
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
-        LoopUnSwitching.run(module);
+//        LoopUnSwitching.run(module);
         LCSSA.remove(module);
         SCCP();
         DeadCodeEliminate();
@@ -96,8 +96,8 @@ public class Manager {
         Branch2MinMax.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-        IntegerSumToMul.run(module);
-        LoopUnroll.run(module);
+//        IntegerSumToMul.run(module);
+//        LoopUnroll.run(module);
         LCSSA.remove(module);
         SCCP();
         DeadCodeEliminate();
@@ -164,6 +164,7 @@ public class Manager {
             modified |= DeadLoopEliminate.run(module);
             modified |= SimplifyCFGPass.run(module);
             modified |= RemoveBlocks.run(module);
+            modified |= DeadCondEliminate.run(module);
             modified |= GlobalValueNumbering.run(module);
             ArithReduce.run(module);
             modified |= DeadArgEliminate.run();
@@ -208,6 +209,7 @@ public class Manager {
     }
 
     private void ArrayPasses() {
+        FuncAnalysis.run(module);
         GepFold.run(module);
         LoadEliminate.run(module);
         StoreEliminate.run(module);

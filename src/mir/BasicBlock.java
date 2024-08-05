@@ -131,6 +131,10 @@ public class BasicBlock extends Value {
         return AnalysisManager.getDomTreeChildren(this);
     }
 
+    public BasicBlock getIDom() {
+        return AnalysisManager.getIDom(this);
+    }
+
     public HashSet<BasicBlock> getDomSet() {
         return AnalysisManager.getDominators(this);
     }

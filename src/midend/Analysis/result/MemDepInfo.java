@@ -1,15 +1,15 @@
 package midend.Analysis.result;
 
 
-import midend.Analysis.MemDepAnalysis;
 import mir.Function;
 import mir.Instruction;
+import mir.Value;
 
 import java.util.HashMap;
 
 public class MemDepInfo {
-    //Load 与其上次定值点
-    private HashMap<Instruction.Load, Instruction> loadMap = new HashMap<>();
+    //Load 与其上次定值点(Store Call BasicBlock)
+    private HashMap<Instruction.Load, Value> loadMap = new HashMap<>();
     //Store 与其可能的使用点
     private HashMap<Instruction.Store, Instruction> storeMap = new HashMap<>();
 
