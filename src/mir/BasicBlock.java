@@ -82,7 +82,7 @@ public class BasicBlock extends Value {
 
     public void addInstAfterPhi(Instruction inst) {
         Instruction pos = instructions.getFirst();
-        while (pos instanceof Instruction.Phi) {
+        while (pos.getInstType() == Instruction.InstType.PHI) {
             pos = (Instruction) pos.getNext();
         }
         instructions.insertBefore(inst, pos);

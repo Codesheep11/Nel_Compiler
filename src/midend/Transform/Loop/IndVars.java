@@ -29,6 +29,9 @@ public class IndVars {
     private static int tick(SCEVExpr scevExpr, Instruction.Icmp.CondCode cmp, int n) {
         int max = 100000;
         int i = -1;
+        if (scevExpr.isNotNegative() && cmp != Instruction.Icmp.CondCode.EQ && cmp != Instruction.Icmp.CondCode.NE) {
+            return calcTick(scevExpr, cmp, n);
+        }
         while (i < max) {
             i++;
             switch (cmp) {
@@ -55,6 +58,30 @@ public class IndVars {
 
         }
         return -1;
+    }
+
+    private static int calcTick(SCEVExpr scevExpr, Instruction.Icmp.CondCode cmp, int n) {
+        int init = scevExpr.getInit();
+        int step = scevExpr.getStep();
+        return switch(cmp) {
+            case SLE -> {
+                if (init > n) yield -1;
+                yield Math.floorDiv(n - init , step) + 1;
+            }
+            case SLT -> {
+                if (init >= n) yield -1;
+                yield (int) Math.ceil((double) (n - init) / (double) step);
+            }
+            case SGE -> {
+                if (init < n) yield -1;
+                yield Math.floorDiv(n - init , step) + 1;
+            }
+            case SGT -> {
+                if (init <= n) yield -1;
+                yield (int) Math.ceil((double) (n - init) / (double) step);
+            }
+            default -> -1;
+        };
     }
 
     private static boolean getTripCount(Loop loop, SCEVinfo scevInfo) {

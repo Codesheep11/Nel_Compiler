@@ -96,6 +96,7 @@ public class Manager {
         Branch2MinMax.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
+        FinalReplacement.run(module);
         IntegerSumToMul.run(module);
         LoopUnroll.run(module);
         LCSSA.remove(module);
