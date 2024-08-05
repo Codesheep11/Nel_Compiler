@@ -4,9 +4,8 @@ import java.util.ArrayList;
 
 /**
  * Chain of Recurrence
- * @author Srchycz
  */
-public final class SCEVExpr {
+public final class SCEVExpr implements Cloneable{
 
     public ArrayList<SCEVExpr> operands;
 
@@ -30,6 +29,7 @@ public final class SCEVExpr {
         this.type = type;
         this.operands = new ArrayList<>();
     }
+
 
 
     private  static int k = 0;
@@ -80,6 +80,37 @@ public final class SCEVExpr {
 
     public int getStep() {
         return calc(this, 1) - calc(this, 0);
+    }
+
+    public int getSize() {
+        if (type == SCEVType.Constant) {
+            return 1;
+        } else {
+            int sum = 0;
+            for (SCEVExpr operand : operands) {
+                sum += operand.getSize();
+            }
+            return sum;
+        }
+    }
+
+    @Override
+    public Object clone() {
+        try {
+            SCEVExpr cloned = (SCEVExpr) super.clone();
+            cloned.operands = new ArrayList<>();
+            for (SCEVExpr operand : this.operands) {
+                cloned.operands.add((SCEVExpr) operand.clone());
+            }
+            cloned.constant = this.constant;
+            cloned.type = this.type;
+            // loop is not deep copied, just reference copied
+            cloned.loop = this.loop;
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException("Clone failed");
     }
 
 
