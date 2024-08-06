@@ -1,4 +1,4 @@
-package backend.Opt;
+package backend.Opt.CfgOpt;
 
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;

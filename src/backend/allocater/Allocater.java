@@ -1,13 +1,12 @@
 package backend.allocater;
 
-import backend.Opt.LivelessDCE;
+import backend.Opt.Liveness.LivelessDCE;
 import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Reg;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.LS;
-import backend.riscv.RiscvInstruction.R3;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
 
