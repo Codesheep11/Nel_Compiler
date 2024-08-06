@@ -1,5 +1,6 @@
-package backend.Opt;
+package backend.Opt.MemoryOpt;
 
+import backend.Opt.Liveness.LivenessAftBin;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;

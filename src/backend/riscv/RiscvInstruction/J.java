@@ -3,7 +3,7 @@ package backend.riscv.RiscvInstruction;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
-import mir.Ir2RiscV.CodeGen;
+import backend.Ir2RiscV.CodeGen;
 
 import java.util.HashSet;
 

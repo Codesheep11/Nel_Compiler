@@ -1,4 +1,4 @@
-package backend.Opt;
+package backend.Opt.MemoryOpt;
 
 import backend.operand.Imm;
 import backend.operand.Reg;
