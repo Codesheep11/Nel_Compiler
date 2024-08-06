@@ -1,4 +1,4 @@
-package backend.Opt;
+package backend.Opt.MemoryOpt;
 
 import backend.operand.Address;
 import backend.operand.Imm;
@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class MemoryOpt {
+public class KnownBaseLSOpt {
     // 应当在块内联后做，因为块比较大，所以做起来效果更好
     // 删除不必要的指令或者将lw换成mv
     // 记录了全局基址指针对应的寄存器

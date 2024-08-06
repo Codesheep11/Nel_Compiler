@@ -188,7 +188,7 @@ public class FunctionInline {
 
         BasicBlock afterCallBB = new BasicBlock(inFunction.getName() + "_after_call_" + function.getName() + "_" + idx, inFunction);
 //        CallbbCut.add(afterCallBB);
-//        Print.output(inFunction,"debug.txt");
+//        Print.output(inFunction,"store.txt");
         for (BasicBlock suc : afterCallBBs) {
             for (Instruction instr : suc.getPhiInstructions()) {
                 Instruction.Phi phi = (Instruction.Phi) instr;
