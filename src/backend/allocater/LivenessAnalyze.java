@@ -1,14 +1,11 @@
 package backend.allocater;
 
-import backend.StackManager;
-import backend.operand.Address;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
-import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
-import mir.Ir2RiscV.CodeGen;
+import backend.Ir2RiscV.CodeGen;
 
 import java.util.ArrayList;
 import java.util.HashMap;

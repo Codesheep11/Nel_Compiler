@@ -1,4 +1,4 @@
-package mir.Ir2RiscV;
+package backend.Ir2RiscV;
 
 import backend.StackManager;
 import backend.operand.Address;

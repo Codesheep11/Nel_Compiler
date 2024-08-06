@@ -1,4 +1,4 @@
-package backend.Opt;
+package backend.Opt.Liveness;
 
 import backend.allocater.LivenessAnalyze;
 import backend.operand.Reg;

@@ -64,7 +64,7 @@ public class SimplifyCFGPass extends FunctionPass {
                 if (!merges.isEmpty()) mergeMap.put(block, merges);
             }
         }
-//        Print.outputLLVM(function, "debug.txt");
+//        Print.outputLLVM(function, "store.txt");
         for (BasicBlock first : mergeMap.keySet()) {
             first.getLastInst().delete();
             for (BasicBlock block : mergeMap.get(first)) {
