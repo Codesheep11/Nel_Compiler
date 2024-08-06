@@ -1,5 +1,7 @@
-package backend.Opt;
+package backend.Opt.CfgOpt;
 
+import backend.Opt.CfgOpt.BackCFGNode;
+import backend.Opt.CfgOpt.GenCFG;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvModule;
