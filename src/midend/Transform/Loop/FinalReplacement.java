@@ -79,15 +79,18 @@ public class FinalReplacement {
         Instruction.Sub tripCount = new Instruction.Sub(exit, indvar_cmp.getSrc2().getType(), indvar_cmp.getSrc2(), Constant.ConstantInt.get(_tmp));
         tripCount.remove();
         exit.addInstAfterPhi(tripCount);
+        Instruction.Max max = new Instruction.Max(exit, tripCount.getType(), tripCount, Constant.ConstantInt.get(0));
+        max.remove();
+        tripCount.addNext(max);
         for (var inst : exit.getPhiInstructions()) {
             if (inst.isLCSSA && inst.getIncomingValueSize() == 1) {
                 Value val = inst.getIncomingValues().get(0);
                 if (scevInfo.contains(val)) {
                     int initVal = scevInfo.query(val).getInit();
                     int stepVal = scevInfo.query(val).getStep();
-                    Instruction.Mul mul = new Instruction.Mul(exit, tripCount.getType(), tripCount, Constant.ConstantInt.get(stepVal));
+                    Instruction.Mul mul = new Instruction.Mul(exit, tripCount.getType(), max, Constant.ConstantInt.get(stepVal));
                     mul.remove();
-                    tripCount.addNext(mul);
+                    max.addNext(mul);
                     Instruction.Add add = new Instruction.Add(exit, mul.getType(), Constant.ConstantInt.get(initVal), mul);
                     add.remove();
                     mul.addNext(add);
