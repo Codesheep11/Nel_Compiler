@@ -141,7 +141,7 @@ public class Manager {
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
-//        BlockInline.run(riscvmodule);
+        BlockInline.run(riscvmodule);
         KnownBaseLSOpt.run(riscvmodule);
 //        MatrixCalSimplify.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
