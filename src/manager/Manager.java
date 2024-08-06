@@ -132,6 +132,7 @@ public class Manager {
         LoopInfo.run(module);
         BrPredction.run(module);
         GepLift.run(module);
+        outputLLVM("debug.txt",module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
@@ -140,7 +141,7 @@ public class Manager {
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
-        BlockInline.run(riscvmodule);
+//        BlockInline.run(riscvmodule);
         KnownBaseLSOpt.run(riscvmodule);
 //        MatrixCalSimplify.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);

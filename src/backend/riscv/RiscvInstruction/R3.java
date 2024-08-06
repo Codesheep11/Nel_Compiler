@@ -13,7 +13,7 @@ public class R3 extends RiscvInstruction {
     public enum R3Type {
         add, sub, addi, addw, addiw, subw, divw, mulw, remw, and, andi, or, ori, xorw, xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti,
         fadd, fsub, fmul, fdiv, min, max, feq, fle, flt, mul, rem, srai, srli, div, slli, xori,
-        sh1add, sh2add, sh3add;// 这三个的最后一个参数才是需要位移的
+        sh1add, sh2add, sh3add, adduw;// 这三个的最后一个参数才是需要位移的
 
         @Override
         public String toString() {
@@ -161,6 +161,9 @@ public class R3 extends RiscvInstruction {
                 }
                 case rem -> {
                     return "rem";
+                }
+                case adduw -> {
+                    return "add.uw";
                 }
                 default -> {
                     throw new AssertionError();

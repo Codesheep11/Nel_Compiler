@@ -72,16 +72,30 @@ public class GepLift {
     }
 
     private static int callOffset(IndexCal c1, IndexCal c2) {
-        if (c1.sum.size() != c2.sum.size() && c1.sum.size() + 1 != c2.sum.size())
+        if (c1.sum.size() != c2.sum.size() && c1.sum.size() + 1 != c2.sum.size() && c1.sum.size() != c2.sum.size() + 1) {
             return Integer.MAX_VALUE;//设置最大值代表不可能计算差值
+        }
         int i = 0;
-        for (; i < c1.sum.size(); i++) {
+        int range = 0;
+        if (c1.sum.size() != c2.sum.size()) {
+            range = Integer.min(c1.sum.size(), c2.sum.size());
+        } else if (c2.sum.get(c2.sum.size() - 1) instanceof Constant.ConstantInt &&
+                c1.sum.get(c1.sum.size() - 1) instanceof Constant.ConstantInt) {
+            range = c1.sum.size() - 1;
+        } else {
+            range = c1.sum.size();
+        }
+        for (; i < range; i++) {
             if (c1.sum.get(i) != c2.sum.get(i)) {
                 return Integer.MAX_VALUE;
             }
         }
         if (c2.sum.size() > c1.sum.size()) {
             if (c2.sum.get(c2.sum.size() - 1) instanceof Constant.ConstantInt ci)
+                return ci.getIntValue();
+            else return Integer.MAX_VALUE;
+        } else if (c1.sum.size() > c2.sum.size()) {
+            if (c1.sum.get(c1.sum.size() - 1) instanceof Constant.ConstantInt ci)
                 return ci.getIntValue();
             else return Integer.MAX_VALUE;
         } else {
