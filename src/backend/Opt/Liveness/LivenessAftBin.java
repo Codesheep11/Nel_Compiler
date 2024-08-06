@@ -1,5 +1,7 @@
-package backend.Opt;
+package backend.Opt.Liveness;
 
+import backend.Opt.CfgOpt.BackCFGNode;
+import backend.Opt.CfgOpt.GenCFG;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
@@ -13,7 +15,7 @@ import java.util.HashSet;
 
 public class LivenessAftBin {
     // 块内联后的活跃变量分析
-    private static HashMap<RiscvBlock, BackCFGNode> cfg;
+    public static HashMap<RiscvBlock, BackCFGNode> cfg;
 
     private static ArrayList<RiscvBlock> callTopoSortAft(RiscvFunction function) {
         cfg = GenCFG.calcCFG(function);

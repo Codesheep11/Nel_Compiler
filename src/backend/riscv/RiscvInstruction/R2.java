@@ -10,7 +10,7 @@ public class R2 extends RiscvInstruction {
     public R2Type type;
 
     public enum R2Type {
-        mv, fmv, fabs, fneg, fmvsx, fmvxs, fcvtws, fcvtsw, sgtz, seqz, snez;
+        mv, fmv, fabs, fneg, fmvsx, fmvxs, fcvtws, fcvtsw, sgtz, seqz, snez, sextw;
 
         @Override
         public String toString() {
@@ -64,6 +64,9 @@ public class R2 extends RiscvInstruction {
                 }
                 case snez -> {
                     return "snez";
+                }
+                case sextw -> {
+                    return "sext.w";
                 }
                 default -> {
                     throw new AssertionError();

@@ -1,6 +1,8 @@
 package backend.Opt;
 
+import backend.Ir2RiscV.VirRegMap;
 import backend.allocater.LivenessAnalyze;
+import backend.operand.Address;
 import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
@@ -8,7 +10,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvGlobalVar;
 import backend.riscv.RiscvInstruction.*;
 import backend.riscv.RiscvModule;
-import mir.Ir2RiscV.VirRegMap;
+import utils.NelLinkedList;
 import utils.Pair;
 
 import java.util.*;
@@ -23,6 +25,7 @@ public class CalculateOpt {
                 PreRAConstValueReUse(block);
                 PreRAConstPointerReUse(block);
                 addZero2Mv(block);
+                addiLS2LSoffset(block);
             }
         }
         for (RiscvFunction function : riscvModule.funcList) {
@@ -30,6 +33,7 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 icmpBranchToBranch(block);
                 SraSll2And(block);
+//                Lsw2Lsd(block);
             }
         }
     }
@@ -64,6 +68,33 @@ public class CalculateOpt {
         }
     }
 
+    // 将addi+ls匹配成直接写的偏移
+    private static void addiLS2LSoffset(RiscvBlock block) {
+        HashSet<R3> needRemove = new HashSet<>();
+        for (int i = 0; i < block.riscvInstructions.size(); i++) {
+            if (block.riscvInstructions.get(i) instanceof R3 addi && addi.type == R3.R3Type.addi) {
+                boolean canRemove = true;
+                HashSet<RiscvInstruction> instrs = LivenessAnalyze.RegUse.get((Reg) addi.rd);
+                for (RiscvInstruction inst : instrs) {
+                    if (inst instanceof LS ls) {
+                        if (ls.rs2.equals(addi.rd) && ls.addr instanceof Imm imm && imm.getVal() == 0) {
+                            ls.rs2 = (Reg) addi.rs1;
+                            ls.addr = new Imm(((Imm) addi.rs2).getVal());
+                        }
+                    } else {
+                        if (LivenessAnalyze.Use.get(inst).contains((Reg) addi.rd)) {
+                            canRemove = false;
+                        }
+                    }
+                }
+                if (canRemove) {
+                    needRemove.add(addi);
+                }
+            }
+        }
+        needRemove.forEach(NelLinkedList.NelLinkNode::remove);
+    }
+
     // 重要依据，这些拉取的常数和全局的不会跨过块
 
     private static void uselessLoadRemove(RiscvBlock block) {
@@ -88,7 +119,7 @@ public class CalculateOpt {
     private static void addZero2Mv(RiscvBlock block) {
         ArrayList<Pair<R3, R2>> needReplace = new ArrayList<>();
         for (RiscvInstruction ri : block.riscvInstructions) {
-            if (ri instanceof R3 r3 && ((R3) ri).type == R3.R3Type.addw) {
+            if (ri instanceof R3 r3 && (((R3) ri).type == R3.R3Type.addw || ((R3) ri).type == R3.R3Type.add)) {
                 if (((Reg) r3.rs2).phyReg == Reg.PhyReg.zero) {
                     needReplace.add(new Pair<>(r3,
                             new R2(block, ((R3) ri).rd, ((R3) ri).rs1, R2.R2Type.mv)));
@@ -247,6 +278,76 @@ public class CalculateOpt {
         }
     }
 
+    private static void PreRAConstImmCalReuse(RiscvBlock block) {
+        Queue<Pair<Reg, Long>> queue = new LinkedList<>();
+        final int windowsize = 4;
+        HashMap<Li, RiscvInstruction> needReplace = new HashMap<>();
+        for (RiscvInstruction ri : block.riscvInstructions) {
+            if (ri instanceof Li now) {
+                long imm = now.getVal();
+                // 先判断是否需要加立即数
+                boolean modify = false;
+                for (var pair : queue) {
+                    if (imm == pair.second) {
+                        needReplace.put(now, new R2(block, now.reg, pair.first, R2.R2Type.mv));
+                        modify = true;
+                        break;
+                    } else if (imm - pair.second <= 2047 && imm - pair.second >= -2047) {
+                        needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(imm - pair.second), R3.R3Type.addi));
+                        modify = true;
+                        break;
+                    } else if (-imm == pair.second) {
+                        needReplace.put(now, new R3(block, now.reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 64), pair.first, R3.R3Type.sub));
+                        modify = true;
+                        break;
+                    } else if (~imm == pair.second) {
+                        needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(-1), R3.R3Type.xori));
+                        modify = true;
+                        break;
+                    } else if (imm == 3 * pair.second) {
+                        needReplace.put(now, new R3(block, now.reg, pair.first, pair.first, R3.R3Type.sh1add));
+                        modify = true;
+                        break;
+                    } else if (imm == 5 * pair.second) {
+                        needReplace.put(now, new R3(block, now.reg, pair.first, pair.first, R3.R3Type.sh2add));
+                        modify = true;
+                        break;
+                    } else if (imm == 9 * pair.second) {
+                        needReplace.put(now, new R3(block, now.reg, pair.first, pair.first, R3.R3Type.sh3add));
+                        modify = true;
+                        break;
+                    } else {
+                        int maxK = 8;
+                        for (int k = 1; k <= maxK; k++) {
+                            if (imm << k == pair.second) {
+                                needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(k), R3.R3Type.slliw));
+                                modify = true;
+                                break;
+                            } else if (imm >> k == pair.second) {
+                                needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(k), R3.R3Type.srliw));
+                                modify = true;
+                                break;
+                            }
+                        }
+                        if (modify) {
+                            break;
+                        }
+                    }
+                }
+                if (!modify) {
+                    queue.add(new Pair<>(now.reg, imm));
+                    while (queue.size() > windowsize) {
+                        queue.poll();
+                    }
+                }
+            }
+        }
+        for (var pair : needReplace.entrySet()) {
+            block.riscvInstructions.insertBefore(pair.getValue(), pair.getKey());
+            pair.getKey().remove();
+        }
+    }
+
     private static void PreRAConstPointerReUse(RiscvBlock riscvBlock) {
         final int range = 16;
         HashMap<RiscvGlobalVar, Pair<Reg, Integer>> map = new HashMap<>();
@@ -366,6 +467,92 @@ public class CalculateOpt {
         for (Pair<Li, R2> pair : needReplace) {
             block.riscvInstructions.insertBefore(pair.second, pair.first);
             pair.first.remove();
+        }
+    }
+
+    private static boolean lsConflict(RiscvBlock block, int i, int j, boolean checkInLw, Reg base, long offset) {
+        // 对于ij之间的指令,check是否有覆盖的相应的内容
+        for (int k = i + 1; k < j; k++) {
+            RiscvInstruction ri = block.riscvInstructions.get(i);
+            if (ri instanceof LS s && s.rs2.equals(base)) {
+                if (s.addr instanceof Imm || s.addr instanceof Address a && a.hasFilled()) {
+                    long off = s.addr instanceof Address a ? a.getOffset() : ((Imm) s.addr).getVal();
+                    if (checkInLw) {
+                        // 如果是lw，检查它是否是sw且覆写了后半段
+                        if (s.type == LS.LSType.sw || s.type == LS.LSType.sd || s.type == LS.LSType.fsw) {
+                            return off == offset + 4;
+                        }
+                    } else {
+                        if (s.type == LS.LSType.lw || s.type == LS.LSType.ld || s.type == LS.LSType.flw) {
+                            return off == offset;
+                        }
+                    }
+                }
+            } else if (ri instanceof J jjj && jjj.type == J.JType.call) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private static void Lsw2Lsd(RiscvBlock block) {
+        HashMap<LS, ArrayList<RiscvInstruction>> needReplace = new HashMap<>();
+        for (int i = 0; i < block.riscvInstructions.size(); i++) {
+            RiscvInstruction now = block.riscvInstructions.get(i);
+            if (now instanceof LS ls1 && !needReplace.containsKey(ls1)) {
+                for (int j = i + 1; j < block.riscvInstructions.size(); j++) {
+                    if (needReplace.containsKey(ls1)) break;
+                    RiscvInstruction next = block.riscvInstructions.get(j);
+                    if (next instanceof LS ls2 && !needReplace.containsKey(ls2)) {
+                        if (ls1.rs2.equals(ls2.rs2)) {
+                            if ((ls1.addr instanceof Imm imm1 && ls2.addr instanceof
+                                    Imm imm2 && imm2.getVal() - imm1.getVal() == 4 || (
+                                    ls1.addr instanceof Address a1 && a1.hasFilled()
+                                            && ls2.addr instanceof Address a2 && a2.hasFilled() &&
+                                            a2.getOffset() - a1.getOffset() == 4))) {
+                                long off = ls1.addr instanceof Imm imm1 ? imm1.getVal() : ((Address) ls1.addr).getOffset();
+                                if (off % 8 != 0) break;
+                                if (ls1.type == LS.LSType.sw && ls2.type == LS.LSType.sw) {
+                                    //如果是俩zero
+                                    if (lsConflict(block, i, j, false, ls1.rs2, off)) break;
+                                    ArrayList<RiscvInstruction> list = new ArrayList<>();
+                                    if (ls1.rs1.preColored && ls1.rs1.phyReg == Reg.PhyReg.zero
+                                            && ls2.rs1.preColored && ls2.rs1.phyReg == Reg.PhyReg.zero) {
+                                        list.add(new LS(block, Reg.getPreColoredReg(Reg.PhyReg.zero, 64),
+                                                ls2.rs2, ls1.addr, LS.LSType.sd));
+                                    } else {
+                                        //如果不是俩zero,那么就需要sli,or然后sd
+                                        Reg reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
+                                        list.add(new R3(block, reg, ls2.rs1, new Imm(32), R3.R3Type.slli));
+                                        list.add(new R3(block, reg, ls1.rs1, reg, R3.R3Type.adduw));
+                                        list.add(new LS(block, reg, ls2.rs2, ls1.addr, LS.LSType.sd));
+                                    }
+                                    needReplace.put(ls1, new ArrayList<>());
+                                    needReplace.put(ls2, list);
+                                }
+                                else if (ls1.type == LS.LSType.lw && ls2.type == LS.LSType.lw) {
+                                    if (lsConflict(block, i, j, true, ls1.rs2, off)) break;
+                                    ArrayList<RiscvInstruction> list1 = new ArrayList<>();
+                                    ArrayList<RiscvInstruction> list2 = new ArrayList<>();
+                                    //单独拿一个寄存器来存
+                                    Reg reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
+                                    list1.add(new LS(block, reg, ls1.rs2, ls1.addr, LS.LSType.ld));
+                                    list1.add(new R2(block, ls1.rs1, reg, R2.R2Type.sextw));
+                                    list2.add(new R3(block, ls2.rs1, reg, new Imm(32), R3.R3Type.srai));
+                                    needReplace.put(ls1, list1);
+                                    needReplace.put(ls2, list2);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (var key : needReplace.keySet()) {
+            for (RiscvInstruction ri : needReplace.get(key)) {
+                block.riscvInstructions.insertBefore(ri, key);
+            }
+            key.remove();
         }
     }
 }
