@@ -33,7 +33,7 @@ public class RiscvFunction {
 
     public HashSet<RiscvBlock> exits = new HashSet<>();
 
-    public final ArrayList<RiscLoop>loops=new ArrayList<>();
+    public final ArrayList<RiscLoop> loops = new ArrayList<>();
 
     public RiscvFunction(Function irFunction) {
         this.name = irFunction.getName();
@@ -49,7 +49,7 @@ public class RiscvFunction {
         } else if (irFunction.getRetType().isFloatTy()) {
             retTypeCode = -1;
         } else {
-            throw new RuntimeException("wrong ret type");
+            retTypeCode = 1;
         }
     }
 
@@ -90,7 +90,8 @@ public class RiscvFunction {
         return switch (str) {
             case "memset", "getint", "putint", "getch",
                     "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
-                    "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main" -> str;
+                    "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main"
+                    , "NELCacheLookup" -> str;
             default -> "f_" + str;
         };
     }

@@ -1,15 +1,22 @@
 package backend.parallel;
 
-public class lib {
-    public static String model = ".file\t\"nel_sysy_rt.cpp\"\n" +
+import manager.Manager;
+
+public class ExternLib {
+
+    public static boolean need() {
+        return Manager.isO1;
+    }
+
+    public static String model = ".file\t\"NEL_sysy_rt.cpp\"\n" +
             "\t.option pic\n" +
             "\t.attribute arch, \"rv64i2p1_m2p0_a2p1_f2p2_d2p2_c2p0_zicsr2p0_zifencei2p0_zba1p0_zbb1p0\"\n" +
             "\t.attribute unaligned_access, 0\n" +
             "\t.attribute stack_align, 16\n" +
             "\t.text\n" +
             "\t.align\t1\n" +
-            "\t.type\t_ZN12_GLOBAL__N_110nelWorkerEPv, @function\n" +
-            "_ZN12_GLOBAL__N_110nelWorkerEPv:\n" +
+            "\t.type\t_ZN12_GLOBAL__N_110NELWorkerEPv, @function\n" +
+            "_ZN12_GLOBAL__N_110NELWorkerEPv:\n" +
             ".LFB1259:\n" +
             "\t.cfi_startproc\n" +
             "\taddi\tsp,sp,-192\n" +
@@ -130,12 +137,12 @@ public class lib {
             "\tj\t.L4\n" +
             "\t.cfi_endproc\n" +
             ".LFE1259:\n" +
-            "\t.size\t_ZN12_GLOBAL__N_110nelWorkerEPv, .-_ZN12_GLOBAL__N_110nelWorkerEPv\n" +
+            "\t.size\t_ZN12_GLOBAL__N_110NELWorkerEPv, .-_ZN12_GLOBAL__N_110NELWorkerEPv\n" +
             "\t.section\t.text.startup,\"ax\",@progbits\n" +
             "\t.align\t1\n" +
-            "\t.globl\tnelInitRuntime\n" +
-            "\t.type\tnelInitRuntime, @function\n" +
-            "nelInitRuntime:\n" +
+            "\t.globl\tNELInitRuntime\n" +
+            "\t.type\tNELInitRuntime, @function\n" +
+            "NELInitRuntime:\n" +
             ".LFB1260:\n" +
             "\t.cfi_startproc\n" +
             "\taddi\tsp,sp,-64\n" +
@@ -159,7 +166,7 @@ public class lib {
             "\tli\ts4,4\n" +
             "\tsd\ts5,8(sp)\n" +
             "\t.cfi_offset 21, -56\n" +
-            "\tlla\ts5,_ZN12_GLOBAL__N_110nelWorkerEPv\n" +
+            "\tlla\ts5,_ZN12_GLOBAL__N_110NELWorkerEPv\n" +
             "\tsd\ts6,0(sp)\n" +
             "\t.cfi_offset 22, -64\n" +
             "\tli\ts6,1\n" +
@@ -210,15 +217,15 @@ public class lib {
             "\tjr\tra\n" +
             "\t.cfi_endproc\n" +
             ".LFE1260:\n" +
-            "\t.size\tnelInitRuntime, .-nelInitRuntime\n" +
+            "\t.size\tNELInitRuntime, .-NELInitRuntime\n" +
             "\t.section\t.init_array,\"aw\"\n" +
             "\t.align\t3\n" +
-            "\t.dword\tnelInitRuntime\n" +
+            "\t.dword\tNELInitRuntime\n" +
             "\t.section\t.text.exit,\"ax\",@progbits\n" +
             "\t.align\t1\n" +
-            "\t.globl\tnelUninitRuntime\n" +
-            "\t.type\tnelUninitRuntime, @function\n" +
-            "nelUninitRuntime:\n" +
+            "\t.globl\tNELUninitRuntime\n" +
+            "\t.type\tNELUninitRuntime, @function\n" +
+            "NELUninitRuntime:\n" +
             ".LFB1261:\n" +
             "\t.cfi_startproc\n" +
             "\taddi\tsp,sp,-32\n" +
@@ -278,15 +285,15 @@ public class lib {
             "\tj\t.L26\n" +
             "\t.cfi_endproc\n" +
             ".LFE1261:\n" +
-            "\t.size\tnelUninitRuntime, .-nelUninitRuntime\n" +
+            "\t.size\tNELUninitRuntime, .-NELUninitRuntime\n" +
             "\t.section\t.fini_array,\"aw\"\n" +
             "\t.align\t3\n" +
-            "\t.dword\tnelUninitRuntime\n" +
+            "\t.dword\tNELUninitRuntime\n" +
             "\t.text\n" +
             "\t.align\t1\n" +
-            "\t.globl\tnelParallelFor\n" +
-            "\t.type\tnelParallelFor, @function\n" +
-            "nelParallelFor:\n" +
+            "\t.globl\tNELParallelFor\n" +
+            "\t.type\tNELParallelFor, @function\n" +
+            "NELParallelFor:\n" +
             ".LFB1265:\n" +
             "\t.cfi_startproc\n" +
             "\tbge\ta0,a1,.L116\n" +
@@ -788,11 +795,11 @@ public class lib {
             "\tj\t.L40\n" +
             "\t.cfi_endproc\n" +
             ".LFE1265:\n" +
-            "\t.size\tnelParallelFor, .-nelParallelFor\n" +
+            "\t.size\tNELParallelFor, .-NELParallelFor\n" +
             "\t.align\t1\n" +
-            "\t.globl\tnelCacheLookup\n" +
-            "\t.type\tnelCacheLookup, @function\n" +
-            "nelCacheLookup:\n" +
+            "\t.globl\tNELCacheLookup\n" +
+            "\t.type\tNELCacheLookup, @function\n" +
+            "NELCacheLookup:\n" +
             ".LFB1267:\n" +
             "\t.cfi_startproc\n" +
             "\tslli\ta1,a1,32\n" +
@@ -812,11 +819,11 @@ public class lib {
             "\tret\n" +
             "\t.cfi_endproc\n" +
             ".LFE1267:\n" +
-            "\t.size\tnelCacheLookup, .-nelCacheLookup\n" +
+            "\t.size\tNELCacheLookup, .-NELCacheLookup\n" +
             "\t.align\t1\n" +
-            "\t.globl\tnelAddRec3SRem\n" +
-            "\t.type\tnelAddRec3SRem, @function\n" +
-            "nelAddRec3SRem:\n" +
+            "\t.globl\tNELAddRec3SRem\n" +
+            "\t.type\tNELAddRec3SRem, @function\n" +
+            "NELAddRec3SRem:\n" +
             ".LFB1268:\n" +
             "\t.cfi_startproc\n" +
             "\taddi\ta5,a0,-1\n" +
@@ -829,22 +836,22 @@ public class lib {
             "\tret\n" +
             "\t.cfi_endproc\n" +
             ".LFE1268:\n" +
-            "\t.size\tnelAddRec3SRem, .-nelAddRec3SRem\n" +
+            "\t.size\tNELAddRec3SRem, .-NELAddRec3SRem\n" +
             "\t.align\t1\n" +
-            "\t.globl\tnelReduceAddI32\n" +
-            "\t.type\tnelReduceAddI32, @function\n" +
-            "nelReduceAddI32:\n" +
+            "\t.globl\tNELReduceAddI32\n" +
+            "\t.type\tNELReduceAddI32, @function\n" +
+            "NELReduceAddI32:\n" +
             ".LFB1269:\n" +
             "\t.cfi_startproc\n" +
             "\tfence iorw,ow; amoadd.w.aq zero,a1,0(a0)\n" +
             "\tret\n" +
             "\t.cfi_endproc\n" +
             ".LFE1269:\n" +
-            "\t.size\tnelReduceAddI32, .-nelReduceAddI32\n" +
+            "\t.size\tNELReduceAddI32, .-NELReduceAddI32\n" +
             "\t.align\t1\n" +
-            "\t.globl\tnelReduceAddF32\n" +
-            "\t.type\tnelReduceAddF32, @function\n" +
-            "nelReduceAddF32:\n" +
+            "\t.globl\tNELReduceAddF32\n" +
+            "\t.type\tNELReduceAddF32, @function\n" +
+            "NELReduceAddF32:\n" +
             ".LFB1270:\n" +
             "\t.cfi_startproc\n" +
             "\taddi\tsp,sp,-16\n" +
@@ -877,7 +884,7 @@ public class lib {
             "\tj\t.L131\n" +
             "\t.cfi_endproc\n" +
             ".LFE1270:\n" +
-            "\t.size\tnelReduceAddF32, .-nelReduceAddF32\n" +
+            "\t.size\tNELReduceAddF32, .-NELReduceAddF32\n" +
             "\t.bss\n" +
             "\t.align\t3\n" +
             "\t.set\t.LANCHOR0,. + 0\n" +
@@ -894,5 +901,5 @@ public class lib {
             "_ZL9lookupPtr:\n" +
             "\t.zero\t4\n" +
             "\t.ident\t\"GCC: (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0\"\n" +
-            "\t.section\t.note.GNU-stack,\"\",@progbits";
+            "\t.section\t.note.GNU-stack,\"\",@progbits\n";
 }

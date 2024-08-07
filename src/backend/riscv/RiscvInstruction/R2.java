@@ -10,7 +10,7 @@ public class R2 extends RiscvInstruction {
     public R2Type type;
 
     public enum R2Type {
-        mv, fmv, fabs, fneg, fmvsx, fmvxs, fcvtws, fcvtsw, sgtz, seqz, snez;
+        mv, fmv, fabs, fneg, fmvwx, fmvxw, fcvtws, fcvtsw, sgtz, seqz, snez;
 
         @Override
         public String toString() {
@@ -35,13 +35,13 @@ public class R2 extends RiscvInstruction {
                 }
                 // f negative 浮点数取反
 
-                case fmvsx -> {
-                    return "fmv.s.x";
+                case fmvxw -> {
+                    return "fmv.x.w";
                 }
                 // f 单精度移动到整数(单纯的bits移动)
 
-                case fmvxs -> {
-                    return "fmv.x.s";
+                case fmvwx -> {
+                    return "fmv.w.x";
                 }
                 // 整数移动到单精度(单纯的bits移动)
 
