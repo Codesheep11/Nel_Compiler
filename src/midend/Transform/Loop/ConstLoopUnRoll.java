@@ -6,7 +6,7 @@ import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.LocalValueNumbering;
 import mir.*;
 import mir.Module;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.SCEVinfo;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

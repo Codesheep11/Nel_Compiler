@@ -1,6 +1,8 @@
 package backend.riscv;
 
 import backend.Opt.GPpooling.GPpool;
+import backend.parallel.ExternLib;
+import manager.Manager;
 
 import java.util.ArrayList;
 
@@ -54,6 +56,7 @@ public class RiscvModule {
         StringBuilder head = new StringBuilder(".option nopic\n" +
                 ".attribute arch, \"rv64i2p1_m2p0_a2p1_f2p2_d2p2_c2p0_zicsr2p0_zifencei2p0_zba1p0_zbb1p0\"\n" +
                 ".attribute unaligned_access, 0\n" +
+                (ExternLib.need(this) ? ExternLib.model : "") +
                 ".attribute stack_align, 16\n.global main\n");
         StringBuilder sb = new StringBuilder("");
         sb.append(".bss\n");

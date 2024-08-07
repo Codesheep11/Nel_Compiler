@@ -29,6 +29,7 @@ import midend.Transform.Array.GepFold;
 import midend.Transform.Array.LocalArrayLift;
 import midend.Transform.Array.SroaPass;
 import midend.Transform.DCE.*;
+import midend.Transform.Function.FuncCache;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
@@ -112,6 +113,8 @@ public class Manager {
         ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
+        FuncCache.run(module);
+        FuncAnalysis.run(module);
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
@@ -132,7 +135,6 @@ public class Manager {
         LoopInfo.run(module);
         BrPredction.run(module);
         GepLift.run(module);
-        outputLLVM("debug.txt",module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
@@ -143,14 +145,11 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         KnownBaseLSOpt.run(riscvmodule);
-//        MatrixCalSimplify.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
         RegAftExternCallLoadOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
-//        ShortInstrConvert.run(riscvmodule);
-//        AfterRAScheduler.postRASchedule(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }
 
@@ -173,6 +172,7 @@ public class Manager {
             modified |= DeadLoopEliminate.run(module);
             modified |= SimplifyCFGPass.run(module);
             modified |= RemoveBlocks.run(module);
+            modified |= DeadCondEliminate.run(module);
             modified |= GlobalValueNumbering.run(module);
             ArithReduce.run(module);
             modified |= DeadArgEliminate.run();
@@ -217,6 +217,7 @@ public class Manager {
     }
 
     private void ArrayPasses() {
+        FuncAnalysis.run(module);
         GepFold.run(module);
         LoadEliminate.run(module);
         StoreEliminate.run(module);

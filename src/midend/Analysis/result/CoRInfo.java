@@ -1,6 +1,8 @@
-package mir.result;
+package midend.Analysis.result;
 
-import mir.*;
+import mir.CoR;
+import mir.Loop;
+import mir.Value;
 
 import java.util.HashMap;
 

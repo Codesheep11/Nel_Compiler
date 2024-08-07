@@ -61,7 +61,7 @@ public class ConstantFolding {
                     float val2 = (float) op2.getConstValue();
                     float result = 0;
                     switch (instruction.getInstType()) {
-                        case FAdd -> result = val1 + val2;
+                        case FADD -> result = val1 + val2;
                         case FSUB -> result = val1 - val2;
                         case FMUL -> result = val1 * val2;
                         case FDIV -> result = val1 / val2;

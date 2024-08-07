@@ -117,7 +117,7 @@ public class Function extends Value {
         while (iter.hasNext()) {
             str.append(iter.next().toString());
             if (iter.hasNext()) {
-                str.append(',');
+                str.append(", ");
             }
         }
         return str.toString();
