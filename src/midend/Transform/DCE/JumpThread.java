@@ -189,7 +189,7 @@ public class JumpThread {
             DeadCodeEliminate.run(module);
             SimplifyCFGPass.runOnFunc(parentFunc);
 //            Print.output(parentFunc, "debug2.txt");
-//            Print.output(block.getParentFunction(), "debug.txt");
+//            Print.output(block.getParentFunction(), "store.txt");
             AnalysisManager.refreshI32Range(parentFunc);
             irAnalyzer = AnalysisManager.getI32Range(parentFunc);
         }

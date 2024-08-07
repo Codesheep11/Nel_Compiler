@@ -1036,7 +1036,6 @@ public class Instruction extends User {
 
         public BinaryOperation(BasicBlock parentBlock, Type resType, InstType instType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, instType);
-            assert operand_1.getType() == operand_2.getType();
             this.operand_1 = operand_1;
             this.operand_2 = operand_2;
             this.resType = resType;
@@ -1652,6 +1651,7 @@ public class Instruction extends User {
             super(parentBlock, type, InstType.MOVE);
             this.src = src;
             this.target = target;
+            addOperand(src);
         }
 
         @Override

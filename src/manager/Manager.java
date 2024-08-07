@@ -1,8 +1,17 @@
 package manager;
 
-import backend.Opt.*;
+import backend.Ir2RiscV.AfterRA;
+import backend.Ir2RiscV.CodeGen;
+import backend.Ir2RiscV.GepLift;
 import backend.Opt.BackLoop.LoopConstLift;
+import backend.Opt.CalculateOpt;
+import backend.Opt.CfgOpt.BlockInline;
+import backend.Opt.CfgOpt.BlockReSort;
+import backend.Opt.CfgOpt.SimplifyCFG;
 import backend.Opt.GPpooling.GlobalFloat2roPool;
+import backend.Opt.MemoryOpt.KnownBaseLSOpt;
+import backend.Opt.MemoryOpt.RegAftExternCallLoadOpt;
+import backend.Opt.MemoryOpt.UnknownBaseLSOpt;
 import backend.allocater.Allocater;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
@@ -25,11 +34,8 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
-import mir.Ir2RiscV.AfterRA;
-import mir.Ir2RiscV.CodeGen;
 import mir.Module;
 
 import java.io.*;
@@ -97,6 +103,7 @@ public class Manager {
         Branch2MinMax.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
+        FinalReplacement.run(module);
         IntegerSumToMul.run(module);
         LoopUnroll.run(module);
         LCSSA.remove(module);
@@ -127,6 +134,8 @@ public class Manager {
         RemovePhi.run(module);
         LoopInfo.run(module);
         BrPredction.run(module);
+        GepLift.run(module);
+        outputLLVM("debug.txt",module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
@@ -136,7 +145,7 @@ public class Manager {
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
-        MemoryOpt.run(riscvmodule);
+        KnownBaseLSOpt.run(riscvmodule);
 //        MatrixCalSimplify.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
         RegAftExternCallLoadOpt.run(riscvmodule);
@@ -289,8 +298,7 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                }
-                else {
+                } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

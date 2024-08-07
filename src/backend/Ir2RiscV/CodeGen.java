@@ -1,4 +1,4 @@
-package mir.Ir2RiscV;
+package backend.Ir2RiscV;
 
 
 import backend.Opt.BackLoop.RiscLoop;
@@ -647,7 +647,7 @@ public class CodeGen {
 
     private void solveAdd(Instruction.Add add) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(add);
-        boolean all32 = !add.getOperand_1().getType().isInt64Ty() && !add.getOperand_2().getType().isInt64Ty();
+        boolean all32 = add.getOperand_1().getType().isInt32Ty() && add.getOperand_2().getType().isInt32Ty();
         if (add.getOperand_1() instanceof Constant.ConstantInt
                 || add.getOperand_2() instanceof Constant.ConstantInt) {
             // 有且仅有一个会是常数,否则会在中端消掉
@@ -683,7 +683,7 @@ public class CodeGen {
      */
     private void solveSub(Instruction.Sub sub) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(sub);
-        boolean all32 = !sub.getOperand_1().getType().isInt64Ty() && !sub.getOperand_2().getType().isInt64Ty();
+        boolean all32 = sub.getOperand_1().getType().isInt32Ty() && sub.getOperand_2().getType().isInt32Ty();
         if (sub.getOperand_2() instanceof Constant.ConstantInt) {
             Reg op = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             int value = (int) ((Constant.ConstantInt) sub.getOperand_2()).getConstValue();
@@ -735,7 +735,7 @@ public class CodeGen {
 
     private void solveMul(Instruction.Mul mul) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(mul);
-        boolean all32 = !mul.getOperand_1().getType().isInt64Ty() && !mul.getOperand_2().getType().isInt64Ty();
+        boolean all32 = mul.getOperand_1().getType().isInt32Ty() && mul.getOperand_2().getType().isInt32Ty();
         if (mul.getOperand_2() instanceof Constant.ConstantInt c && all32) {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
             MulPlaner.MulConst(ans, op1, c.getIntValue());
@@ -757,7 +757,7 @@ public class CodeGen {
         // 优化只支持全32位的情况
         Reg op1 = VirRegMap.VRM.ensureRegForValue(div.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(div);
-        boolean all32 = !div.getOperand_1().getType().isInt64Ty() && !div.getOperand_2().getType().isInt64Ty();
+        boolean all32 = div.getOperand_1().getType().isInt32Ty()&& div.getOperand_2().getType().isInt32Ty();
         if (div.getOperand_2() instanceof Constant.ConstantInt co && all32) {
             if (DivRemByConstant.Div(ans, op1, co.getIntValue(), div.getOperand_1(), div.getParentBlock())) return;
         }
@@ -789,7 +789,7 @@ public class CodeGen {
     private void solveRem(Instruction.Rem rem) {
         Reg op1 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(rem);
-        boolean all32 = !rem.getOperand_1().getType().isInt64Ty() && !rem.getOperand_2().getType().isInt64Ty();
+        boolean all32 = rem.getOperand_1().getType().isInt32Ty() && rem.getOperand_2().getType().isInt32Ty();
         if (rem.getOperand_2() instanceof Constant.ConstantInt co && all32) {
             if (DivRemByConstant.Rem(ans, op1,
                     co.getIntValue(), rem.getOperand_1(), rem.getParentBlock())) return;

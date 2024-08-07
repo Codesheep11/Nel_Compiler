@@ -133,7 +133,7 @@ public class IntegerSumToMul {
 
         loop.getPreHeader().getTerminator().delete();
         new Instruction.Jump(loop.getPreHeader(), cond_block);
-
+        // TODO: max改进
         // calc
         // slt: tripCount = (limit_i - initial_i) sle: tripCount = (limit_i - initial_i + 1)
         int _tmp = init;
