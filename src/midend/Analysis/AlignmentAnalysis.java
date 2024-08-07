@@ -3,7 +3,7 @@ package midend.Analysis;
 import midend.Transform.Loop.IndVars;
 import mir.*;
 import mir.Module;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.SCEVinfo;
 
 import java.util.*;
 import java.util.function.BiConsumer;

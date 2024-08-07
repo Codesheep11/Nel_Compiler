@@ -2,7 +2,7 @@ package midend.Transform.Loop;
 
 import mir.*;
 import mir.Module;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.SCEVinfo;
 
 import java.util.ArrayList;
 
