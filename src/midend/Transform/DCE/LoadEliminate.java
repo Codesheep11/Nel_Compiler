@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * 移除冗余的store和Load语句
+ * 移除冗余的Load语句
  * 冗余的Load:
  * 1.在下次Store之前以及存在相同的Load地址
  * 2.可以识别到的Store的值
@@ -54,7 +54,7 @@ public class LoadEliminate {
         HashMap<GlobalVariable, Value> curGlobalStore = getClone(Global2Store);
         HashMap<GlobalVariable, Value> curGlobalLoad = getClone(Global2Load);
         //todo:如果存在前序被自己支配，则考虑在重复load处插入phi?可能需要arraySSA
-        clear();
+        if (block.getPreBlocks().size() > 1) clear();
         for (Instruction instr : block.getInstructions()) {
             if (instr instanceof Instruction.Store) handleStore((Instruction.Store) instr);
             else if (instr instanceof Instruction.Load) handleLoad((Instruction.Load) instr);
@@ -162,15 +162,16 @@ public class LoadEliminate {
             }
         }
         //全局变量写
-        //todo:之后考虑重构到具体的全局变量
         if (calleeInfo.hasMemoryWrite) {
-            Global2Store.clear();
-            Global2Load.clear();
-            for (Value key : Address2Idx2Store.keySet()) {
-                if (key instanceof GlobalVariable) Address2Idx2Store.get(key).clear();
-            }
-            for (Value key : Address2Idx2Load.keySet()) {
-                if (key instanceof GlobalVariable) Address2Idx2Load.get(key).clear();
+            for (GlobalVariable gv : calleeInfo.usedGlobalVariables) {
+                if (((Type.PointerType) gv.getType()).getInnerType().isArrayTy()) {
+                    Address2Idx2Load.remove(gv);
+                    Address2Idx2Store.remove(gv);
+                }
+                else {
+                    Global2Load.remove(gv);
+                    Global2Store.remove(gv);
+                }
             }
         }
     }

@@ -136,6 +136,10 @@ public class StackManager {
         llvm2Offset.get(funcName).put(ans, -size * off + now_off);
     }
 
+    public boolean valueHasOffset(String funcname, Value base) {
+        return llvm2Offset.get(funcname).containsKey(base);
+    }
+
     public boolean canBeCalAsOffset(String funcName, Value pointer) {
         prepareFunc(funcName);
         return llvm2Offset.get(funcName).containsKey(pointer);

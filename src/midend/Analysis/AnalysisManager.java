@@ -1,14 +1,13 @@
 package midend.Analysis;
 
 import midend.Util.ControlFlowGraph;
-import midend.Util.DominanceGraph;
 import midend.Util.DominanceGraphLT;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
-import mir.result.CFGinfo;
-import mir.result.DGinfo;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.CFGinfo;
+import midend.Analysis.result.DGinfo;
+import midend.Analysis.result.SCEVinfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
