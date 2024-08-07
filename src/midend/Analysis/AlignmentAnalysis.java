@@ -70,7 +70,7 @@ public final class AlignmentAnalysis {
         AnalysisManager.setAlignMap(alignMap);
     }
 
-    private static final int ANA_LEN = 64;
+    private static final int ANA_LEN = 5000;
 
     public static void runOnFunc(Function function) {
         IndVars.runOnFunc(function);
@@ -171,7 +171,9 @@ public final class AlignmentAnalysis {
                     return AlignType.ALIGN_BYTE_8;
                 if (align1 == AlignType.ALIGN_BYTE_4 && align2 == AlignType.ALIGN_BYTE_4)
                     return AlignType.ALIGN_BYTE_8;
-                else return AlignType.ALIGN_BYTE_4;
+                if (align1 == AlignType.UNKNOWN || align2 ==AlignType.UNKNOWN)
+                    return AlignType.UNKNOWN;
+                return AlignType.ALIGN_BYTE_4;
             }
             case MUL -> {
                 Instruction.Mul mul = (Instruction.Mul) inst;
@@ -181,7 +183,9 @@ public final class AlignmentAnalysis {
                 AlignType align2 = GepSpread(mul.getOperand_2());
                 if (align2 == AlignType.ALIGN_BYTE_8)
                     return AlignType.ALIGN_BYTE_8;
-                else return AlignType.ALIGN_BYTE_4;
+                if (align1 == AlignType.UNKNOWN || align2 == AlignType.UNKNOWN)
+                    return AlignType.UNKNOWN;
+                return AlignType.ALIGN_BYTE_4;
             }
             default -> {
                 return alignMap.get(value);

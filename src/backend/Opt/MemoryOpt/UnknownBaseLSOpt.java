@@ -86,17 +86,17 @@ public class UnknownBaseLSOpt {
     private static void runOnBlock(RiscvBlock block) {
         ArrayList<Pair<LS, R2>> ls2move = new ArrayList<>();
         for (RiscvInstruction instr : block.riscvInstructions) {
-            if (instr instanceof LS ls && ls.rs2.phyReg != Reg.PhyReg.sp) {
+            if (instr instanceof LS ls && ls.base.phyReg != Reg.PhyReg.sp) {
                 long off = ((Imm) ls.addr).getVal();
                 if (ls.type == LS.LSType.ld || ls.type == LS.LSType.lw || ls.type == LS.LSType.flw) {
-                    ArrayList<UBRecord> list = queryByOff(ls.rs1, ls.rs2, off);
-                    removeByReg(ls.rs1);
-                    removeByBase(ls.rs1);
+                    ArrayList<UBRecord> list = queryByOff(ls.val, ls.base, off);
+                    removeByReg(ls.val);
+                    removeByBase(ls.val);
                     if (list.size() != 0) {
-                        R2.R2Type r2Type = ls.rs1.regType == Reg.RegType.GPR ? R2.R2Type.mv : R2.R2Type.fmv;
-                        ls2move.add(new Pair<>(ls, new R2(block, ls.rs1, list.get(0).reg, r2Type)));
+                        R2.R2Type r2Type = ls.val.regType == Reg.RegType.GPR ? R2.R2Type.mv : R2.R2Type.fmv;
+                        ls2move.add(new Pair<>(ls, new R2(block, ls.val, list.get(0).reg, r2Type)));
                     }
-                    records.add(new UBRecord(ls.rs1, off, ls.rs2));
+                    records.add(new UBRecord(ls.val, off, ls.base));
                 } else {
                     // 写个简单版的，直接全清空就没事了
                     records.clear();

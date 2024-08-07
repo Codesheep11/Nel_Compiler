@@ -10,6 +10,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvGlobalVar;
 import backend.riscv.RiscvInstruction.*;
 import backend.riscv.RiscvModule;
+import midend.Analysis.AlignmentAnalysis;
 import utils.NelLinkedList;
 import utils.Pair;
 
@@ -77,10 +78,19 @@ public class CalculateOpt {
                 HashSet<RiscvInstruction> instrs = LivenessAnalyze.RegUse.get((Reg) addi.rd);
                 for (RiscvInstruction inst : instrs) {
                     if (inst instanceof LS ls) {
-                        if (ls.rs2.equals(addi.rd) && ls.addr instanceof Imm imm && imm.getVal() == 0 && !ls.rs1.equals(addi.rd)) {
-                            ls.rs2 = (Reg) addi.rs1;
+                        if (ls.base.equals(addi.rd) && ls.addr instanceof Imm imm && imm.getVal() == 0 && !ls.val.equals(addi.rd)) {
+                            ls.base = (Reg) addi.rs1;
                             ls.addr = new Imm(((Imm) addi.rs2).getVal());
-                        } else if (ls.rs1.equals(addi.rd)) {
+                            if (ls.align == AlignmentAnalysis.AlignType.ALIGN_BYTE_8) {
+                                if (((Imm) addi.rs2).getVal() % 8 != 0) {
+                                    ls.align = AlignmentAnalysis.AlignType.ALIGN_BYTE_4;
+                                }
+                            } else if (ls.align == AlignmentAnalysis.AlignType.ALIGN_BYTE_4) {
+                                if (((Imm) addi.rs2).getVal() % 8 != 0) {
+                                    ls.align = AlignmentAnalysis.AlignType.ALIGN_BYTE_8;
+                                }
+                            }
+                        } else if (ls.val.equals(addi.rd)) {
                             canRemove = false;
                         }
                     } else {
@@ -106,7 +116,7 @@ public class CalculateOpt {
             if (instr == block.riscvInstructions.getFirst()) continue;
             RiscvInstruction before = (RiscvInstruction) instr.prev;
             if (before instanceof LS be && instr instanceof LS af) {
-                if (be.rs1.equals(af.rs1) && be.rs2.equals(af.rs2) && be.addr.equals(af.addr)) {
+                if (be.val.equals(af.val) && be.base.equals(af.base) && be.addr.equals(af.addr)) {
                     needRemove.add(instr);
                 }
             }
@@ -477,7 +487,7 @@ public class CalculateOpt {
         // 对于ij之间的指令,check是否有覆盖的相应的内容
         for (int k = i + 1; k < j; k++) {
             RiscvInstruction ri = block.riscvInstructions.get(i);
-            if (ri instanceof LS s && s.rs2.equals(base)) {
+            if (ri instanceof LS s && s.base.equals(base)) {
                 if (s.addr instanceof Imm || s.addr instanceof Address a && a.hasFilled()) {
                     long off = s.addr instanceof Address a ? a.getOffset() : ((Imm) s.addr).getVal();
                     if (checkInLw) {
@@ -507,40 +517,42 @@ public class CalculateOpt {
                     if (needReplace.containsKey(ls1)) break;
                     RiscvInstruction next = block.riscvInstructions.get(j);
                     if (next instanceof LS ls2 && !needReplace.containsKey(ls2)) {
-                        if (ls1.rs2.equals(ls2.rs2)) {
+                        if (ls1.base.equals(ls2.base)) {
                             if ((ls1.addr instanceof Imm imm1 && ls2.addr instanceof
                                     Imm imm2 && imm2.getVal() - imm1.getVal() == 4 || (
                                     ls1.addr instanceof Address a1 && a1.hasFilled()
                                             && ls2.addr instanceof Address a2 && a2.hasFilled() &&
                                             a2.getOffset() - a1.getOffset() == 4))) {
                                 long off = ls1.addr instanceof Imm imm1 ? imm1.getVal() : ((Address) ls1.addr).getOffset();
-                                if (off % 8 != 0) break;
+                                boolean can = (off%8==0&&ls1.align== AlignmentAnalysis.AlignType.ALIGN_BYTE_8)||
+                                        (off%8!=0&&ls1.align== AlignmentAnalysis.AlignType.ALIGN_BYTE_4);
+                                if(!can)break;
                                 if (ls1.type == LS.LSType.sw && ls2.type == LS.LSType.sw) {
                                     //如果是俩zero
-                                    if (lsConflict(block, i, j, false, ls1.rs2, off)) break;
+                                    if (lsConflict(block, i, j, false, ls1.base, off)) break;
                                     ArrayList<RiscvInstruction> list = new ArrayList<>();
-                                    if (ls1.rs1.preColored && ls1.rs1.phyReg == Reg.PhyReg.zero
-                                            && ls2.rs1.preColored && ls2.rs1.phyReg == Reg.PhyReg.zero) {
+                                    if (ls1.val.preColored && ls1.val.phyReg == Reg.PhyReg.zero
+                                            && ls2.val.preColored && ls2.val.phyReg == Reg.PhyReg.zero) {
                                         list.add(new LS(block, Reg.getPreColoredReg(Reg.PhyReg.zero, 64),
-                                                ls2.rs2, ls1.addr, LS.LSType.sd));
+                                                ls2.base, ls1.addr, LS.LSType.sd, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                                     } else {
                                         //如果不是俩zero,那么就需要sli,or然后sd
                                         Reg reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-                                        list.add(new R3(block, reg, ls2.rs1, new Imm(32), R3.R3Type.slli));
-                                        list.add(new R3(block, reg, ls1.rs1, reg, R3.R3Type.adduw));
-                                        list.add(new LS(block, reg, ls2.rs2, ls1.addr, LS.LSType.sd));
+                                        list.add(new R3(block, reg, ls2.val, new Imm(32), R3.R3Type.slli));
+                                        list.add(new R3(block, reg, ls1.val, reg, R3.R3Type.adduw));
+                                        list.add(new LS(block, reg, ls2.base, ls1.addr, LS.LSType.sd, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                                     }
                                     needReplace.put(ls1, new ArrayList<>());
                                     needReplace.put(ls2, list);
                                 } else if (ls1.type == LS.LSType.lw && ls2.type == LS.LSType.lw) {
-                                    if (lsConflict(block, i, j, true, ls1.rs2, off)) break;
+                                    if (lsConflict(block, i, j, true, ls1.base, off)) break;
                                     ArrayList<RiscvInstruction> list1 = new ArrayList<>();
                                     ArrayList<RiscvInstruction> list2 = new ArrayList<>();
                                     //单独拿一个寄存器来存
                                     Reg reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-                                    list1.add(new LS(block, reg, ls1.rs2, ls1.addr, LS.LSType.ld));
-                                    list1.add(new R2(block, ls1.rs1, reg, R2.R2Type.sextw));
-                                    list2.add(new R3(block, ls2.rs1, reg, new Imm(32), R3.R3Type.srai));
+                                    list1.add(new LS(block, reg, ls1.base, ls1.addr, LS.LSType.ld, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                                    list1.add(new R2(block, ls1.val, reg, R2.R2Type.sextw));
+                                    list2.add(new R3(block, ls2.val, reg, new Imm(32), R3.R3Type.srai));
                                     needReplace.put(ls1, list1);
                                     needReplace.put(ls2, list2);
                                 }
