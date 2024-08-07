@@ -1,4 +1,4 @@
-package mir.result;
+package midend.Analysis.result;
 
 import mir.Constant;
 import mir.SCEVExpr;

@@ -1,6 +1,6 @@
 package midend.Transform;
 
-import midend.Util.Print;
+import manager.Manager;
 import mir.Module;
 import mir.*;
 
@@ -62,6 +62,10 @@ public class ArithReduce {
             case REM -> reduceRem((Instruction.Rem) inst);
             case MIN -> reduceMin((Instruction.Min) inst);
             case MAX -> reduceMax((Instruction.Max) inst);
+//            case FADD -> reduceFADD((Instruction.FAdd) inst);
+//            case FSUB -> reduceFSUB((Instruction.FSub) inst);
+//            case FMUL -> reduceFMUL((Instruction.FMul) inst);
+//            case FDIV -> reduceFDIV((Instruction.FDiv) inst);
             default -> reducedList.add(inst);
         }
     }
@@ -670,6 +674,492 @@ public class ArithReduce {
             if (min2.getOperand_1().equals(inst.getOperand_1()) || min2.getOperand_2().equals(inst.getOperand_1())) {
                 inst.replaceAllUsesWith(inst.getOperand_1());
                 delList.add(inst);
+                return;
+            }
+        }
+        reducedList.add(inst);
+    }
+
+    private static void reduceFADD(Instruction.FAdd inst) {
+        if (!Manager.isO1) {
+            reducedList.add(inst);
+            return;
+        }
+        if (inst.getOperand_1() instanceof Constant) {
+            //0 + v -> v
+            if (((Constant) inst.getOperand_1()).isZero()) {
+                inst.replaceAllUsesWith(inst.getOperand_2());
+                delList.add(inst);
+                return;
+            }
+            //c2 + (c1 + x) + -> (c1 + c2) + x
+            if (inst.getOperand_2() instanceof Instruction.FAdd) {
+                Instruction.FAdd fadd = (Instruction.FAdd) inst.getOperand_2();
+                if (fadd.getOperand_1() instanceof Constant) {
+                    Instruction.FAdd newFAdd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(((float) ((Constant) inst.getOperand_1()).getConstValue())
+                                    + ((float) ((Constant) fadd.getOperand_1()).getConstValue())), fadd.getOperand_2());
+                    inst.replaceAllUsesWith(newFAdd);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFAdd);
+                    return;
+                }
+            }
+            if (inst.getOperand_2() instanceof Instruction.FSub fsub) {
+                //c2 + (c1 - x) -> (c2 + c1) - x
+                if (fsub.getOperand_1() instanceof Constant) {
+                    Instruction.FSub newFSub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(((float) ((Constant) inst.getOperand_1()).getConstValue())
+                                    + ((float) ((Constant) fsub.getOperand_1()).getConstValue())), fsub.getOperand_2());
+//                    newSub.remove();
+                    inst.replaceAllUsesWith(newFSub);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFSub);
+                    return;
+                }
+                //c2 + (x - c1) -> (c2 - c1) + x
+                if (fsub.getOperand_2() instanceof Constant) {
+                    Instruction.FAdd newFAdd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(((float) ((Constant) inst.getOperand_1()).getConstValue())
+                                    - ((float) ((Constant) fsub.getOperand_2()).getConstValue())), fsub.getOperand_1());
+//                    newAdd.remove();
+                    inst.replaceAllUsesWith(newFAdd);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFAdd);
+                    return;
+                }
+            }
+        }
+        // a + (0 - b) -> a - b
+        if (inst.getOperand_2() instanceof Instruction.FSub) {
+            Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_2();
+            if (fsub.getOperand_1() instanceof Constant && ((Constant) fsub.getOperand_1()).isZero()) {
+                Instruction.FSub newFSub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
+                        inst.getOperand_1(), fsub.getOperand_2());
+//                newSub.remove();
+                inst.replaceAllUsesWith(newFSub);
+                delList.add(inst);
+                snap.add(idx + 1, newFSub);
+                return;
+            }
+        }
+        /*
+         a * b + a -> (1 + b) * a
+         b * a + a -> (1 + b) * a
+         */
+        if (inst.getOperand_1() instanceof Instruction.FMul fmul1) {
+            if (fmul1.getUsers().size() == 1) {
+                if (fmul1.getOperand_1().equals(inst.getOperand_2())) {
+                    Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(1), fmul1.getOperand_2());
+                    Instruction.FMul newFMul = new Instruction.FMul(inst.getParentBlock(), inst.getType(),
+                            fadd, inst.getOperand_2());
+                    inst.replaceAllUsesWith(newFMul);
+                    delList.add(inst);
+                    snap.add(idx + 1, fadd);
+                    snap.add(idx + 2, newFMul);
+                    return;
+                }
+                else if (fmul1.getOperand_2().equals(inst.getOperand_2())) {
+                    Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(1), fmul1.getOperand_1());
+                    Instruction.FMul newFMul = new Instruction.FMul(inst.getParentBlock(), inst.getType(),
+                            fadd, inst.getOperand_2());
+                    inst.replaceAllUsesWith(newFMul);
+                    delList.add(inst);
+                    snap.add(idx + 1, fadd);
+                    snap.add(idx + 2, newFMul);
+                    return;
+                }
+            }
+        }
+        /*
+         a + a * b -> (1 + b) * a
+         a + b * a -> (1 + b) * a
+         */
+        if (inst.getOperand_2() instanceof Instruction.FMul fmul2) {
+            if (fmul2.getUsers().size() == 1) {
+                if (fmul2.getOperand_1().equals(inst.getOperand_1())) {
+                    Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(1), fmul2.getOperand_2());
+                    Instruction.FMul newFMul = new Instruction.FMul(inst.getParentBlock(), inst.getType(),
+                            fadd, inst.getOperand_1());
+                    inst.replaceAllUsesWith(newFMul);
+                    delList.add(inst);
+                    snap.add(idx + 1, fadd);
+                    snap.add(idx + 2, newFMul);
+                    return;
+                }
+                else if (fmul2.getOperand_2().equals(inst.getOperand_1())) {
+                    Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(1), fmul2.getOperand_1());
+                    Instruction.FMul newFMul = new Instruction.FMul(inst.getParentBlock(), inst.getType(),
+                            fadd, inst.getOperand_1());
+                    inst.replaceAllUsesWith(newFMul);
+                    delList.add(inst);
+                    snap.add(idx + 1, fadd);
+                    snap.add(idx + 2, newFMul);
+                    return;
+                }
+            }
+        }
+        /*
+         b * a + c * a -> (b + c) * a
+         a * b + c * a -> (b + c) * a
+         a * b + a * c -> (b + c) * a
+         b * a + a * c -> (b + c) * a
+         */
+        if (inst.getOperand_1() instanceof Instruction.FMul fmul1 && inst.getOperand_2() instanceof Instruction.FMul fmul2) {
+            if (fmul1.getUsers().size() == 1 || fmul2.getUsers().size() == 1) {
+                Value a = null, b = null, c = null;
+                if (fmul1.getOperand_1().equals(fmul2.getOperand_1())) {
+                    a = fmul1.getOperand_1();
+                    b = fmul1.getOperand_2();
+                    c = fmul2.getOperand_2();
+                }
+                else if (fmul1.getOperand_1().equals(fmul2.getOperand_2())) {
+                    a = fmul1.getOperand_1();
+                    b = fmul1.getOperand_2();
+                    c = fmul2.getOperand_1();
+                }
+                else if (fmul1.getOperand_2().equals(fmul2.getOperand_1())) {
+                    a = fmul1.getOperand_2();
+                    b = fmul1.getOperand_1();
+                    c = fmul2.getOperand_2();
+                }
+                else if (fmul1.getOperand_2().equals(fmul2.getOperand_2())) {
+                    a = fmul1.getOperand_2();
+                    b = fmul1.getOperand_1();
+                    c = fmul2.getOperand_1();
+                }
+                if (a != null) {
+                    Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(), b, c);
+//                add.remove();
+                    Instruction.FMul newFMul = new Instruction.FMul(inst.getParentBlock(), inst.getType(), a, fadd);
+//                newMul.remove();
+                    inst.replaceAllUsesWith(newFMul);
+                    delList.add(inst);
+                    snap.add(idx + 1, fadd);
+                    snap.add(idx + 2, newFMul);
+                    return;
+                }
+            }
+        }
+        reducedList.add(inst);
+    }
+
+    private static void reduceFSUB(Instruction.FSub inst) {
+        if (!Manager.isO1) {
+            reducedList.add(inst);
+            return;
+        }
+        if (inst.getOperand_1() instanceof Constant c1) {
+            //0 - (0 - a) -> a
+            if (c1.isZero() && inst.getOperand_2() instanceof Instruction.FSub fsub) {
+                if (fsub.getOperand_1() instanceof Constant c2 && c2.isZero()) {
+                    inst.replaceAllUsesWith(fsub.getOperand_2());
+                    delList.add(inst);
+                    return;
+                }
+            }
+            //c1 - (c2 + x) -> (c1 - c2) - x
+            if (inst.getOperand_2() instanceof Instruction.FAdd fadd) {
+                if (fadd.getOperand_1() instanceof Constant) {
+                    Constant.ConstantFloat newConst = new Constant.ConstantFloat(((float) c1.getConstValue()) - ((float) ((Constant) fadd.getOperand_1()).getConstValue()));
+                    Instruction.FSub newFSub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
+                            newConst, fadd.getOperand_2());
+                    inst.replaceAllUsesWith(newFSub);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFSub);
+                    return;
+                }
+            }
+        }
+        if (inst.getOperand_2() instanceof Constant c2) {
+            //a - 0 -> a
+            if (c2.isZero()) {
+                inst.replaceAllUsesWith(inst.getOperand_1());
+                delList.add(inst);
+                return;
+            }
+            if (inst.getOperand_1() instanceof Instruction.FSub) {
+                Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_1();
+                //(x - c1) - c2 -> x + -(c1 + c2)
+                if (fsub.getOperand_2() instanceof Constant) {
+                    Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                            fsub.getOperand_1(), new Constant.ConstantFloat(
+                            -1 * ((float) ((Constant) fsub.getOperand_2()).getConstValue()) + (float) c2.getConstValue()));
+                    inst.replaceAllUsesWith(fadd);
+                    delList.add(inst);
+                    snap.add(idx + 1, fadd);
+                    return;
+                }
+                //(c1 - x) - c2 -> (c1 - c2) - x
+                if (fsub.getOperand_1() instanceof Constant) {
+                    Instruction.FSub newFSub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(((float) ((Constant) fsub.getOperand_1()).getConstValue()) - ((float) c2.getConstValue())), fsub.getOperand_2());
+                    inst.replaceAllUsesWith(newFSub);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFSub);
+                    return;
+                }
+            }
+            //(c1 + x) - c2 -> (c1 - c2) + x
+            if (inst.getOperand_1() instanceof Instruction.FAdd) {
+                Instruction.FAdd fadd = (Instruction.FAdd) inst.getOperand_1();
+                if (fadd.getOperand_1() instanceof Constant) {
+                    Instruction.FAdd newFAdd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(((float) ((Constant) fadd.getOperand_1()).getConstValue()) - ((float) c2.getConstValue())),
+                            fadd.getOperand_2());
+                    inst.replaceAllUsesWith(newFAdd);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFAdd);
+                    return;
+                }
+            }
+//a - c ->  (-c) + a
+            Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
+                    new Constant.ConstantFloat(-1 * (float) ((Constant) inst.getOperand_2()).getConstValue()), inst.getOperand_1());
+//            add.remove();
+            inst.replaceAllUsesWith(fadd);
+            delList.add(inst);
+            snap.add(idx + 1, fadd);
+            return;
+        }
+        //a - a -> 0
+        if (inst.getOperand_1().equals(inst.getOperand_2())) {
+            inst.replaceAllUsesWith(new Constant.ConstantFloat(0));
+            delList.add(inst);
+            return;
+        }
+        //a - (0 - b) -> a + b
+        if (inst.getOperand_2() instanceof Instruction.FSub) {
+            Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_2();
+            if (fsub.getOperand_1() instanceof Constant c && c.isZero()) {
+                Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(), inst.getOperand_1(), fsub.getOperand_2());
+//                add.remove();
+                inst.replaceAllUsesWith(fadd);
+                delList.add(inst);
+                snap.add(idx + 1, fadd);
+                return;
+            }
+        }
+        //a - (a + b) -> 0 - b
+        //a - (b + a) -> 0 - b
+        if (inst.getOperand_2() instanceof Instruction.FAdd fadd) {
+            if (fadd.getOperand_1().equals(inst.getOperand_1())) {
+                Instruction.FSub newFSub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
+                        new Constant.ConstantFloat(0), fadd.getOperand_2());
+//                newSub.remove();
+                inst.replaceAllUsesWith(newFSub);
+                delList.add(inst);
+                snap.add(idx + 1, newFSub);
+                return;
+            }
+            if (fadd.getOperand_2().equals(inst.getOperand_1())) {
+                Instruction.FSub newFSub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
+                        new Constant.ConstantFloat(0), fadd.getOperand_1());
+//                newSub.remove();
+                inst.replaceAllUsesWith(newFSub);
+                delList.add(inst);
+                snap.add(idx + 1, newFSub);
+                return;
+            }
+        }
+        /*
+         b * a - c * a -> (b - c) * a
+         a * b - c * a -> (b - c) * a
+         a * b - a * c -> (b - c) * a
+         b * a - a * c -> (b - c) * a
+         */
+        if (inst.getOperand_1() instanceof Instruction.FMul fmul1 && inst.getOperand_2() instanceof Instruction.FMul fmul2) {
+            if (fmul1.getUsers().size() == 1 || fmul2.getUsers().size() == 1) {
+                Value a = null, b = null, c = null;
+                if (fmul1.getOperand_1().equals(fmul2.getOperand_1())) {
+                    a = fmul1.getOperand_1();
+                    b = fmul1.getOperand_2();
+                    c = fmul2.getOperand_2();
+                }
+                else if (fmul1.getOperand_1().equals(fmul2.getOperand_2())) {
+                    a = fmul1.getOperand_1();
+                    b = fmul1.getOperand_2();
+                    c = fmul2.getOperand_1();
+                }
+                else if (fmul1.getOperand_2().equals(fmul2.getOperand_1())) {
+                    a = fmul1.getOperand_2();
+                    b = fmul1.getOperand_1();
+                    c = fmul2.getOperand_2();
+                }
+                else if (fmul1.getOperand_2().equals(fmul2.getOperand_2())) {
+                    a = fmul1.getOperand_2();
+                    b = fmul1.getOperand_1();
+                    c = fmul2.getOperand_1();
+                }
+                if (a != null) {
+                    Instruction.FSub fsub = new Instruction.FSub(inst.getParentBlock(), inst.getType(), b, c);
+//                sub.remove();
+                    Instruction.FMul newFMul = new Instruction.FMul(inst.getParentBlock(), inst.getType(), a, fsub);
+//                newMul.remove();
+                    inst.replaceAllUsesWith(newFMul);
+                    delList.add(inst);
+                    snap.add(idx + 1, fsub);
+                    snap.add(idx + 2, newFMul);
+                    return;
+                }
+            }
+        }
+        reducedList.add(inst);
+    }
+
+    private static void reduceFMUL(Instruction.FMul inst) {
+        if (inst.getOperand_1() instanceof Constant c) {
+            // 0 * v -> 0
+            if (c.isZero()) {
+                inst.replaceAllUsesWith(new Constant.ConstantFloat(0));
+                delList.add(inst);
+                return;
+            }
+            // 1 * v -> v
+            if (c.getConstValue().equals(1)) {
+                inst.replaceAllUsesWith(inst.getOperand_2());
+                delList.add(inst);
+                return;
+            }
+            // -1 * v -> 0 - v
+            if (c.getConstValue().equals(-1)) {
+                Instruction.FSub fsub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
+                        new Constant.ConstantFloat(0), inst.getOperand_2());
+//                sub.remove();
+                inst.replaceAllUsesWith(fsub);
+                delList.add(inst);
+                snap.add(idx + 1, fsub);
+                return;
+            }
+            //c * (0 - x) -> -c * x
+            if (inst.getOperand_2() instanceof Instruction.FSub fsub) {
+                if (fsub.getOperand_1() instanceof Constant c1 && c1.isZero()) {
+                    Instruction.FMul newFMul = new Instruction.FMul(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(-1 * (float) c.getConstValue()), fsub.getOperand_2());
+                    inst.replaceAllUsesWith(newFMul);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFMul);
+                    return;
+                }
+            }
+        }
+        reducedList.add(inst);
+    }
+
+    private static void reduceFDIV(Instruction.FDiv inst) {
+        if (inst.getOperand_1() instanceof Constant constant) {
+            // 0 / v -> 0
+            if (constant.isZero()) {
+                inst.replaceAllUsesWith(new Constant.ConstantFloat(0));
+                delList.add(inst);
+                return;
+            }
+        }
+        if (inst.getOperand_2() instanceof Constant constant) {
+            // v / 1 -> v
+            if (constant.getConstValue().equals(1)) {
+                inst.replaceAllUsesWith(inst.getOperand_1());
+                delList.add(inst);
+                return;
+            }
+            // v / -1 -> 0 - v
+            if (constant.getConstValue().equals(-1)) {
+                Instruction.FSub fsub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
+                        new Constant.ConstantFloat(0), inst.getOperand_1());
+//                sub.remove();
+                inst.replaceAllUsesWith(fsub);
+                delList.add(inst);
+                snap.add(idx + 1, fsub);
+                return;
+            }
+            // (c1 * x) / c2 -> 0 if c1 % c2 == 0
+            if (inst.getOperand_1() instanceof Instruction.FMul) {
+                Instruction.FMul mul = (Instruction.FMul) inst.getOperand_1();
+                if (mul.getUsers().size() == 1) {
+                    if (mul.getOperand_1() instanceof Constant c1) {
+                        if (((float) c1.getConstValue()) % ((float) constant.getConstValue()) == 0) {
+                            inst.replaceAllUsesWith(new Constant.ConstantFloat(0));
+                            delList.add(inst);
+                            return;
+                        }
+                    }
+                }
+            }
+            // (0 - x) / c -> x / -c
+            if (inst.getOperand_1() instanceof Instruction.FSub) {
+                Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_1();
+                if (fsub.getOperand_1() instanceof Constant c && c.isZero()) {
+                    Instruction.FDiv newFDiv = new Instruction.FDiv(inst.getParentBlock(), inst.getType(),
+                            fsub.getOperand_2(), new Constant.ConstantFloat(-1 * (float) constant.getConstValue()));
+                    inst.replaceAllUsesWith(newFDiv);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFDiv);
+                    return;
+                }
+            }
+        }
+        //v / v -> 1
+        if (inst.getOperand_1().equals(inst.getOperand_2())) {
+            inst.replaceAllUsesWith(new Constant.ConstantFloat(1));
+            delList.add(inst);
+            return;
+        }
+        //v / (0 - v) -> -1
+        if (inst.getOperand_2() instanceof Instruction.FSub) {
+            Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_2();
+            if (fsub.getOperand_1() instanceof Constant c && c.isZero() && fsub.getOperand_2().equals(inst.getOperand_1())) {
+                inst.replaceAllUsesWith(new Constant.ConstantFloat(-1));
+                delList.add(inst);
+                return;
+            }
+        }
+        //( 0 - v ) / v -> -1
+        if (inst.getOperand_1() instanceof Instruction.FSub) {
+            Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_1();
+            if (fsub.getOperand_1() instanceof Constant c && c.isZero() && fsub.getOperand_2().equals(inst.getOperand_2())) {
+                inst.replaceAllUsesWith(new Constant.ConstantFloat(-1));
+                delList.add(inst);
+                return;
+            }
+        }
+        //v / (v * a) or (a * v) -> 1 / a 确保 v * a 只有一个作用点
+        if (inst.getOperand_2() instanceof Instruction.FMul) {
+            Instruction.FMul mul = (Instruction.FMul) inst.getOperand_2();
+            if (mul.getUsers().size() == 1) {
+                if (mul.getOperand_1().equals(inst.getOperand_1())) {
+                    Instruction.FDiv newFDiv = new Instruction.FDiv(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(1), mul.getOperand_2());
+                    inst.replaceAllUsesWith(newFDiv);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFDiv);
+                    return;
+                }
+                else if (mul.getOperand_2().equals(inst.getOperand_1())) {
+                    Instruction.FDiv newFDiv = new Instruction.FDiv(inst.getParentBlock(), inst.getType(),
+                            new Constant.ConstantFloat(1), mul.getOperand_1());
+                    inst.replaceAllUsesWith(newFDiv);
+                    delList.add(inst);
+                    snap.add(idx + 1, newFDiv);
+                    return;
+                }
+            }
+        }
+        //v / a / b -> v / (a * b) 确保 a / b 只有一个作用点
+        if (inst.getOperand_1() instanceof Instruction.FDiv) {
+            Instruction.FDiv div = (Instruction.FDiv) inst.getOperand_1();
+            if (div.getUsers().size() == 1) {
+                Instruction.FMul mul = new Instruction.FMul(inst.getParentBlock(), inst.getType(),
+                        div.getOperand_2(), inst.getOperand_2());
+                Instruction.FDiv newFDiv = new Instruction.FDiv(inst.getParentBlock(), inst.getType(),
+                        div.getOperand_1(), mul);
+                inst.replaceAllUsesWith(newFDiv);
+                delList.add(inst);
+                snap.add(idx + 1, mul);
+                snap.add(idx + 2, newFDiv);
                 return;
             }
         }
