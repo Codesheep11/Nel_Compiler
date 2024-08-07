@@ -24,6 +24,8 @@ public final class AnalysisManager {
     private static final HashMap<Function, I32RangeAnalysis> rangeMap = new HashMap<>();
     private static final HashMap<Function, FuncInfo> funcInfoMap = new HashMap<>();
 
+    private static AlignmentAnalysis.AlignMap alignMap;
+
     private static final HashMap<Function, Boolean> dirtyCFG = new HashMap<>();
 
     private static final HashMap<Function, Boolean> dirtyDG = new HashMap<>();
@@ -218,6 +220,16 @@ public final class AnalysisManager {
 
     public static void setFuncInfo(Function function) {
         funcInfoMap.put(function, new FuncInfo(function));
+    }
+    // endregion
+
+    // region AlignMap
+    public static AlignmentAnalysis.AlignMap getAlignMap() {
+        return alignMap;
+    }
+
+    public static void setAlignMap(AlignmentAnalysis.AlignMap map) {
+        alignMap = map;
     }
     // endregion
 }

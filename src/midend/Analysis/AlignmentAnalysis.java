@@ -23,6 +23,22 @@ public final class AlignmentAnalysis {
         public static AlignType merge(AlignType a, AlignType b) {
             return a.morePreciseThan(b) ? b : a;
         }
+
+        public static AlignType mul(AlignType a, AlignType b) {
+            if (a == ALIGN_BYTE_8 || b == ALIGN_BYTE_8)
+                return ALIGN_BYTE_8;
+            if (a == UNKNOWN) return b;
+            if (b == UNKNOWN) return a;
+            return ALIGN_BYTE_4;
+        }
+
+        public static AlignType add(AlignType a, AlignType b) {
+            if (a == ALIGN_BYTE_8 && b == ALIGN_BYTE_8)
+                return ALIGN_BYTE_8;
+            if (a == ALIGN_BYTE_4 && b == ALIGN_BYTE_4)
+                return ALIGN_BYTE_8;
+            return ALIGN_BYTE_4;
+        }
     }
 
     public static final class AlignMap extends HashMap<Value, AlignType> {
@@ -44,14 +60,14 @@ public final class AlignmentAnalysis {
     private static AlignMap alignMap;
 
 
-    public static AlignMap run(Module module) {
+    public static void run(Module module) {
         cur_module = module;
         alignMap = new AlignMap();
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             runOnFunc(function);
         }
-        return alignMap;
+        AnalysisManager.setAlignMap(alignMap);
     }
 
     private static final int ANA_LEN = 64;
@@ -106,18 +122,17 @@ public final class AlignmentAnalysis {
                 }
                 case GEP -> {
                     Instruction.GetElementPtr gep = (Instruction.GetElementPtr) inst;
-                    Value baseAlign = gep.getIdx();
-                    SCEVExpr scevExpr = scevInfo.query(baseAlign);
-                    if (scevExpr != null) {
-                        if (scevExpr.isEvenAll())
-                            updateAlign.accept(inst, AlignType.ALIGN_BYTE_8);
-                        else if (scevExpr.isOddAll())
-                            updateAlign.accept(inst, AlignType.ALIGN_BYTE_4);
-                    } else {
-                        AlignType alignType = alignMap.get(baseAlign);
+                    Value baseAlign = gep.getBase();
+                    Value idxAlign = gep.getIdx();
 
-                        updateAlign.accept(inst, alignType);
-                    }
+                    AlignType idxAlignType = GepSpread(idxAlign);
+                    AlignType baseAlignType = alignMap.get(baseAlign);
+                    Type innerType = ((Type.PointerType) gep.getType()).getInnerType();
+                    // base + idx * innerType
+                    AlignType innerAlign = (innerType.queryBytesSizeOfType() & 7) == 0 ? AlignType.ALIGN_BYTE_8 : AlignType.ALIGN_BYTE_4;
+
+                    updateAlign.accept(inst, AlignType.add(baseAlignType, AlignType.mul(idxAlignType, innerAlign)));
+
 
                 }
                 case PHI -> {
@@ -154,13 +169,17 @@ public final class AlignmentAnalysis {
                 AlignType align2 = GepSpread(add.getOperand_2());
                 if (align1 == AlignType.ALIGN_BYTE_8 && align2 == AlignType.ALIGN_BYTE_8)
                     return AlignType.ALIGN_BYTE_8;
+                if (align1 == AlignType.ALIGN_BYTE_4 && align2 == AlignType.ALIGN_BYTE_4)
+                    return AlignType.ALIGN_BYTE_8;
                 else return AlignType.ALIGN_BYTE_4;
             }
             case MUL -> {
                 Instruction.Mul mul = (Instruction.Mul) inst;
                 AlignType align1 = GepSpread(mul.getOperand_1());
+                if (align1 == AlignType.ALIGN_BYTE_8)
+                    return AlignType.ALIGN_BYTE_8;
                 AlignType align2 = GepSpread(mul.getOperand_2());
-                if (align1 == AlignType.ALIGN_BYTE_8 || align2 == AlignType.ALIGN_BYTE_8)
+                if (align2 == AlignType.ALIGN_BYTE_8)
                     return AlignType.ALIGN_BYTE_8;
                 else return AlignType.ALIGN_BYTE_4;
             }

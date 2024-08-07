@@ -115,10 +115,11 @@ public class Manager {
         ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
-        LoopBuildAndNormalize();
-        Print.printAlignMap(AlignmentAnalysis.run(module), "alignMap.txt");
         FuncCache.run(module);
         FuncAnalysis.run(module);
+        LoopBuildAndNormalize();
+        GepLift.run(module);
+        AlignmentAnalysis.run(module);
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
@@ -138,7 +139,6 @@ public class Manager {
         RemovePhi.run(module);
         LoopInfo.run(module);
         BrPredction.run(module);
-        GepLift.run(module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
