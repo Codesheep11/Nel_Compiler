@@ -77,11 +77,14 @@ public class CalculateOpt {
                 HashSet<RiscvInstruction> instrs = LivenessAnalyze.RegUse.get((Reg) addi.rd);
                 for (RiscvInstruction inst : instrs) {
                     if (inst instanceof LS ls) {
-                        if (ls.rs2.equals(addi.rd) && ls.addr instanceof Imm imm && imm.getVal() == 0) {
+                        if (ls.rs2.equals(addi.rd) && ls.addr instanceof Imm imm && imm.getVal() == 0 && !ls.rs1.equals(addi.rd)) {
                             ls.rs2 = (Reg) addi.rs1;
                             ls.addr = new Imm(((Imm) addi.rs2).getVal());
+                        } else if (ls.rs1.equals(addi.rd)) {
+                            canRemove = false;
                         }
                     } else {
+                        // 如果是ls的话但是使用了这个呢?
                         if (LivenessAnalyze.Use.get(inst).contains((Reg) addi.rd)) {
                             canRemove = false;
                         }
@@ -529,8 +532,7 @@ public class CalculateOpt {
                                     }
                                     needReplace.put(ls1, new ArrayList<>());
                                     needReplace.put(ls2, list);
-                                }
-                                else if (ls1.type == LS.LSType.lw && ls2.type == LS.LSType.lw) {
+                                } else if (ls1.type == LS.LSType.lw && ls2.type == LS.LSType.lw) {
                                     if (lsConflict(block, i, j, true, ls1.rs2, off)) break;
                                     ArrayList<RiscvInstruction> list1 = new ArrayList<>();
                                     ArrayList<RiscvInstruction> list2 = new ArrayList<>();
