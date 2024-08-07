@@ -2,8 +2,7 @@ package midend.Analysis;
 
 import midend.Transform.RangeFolding;
 import mir.*;
-import mir.Module;
-import mir.result.DGinfo;
+import midend.Analysis.result.DGinfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
