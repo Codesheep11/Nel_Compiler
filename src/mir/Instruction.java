@@ -179,6 +179,19 @@ public class Instruction extends User {
         };
     }
 
+    public boolean isMovable() {
+        if (!this.isNoSideEffect())
+            return false;
+        switch (instType) {
+            case ALLOC, PHI, LOAD -> {
+                return false;
+            }
+            default -> {
+                return true;
+            }
+        }
+    }
+
     public boolean isAssociative() {
         return switch (instType) {
             case ADD, MUL -> true;
@@ -696,6 +709,8 @@ public class Instruction extends User {
         public TypeCast(BasicBlock parentBlock, Type type, InstType instType) {
             super(parentBlock, type, instType);
         }
+
+        public abstract Value getSrc();
     }
 
     //zero extend I1 to I32

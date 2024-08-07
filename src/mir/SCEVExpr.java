@@ -70,6 +70,14 @@ public final class SCEVExpr implements Cloneable{
         }
     }
 
+    public boolean isOddAll() {
+        return (getInit() & 1) == 1 && (getStep() & 1) == 0;
+    }
+
+    public boolean isEvenAll() {
+        return (getInit() & 1) == 0 && (getStep() & 1) == 0;
+    }
+
     public int getInit() {
         if (type == SCEVType.Constant) {
             return constant;

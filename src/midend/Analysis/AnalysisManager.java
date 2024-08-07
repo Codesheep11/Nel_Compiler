@@ -17,19 +17,13 @@ import java.util.HashSet;
 /**
  *
  */
-public class AnalysisManager {
-
-    public AnalysisManager() {
-
-    }
+public final class AnalysisManager {
 
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
     private static final HashMap<Function, SCEVinfo> scevMap = new HashMap<>();
     private static final HashMap<Function, I32RangeAnalysis> rangeMap = new HashMap<>();
     private static final HashMap<Function, FuncInfo> funcInfoMap = new HashMap<>();
-
-    private static final HashMap<Function, Boolean> dirtyLCSSA = new HashMap<>();
 
     private static final HashMap<Function, Boolean> dirtyCFG = new HashMap<>();
 
@@ -226,4 +220,5 @@ public class AnalysisManager {
     public static void setFuncInfo(Function function) {
         funcInfoMap.put(function, new FuncInfo(function));
     }
+    // endregion
 }

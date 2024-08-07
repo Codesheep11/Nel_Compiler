@@ -21,6 +21,7 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
+import midend.Analysis.AlignmentAnalysis;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.*;
@@ -33,6 +34,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Module;
@@ -112,6 +114,8 @@ public class Manager {
         ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
+        LoopBuildAndNormalize();
+        Print.printAlignMap(AlignmentAnalysis.run(module), "alignMap.txt");
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
@@ -132,7 +136,6 @@ public class Manager {
         LoopInfo.run(module);
         BrPredction.run(module);
         GepLift.run(module);
-        outputLLVM("debug.txt",module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
