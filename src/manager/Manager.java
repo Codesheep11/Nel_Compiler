@@ -135,7 +135,7 @@ public class Manager {
         LoopInfo.run(module);
         BrPredction.run(module);
         GepLift.run(module);
-        outputLLVM("debug.txt",module);
+//        outputLLVM("debug.txt",module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);

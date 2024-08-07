@@ -91,7 +91,7 @@ public class RiscvFunction {
             case "memset", "getint", "putint", "getch",
                     "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
                     "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main"
-                    , "NELCacheLookup" -> str;
+                    , "NELCacheLookup","NELParallelFor" -> str;
             default -> "f_" + str;
         };
     }

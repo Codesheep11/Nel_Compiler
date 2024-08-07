@@ -96,7 +96,7 @@ public class GepLift {
             else return Integer.MAX_VALUE;
         } else if (c1.sum.size() > c2.sum.size()) {
             if (c1.sum.get(c1.sum.size() - 1) instanceof Constant.ConstantInt ci)
-                return ci.getIntValue();
+                return -ci.getIntValue();
             else return Integer.MAX_VALUE;
         } else {
             if (c2.sum.get(c2.sum.size() - 1) instanceof Constant.ConstantInt cs2
@@ -162,8 +162,10 @@ public class GepLift {
         HashSet<Instruction> toRemove = new HashSet<>();
         for (Instruction.GetElementPtr gep : myBaseOffset.keySet()) {
             OffsetPair offsetPair = myBaseOffset.get(gep);
-            Instruction.Add add = new Instruction.Add(block, gep.getType(),
-                    offsetPair.gepBase, Constant.ConstantInt.get(offsetPair.offset * gep.getEleType().queryBytesSizeOfType()));
+            ArrayList<Value> offset = new ArrayList<>();
+            offset.add(Constant.ConstantInt.get(offsetPair.offset));
+            Instruction.GetElementPtr add = new Instruction.GetElementPtr(block, offsetPair.gepBase,
+                    offsetPair.gepBase.getEleType(), offset);
             add.remove();
             block.getInstructions().insertBefore(add, gep);
             // 将使用gep的替换为add

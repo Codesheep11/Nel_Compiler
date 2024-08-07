@@ -1,11 +1,19 @@
 package backend.parallel;
 
-import manager.Manager;
+import backend.riscv.RiscvFunction;
+import backend.riscv.RiscvModule;
 
 public class ExternLib {
 
-    public static boolean need() {
-        return Manager.isO1;
+    public static boolean need(RiscvModule riscvModule) {
+        boolean need = false;
+        for (RiscvFunction function : riscvModule.funcList) {
+            if (function.isExternal && (function.name.equals("NELCacheLookup") || function.name.equals("NELParallelFor"))) {
+                need = true;
+                break;
+            }
+        }
+        return need;
     }
 
     public static String model = ".file\t\"NEL_sysy_rt.cpp\"\n" +
