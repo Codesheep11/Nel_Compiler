@@ -40,6 +40,7 @@ public class Reassociate {
     }
 
     private static void runOnInst(Instruction.BinaryOperation inst) {
+        if (inst instanceof Instruction.FMul || inst instanceof Instruction.FAdd) return;
         BasicBlock block = inst.getParentBlock();
         Instruction.InstType instType = inst.getInstType();
         ArrayList<Pair<Integer, Value>> args = new ArrayList<>();
@@ -142,6 +143,19 @@ public class Reassociate {
                 }
                 break;
             }
+//            case FADD: {
+//                for (Pair<Integer, Value> pair : args) {
+//                    if (pair.getKey() == 1) reductionStorage.add(pair.getValue());
+//                    else {
+//                        Instruction mul = new Instruction.FMul(block, pair.getValue().getType(),
+//                                pair.getValue(), new Constant.ConstantFloat(pair.getKey()));
+//                        mul.remove();
+//                        block.getInstructions().insertBefore(mul, inst);
+//                        reductionStorage.add(mul);
+//                    }
+//                }
+//                break;
+//            }
             default: {
                 throw new RuntimeException("Unsupported instruction type");
             }
@@ -164,6 +178,12 @@ public class Reassociate {
                     block.getInstructions().insertBefore(mul, inst);
                     reducedStorage = mul;
                 }
+//                else if (inst instanceof Instruction.FAdd) {
+//                    Instruction fadd = new Instruction.FAdd(block, v.getType(), reducedStorage, v);
+//                    fadd.remove();
+//                    block.getInstructions().insertBefore(fadd, inst);
+//                    reducedStorage = fadd;
+//                }
                 else {
                     throw new RuntimeException("Unsupported instruction type");
                 }

@@ -3,7 +3,7 @@ package midend.Util;
 import mir.BasicBlock;
 import mir.Function;
 import mir.Instruction;
-import mir.result.CFGinfo;
+import midend.Analysis.result.CFGinfo;
 
 import java.util.*;
 

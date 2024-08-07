@@ -290,7 +290,7 @@ public class CodeGen {
             } else if (type.isFloatTy()) {
                 nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.fa0, 32), R2.R2Type.fmv));
             } else {
-                throw new RuntimeException("....");
+                nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.a0, 64), R2.R2Type.mv));
             }
         }
     }
@@ -420,7 +420,8 @@ public class CodeGen {
         Value offset = getElementPtr.getIdx();
         Reg pointer = VirRegMap.VRM.ensureRegForValue(getElementPtr);
         Reg base;
-        if (getElementPtr.getBase() instanceof GlobalVariable || getElementPtr.getBase() instanceof Function.Argument) {
+        if (getElementPtr.getBase() instanceof GlobalVariable || getElementPtr.getBase() instanceof Function.Argument
+                || !StackManager.getInstance().valueHasOffset(nowFunc.name, getElementPtr.getBase())) {
             // 这两种情况是可以直接用指针的情况
             if (getElementPtr.getBase() instanceof GlobalVariable) {
                 base = Reg.getVirtualReg(Reg.RegType.GPR, 64);
@@ -631,7 +632,13 @@ public class CodeGen {
 
     private void solveBitCast(Instruction.BitCast bitCast) {
         //
-        VirRegMap.VRM.binding(bitCast.getSrc(), bitCast);
+        if (bitCast.getSrc().getType().isFloatTy() && !bitCast.getType().isFloatTy()) {
+            Reg reg = VirRegMap.VRM.ensureRegForValue(bitCast.getSrc());
+            Reg ans = VirRegMap.VRM.ensureRegForValue(bitCast);
+            nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, reg, R2.R2Type.fmvxw));
+        } else {
+            VirRegMap.VRM.binding(bitCast.getSrc(), bitCast);
+        }
     }
 
     /**

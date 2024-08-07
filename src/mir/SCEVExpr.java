@@ -31,7 +31,6 @@ public final class SCEVExpr implements Cloneable{
     }
 
 
-
     private  static int k = 0;
     private static int n = 0;
     private static int c = 1;

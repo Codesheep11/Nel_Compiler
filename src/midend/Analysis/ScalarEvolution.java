@@ -1,11 +1,10 @@
 package midend.Analysis;
 
 import mir.*;
-import mir.result.CoRInfo;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.SCEVinfo;
 
+import midend.Analysis.result.CoRInfo;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Consumer;
 

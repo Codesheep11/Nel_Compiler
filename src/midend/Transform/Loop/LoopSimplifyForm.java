@@ -6,6 +6,7 @@ import mir.Module;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 
 /**
  * 循环简化
@@ -109,7 +110,7 @@ public class LoopSimplifyForm {
     }
 
     private static void CanonicalizeExits(Loop loop) {
-        HashSet<BasicBlock> newExits = new HashSet<>();
+        LinkedHashSet<BasicBlock> newExits = new LinkedHashSet<>();
         Function parentFunction = loop.header.getParentFunction();
         for (BasicBlock exit : loop.exits) {
             if (!AnalysisManager.dominate(loop.header, exit)) {

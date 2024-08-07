@@ -4,6 +4,7 @@ import midend.Transform.Loop.LoopCloneInfo;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 //import static midend.Util.CloneInfo.bbMap;
 
@@ -12,13 +13,13 @@ public class Loop {
     private final int hash;
     public Loop parent = null;
     public HashSet<Loop> children = new HashSet<>();
-    public HashSet<BasicBlock> nowLevelBB = new HashSet<>();
+    public LinkedHashSet<BasicBlock> nowLevelBB = new LinkedHashSet<>();
     public BasicBlock header = null;
     public BasicBlock preHeader = null;
-    public HashSet<BasicBlock> enterings = new HashSet<>(); //enterings -> preheader
-    public HashSet<BasicBlock> exitings = new HashSet<>();
-    public HashSet<BasicBlock> exits = new HashSet<>();
-    public HashSet<BasicBlock> latchs = new HashSet<>();// 1 latch
+    public LinkedHashSet<BasicBlock> enterings = new LinkedHashSet<>(); //enterings -> preheader
+    public LinkedHashSet<BasicBlock> exitings = new LinkedHashSet<>();
+    public LinkedHashSet<BasicBlock> exits = new LinkedHashSet<>();
+    public LinkedHashSet<BasicBlock> latchs = new LinkedHashSet<>();// 1 latch
 
     public int tripCount = -1;
     //todo: cond
@@ -162,8 +163,8 @@ public class Loop {
         }
 
         info.cpy.header = (BasicBlock) info.getReflectedValue(header);
-        info.cpy.enterings = new HashSet<>(enterings);
-        info.cpy.exits = new HashSet<>(exits);
+        info.cpy.enterings = new LinkedHashSet<>(enterings);
+        info.cpy.exits = new LinkedHashSet<>(exits);
         latchs.forEach(bb -> info.cpy.latchs.add((BasicBlock) info.getReflectedValue(bb)));
         exitings.forEach(bb -> info.cpy.exitings.add((BasicBlock) info.getReflectedValue(bb)));
 

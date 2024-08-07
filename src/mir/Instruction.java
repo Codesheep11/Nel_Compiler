@@ -1,7 +1,6 @@
 package mir;
 
 import frontend.Recorder;
-import manager.Manager;
 import midend.Analysis.AnalysisManager;
 import midend.Util.CloneInfo;
 import midend.Util.FuncInfo;
@@ -32,7 +31,7 @@ public class Instruction extends User {
         BitCast,
         ADD,
         SUB,
-        FAdd,
+        FADD,
         FSUB,
         MUL,
         DIV,
@@ -194,7 +193,7 @@ public class Instruction extends User {
 
     public boolean isAssociative() {
         return switch (instType) {
-            case ADD, MUL -> true;
+            case ADD, MUL, FADD, FMUL -> true;
             default -> false;
         };
     }
@@ -242,7 +241,8 @@ public class Instruction extends User {
             Value retValue = getRetValue();
             if (retValue != null) {
                 return String.format("ret %s %s", retValue.getType().toString(), retValue.getDescriptor());
-            } else {
+            }
+            else {
                 return "ret void";
             }
         }
@@ -324,7 +324,8 @@ public class Instruction extends User {
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());
-            } else {
+            }
+            else {
                 return String.format("%s = call %s @%s(%s)", getDescriptor(), destFunction.getRetType().toString(), destFunction.name, paramsToString());
             }
         }
@@ -1125,7 +1126,7 @@ public class Instruction extends User {
     public static class FAdd extends BinaryOperation {
 
         public FAdd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
-            super(parentBlock, resType, InstType.FAdd, operand_1, operand_2);
+            super(parentBlock, resType, InstType.FADD, operand_1, operand_2);
         }
 
         @Override
@@ -1830,7 +1831,8 @@ public class Instruction extends User {
                 Value val = optionalValues.get(value);
                 optionalValues.remove(value);
                 optionalValues.put((BasicBlock) v, val);
-            } else {
+            }
+            else {
                 for (BasicBlock block : optionalValues.keySet()) {
                     if (optionalValues.get(block).equals(value)) {
                         optionalValues.put(block, v);
