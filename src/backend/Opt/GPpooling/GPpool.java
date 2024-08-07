@@ -1,6 +1,8 @@
 package backend.Opt.GPpooling;
 
-import backend.riscv.*;
+import backend.riscv.RiscvFloat;
+import backend.riscv.RiscvGlobalVar;
+import backend.riscv.RiscvModule;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,9 +31,6 @@ public class GPpool extends RiscvGlobalVar {
         }
     }
 
-    public boolean used() {
-        return size != 0;
-    }
 
     public int queryOffset(RiscvFloat globalVar) {
         if (gv2offset.containsKey(globalVar)) return gv2offset.get(globalVar);
