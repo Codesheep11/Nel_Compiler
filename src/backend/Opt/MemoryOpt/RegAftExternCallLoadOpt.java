@@ -40,7 +40,7 @@ public class RegAftExternCallLoadOpt {
                         lastLoad.remove(ri.getRegByIdx(i));
                     }
                 }
-                lastLoad.put(ls.rs1, ls);
+                lastLoad.put(ls.val, ls);
             } else if (ri instanceof J j) {
                 if (j.type == J.JType.j || j.type == J.JType.ret) break;
                 // 直接对所有call搞删除?可能是后面没用上
