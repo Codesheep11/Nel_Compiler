@@ -27,8 +27,8 @@ public final class AlignmentAnalysis {
         public static AlignType mul(AlignType a, AlignType b) {
             if (a == ALIGN_BYTE_8 || b == ALIGN_BYTE_8)
                 return ALIGN_BYTE_8;
-            if (a == UNKNOWN) return b;
-            if (b == UNKNOWN) return a;
+            if (a == UNKNOWN || b == UNKNOWN)
+                return UNKNOWN;
             return ALIGN_BYTE_4;
         }
 
@@ -37,6 +37,8 @@ public final class AlignmentAnalysis {
                 return ALIGN_BYTE_8;
             if (a == ALIGN_BYTE_4 && b == ALIGN_BYTE_4)
                 return ALIGN_BYTE_8;
+            if (a == UNKNOWN || b == UNKNOWN)
+                return UNKNOWN;
             return ALIGN_BYTE_4;
         }
     }
@@ -167,25 +169,15 @@ public final class AlignmentAnalysis {
                 Instruction.Add add = (Instruction.Add) inst;
                 AlignType align1 = GepSpread(add.getOperand_1());
                 AlignType align2 = GepSpread(add.getOperand_2());
-                if (align1 == AlignType.ALIGN_BYTE_8 && align2 == AlignType.ALIGN_BYTE_8)
-                    return AlignType.ALIGN_BYTE_8;
-                if (align1 == AlignType.ALIGN_BYTE_4 && align2 == AlignType.ALIGN_BYTE_4)
-                    return AlignType.ALIGN_BYTE_8;
-                if (align1 == AlignType.UNKNOWN || align2 ==AlignType.UNKNOWN)
-                    return AlignType.UNKNOWN;
-                return AlignType.ALIGN_BYTE_4;
+
+                return AlignType.add(align1, align2);
             }
             case MUL -> {
                 Instruction.Mul mul = (Instruction.Mul) inst;
                 AlignType align1 = GepSpread(mul.getOperand_1());
-                if (align1 == AlignType.ALIGN_BYTE_8)
-                    return AlignType.ALIGN_BYTE_8;
                 AlignType align2 = GepSpread(mul.getOperand_2());
-                if (align2 == AlignType.ALIGN_BYTE_8)
-                    return AlignType.ALIGN_BYTE_8;
-                if (align1 == AlignType.UNKNOWN || align2 == AlignType.UNKNOWN)
-                    return AlignType.UNKNOWN;
-                return AlignType.ALIGN_BYTE_4;
+
+                return AlignType.mul(align1, align2);
             }
             default -> {
                 return alignMap.get(value);
