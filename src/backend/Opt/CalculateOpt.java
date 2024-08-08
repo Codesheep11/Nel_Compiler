@@ -34,7 +34,7 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 icmpBranchToBranch(block);
                 SraSll2And(block);
-//                Lsw2Lsd(block);
+                Lsw2Lsd(block);
             }
         }
     }
@@ -544,7 +544,8 @@ public class CalculateOpt {
                                     }
                                     needReplace.put(ls1, new ArrayList<>());
                                     needReplace.put(ls2, list);
-                                } else if (ls1.type == LS.LSType.lw && ls2.type == LS.LSType.lw) {
+                                }
+                                else if (ls1.type == LS.LSType.lw && ls2.type == LS.LSType.lw) {
                                     if (lsConflict(block, i, j, true, ls1.base, off)) break;
                                     ArrayList<RiscvInstruction> list1 = new ArrayList<>();
                                     ArrayList<RiscvInstruction> list2 = new ArrayList<>();

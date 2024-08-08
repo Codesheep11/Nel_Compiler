@@ -47,6 +47,8 @@ public class Instruction extends User {
         FNMSUB,
         MIN,
         MAX,
+        // Paralllel
+        ATOMICADD,
         // bitwise operation
         SHL,
         LSHR,
@@ -174,6 +176,7 @@ public class Instruction extends User {
                 yield !calleeInfo.hasSideEffect && calleeInfo.isStateless && calleeInfo.hasReturn;
             }
             case STORE -> false;
+            case ATOMICADD -> false;
             default -> true;
         };
     }
@@ -1409,6 +1412,29 @@ public class Instruction extends User {
         @Override
         public Max cloneToBB(BasicBlock block) {
             return new Max(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class AtomicAdd extends Instruction {
+
+        private Value ptr;
+        private Value inc;
+
+        public AtomicAdd(BasicBlock parentBlock, Type resType, Value ptr, Value operand) {
+            super(parentBlock, resType, InstType.ATOMICADD);
+            this.ptr = ptr;
+            this.inc = operand;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = atomic_add %s %s, %s %s", getDescriptor(),
+                    ptr.getType(), ptr.getDescriptor(), inc.getType(), inc.getDescriptor());
+        }
+
+        @Override
+        public AtomicAdd cloneToBB(BasicBlock block) {
+            return new AtomicAdd(block, getType(), getInstType(), ptr, inc);
         }
     }
 

@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Objects;
 
 public class BasicBlock extends Value {
-    private final Function parentFunction; // 父函数
+    private Function parentFunction; // 父函数
     private final String label;
     private final NelLinkedList<Instruction> instructions;
 
@@ -39,7 +39,8 @@ public class BasicBlock extends Value {
         for (Instruction inst : instructions) {
             if (inst instanceof Instruction.Phi phi) {
                 phiInstructions.add(phi);
-            } else {
+            }
+            else {
                 break;
             }
         }
@@ -58,6 +59,10 @@ public class BasicBlock extends Value {
 
     public Function getParentFunction() {
         return parentFunction;
+    }
+
+    public void setParentFunction(Function parentFunction) {
+        this.parentFunction = parentFunction;
     }
 
     public String getLabel() {

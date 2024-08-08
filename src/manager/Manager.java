@@ -120,7 +120,7 @@ public class Manager {
         LoopBuildAndNormalize();
         GepLift.run(module);
         AlignmentAnalysis.run(module);
-        Print.printAlignMap(AnalysisManager.getAlignMap(), "alignMap.txt");
+//        Print.printAlignMap(AnalysisManager.getAlignMap(), "alignMap.txt");
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
@@ -140,7 +140,7 @@ public class Manager {
         RemovePhi.run(module);
         LoopInfo.run(module);
         BrPredction.run(module);
-        outputLLVM("debug.txt",module);
+//        outputLLVM("debug.txt",module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
@@ -149,7 +149,7 @@ public class Manager {
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
-        BlockInline.run(riscvmodule);
+//        BlockInline.run(riscvmodule);
         KnownBaseLSOpt.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
         RegAftExternCallLoadOpt.run(riscvmodule);
@@ -216,7 +216,7 @@ public class Manager {
     private void FuncPasses() {
         FuncAnalysis.run(module);
         TailCall2Loop.run(module);
-        FunctionInline.run(module);
+//        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         FuncAnalysis.run(module);
