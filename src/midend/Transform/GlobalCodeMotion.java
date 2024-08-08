@@ -32,11 +32,11 @@ public class GlobalCodeMotion {
         if (!CentralControl._GCM_OPEN) return;
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            run(func);
+            runOnFunc(func);
         }
     }
 
-    public static void run(Function function) {
+    public static void runOnFunc(Function function) {
         if (!CentralControl._GCM_OPEN) return;
         GlobalCodeMotion gcm = new GlobalCodeMotion();
         gcm.entry = function.getEntry();

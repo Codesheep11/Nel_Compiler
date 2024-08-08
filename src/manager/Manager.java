@@ -120,7 +120,7 @@ public class Manager {
         LoopBuildAndNormalize();
         GepLift.run(module);
         AlignmentAnalysis.run(module);
-        Print.printAlignMap(AnalysisManager.getAlignMap(), "alignMap.txt");
+//        Print.printAlignMap(AnalysisManager.getAlignMap(), "alignMap.txt");
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);

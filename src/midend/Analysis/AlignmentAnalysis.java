@@ -185,5 +185,17 @@ public final class AlignmentAnalysis {
         }
     }
 
+    private static AlignType scev2align(SCEVExpr scevExpr) {
+        if (scevExpr.isInSameLoop()) {
+            if (scevExpr.isEvenAll())
+                return AlignType.ALIGN_BYTE_8;
+            else if (scevExpr.isOddAll())
+                return AlignType.ALIGN_BYTE_4;
+            return AlignType.UNKNOWN;
+        }
+        //FIXME: more precise
+        return AlignType.UNKNOWN;
+    }
+
 
 }
