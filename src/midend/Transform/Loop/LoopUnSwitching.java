@@ -2,11 +2,16 @@ package midend.Transform.Loop;
 
 import manager.CentralControl;
 import midend.Analysis.AnalysisManager;
+import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.RemoveBlocks;
+import midend.Transform.DCE.SimplifyCFGPass;
+import midend.Transform.GlobalCodeMotion;
+import midend.Transform.LocalValueNumbering;
 import mir.*;
 import mir.Module;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -23,30 +28,50 @@ public class LoopUnSwitching {
 
 
     public static void run(Module module) {
-        if (!CentralControl._LUS_OPEN) return;
+        handled = new HashSet<>();
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            for (Loop loop : function.loopInfo.TopLevelLoops)
-//                unSwitching(loop);
-                collectBranch(loop);
+            runOnFunc(function);
+//            for (Loop loop : function.loopInfo.TopLevelLoops)
+//                collectBranch(loop);
         }
+    }
+
+    public static void runOnFunc(Function function) {
+        boolean modified;
+        do {
+            modified = false;
+            AnalysisManager.refreshCFG(function);
+            LoopReBuildAndNormalize(function);
+            for (var loop : function.loopInfo.TopLevelLoops) {
+                modified |= unSwitching(loop);
+            }
+            DeadLoopEliminate.runOnFunc(function);
+            SimplifyCFGPass.runOnFunc(function);
+            LocalValueNumbering.runOnFunc(function);
+            SimplifyCFGPass.runOnFunc(function);
+        } while (modified);
     }
 
     // NOTE: 最好不要超过10
     private static final int threshold = 10;
 
-//    private static boolean unSwitching(Loop loop) {
-//        boolean modified = false;
-//        for (Loop child : loop.children) {
-//            modified |= unSwitching(child);
-//        }
-//        return modified | collectBranch(loop);
-//    }
+    private static HashSet<BasicBlock> handled = new HashSet<>();
+
+    private static boolean unSwitching(Loop loop) {
+        if (handled.contains(loop.header)) return false;
+        handled.add(loop.header);
+        for (Loop child : loop.children) {
+            if(unSwitching(child))
+                return true;
+        }
+        return collectBranch(loop);
+    }
 
     private static boolean collectBranch(Loop loop) {
         ArrayList<Instruction.Branch> branches = new ArrayList<>();
         for (BasicBlock block : loop.nowLevelBB) {
-            if (block.getInstructions().size() == 0) {
+            if (block.getInstructions().isEmpty()) {
                 System.out.println("empty block " + block.getLabel());
             }
             if (block.getLastInst() instanceof Instruction.Branch branch) {
@@ -83,7 +108,7 @@ public class LoopUnSwitching {
 
         ArrayList<BasicBlock> condBlocks = new ArrayList<>();
         for (int i = 1; i < (1 << branches.size()); ++i)
-            condBlocks.add(new BasicBlock(getNewLabel(parentFunction, "cond"), parentFunction));
+            condBlocks.add(new BasicBlock(getNewLabel(parentFunction, "unswitch"), parentFunction));
 
         ArrayList<LoopCloneInfo> infos = new ArrayList<>();
         for (int i = (1 << branches.size()); i < (1 << (branches.size() + 1)); ++i) {
@@ -167,7 +192,7 @@ public class LoopUnSwitching {
         new Instruction.Jump(condFalseCopyBlock, (BasicBlock) falseinfo.getReflectedValue(falseBlock));
 
         // create cond block
-        BasicBlock condBlock = new BasicBlock(getNewLabel(parentFunction, "cond"), parentFunction);
+        BasicBlock condBlock = new BasicBlock(getNewLabel(parentFunction, "unswitch"), parentFunction);
         new Instruction.Branch(condBlock, branch.getCond(), trueLoop.header, falseLoop.header);
         BasicBlock preHeader = loop.getPreHeader();
         trueLoop.header.getPhiInstructions().forEach(phi -> phi.changePreBlock(preHeader, condBlock));
@@ -198,6 +223,13 @@ public class LoopUnSwitching {
             }
         }
         RemoveBlocks.runOnFunc(parentFunction);
+    }
+
+    private static void LoopReBuildAndNormalize(Function func) {
+        LCSSA.removeOnFunc(func);
+        LoopInfo.runOnFunc(func);
+        LoopSimplifyForm.runOnFunc(func);
+        LCSSA.runOnFunc(func);
     }
 
     private static String getNewLabel(Function function, String infix) {
