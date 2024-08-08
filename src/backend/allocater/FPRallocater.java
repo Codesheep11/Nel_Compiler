@@ -8,6 +8,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.R2;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
+import midend.Analysis.AlignmentAnalysis;
 
 import java.util.*;
 
@@ -100,8 +101,8 @@ public class FPRallocater {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                RiscvInstruction store = new LS(ud.block, tmp, sp, offset, LS.LSType.fsw, true);
-                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, LS.LSType.flw, true);
+                RiscvInstruction store = new LS(ud.block, tmp, sp, offset, LS.LSType.fsw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, LS.LSType.flw, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 ud.replaceUseReg(reg, tmp);
                 ud.block.riscvInstructions.insertAfter(store, ud);
                 ud.block.riscvInstructions.insertBefore(load, ud);
@@ -110,7 +111,7 @@ public class FPRallocater {
                 //如果定义点是lw或者ld指令，则不需要sw保护？
                 //错误的，定义点也可能会溢出，比如call多个load或者多个arg
                 //非 ssa 在使用点使用新的虚拟寄存器
-                if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).rs1.equals(reg)) {
+                if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).val.equals(reg)) {
                     LS.LSType type = ((LS) def).type;
                     if (type == LS.LSType.fsw) continue;
                 }
@@ -118,18 +119,18 @@ public class FPRallocater {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                store = new LS(def.block, tmp, sp, offset, LS.LSType.fsw, true);
+                store = new LS(def.block, tmp, sp, offset, LS.LSType.fsw, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 def.replaceUseReg(reg, tmp);
                 def.block.riscvInstructions.insertAfter(store, def);
             }
             for (RiscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
-                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).rs1.equals(reg)) continue;
+                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).val.equals(reg)) continue;
                 RiscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                load = new LS(use.block, tmp, sp, offset, LS.LSType.flw, true);
+                load = new LS(use.block, tmp, sp, offset, LS.LSType.flw, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 use.replaceUseReg(reg, tmp);
                 use.block.riscvInstructions.insertBefore(load, use);
             }

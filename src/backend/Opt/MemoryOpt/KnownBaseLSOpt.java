@@ -149,43 +149,43 @@ public class KnownBaseLSOpt {
             } else {
                 // 证明是ls
                 LS.LSType type = ls.type;
-                Reg base = ls.rs2;
+                Reg base = ls.base;
                 if (type == LS.LSType.ld || type == LS.LSType.lw || type == LS.LSType.flw) {
                     // 如果是lw,且不存在这样的记录,那么更新这个
                     if (base.phyReg == Reg.PhyReg.sp) {
                         // 如果是sp
                         // 首先清空所有和这个被寄存器相关的
-                        ArrayList<LSRecord> list = queryByOff(ls.rs1, base, ((Address) ls.addr).getOffset());
-                        coverByReg(ls.rs1);
+                        ArrayList<LSRecord> list = queryByOff(ls.val, base, ((Address) ls.addr).getOffset());
+                        coverByReg(ls.val);
                         // 如果找到了,那么说明该地址对应的值已经存起来了,直接move即可
                         // 同时需要保证如果是原本有的话，也能将记录补上
                         if (list.size() != 0) {
-                            R2.R2Type r2Type = ls.rs1.regType == Reg.RegType.GPR ? R2.R2Type.mv : R2.R2Type.fmv;
-                            ls2move.add(new Pair<>(ls, new R2(block, ls.rs1, list.get(0).reg, r2Type)));
+                            R2.R2Type r2Type = ls.val.regType == Reg.RegType.GPR ? R2.R2Type.mv : R2.R2Type.fmv;
+                            ls2move.add(new Pair<>(ls, new R2(block, ls.val, list.get(0).reg, r2Type)));
                         }
-                        records.add(new LSRecord(ls.rs1, ((Address) ls.addr).getOffset(), base));
+                        records.add(new LSRecord(ls.val, ((Address) ls.addr).getOffset(), base));
                     } else if (baseRecords.containsKey(base)) {
                         // 如果是全局的
                         RiscvGlobalVar rb = baseRecords.get(base);
-                        ArrayList<LSRecord> list = queryByOff(ls.rs1, rb, ((Imm) ls.addr).getVal());
-                        coverByReg(ls.rs1);
+                        ArrayList<LSRecord> list = queryByOff(ls.val, rb, ((Imm) ls.addr).getVal());
+                        coverByReg(ls.val);
                         // 如果找到了,那么说明该地址对应的值已经存起来了,直接move即可
                         // 同时需要保证如果是原本有的话，也能将记录补上
                         if (list.size() != 0) {
-                            R2.R2Type r2Type = ls.rs1.regType == Reg.RegType.GPR ? R2.R2Type.mv : R2.R2Type.fmv;
-                            ls2move.add(new Pair<>(ls, new R2(block, ls.rs1, list.get(0).reg, r2Type)));
+                            R2.R2Type r2Type = ls.val.regType == Reg.RegType.GPR ? R2.R2Type.mv : R2.R2Type.fmv;
+                            ls2move.add(new Pair<>(ls, new R2(block, ls.val, list.get(0).reg, r2Type)));
                         }
-                        records.add(new LSRecord(ls.rs1, ((Imm) ls.addr).getVal(), rb));
+                        records.add(new LSRecord(ls.val, ((Imm) ls.addr).getVal(), rb));
                     } else {
                         // 既不是全局的,也不是sp,那么就不知道获取的是来自哪里的了，就没法分析了
                         // 因此也要将这个有关的记录全部删除
-                        coverByReg(ls.rs1);
+                        coverByReg(ls.val);
                     }
                 } else {
                     // 如果是sw系列的
-                    if (ls.rs2.phyReg == Reg.PhyReg.sp) {
+                    if (ls.base.phyReg == Reg.PhyReg.sp) {
                         // 如果是sp，如果有一模一样的记录的话那就删了这个指令,否则要清空这个地址的所有记录
-                        LSRecord lsRecord = new LSRecord(ls.rs1, ((Address) ls.addr).getOffset(), base);
+                        LSRecord lsRecord = new LSRecord(ls.val, ((Address) ls.addr).getOffset(), base);
                         if (hasSame(lsRecord)) {
                             iterator.remove();
                         } else {
@@ -195,7 +195,7 @@ public class KnownBaseLSOpt {
                     } else if (baseRecords.containsKey(base)) {
                         // 如果是全局的
                         RiscvGlobalVar rb = baseRecords.get(base);
-                        LSRecord lsRecord = new LSRecord(ls.rs1, ((Imm) ls.addr).getVal(), rb);
+                        LSRecord lsRecord = new LSRecord(ls.val, ((Imm) ls.addr).getVal(), rb);
                         if (hasSame(lsRecord)) {
                             iterator.remove();
                         } else {
@@ -207,7 +207,7 @@ public class KnownBaseLSOpt {
                         records.clear();
                     }
                 }
-                baseRecords.remove(ls.rs1);
+                baseRecords.remove(ls.val);
             }
         }
         for (Pair<LS, R2> entry : ls2move) {

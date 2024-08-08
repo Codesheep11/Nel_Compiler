@@ -69,6 +69,35 @@ public final class SCEVExpr implements Cloneable{
         }
     }
 
+    public boolean isOddAll() {
+        return (getInit() & 1) == 1 && (getStep() & 1) == 0;
+    }
+
+    public boolean isEvenAll() {
+        return (getInit() & 1) == 0 && (getStep() & 1) == 0;
+    }
+
+    public boolean isInSameLoop() {
+        if (type == SCEVType.Constant) {
+            return true;
+        } else {
+            Loop loop = null;
+            for (SCEVExpr operand : operands) {
+                if (!operand.isInSameLoop()) {
+                    return false;
+                }
+                if (loop == null) {
+                    loop = operand.loop;
+                } else {
+                    if (loop != operand.loop) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
     public int getInit() {
         if (type == SCEVType.Constant) {
             return constant;

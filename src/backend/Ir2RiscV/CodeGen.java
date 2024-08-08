@@ -9,6 +9,8 @@ import backend.operand.Reg;
 import backend.riscv.*;
 import backend.riscv.RiscvInstruction.*;
 import manager.Manager;
+import midend.Analysis.AlignmentAnalysis;
+import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import mir.Module;
 import mir.*;
@@ -28,11 +30,17 @@ public class CodeGen {
      */
     public static final HashMap<String, RiscvGlobalVar> gloMap = new HashMap<>();
 
+    private final AlignmentAnalysis.AlignMap alignMap;
+
     public static final RiscvModule ansRis = new RiscvModule();
 
     // 为了给branch 和 jump指令进行block的存放
     // 因为branch和jump需要存的属性是riscvBlock,所以需要提前将所有llvm块和其翻译后的riscv块对应好
     public final HashMap<BasicBlock, RiscvBlock> blockMap = new HashMap<>();
+
+    public CodeGen() {
+        alignMap = AnalysisManager.getAlignMap();
+    }
 
     public RiscvModule genCode(Module module) {
         Reg.initPreColoredRegs();
@@ -96,7 +104,7 @@ public class CodeGen {
                     Reg.getPreColoredReg(Reg.PhyReg.ra, 64),
                     Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                     offset,
-                    LS.LSType.sd));
+                    LS.LSType.sd, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
         }
         nowBlock = function.isExternal() ? null : blockMap.get(function.getEntry());
         // 非浮点参数的个数
@@ -161,7 +169,7 @@ public class CodeGen {
                         Reg.getPreColoredReg(Reg.PhyReg.ra, 64),
                         Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                         offset,
-                        LS.LSType.ld);
+                        LS.LSType.ld, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 rb.riscvInstructions.insertBefore(ld, rb.riscvInstructions.getLast());
             }
         }
@@ -240,7 +248,7 @@ public class CodeGen {
                             paraReg,
                             Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                             address,
-                            LS.LSType.fsw));
+                            LS.LSType.fsw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
             } else if (para.getType().isPointerTy()) {
                 if (count_int < 8) {
@@ -258,7 +266,7 @@ public class CodeGen {
                             paraReg,
                             Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                             address,
-                            LS.LSType.sd));
+                            LS.LSType.sd, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
             } else if (para.getType().isInt32Ty()) {
                 if (count_int < 8) {
@@ -276,7 +284,7 @@ public class CodeGen {
                             paraReg,
                             Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                             address,
-                            LS.LSType.sw));
+                            LS.LSType.sw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
             }
         }
@@ -334,7 +342,7 @@ public class CodeGen {
                 } else {
                     lstype = LS.LSType.flw;
                 }
-                nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, lstype));
+                nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, lstype, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 return;
             }
             // 如果是对全局变量的访问
@@ -343,19 +351,20 @@ public class CodeGen {
                 RiscvGlobalVar label = gloMap.get(((GlobalVariable) loadInstr.getAddr()).label);
                 nowBlock.riscvInstructions.addLast(new La(nowBlock, tmp, label));
                 if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.flw));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 } else {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.lw));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.lw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
             } else {
                 //否则我们获得了一个指针，这个指针可以通过查询得到
                 Reg addr = VirRegMap.VRM.ensureRegForValue(loadInstr.getAddr());
+                AlignmentAnalysis.AlignType align = alignMap.get(loadInstr.getAddr());
                 if (type.isInt64Ty() || type.isPointerTy()) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.ld));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.ld, align));
                 } else if (type.isInt32Ty() || type.isInt1Ty()) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.lw));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.lw, align));
                 } else {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.flw));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.flw, align));
                 }
             }
         }
@@ -382,7 +391,7 @@ public class CodeGen {
                 } else {
                     lstype = LS.LSType.fsw;
                 }
-                nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, lstype));
+                nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, lstype, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 return;
             }
             // 如果是对全局变量的访问
@@ -391,19 +400,20 @@ public class CodeGen {
                 RiscvGlobalVar label = gloMap.get(((GlobalVariable) storeInstr.getAddr()).label);
                 nowBlock.riscvInstructions.addLast(new La(nowBlock, tmp, label));
                 if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.fsw));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.fsw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 } else {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.sw));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.sw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
             } else {
                 //否则我们获得了一个指针，这个指针可以通过查询得到
                 Reg addr = VirRegMap.VRM.ensureRegForValue(storeInstr.getAddr());
+                AlignmentAnalysis.AlignType align = alignMap.get(storeInstr.getAddr());
                 if (type.isInt64Ty() || type.isPointerTy()) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sd));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sd, align));
                 } else if (type.isInt32Ty() || type.isInt1Ty()) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sw));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sw, align));
                 } else {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.fsw));
+                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.fsw, align));
                 }
             }
         }
@@ -757,7 +767,7 @@ public class CodeGen {
         // 优化只支持全32位的情况
         Reg op1 = VirRegMap.VRM.ensureRegForValue(div.getOperand_1());
         Reg ans = VirRegMap.VRM.ensureRegForValue(div);
-        boolean all32 = div.getOperand_1().getType().isInt32Ty()&& div.getOperand_2().getType().isInt32Ty();
+        boolean all32 = div.getOperand_1().getType().isInt32Ty() && div.getOperand_2().getType().isInt32Ty();
         if (div.getOperand_2() instanceof Constant.ConstantInt co && all32) {
             if (DivRemByConstant.Div(ans, op1, co.getIntValue(), div.getOperand_1(), div.getParentBlock())) return;
         }
