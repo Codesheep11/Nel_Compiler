@@ -10,6 +10,7 @@ import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.La;
 import backend.riscv.RiscvInstruction.Li;
 import backend.riscv.RiscvInstruction.R2;
+import midend.Analysis.AlignmentAnalysis;
 import mir.*;
 
 import java.util.HashMap;
@@ -39,14 +40,11 @@ public class VirRegMap {
         Reg reg;
         if (type.isFloatTy()) {
             reg = Reg.getVirtualReg(Reg.RegType.FPR, 32);
-        }
-        else if (type.isInt64Ty() || type.isPointerTy()) {
+        } else if (type.isInt64Ty() || type.isPointerTy()) {
             reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-        }
-        else if (type.isInt1Ty() || type.isInt32Ty()) {
+        } else if (type.isInt1Ty() || type.isInt32Ty()) {
             reg = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-        }
-        else {
+        } else {
             throw new RuntimeException("alloc array to a reg");
         }
         return reg;
@@ -57,14 +55,11 @@ public class VirRegMap {
         Reg reg;
         if (type.isFloatTy()) {
             reg = Reg.getVirtualReg(Reg.RegType.FPR, 32);
-        }
-        else if (type.isInt64Ty() || type.isPointerTy()) {
+        } else if (type.isInt64Ty() || type.isPointerTy()) {
             reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-        }
-        else if (type.isInt1Ty() || type.isInt32Ty()) {
+        } else if (type.isInt1Ty() || type.isInt32Ty()) {
             reg = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-        }
-        else {
+        } else {
             throw new RuntimeException("alloc array to a reg");
         }
         // bits:位数，64，32?
@@ -81,23 +76,18 @@ public class VirRegMap {
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
             Address address = nowFunction.getArgAddress((Function.Argument) value);
             if (value.getType().isFloatTy()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.flw));
-            }
-            else if (value.getType().isInt64Ty() || value.getType().isPointerTy()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.ld));
-            }
-            else if (value.getType().isInt32Ty()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.lw));
-            }
-            else {
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+            } else if (value.getType().isInt64Ty() || value.getType().isPointerTy()) {
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.ld, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+            } else if (value.getType().isInt32Ty()) {
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.lw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+            } else {
                 throw new RuntimeException("wrong type");
             }
             return reg;
-        }
-        else if (value instanceof Constant) {
+        } else if (value instanceof Constant) {
             if ((value instanceof Constant.ConstantInt && (Integer) ((Constant.ConstantInt) value).getConstValue() == 0)
-                    || (value instanceof Constant.ConstantBool) && (Integer) ((Constant.ConstantBool) value).getConstValue() == 0)
-            {
+                    || (value instanceof Constant.ConstantBool) && (Integer) ((Constant.ConstantBool) value).getConstValue() == 0) {
                 return Reg.getPreColoredReg(Reg.PhyReg.zero, 32);
             }
             Reg reg = genReg(value);
@@ -106,26 +96,21 @@ public class VirRegMap {
                 RiscvFloat rf = CodeGen.ansRis.getSameFloat(init);
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, tmp, rf));
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Imm(0), LS.LSType.flw));
-            }
-            else if (value instanceof Constant.ConstantInt) {
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Imm(0), LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+            } else if (value instanceof Constant.ConstantInt) {
                 int init = ((Integer) ((Constant.ConstantInt) value).getConstValue());
                 CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
-            }
-            else if (value instanceof Constant.ConstantBool) {
+            } else if (value instanceof Constant.ConstantBool) {
                 int init = ((Integer) ((Constant.ConstantBool) value).getConstValue());
                 CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
-            }
-            else if (value instanceof GlobalVariable) {
+            } else if (value instanceof GlobalVariable) {
                 RiscvGlobalVar rb = CodeGen.gloMap.get(((GlobalVariable) value).label);
                 CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, reg, rb));
-            }
-            else {
-                throw new RuntimeException("wrong const type"+value.getType());
+            } else {
+                throw new RuntimeException("wrong const type" + value.getType());
             }
             return reg;
-        }
-        else {
+        } else {
             if (!map.containsKey(value)) {
                 addValue(value);
             }
@@ -140,8 +125,7 @@ public class VirRegMap {
         //所以答案是，提前先看看原本有没有这个寄存器
         if (map.containsKey(b)) {
             CodeGen.nowBlock.riscvInstructions.addLast(new R2(CodeGen.nowBlock, map.get(b), reg, R2.R2Type.mv));
-        }
-        else {
+        } else {
             map.put(b, reg);
         }
         StackManager.getInstance().bindingValue(nowFunction.getName(), a, b);

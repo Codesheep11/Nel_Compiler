@@ -6,25 +6,70 @@ import midend.Analysis.result.SCEVinfo;
 import midend.Analysis.result.CoRInfo;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.function.Consumer;
 
 /**
  * Scalar Evolution Analysis <br>
  * 标量演化分析 <br>
+ *
  * @author Srchycz
  * NOTE: 互相依赖无法处理
+ * 必须经过 LSF
  */
 public class ScalarEvolution {
 
     private static final HashSet<Instruction> visited = new HashSet<>();
 
     private static final HashSet<Instruction> visited_plus = new HashSet<>();
+
+    private static Loop findLoop(Function function, BasicBlock block) {
+        Loop ret = null;
+        for (Loop loop : function.loopInfo.TopLevelLoops) {
+            ret = loopContains(loop, block);
+            if (ret != null) {
+                return ret;
+            }
+        }
+        return ret;
+    }
+
+    private static Loop loopContains(Loop loop, BasicBlock block) {
+        Loop ret = null;
+        for (Loop child : loop.children) {
+            ret = loopContains(child, block);
+            if (ret != null) {
+                return ret;
+            }
+        }
+        if (loop.header == block) {
+            return loop;
+        }
+        return null;
+    }
+
     public static SCEVinfo runOnFunc(Function func) {
         visited.clear();
         SCEVinfo res = new SCEVinfo();
         CoRInfo corInfo = new CoRInfo();
-        for (Loop loop : func.loopInfo.TopLevelLoops) {
-            runLoop(loop, res, corInfo);
+        for (BasicBlock block : func.getBlocks()) {
+            Loop loop = findLoop(func, block);
+            for (Instruction inst : block.getInstructions()) {
+                if (inst instanceof Instruction.Phi phiInst) {
+                    if (phiInst.getIncomingValueSize() == 2) {
+                        BasicInduceVariableAnalysis(phiInst, res, loop);
+//                        BasicInduceVariableAnalysisPlus(phiInst, corInfo, loop);
+                    }
+                }
+            }
         }
+        for (BasicBlock block : func.getBlocks()) {
+            for (Instruction inst : block.getInstructions()) {
+                GeneralInduceVariableAnalysis(inst, res);
+            }
+        }
+//        for (Loop loop : func.loopInfo.TopLevelLoops) {
+//            runLoop(loop, res, corInfo);
+//        }
 
         return res;
     }
@@ -37,7 +82,7 @@ public class ScalarEvolution {
             if (inst instanceof Instruction.Phi phiInst) {
                 if (phiInst.getIncomingValueSize() == 2) {
                     BasicInduceVariableAnalysis(phiInst, res, loop);
-                    BasicInduceVariableAnalysisPlus(phiInst, corInfo, loop);
+//                    BasicInduceVariableAnalysisPlus(phiInst, corInfo, loop);
                 }
             } else {
                 GeneralInduceVariableAnalysis(inst, res);
@@ -47,9 +92,10 @@ public class ScalarEvolution {
 
     /**
      * 基础归纳变量分析
+     *
      * @param aimPhi phi指令 应该位于 header处
-     * @param res 结果
-     * @param loop 循环
+     * @param res    结果
+     * @param loop   循环
      */
     private static void BasicInduceVariableAnalysis(Instruction.Phi aimPhi, SCEVinfo res, Loop loop) {
         if (visited.contains(aimPhi)) return;
@@ -61,7 +107,9 @@ public class ScalarEvolution {
 //            System.out.println("Invariant");
             return;
         }
-        Instruction nextInst = (Instruction) next;
+        if (!(next instanceof Instruction nextInst)) {
+            return;
+        }
         if (nextInst instanceof Instruction.BinaryOperation.Add addInst) {
             Value op1 = addInst.getOperand_1();
             Value op2 = addInst.getOperand_2();
@@ -110,6 +158,7 @@ public class ScalarEvolution {
             }
         }
     }
+
     /**
      * 通用归纳变量分析
      */
@@ -137,7 +186,8 @@ public class ScalarEvolution {
                     }
                 }
             }
-            default -> { }
+            default -> {
+            }
         }
     }
 
@@ -195,11 +245,10 @@ public class ScalarEvolution {
                     SCEVExpr scev = foldAdd(res, l, r);
                     if (scev != null) {
                         operands.add(scev);
-                    }
-                    else {
+                    } else {
                         return null;
                     }
-                } else if (l != null){
+                } else if (l != null) {
                     operands.add(l);
                 } else if (r != null) {
                     operands.add(r);
@@ -238,14 +287,17 @@ public class ScalarEvolution {
     }
 
     private static Value getInitial(Instruction.Phi phiInst, Loop loop) {
+        if (loop == null) {
+            return phiInst.getOptionalValue(phiInst.getPreBlocks().get(0));
+        }
         return phiInst.getOptionalValue(loop.getPreHeader());
     }
 
     private static Value getNext(Instruction.Phi phiInst, Loop loop) {
-        for (BasicBlock block : phiInst.getPreBlocks())
-            if (block != loop.getPreHeader())
-                return phiInst.getOptionalValue(block);
-        throw new RuntimeException("getNext: no next value");
+        if (loop == null) {
+            return phiInst.getOptionalValue(phiInst.getPreBlocks().get(1));
+        }
+        return phiInst.getOptionalValue(loop.getLatch());
     }
 
     private static boolean inSameLoop(SCEVExpr inst1, SCEVExpr inst2) {
