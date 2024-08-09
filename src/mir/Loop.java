@@ -4,6 +4,7 @@ import midend.Transform.Loop.LoopCloneInfo;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 //import static midend.Util.CloneInfo.bbMap;
 
@@ -12,13 +13,13 @@ public class Loop {
     private final int hash;
     public Loop parent = null;
     public HashSet<Loop> children = new HashSet<>();
-    public HashSet<BasicBlock> nowLevelBB = new HashSet<>();
+    public LinkedHashSet<BasicBlock> nowLevelBB = new LinkedHashSet<>();
     public BasicBlock header = null;
     public BasicBlock preHeader = null;
-    public HashSet<BasicBlock> enterings = new HashSet<>(); //enterings -> preheader
-    public HashSet<BasicBlock> exitings = new HashSet<>();
-    public HashSet<BasicBlock> exits = new HashSet<>();
-    public HashSet<BasicBlock> latchs = new HashSet<>();// 1 latch
+    public LinkedHashSet<BasicBlock> enterings = new LinkedHashSet<>(); //enterings -> preheader
+    public LinkedHashSet<BasicBlock> exitings = new LinkedHashSet<>();
+    public LinkedHashSet<BasicBlock> exits = new LinkedHashSet<>();
+    public LinkedHashSet<BasicBlock> latchs = new LinkedHashSet<>();// 1 latch
 
     public int tripCount = -1;
     //todo: cond
@@ -63,6 +64,10 @@ public class Loop {
      * @return
      */
     public boolean defValue(Value value) {
+        if (value instanceof Constant.ConstantInt) return false;
+        if (value instanceof Constant.ConstantBool) return false;
+        if (value instanceof Constant.ConstantFloat) return false;
+        if (value instanceof Function.Argument) return false;
         if (!(value instanceof Instruction))
             throw new RuntimeException("defValue:" + value + "value is not an instruction\n");
         return LoopContains(((Instruction) value).getParentBlock());
@@ -107,7 +112,7 @@ public class Loop {
 
     public BasicBlock getExit() {
         if (exits.size() != 1) {
-            throw new RuntimeException("getExit: exits.size() != 1\n");
+            throw new RuntimeException("getExit: exits.size() != 1 size:" + exits.size() + "\n");
         }
         return exits.iterator().next();
     }
@@ -129,7 +134,7 @@ public class Loop {
     /**
      * 获得该循环的大小 (指令数)
      */
-    public int getSize(){
+    public int getSize() {
         int sum = 0;
         for (var block : nowLevelBB) {
             sum += block.getInstructions().size();
@@ -158,8 +163,8 @@ public class Loop {
         }
 
         info.cpy.header = (BasicBlock) info.getReflectedValue(header);
-        info.cpy.enterings = new HashSet<>(enterings);
-        info.cpy.exits = new HashSet<>(exits);
+        info.cpy.enterings = new LinkedHashSet<>(enterings);
+        info.cpy.exits = new LinkedHashSet<>(exits);
         latchs.forEach(bb -> info.cpy.latchs.add((BasicBlock) info.getReflectedValue(bb)));
         exitings.forEach(bb -> info.cpy.exitings.add((BasicBlock) info.getReflectedValue(bb)));
 

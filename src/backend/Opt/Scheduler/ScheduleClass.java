@@ -328,10 +328,10 @@ public abstract class ScheduleClass {
                 case mv, sgtz, seqz, snez -> {
                     return new RISCVScheduleClassIntegerArithmetic();
                 }
-                case fmvxs -> {
+                case fmvxw -> {
                     return new RISCVScheduleClassFPCycle1();
                 }
-                case fmv, fabs, fneg, fmvsx, fcvtws, fcvtsw -> {
+                case fmv, fabs, fneg, fmvwx, fcvtws, fcvtsw -> {
                     return new RISCVScheduleClassFPCycle2();
                 }
                 default -> throw new RuntimeException("wrong type");

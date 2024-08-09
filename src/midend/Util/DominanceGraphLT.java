@@ -1,9 +1,8 @@
 package midend.Util;
 
-import midend.Transform.DCE.RemoveBlocks;
 import mir.BasicBlock;
 import mir.Function;
-import mir.result.DGinfo;
+import midend.Analysis.result.DGinfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;

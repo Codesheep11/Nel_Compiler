@@ -11,15 +11,18 @@ public class R3 extends RiscvInstruction {
     public R3Type type;
 
     public enum R3Type {
-        add, addi, addw, addiw, subw, divw, mulw, remw, and, andi, or, ori, xorw, xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti,
-        fadd, fsub, fmul, fdiv, min, max, feq, fle, flt, mul, srai, srli,
-        sh1add, sh2add, sh3add;// 这三个的最后一个参数才是需要位移的
+        add, sub, addi, addw, addiw, subw, divw, mulw, remw, and, andi, or, ori, xorw, xoriw, sllw, slliw, sraw, sraiw, srlw, srliw, slt, slti,
+        fadd, fsub, fmul, fdiv, min, max, feq, fle, flt, mul, rem, srai, srli, div, slli, xori,
+        sh1add, sh2add, sh3add, adduw;// 这三个的最后一个参数才是需要位移的
 
         @Override
         public String toString() {
             switch (this) {
                 case add -> {
                     return "add";
+                }
+                case sub -> {
+                    return "sub";
                 }
                 // 用于地址
                 case addi -> {
@@ -41,6 +44,9 @@ public class R3 extends RiscvInstruction {
                 case divw -> {
                     return "divw";
                 }
+                case div -> {
+                    return "div";
+                }
                 // 字除
                 case mulw -> {
                     return "mulw";
@@ -52,6 +58,9 @@ public class R3 extends RiscvInstruction {
                 // 字余
                 case and -> {
                     return "and";
+                }
+                case xori -> {
+                    return "xori";
                 }
                 // 字与
                 case andi -> {
@@ -80,6 +89,9 @@ public class R3 extends RiscvInstruction {
                 // 字左移
                 case slliw -> {
                     return "slliw";
+                }
+                case slli -> {
+                    return "slli";
                 }
                 // 左移立即数，注意范围
                 case sraw -> {
@@ -146,6 +158,12 @@ public class R3 extends RiscvInstruction {
                 }
                 case srli -> {
                     return "srli";
+                }
+                case rem -> {
+                    return "rem";
+                }
+                case adduw -> {
+                    return "add.uw";
                 }
                 default -> {
                     throw new AssertionError();

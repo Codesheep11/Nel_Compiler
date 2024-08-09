@@ -63,20 +63,20 @@ public class ShortInstrConvert {
                 }
             } else if (instr instanceof LS ls) {
                 long offset = ls.addr instanceof Address ad ? -ad.getOffset() : ((Imm) ls.addr).getVal();
-                if (ls.rs2.phyReg == Reg.PhyReg.sp) {
+                if (ls.base.phyReg == Reg.PhyReg.sp) {
                     if (offset > 0 && offset < 255) {
                         if (ls.type == LS.LSType.lw) {
-                            needReplace.add(new Pair<>(instr, new ShortInst.LwSp(block, ls.rs1, offset)));
+                            needReplace.add(new Pair<>(instr, new ShortInst.LwSp(block, ls.val, offset)));
                         } else if (ls.type == LS.LSType.sw) {
-                            needReplace.add(new Pair<>(instr, new ShortInst.SwSp(block, ls.rs1, offset)));
+                            needReplace.add(new Pair<>(instr, new ShortInst.SwSp(block, ls.val, offset)));
                         }
                     }
-                } else if (checkRegRange(ls.rs1) && checkRegRange(ls.rs2)) {
+                } else if (checkRegRange(ls.val) && checkRegRange(ls.base)) {
                     if (offset > 0 && offset / 4 < 31) {
                         if (ls.type == LS.LSType.lw) {
-                            needReplace.add(new Pair<>(instr, new ShortInst.ShortLw(block, ls.rs1, ls.rs2, offset)));
+                            needReplace.add(new Pair<>(instr, new ShortInst.ShortLw(block, ls.val, ls.base, offset)));
                         } else if (ls.type == LS.LSType.sw) {
-                            needReplace.add(new Pair<>(instr, new ShortInst.ShortSw(block, ls.rs1, ls.rs2, offset)));
+                            needReplace.add(new Pair<>(instr, new ShortInst.ShortSw(block, ls.val, ls.base, offset)));
                         }
                     }
                 }

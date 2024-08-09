@@ -5,9 +5,7 @@ import backend.riscv.*;
 import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.La;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
-import utils.Pair;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 public class GlobalFloat2roPool {
@@ -20,8 +18,8 @@ public class GlobalFloat2roPool {
         Iterator<RiscvGlobalVar> iterator = riscvModule.globList.iterator();
         while (iterator.hasNext()) {
             RiscvGlobalVar rb = iterator.next();
-            if (rb instanceof RiscvFloat) {
-                gPpool.add(rb);
+            if (rb instanceof RiscvFloat rf) {
+                gPpool.add(rf);
                 iterator.remove();
             }
         }
@@ -40,9 +38,9 @@ public class GlobalFloat2roPool {
             RiscvInstruction now = block.riscvInstructions.get(i);
             RiscvInstruction next = block.riscvInstructions.get(i + 1);
             if (now instanceof La la && next instanceof LS ls) {
-                if (gPpool.queryOffset(la.content) != -1) {
-                    int off = gPpool.queryOffset(la.content);
-                    if (la.reg.equals(ls.rs2)) {
+                if (la.content instanceof RiscvFloat ri) {
+                    int off = gPpool.queryOffset(ri);
+                    if (la.reg.equals(ls.base)) {
                         // 代表可以换掉
                         la.content = gPpool;
                         ls.addr = new Imm(off);

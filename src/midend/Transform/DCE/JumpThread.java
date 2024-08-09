@@ -3,15 +3,11 @@ package midend.Transform.DCE;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.I32RangeAnalysis;
 import midend.Util.CloneInfo;
-import midend.Util.Print;
 import mir.Module;
 import mir.*;
-import mir.result.DGinfo;
-import utils.Pair;
+import midend.Analysis.result.DGinfo;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 import static manager.Manager.module;
@@ -193,7 +189,7 @@ public class JumpThread {
             DeadCodeEliminate.run(module);
             SimplifyCFGPass.runOnFunc(parentFunc);
 //            Print.output(parentFunc, "debug2.txt");
-//            Print.output(block.getParentFunction(), "debug.txt");
+//            Print.output(block.getParentFunction(), "store.txt");
             AnalysisManager.refreshI32Range(parentFunc);
             irAnalyzer = AnalysisManager.getI32Range(parentFunc);
         }

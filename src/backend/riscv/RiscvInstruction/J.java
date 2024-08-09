@@ -3,7 +3,7 @@ package backend.riscv.RiscvInstruction;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
-import mir.Ir2RiscV.CodeGen;
+import backend.Ir2RiscV.CodeGen;
 
 import java.util.HashSet;
 
@@ -69,6 +69,15 @@ public class J extends RiscvInstruction {
         super.updateUseDef();
         throw new RuntimeException("J instruction should not be replaced");
 
+    }
+
+    public boolean isExternel() {
+        if (type != JType.call) throw new RuntimeException("wrong type");
+        return switch (funcName) {
+            case "memset", "getint", "putint", "getch", "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray", "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main" ->
+                    true;
+            default -> false;
+        };
     }
 
     @Override

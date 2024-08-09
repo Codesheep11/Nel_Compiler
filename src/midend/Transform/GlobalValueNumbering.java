@@ -2,13 +2,11 @@ package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
 import mir.*;
-import manager.CentralControl;
 import mir.Module;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 /**
  * 全局值编号
@@ -22,30 +20,29 @@ public class GlobalValueNumbering {
 
     }
 
-    public static void run(Module module) {
-        if (!CentralControl._GVN_OPEN) return;
-        if (!CentralControl._GCM_OPEN) {
-            System.out.println("Warning: GVN 依赖于 GCM，请打开 GCM!");
-        }
+    public static boolean run(Module module) {
+        boolean modified = false;
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            runOnFunc(func);
+            modified |= runOnFunc(func);
         }
+        GlobalCodeMotion.run(module);
+        return modified;
     }
 
 
-    public static void runOnFunc(Function function) {
+    public static boolean runOnFunc(Function function) {
         AnalysisManager.refreshDG(function);
-        GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
+        return GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
     }
 
     /**
-     * 对基本块进行全局值编号, 并依照支配树向下传递
+     * 对基本块进行全局值编号
      *
      * @param block 基本块
      */
-    private static void GVN4Block(BasicBlock block, HashSet<String> records, HashMap<String, Instruction> recordInstructions) {
-        Iterator<Instruction> iter = block.getInstructions().iterator();
+    private static boolean GVN4Block(BasicBlock block, HashSet<String> records, HashMap<String, Instruction> recordInstructions) {
+        boolean modified = false;
         ArrayList<Instruction> delList = new ArrayList<>();
         for (Instruction inst : block.getInstructions()){
             // 尝试常量折叠
@@ -66,14 +63,15 @@ public class GlobalValueNumbering {
         }
         delList.forEach(Value::delete);
         for (BasicBlock child : block.getDomTreeChildren()) {
-            GVN4Block(child, new HashSet<>(records), new HashMap<>(recordInstructions));
+            modified |= GVN4Block(child, records, recordInstructions);
         }
+        return modified;
     }
 
     private static String generateExpressionKey(Instruction inst) {
         return switch (inst.getInstType()) {
             // 满足交换律的操作符
-            case FAdd, FMUL, ADD, MUL, MAX, MIN -> {
+            case FADD, FMUL, ADD, MUL, MAX, MIN -> {
                 Instruction.BinaryOperation binaryOperation = (Instruction.BinaryOperation) inst;
                 String operand1 = binaryOperation.getOperand_1().getDescriptor();
                 String operand2 = binaryOperation.getOperand_2().getDescriptor();
@@ -92,6 +90,20 @@ public class GlobalValueNumbering {
                 String operand2 = binaryOperation.getOperand_2().getDescriptor();
                 yield inst.getInstType().name() + "," + operand1 + "," + operand2;
             }
+            case FMADD, FMSUB, FNMADD, FNMSUB -> {
+                Instruction.TripleOperation tripleOp = (Instruction.TripleOperation) inst;
+                String operand1 = tripleOp.getOperand_1().getDescriptor();
+                String operand2 = tripleOp.getOperand_2().getDescriptor();
+                String operand3 = tripleOp.getOperand_3().getDescriptor();
+                if (operand1.compareTo(operand2) > 0) {
+                    // 交换顺序
+                    String temp = operand1;
+                    operand1 = operand2;
+                    operand2 = temp;
+                }
+                yield inst.getInstType().name() + "," + operand1 + "," + operand2 + "," + operand3;
+            }
+            case FNEG -> inst.getInstType().name() + "," + inst.getOperands().get(0).getDescriptor();
             case Fcmp, Icmp -> {
                 Instruction.Condition compare = (Instruction.Condition) inst;
                 String operand1 = compare.getSrc1().getDescriptor();
@@ -125,6 +137,5 @@ public class GlobalValueNumbering {
             }
         };
     }
-
 }
 

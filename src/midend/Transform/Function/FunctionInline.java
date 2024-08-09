@@ -47,7 +47,7 @@ public class FunctionInline {
         for (Function function : funcCanInline) function.delete();
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
-            function.buildControlFlowGraph();
+            AnalysisManager.refreshCFG(function);
         }
     }
 
@@ -124,7 +124,7 @@ public class FunctionInline {
 
     /***
      * 内联一个具体的函数
-     * targes : 调用该函数的所有指令所在的基本块
+     * targets : 调用该函数的所有指令所在的基本块
      * callers : 调用该函数的所有指令
      * 一一对应的
      * @param function 要内联的函数
@@ -188,7 +188,7 @@ public class FunctionInline {
 
         BasicBlock afterCallBB = new BasicBlock(inFunction.getName() + "_after_call_" + function.getName() + "_" + idx, inFunction);
 //        CallbbCut.add(afterCallBB);
-//        Print.output(inFunction,"debug.txt");
+//        Print.output(inFunction,"store.txt");
         for (BasicBlock suc : afterCallBBs) {
             for (Instruction instr : suc.getPhiInstructions()) {
                 Instruction.Phi phi = (Instruction.Phi) instr;

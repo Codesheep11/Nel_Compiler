@@ -1,11 +1,9 @@
 package midend.Transform.Array;
 
-import mir.GlobalVariable;
 import mir.Module;
 import mir.*;
 
 import java.util.ArrayList;
-import java.util.ListIterator;
 
 public class ConstIdx2Value {
     public static void run(Module module) {
@@ -16,9 +14,8 @@ public class ConstIdx2Value {
 
     private static void TransLoad2Value(GlobalVariable gv) {
         if (!gv.getInnerType().isArrayTy()) return;
-        ArrayList<Instruction> UseInst = new ArrayList<>();
         ArrayList<Instruction> LoadList = new ArrayList<>();
-        UseInst.addAll(gv.getUsers());
+        ArrayList<Instruction> UseInst = new ArrayList<>(gv.getUsers());
         while (!UseInst.isEmpty()) {
             Instruction inst = UseInst.remove(0);
             if (inst instanceof Instruction.Store || inst instanceof Instruction.Call) return;
@@ -32,7 +29,9 @@ public class ConstIdx2Value {
             Instruction.Load loadInst = (Instruction.Load) load;
             Instruction.GetElementPtr address = (Instruction.GetElementPtr) loadInst.getAddr();
             if (gv.getConstValue() instanceof Constant.ConstantZeroInitializer) {
-                Constant constValue = Constant.ConstantInt.get(0);
+                Type.ArrayType arrayType = (Type.ArrayType) gv.getInnerType();
+                Constant constValue = arrayType.getBasicEleType().isInt32Ty() ?
+                        Constant.ConstantInt.get(0) : new Constant.ConstantFloat(0);
                 loadInst.replaceAllUsesWith(constValue);
                 delList.add(loadInst);
             }

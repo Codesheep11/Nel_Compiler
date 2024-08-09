@@ -1,14 +1,13 @@
 package midend.Analysis;
 
 import midend.Util.ControlFlowGraph;
-import midend.Util.DominanceGraph;
 import midend.Util.DominanceGraphLT;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
-import mir.result.CFGinfo;
-import mir.result.DGinfo;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.CFGinfo;
+import midend.Analysis.result.DGinfo;
+import midend.Analysis.result.SCEVinfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,11 +16,7 @@ import java.util.HashSet;
 /**
  *
  */
-public class AnalysisManager {
-
-    public AnalysisManager() {
-
-    }
+public final class AnalysisManager {
 
     private static final HashMap<Function, CFGinfo> cfgMap = new HashMap<>();
     private static final HashMap<Function, DGinfo> dgMap = new HashMap<>();
@@ -29,7 +24,7 @@ public class AnalysisManager {
     private static final HashMap<Function, I32RangeAnalysis> rangeMap = new HashMap<>();
     private static final HashMap<Function, FuncInfo> funcInfoMap = new HashMap<>();
 
-    private static final HashMap<Function, Boolean> dirtyLCSSA = new HashMap<>();
+    private static AlignmentAnalysis.AlignMap alignMap;
 
     private static final HashMap<Function, Boolean> dirtyCFG = new HashMap<>();
 
@@ -125,8 +120,7 @@ public class AnalysisManager {
         checkDG(block_a.getParentFunction());
         if (block_a.equals(block_b)) {
             return a.getIndex() < b.getIndex();
-        }
-        else return dominate(block_a, block_b);
+        } else return dominate(block_a, block_b);
     }
 
     public static boolean strictlyDominate(BasicBlock a, BasicBlock b) {
@@ -216,6 +210,7 @@ public class AnalysisManager {
     }
 
     public static I32RangeAnalysis.I32Range getValueRange(Value value, BasicBlock block) {
+        if (value.getType().isInt64Ty()) return I32RangeAnalysis.I32Range.Any();
         return rangeMap.get(block.getParentFunction()).getValueRange(value, block);
     }
     // endregion
@@ -231,4 +226,15 @@ public class AnalysisManager {
     public static void setFuncInfo(Function function) {
         funcInfoMap.put(function, new FuncInfo(function));
     }
+    // endregion
+
+    // region AlignMap
+    public static AlignmentAnalysis.AlignMap getAlignMap() {
+        return alignMap;
+    }
+
+    public static void setAlignMap(AlignmentAnalysis.AlignMap map) {
+        alignMap = map;
+    }
+    // endregion
 }

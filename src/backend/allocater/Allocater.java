@@ -1,15 +1,15 @@
 package backend.allocater;
 
-import backend.Opt.LivelessDCE;
+import backend.Opt.Liveness.LivelessDCE;
 import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Reg;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.LS;
-import backend.riscv.RiscvInstruction.R3;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
+import midend.Analysis.AlignmentAnalysis;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,10 +80,10 @@ public class Allocater {
                 RiscvInstruction store, load;
                 Address offset = StackManager.getInstance().getRegOffset(func.name, reg.toString(), reg.bits / 8);
                 store = new LS(call.block, reg, Reg.getPreColoredReg(sp, 64), offset,
-                        reg.regType == Reg.RegType.FPR ? LS.LSType.fsw : (reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd));
+                        reg.regType == Reg.RegType.FPR ? LS.LSType.fsw : (reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd), AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 call.block.riscvInstructions.insertBefore(store, call);
                 load = new LS(call.block, reg, Reg.getPreColoredReg(sp, 64), offset,
-                        reg.regType == Reg.RegType.FPR ? LS.LSType.flw : (reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld));
+                        reg.regType == Reg.RegType.FPR ? LS.LSType.flw : (reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld), AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 call.block.riscvInstructions.insertAfter(load, call);
             }
             if (UsedRegs.containsKey(call.funcName))

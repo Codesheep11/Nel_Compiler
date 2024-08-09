@@ -2,8 +2,7 @@ package midend.Analysis;
 
 import midend.Transform.RangeFolding;
 import mir.*;
-import mir.Module;
-import mir.result.DGinfo;
+import midend.Analysis.result.DGinfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -264,6 +263,9 @@ public class I32RangeAnalysis {
                                     multiplyExact(r1.maxValue, r2.maxValue)));
                 } catch (ArithmeticException e) {
                     minValue = Integer.MIN_VALUE;
+                }
+                if (((Instruction.Mul) inst).getOperand_1().equals(((Instruction.Mul) inst).getOperand_2())) {
+                    minValue = 0;
                 }
                 int maxValue;
                 try {

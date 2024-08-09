@@ -3,10 +3,10 @@ package midend.Transform.Loop;
 import midend.Analysis.AnalysisManager;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
-import midend.Transform.GlobalValueNumbering;
+import midend.Transform.LocalValueNumbering;
 import mir.*;
 import mir.Module;
-import mir.result.SCEVinfo;
+import midend.Analysis.result.SCEVinfo;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -43,14 +43,14 @@ public class LoopUnroll {
             }
             DeadLoopEliminate.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
-            GlobalValueNumbering.runOnFunc(function);
+            LocalValueNumbering.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
         } while (modified);
     }
 
     private static boolean canUnroll(Loop loop) {
         if (loop.tripCount > 0) return false;
-        if (loop.exits.size() > 1) return false;
+        if (loop.exits.size() != 1) return false;
         // 退出条件复杂
         ArrayList<BasicBlock> _pre = loop.getExit().getPreBlocks();
         if (_pre.size() > 1 || _pre.get(0) != loop.header) return false;

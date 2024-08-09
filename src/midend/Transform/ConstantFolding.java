@@ -61,7 +61,7 @@ public class ConstantFolding {
                     float val2 = (float) op2.getConstValue();
                     float result = 0;
                     switch (instruction.getInstType()) {
-                        case FAdd -> result = val1 + val2;
+                        case FADD -> result = val1 + val2;
                         case FSUB -> result = val1 - val2;
                         case FMUL -> result = val1 * val2;
                         case FDIV -> result = val1 / val2;
@@ -112,6 +112,13 @@ public class ConstantFolding {
                     instruction.replaceAllUsesWith(Constant.ConstantBool.get(result ? 1 : 0));
                     return true;
                 }
+            }
+        }
+        else if(instruction instanceof Instruction.Sext sext) {
+            if (sext.getSrc() instanceof Constant.ConstantInt) {
+                int val = (int) ((Constant.ConstantInt) sext.getSrc()).getConstValue();
+                instruction.replaceAllUsesWith(Constant.ConstantInt.get(val));
+                return true;
             }
         }
         return false;

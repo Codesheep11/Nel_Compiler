@@ -3,7 +3,7 @@ package midend.Transform;
 import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
-import mir.result.CFGinfo;
+import midend.Analysis.result.CFGinfo;
 
 import java.util.ArrayList;
 
@@ -24,6 +24,7 @@ public class RemovePhi {
             PhiCopy2move(function);
             AnalysisManager.refreshCFG(function);
             AnalysisManager.refreshDG(function);
+            AnalysisManager.refreshI32Range(function);
         }
     }
 

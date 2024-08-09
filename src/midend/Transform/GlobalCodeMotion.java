@@ -1,10 +1,11 @@
 package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
+import midend.Util.FuncInfo;
 import mir.*;
 import manager.CentralControl;
 import mir.Module;
-import mir.result.DGinfo;
+import midend.Analysis.result.DGinfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,15 +32,16 @@ public class GlobalCodeMotion {
         if (!CentralControl._GCM_OPEN) return;
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            run(func);
+            runOnFunc(func);
         }
     }
 
-    public static void run(Function function) {
+    public static void runOnFunc(Function function) {
         if (!CentralControl._GCM_OPEN) return;
         GlobalCodeMotion gcm = new GlobalCodeMotion();
         gcm.entry = function.getEntry();
         gcm.currentFunc = function;
+        AnalysisManager.refreshDG(function);
         gcm.dginfo = AnalysisManager.getDG(function);
         gcm.GCMEarly4Block(function.getEntry());
         gcm.scheduledSet.clear();
@@ -109,7 +111,6 @@ public class GlobalCodeMotion {
         for (Use use : instr.getUses()) {
             User user = use.getUser();
             if (user instanceof Instruction instrUser) {
-//                System.out.println(instrUser);
                 scheduleLateAndBest(instrUser);
                 BasicBlock userBlock = instrUser.latest;
                 if (instrUser instanceof Instruction.Phi phi) {
@@ -217,7 +218,12 @@ public class GlobalCodeMotion {
 
     private boolean isPinned(Instruction inst) {
         return switch (inst.getInstType()) {
-            case PHI, PHICOPY, JUMP, BRANCH, RETURN, STORE, LOAD, CALL -> true;
+            case PHI, PHICOPY, JUMP, BRANCH, RETURN, STORE, LOAD -> true;
+            case CALL -> {
+                Function func = ((Instruction.Call) inst).getDestFunction();
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
+                yield func.isExternal() || !funcInfo.isStateless || funcInfo.hasReadIn || funcInfo.hasPutOut;
+            }
             default -> false;
         };
     }
