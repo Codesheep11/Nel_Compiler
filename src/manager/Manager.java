@@ -90,7 +90,7 @@ public class Manager {
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
-        LoopUnSwitching.run(module);
+//        LoopUnSwitching.run(module);
         LCSSA.remove(module);
         SCCP();
         DeadCodeEliminate();
@@ -120,7 +120,6 @@ public class Manager {
         LoopBuildAndNormalize();
         GepLift.run(module);
         AlignmentAnalysis.run(module);
-//        Print.printAlignMap(AnalysisManager.getAlignMap(), "alignMap.txt");
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
@@ -149,7 +148,7 @@ public class Manager {
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocater.run(riscvmodule);
         AfterRA.run(riscvmodule);
-//        BlockInline.run(riscvmodule);
+        BlockInline.run(riscvmodule);
         KnownBaseLSOpt.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
         RegAftExternCallLoadOpt.run(riscvmodule);
@@ -216,7 +215,7 @@ public class Manager {
     private void FuncPasses() {
         FuncAnalysis.run(module);
         TailCall2Loop.run(module);
-//        FunctionInline.run(module);
+        FunctionInline.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         FuncAnalysis.run(module);
@@ -300,7 +299,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

@@ -21,6 +21,9 @@ public class LoopParallel {
     private static SCEVinfo scevInfo;
     private static Instruction.Phi indvar;
     private static Instruction.Phi recIndvar;
+    private static ArrayList<Pair<Value, Integer>> payLoad;
+    private static int totalSize = 0;
+    private static int givOffset = 0;
 
 
     private static Module module;
@@ -89,16 +92,20 @@ public class LoopParallel {
 
     private static void tryParallelLoop(Loop loop) {
         if (!canTransform(loop)) return;
-
         //新建bodyFunc
         Function bodyFunc = new Function(Type.VoidType.VOID_TYPE, getParallelBodyName());
         module.addFunction(bodyFunc);
-        ArrayList<Pair<Value, Integer>> payload = new ArrayList<>();
-        int totalSize = 0;
+        //新建payload
+        payLoad.clear();
+        totalSize = 0;
+        givOffset = 0;
+        HashSet<Value> insertedParam = new HashSet<>();
+        //todo:给recNext的参数和recInnerStep加入payLoad
         GlobalVariable payloadVar = new GlobalVariable(new Constant.ConstantArray
                 (new Type.ArrayType(totalSize / 4, Type.BasicType.I32_TYPE)),
                 getParallelPayloadName());
         module.addGlobalValue(payloadVar);
+        //todo:循环开始变换成函数
         ArrayList<Function.Argument> arguments = new ArrayList<>();
         Function.Argument beg = new Function.Argument(Type.BasicType.I32_TYPE, bodyFunc);
         beg.idx = 0;
@@ -109,28 +116,29 @@ public class LoopParallel {
         bodyFunc.setFuncRArguments(arguments);
         BasicBlock funcEntry = new BasicBlock(bodyFunc.getBBName() + "_entry", bodyFunc);
         BasicBlock funcRet = new BasicBlock(bodyFunc.getBBName() + "_ret", bodyFunc);
-        for (BasicBlock block : loop.getAllBlocks()) {
-            block.remove();
-            block.setParentFunction(bodyFunc);
-            bodyFunc.appendBlock(block);
-        }
-        loop.header.
+        //todo:内部使用的value换成payLoad
+
+        //todo:存payLoad
+        //todo:取recPayLoad
+        //todo:修改跳转逻辑
     }
 
-    private static void addArgument(Value param, HashSet<Value> insertedParam) {
-//        if (param == indvar) return;
-//        if (param instanceof Constant) return;
-//        if (param == indvar_cmp.getSrc1() && !indvar_cmp.getSrc2().getUsers().isEmpty()) return;
-//        if (!insertedParam.add(param)) return;
-//        int align = param.getType().getAlign();
-//        int size = param.getType().getSize();
-//        totalSize = (totalSize + align - 1) / align * align;
-//        maxAlignment = Math.max(maxAlignment, align);
-//        if (param == indvar_cmp.getSrc1())
-//            givOffset = new Constant.ConstantInt(Type.BasicType.I32_TYPE, totalSize);
-//        else
-//            payload.add(new Pair<>(param, totalSize));
-//        totalSize += size;
+    private static void insertPayLoad(Value value, HashSet<Value> insertedParam) {
+        if (value == indvar) return;
+//        if (isConstant(value)) return;
+        //计算变量 只在当前循环层次被使用的话
+//        if (value == recIndvar &&) return;
+        if (insertedParam.contains(value)) return;
+        int size = value.getType().queryBytesSizeOfType();
+        if (size == 8 && totalSize % 8 != 0) {
+            totalSize += 4;
+        }
+        if (value.equals(recIndvar)) {
+            givOffset = totalSize;
+        }
+        payLoad.add(new Pair<>(value, totalSize));
+        totalSize += size;
+        insertedParam.add(value);
     }
 
     private static boolean canTransform(Loop loop) {
@@ -167,7 +175,7 @@ public class LoopParallel {
                 }
             }
         }
-
+        //检查是否有可以原子化的读写操作以及危险操作
         ArrayList<Pair<Instruction.Load, Instruction.Store>> workList = new ArrayList<>();
         for (Value key : loadStoreMap.keySet()) {
             if (loadStoreMap.get(key) == 3) {

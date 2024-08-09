@@ -1434,7 +1434,7 @@ public class Instruction extends User {
 
         @Override
         public AtomicAdd cloneToBB(BasicBlock block) {
-            return new AtomicAdd(block, getType(), getInstType(), ptr, inc);
+            return new AtomicAdd(block, getType(),  ptr, inc);
         }
     }
 
