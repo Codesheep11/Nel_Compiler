@@ -159,10 +159,11 @@ public final class AlignmentAnalysis {
             return alignMap.get(value);
         SCEVExpr scevExpr = scevInfo.query(inst);
         if (scevExpr != null) {
-            if (scevExpr.isEvenAll())
-                return AlignType.ALIGN_BYTE_8;
-            else if (scevExpr.isOddAll())
-                return AlignType.ALIGN_BYTE_4;
+            return scev2align(scevExpr);
+//            if (scevExpr.isEvenAll())
+//                return AlignType.ALIGN_BYTE_8;
+//            else if (scevExpr.isOddAll())
+//                return AlignType.ALIGN_BYTE_4;
         }
         switch (inst.getInstType()) {
             case ADD -> {
@@ -183,6 +184,18 @@ public final class AlignmentAnalysis {
                 return alignMap.get(value);
             }
         }
+    }
+
+    private static AlignType scev2align(SCEVExpr scevExpr) {
+        if (scevExpr.isInSameLoop()) {
+            if (scevExpr.isEvenAll())
+                return AlignType.ALIGN_BYTE_8;
+            else if (scevExpr.isOddAll())
+                return AlignType.ALIGN_BYTE_4;
+            return AlignType.UNKNOWN;
+        }
+        //FIXME: more precise
+        return AlignType.UNKNOWN;
     }
 
 

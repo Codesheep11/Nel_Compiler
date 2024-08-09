@@ -1,12 +1,10 @@
 package midend.Transform.Loop;
 
-import manager.CentralControl;
 import midend.Analysis.AnalysisManager;
-import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.RemoveBlocks;
 import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.GlobalCodeMotion;
-import midend.Transform.LocalValueNumbering;
+import midend.Transform.GlobalValueNumbering;
 import mir.*;
 import mir.Module;
 
@@ -46,9 +44,8 @@ public class LoopUnSwitching {
             for (var loop : function.loopInfo.TopLevelLoops) {
                 modified |= unSwitching(loop);
             }
-            DeadLoopEliminate.runOnFunc(function);
-            SimplifyCFGPass.runOnFunc(function);
-            LocalValueNumbering.runOnFunc(function);
+            GlobalValueNumbering.runOnFunc(function);
+            GlobalCodeMotion.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
         } while (modified);
     }
