@@ -90,7 +90,7 @@ public class Manager {
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
-//        LoopUnSwitching.run(module);
+        LoopUnSwitching.run(module);
         LCSSA.remove(module);
         SCCP();
         DeadCodeEliminate();
