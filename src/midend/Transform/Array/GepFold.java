@@ -1,5 +1,6 @@
 package midend.Transform.Array;
 
+import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
 
@@ -10,7 +11,7 @@ public class GepFold {
     public static void run(Module module) {
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            func.buildDominanceGraph();
+            AnalysisManager.refreshDG(func);
             ArrayList<Instruction.GetElementPtr> geps = new ArrayList<>();
             for (BasicBlock block : func.getDomTreeLayerSort()) {
                 for (Instruction inst : block.getInstructions()) {
@@ -83,7 +84,7 @@ public class GepFold {
                     if (baseType.isArrayTy()) baseType = ((Type.ArrayType) baseType).getEleType();
                 }
                 if (sum != null) offsets.set(offsets.size() - 1, sum);
-                Instruction.GetElementPtr newGep = new Instruction.GetElementPtr(block, address, ((Type.PointerType) gep.getType()).getInnerType(), offsets);
+                Instruction.GetElementPtr newGep = new Instruction.GetElementPtr(block, address, gep.getEleType(), offsets);
                 newGep.remove();
 //                System.out.println("newGep: " + newGep.getType() + newGep);
                 block.getInstructions().insertBefore(newGep, gep);

@@ -79,10 +79,13 @@ public class GepLift {
         int range = 0;
         if (c1.sum.size() != c2.sum.size()) {
             range = Integer.min(c1.sum.size(), c2.sum.size());
-        } else if (c2.sum.get(c2.sum.size() - 1) instanceof Constant.ConstantInt &&
-                c1.sum.get(c1.sum.size() - 1) instanceof Constant.ConstantInt) {
+        }
+        else if (c2.sum.get(c2.sum.size() - 1) instanceof Constant.ConstantInt &&
+                c1.sum.get(c1.sum.size() - 1) instanceof Constant.ConstantInt)
+        {
             range = c1.sum.size() - 1;
-        } else {
+        }
+        else {
             range = c1.sum.size();
         }
         for (; i < range; i++) {
@@ -94,11 +97,13 @@ public class GepLift {
             if (c2.sum.get(c2.sum.size() - 1) instanceof Constant.ConstantInt ci)
                 return ci.getIntValue();
             else return Integer.MAX_VALUE;
-        } else if (c1.sum.size() > c2.sum.size()) {
+        }
+        else if (c1.sum.size() > c2.sum.size()) {
             if (c1.sum.get(c1.sum.size() - 1) instanceof Constant.ConstantInt ci)
                 return -ci.getIntValue();
             else return Integer.MAX_VALUE;
-        } else {
+        }
+        else {
             if (c2.sum.get(c2.sum.size() - 1) instanceof Constant.ConstantInt cs2
                     && c1.sum.get(c1.sum.size() - 1) instanceof Constant.ConstantInt cs1)
                 return cs2.getIntValue() - cs1.getIntValue();
@@ -129,7 +134,8 @@ public class GepLift {
                         if (value.getUsers().size() == 1) {
                             indexCal.store.add((Instruction) value);
                         }
-                    } else {
+                    }
+                    else {
                         // 不包含,代表可以直接放入
                         indexCal.sum.add(value);
                     }
@@ -153,7 +159,8 @@ public class GepLift {
                     // 代表可以约减
                     myBaseOffset.put(next, new OffsetPair(head, ans));
                     q.remove(1);
-                } else {
+                }
+                else {
                     q.remove(0);
                 }
             }
@@ -169,12 +176,12 @@ public class GepLift {
             block.getInstructions().insertBefore(add, gep);
             // 将使用gep的替换为add
             gep.replaceAllUsesWith(add);
-            gep.remove();
+            gep.delete();
             IndexCal indexCal = indexCalMap.get(gep);
             toRemove.addAll(indexCal.store);
         }
         for (Instruction instruction : toRemove) {
-            instruction.remove();
+            instruction.delete();
         }
     }
 

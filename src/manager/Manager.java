@@ -130,6 +130,7 @@ public class Manager {
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
+        GepFold.run(module);
 //        /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
@@ -188,6 +189,7 @@ public class Manager {
             ArithReduce.run(module);
             modified |= DeadArgEliminate.run();
             modified |= DeadRetEliminate.run(module);
+            modified |= UseLessInstELiminate.run(module);
             modified |= DeadCodeEliminate.run(module);
         } while (modified);
     }

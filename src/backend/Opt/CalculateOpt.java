@@ -34,7 +34,7 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 icmpBranchToBranch(block);
                 SraSll2And(block);
-//                Lsw2Lsd(block);
+                Lsw2Lsd(block);
             }
         }
     }

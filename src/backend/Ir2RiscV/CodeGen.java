@@ -38,8 +38,14 @@ public class CodeGen {
     // 因为branch和jump需要存的属性是riscvBlock,所以需要提前将所有llvm块和其翻译后的riscv块对应好
     public final HashMap<BasicBlock, RiscvBlock> blockMap = new HashMap<>();
 
-    public CodeGen() {
-        alignMap = AnalysisManager.getAlignMap();
+    public CodeGen()
+    {
+        if (Manager.isO1) {
+            alignMap = AnalysisManager.getAlignMap();
+        }
+        else {
+            alignMap = new AlignmentAnalysis.AlignMap();
+        }
     }
 
     public RiscvModule genCode(Module module) {
