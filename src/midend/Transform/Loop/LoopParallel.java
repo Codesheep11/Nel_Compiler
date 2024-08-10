@@ -118,7 +118,7 @@ public class LoopParallel {
             }
         }
         //将外部使用的归纳变量加入payload
-        for (Value v : recList) {
+        for (Value v : recMap.keySet()) {
             insertPayLoad(v, OutPayLoad);
         }
         GlobalVariable payloadVar = new GlobalVariable(new Constant.ConstantArray
