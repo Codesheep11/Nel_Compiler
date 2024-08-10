@@ -35,8 +35,7 @@ public class DeadArgEliminate {
             if (arg.use_empty()) removeList.add(arg);
             else if (AnalysisManager.getFuncInfo(function).isRecursive) {
                 boolean hasUse = false;
-                for (Use use : arg.getUses()) {
-                    User user = use.getUser();
+                for (Instruction user : arg.getUsers()) {
                     if (!isRecurseUser(user, i)) {
                         hasUse = true;
                         break;

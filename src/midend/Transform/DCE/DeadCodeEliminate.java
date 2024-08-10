@@ -68,7 +68,9 @@ public class DeadCodeEliminate {
 //        newUsefulVar.add(value);
         if (value.getType().isPointerTy()) {
             for (Instruction inst : value.getUsers()) {
-                if (inst instanceof Instruction.Store || inst instanceof Instruction.Call) {
+                if (inst instanceof Instruction.Store || inst instanceof Instruction.Call
+                        || inst instanceof Instruction.AtomicAdd || inst instanceof Instruction.GetElementPtr)
+                {
                     newUsefulVar.add(inst);
                     continue;
                 }

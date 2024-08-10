@@ -4,9 +4,11 @@ import backend.allocater.LivenessAnalyze;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
+import backend.riscv.RiscvInstruction.AMOadd;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
+import mir.Instruction;
 import utils.NelLinkedList;
 
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ public class LivelessDCE {
 
     private static boolean canbeDelete(RiscvInstruction inst) {
         if (inst instanceof J) return false;
+        if (inst instanceof AMOadd) return false;
         if (Def.get(inst).isEmpty()) return false;
         Reg def = Def.get(inst).iterator().next();
         if (RegUse.get(def).size() == 1) return true;

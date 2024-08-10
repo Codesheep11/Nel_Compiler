@@ -16,6 +16,7 @@ public class DeadLoopEliminate {
         boolean modified = false;
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
+//            if (function.isParallelLoopBody) continue;
             LoopInfo.runOnFunc(function);
             runOnFunc(function);
         }
@@ -84,6 +85,7 @@ public class DeadLoopEliminate {
 
     private static boolean hasStrongEffect(Instruction instr) {
         if (instr instanceof Instruction.Store) return true;
+        if (instr instanceof Instruction.AtomicAdd) return true;
         if (instr instanceof Instruction.Load) return true;
         if (instr instanceof Instruction.Return) return true;
         if (instr instanceof Instruction.Call call) {
