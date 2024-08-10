@@ -159,7 +159,7 @@ public class LoopParallel {
         Instruction.Branch br = (Instruction.Branch) cloneLoop.header.getTerminator();
         br.replaceUseOfWith(loop.getExit(), funcRet);
 
-        for (Value rec : recList) {
+        for (Value rec : recMap.keySet()) {
             Instruction reflectedValue = (Instruction) info.getReflectedValue(rec);
             Instruction.Add add = (Instruction.Add) ((Instruction.Phi) reflectedValue).getOptionalValue(cloneLoop.getLatch());
             BasicBlock block = add.getParentBlock();
@@ -307,13 +307,14 @@ public class LoopParallel {
         recMap.clear();
         for (Instruction.Phi phi1 : loop.getExit().getPhiInstructions()) {
             if (!phi1.isLCSSA) continue;
-            //todo: 找到所有可以找到的rec 存储在recMap中<LCSSA_out, <inst,inc> >
-            Value val = phi1.getOptionalValue(loop.header);
-            if (!(val instanceof Instruction.Phi rec)) return false;
-            //这里的val是循环头中向外传递出去的val
-            if (!getRecPhi(rec, loop)) {
-                return false;
-            }
+            return false;
+//            //todo: 找到所有可以找到的rec 存储在recMap中<LCSSA_out, <inst,inc> >
+//            Value val = phi1.getOptionalValue(loop.header);
+//            if (!(val instanceof Instruction.Phi rec)) return false;
+//            //这里的val是循环头中向外传递出去的val
+//            if (!getRecPhi(rec, loop)) {
+//                return false;
+//            }
         }
         //循环独立性检查
         //收集循环内所有的基地址
@@ -398,7 +399,7 @@ public class LoopParallel {
         BasicBlock latch = curLoop.getLatch();
         if (rec.getOptionalValue(latch) instanceof Instruction.Phi phi) {
             if (phi.isLCSSA) {
-                phi.getOptionalValue();
+//                phi.getOptionalValue();
                 return getRecPhi(phi, curLoop);
             }
         }
