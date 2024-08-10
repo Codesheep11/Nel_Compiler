@@ -42,6 +42,8 @@ public class Function extends Value {
 
     }
 
+    public boolean isParallelLoopBody = false;
+
     private Type retType; // 返回值类型
     private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表

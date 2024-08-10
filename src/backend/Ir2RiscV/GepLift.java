@@ -164,8 +164,7 @@ public class GepLift {
             OffsetPair offsetPair = myBaseOffset.get(gep);
             ArrayList<Value> offset = new ArrayList<>();
             offset.add(Constant.ConstantInt.get(offsetPair.offset));
-            Instruction.GetElementPtr add = new Instruction.GetElementPtr(block, offsetPair.gepBase,
-                    offsetPair.gepBase.getEleType(), offset);
+            Instruction.GetElementPtr add = new Instruction.GetElementPtr(block, offsetPair.gepBase, offsetPair.gepBase.getEleType(), offset);
             add.remove();
             block.getInstructions().insertBefore(add, gep);
             // 将使用gep的替换为add

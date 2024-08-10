@@ -119,7 +119,7 @@ public class Instruction extends User {
     public boolean gvnable() {
         return switch (instType) {
             case ALLOC, LOAD, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
-            case SHL, AND, OR, XOR, ASHR, LSHR -> false; // 目前判断 gvn 位运算平均收益为负
+            case SHL, AND, OR, XOR, ASHR, LSHR, ATOMICADD -> false; // 目前判断 gvn 位运算平均收益为负
             case Sext, TRUNC, FMADD -> false;
             case CALL -> {
                 Function func = ((Call) this).getDestFunction();
@@ -448,7 +448,7 @@ public class Instruction extends User {
 
         @Override
         public String toString() {
-            return String.format("br i1 %s, label %%%s, label %%%s", cond.getDescriptor(), thenBlock.getLabel(), elseBlock.getLabel());
+            return String.format("br i1 %s, label %%%s, label %%%s ;%f", cond.getDescriptor(), thenBlock.getLabel(), elseBlock.getLabel(), probability);
         }
 
         @Override
@@ -1424,6 +1424,27 @@ public class Instruction extends User {
             super(parentBlock, resType, InstType.ATOMICADD);
             this.ptr = ptr;
             this.inc = operand;
+            addOperand(ptr);
+            addOperand(inc);
+        }
+
+        public Value getInc() {
+            return inc;
+        }
+
+        public Value getPtr() {
+            return ptr;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (ptr.equals(value)) {
+                ptr = v;
+            }
+            if (inc.equals(value)) {
+                inc = v;
+            }
         }
 
         @Override
@@ -1434,7 +1455,7 @@ public class Instruction extends User {
 
         @Override
         public AtomicAdd cloneToBB(BasicBlock block) {
-            return new AtomicAdd(block, getType(),  ptr, inc);
+            return new AtomicAdd(block, getType(), ptr, inc);
         }
     }
 

@@ -107,10 +107,17 @@ public class Manager {
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
-        LoopUnroll.run(module);
         LCSSA.remove(module);
         SCCP();
         DeadCodeEliminate();
+        LoopBuildAndNormalize();
+        LoopParallel.run(module);
+        FuncAnalysis.run(module);
+        LCSSA.remove(module);
+        LoopBuildAndNormalize();
+        FinalReplacement.run(module);
+        LoopUnroll.run(module);
+        LCSSA.remove(module);
         ArrayPasses();
         ConstLoopUnRoll.run(module);
         SCCP();
@@ -123,7 +130,7 @@ public class Manager {
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
-        /*--------------------------------------------------------------------------*/
+//        /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
         AggressivePass();
@@ -139,7 +146,6 @@ public class Manager {
         RemovePhi.run(module);
         LoopInfo.run(module);
         BrPredction.run(module);
-//        outputLLVM("debug.txt",module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
