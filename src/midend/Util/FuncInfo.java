@@ -57,7 +57,7 @@ public class FuncInfo {
         public static final Function PUTARRAY = new Function(Type.VoidType.VOID_TYPE, "putarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.I32_TYPE));
         public static final Function PUTFARRAY = new Function(Type.VoidType.VOID_TYPE, "putfarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.F32_TYPE));
         public static final Function PUTF = new Function(Type.VoidType.VOID_TYPE, "putf");
-        public static final Function PARALLEL = new Function(Type.VoidType.VOID_TYPE, "nel_parallel", Type.BasicType.I32_TYPE, Type.BasicType.I32_TYPE, Type.FunctionType.FUNC_TYPE);
+//        public static final Function PARALLEL = new Function(Type.VoidType.VOID_TYPE, "nel_parallel", Type.BasicType.I32_TYPE, Type.BasicType.I32_TYPE, Type.FunctionType.FUNC_TYPE);
         //        public static final Function MIN = new Function(Type.BasicType.I32_TYPE, "llvm.smin.i32", Type.BasicType.I32_TYPE, Type.BasicType.I32_TYPE);
 //        public static final Function MAX = new Function(Type.BasicType.I32_TYPE, "llvm.smax.i32", Type.BasicType.I32_TYPE, Type.BasicType.I32_TYPE);
         public static final HashMap<String, Function> externFunctions = new HashMap<>() {
@@ -76,7 +76,7 @@ public class FuncInfo {
                 put(PUTARRAY.getName(), PUTARRAY);
                 put(PUTFARRAY.getName(), PUTFARRAY);
                 put(PUTF.getName(), PUTF);
-                put(PARALLEL.getName(), PARALLEL);
+//                put(PARALLEL.getName(), PARALLEL);
 //            put(MIN.getName(), MIN);
 //            put(MAX.getName(), MAX);
             }

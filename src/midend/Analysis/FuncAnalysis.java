@@ -1,5 +1,6 @@
 package midend.Analysis;
 
+import midend.Transform.Function.FuncCache;
 import midend.Transform.GlobalVarLocalize;
 import midend.Util.FuncInfo;
 import mir.*;
@@ -30,6 +31,9 @@ public class FuncAnalysis {
         funcTopoSort.clear();
         for (Function callee : module.getFuncSet()) {
             AnalysisManager.setFuncInfo(callee);
+            if (callee.isParallelLoopBody) {
+                addCall(main, callee);
+            }
             for (Instruction user : callee.getUsers()) {
                 if (user instanceof Instruction.Call call) {
                     Function caller = call.getParentBlock().getParentFunction();
@@ -66,7 +70,12 @@ public class FuncAnalysis {
         ExternFuncInit();
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            BuildAttribute(func);
+            if (func.getName().equals("NELCacheLookup") || func.getName().equals("NELParallelFor")) {
+                BuildLibAttribute(func);
+            }
+            else {
+                BuildAttribute(func);
+            }
         }
         TransAttribute();
     }
@@ -148,6 +157,15 @@ public class FuncAnalysis {
         funcInfo.isRecursive = isRecursive;
         funcInfo.hasSideEffect = hasSideEffect;
         funcInfo.isStateless = isStateless && !hasMemoryWrite && !hasMemoryRead && !hasSideEffect;
+    }
+
+    private static void BuildLibAttribute(Function function) {
+        FuncInfo funcInfo = AnalysisManager.getFuncInfo(function);
+        funcInfo.hasMemoryAlloc = true;
+        funcInfo.hasMemoryRead = true;
+        funcInfo.hasMemoryWrite = true;
+        funcInfo.hasSideEffect = true;
+        funcInfo.isStateless = false;
     }
 
     /**

@@ -91,7 +91,7 @@ public class LS extends RiscvInstruction {
 
     @Override
     public String toString() {
-        return "\t" + type + "\t\t" + val + ", " + addr + "(" + base + ")" + (isSpilled ? " #spilled" : "") + "# " + align;
+        return "\t" + type + "\t\t" + val + ", " + addr + "(" + base + ")" + (isSpilled ? " #spilled" : "") ;
     }
 
     public void replaceMe() {

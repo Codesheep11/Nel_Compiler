@@ -137,6 +137,7 @@ public class StackManager {
     }
 
     public boolean valueHasOffset(String funcname, Value base) {
+        prepareFunc(funcname);
         return llvm2Offset.get(funcname).containsKey(base);
     }
 
