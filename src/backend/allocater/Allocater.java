@@ -4,13 +4,16 @@ import backend.Opt.Liveness.LivelessDCE;
 import backend.StackManager;
 import backend.operand.Address;
 import backend.operand.Reg;
+import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
 import midend.Analysis.AlignmentAnalysis;
+import mir.BasicBlock;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -32,14 +35,13 @@ public class Allocater {
     public static void run(RiscvModule riscvModule) {
         module = riscvModule;
         HashSet<Reg.PhyReg> allRegs = new HashSet<Reg.PhyReg>() {{
-            for (int i = 4; i <= 7; i++) add(getPhyRegByOrder(i));
+            for (int i = 3; i <= 7; i++) add(getPhyRegByOrder(i));
             for (int i = 10; i <= 17; i++) add(getPhyRegByOrder(i));
             for (int i = 28; i <= 39; i++) add(getPhyRegByOrder(i));
             for (int i = 42; i <= 49; i++) add(getPhyRegByOrder(i));
             for (int i = 60; i <= 63; i++) add(getPhyRegByOrder(i));
         }};
         for (RiscvFunction func : module.TopoSort) {
-//            System.out.println(func.name);
             if (func.isExternal) {
                 HashSet<Reg.PhyReg> used = new HashSet<>();
                 used.addAll(allRegs);
@@ -89,7 +91,32 @@ public class Allocater {
             if (UsedRegs.containsKey(call.funcName))
                 UsedRegs.get(func.name).addAll(UsedRegs.get(call.funcName));
         }
-        //保护sp
+        //如果是并行循环体，则需要保护所有用到的全局寄存器
+        if (func.isParallLoopBody) {
+            ArrayList<Reg> saved = new ArrayList<>();
+            for (Reg.PhyReg use : UsedRegs.get(func.name)) {
+                int idx = use.ordinal();
+                if (idx == 3 || idx == 4 || (idx >= 8 && idx <= 9) || (idx >= 18 && idx <= 27))
+                    saved.add(Reg.getPreColoredReg(use, 64));
+                else if ((idx >= 40 && idx <= 41) || (idx >= 50 && idx <= 59)) {
+                    saved.add(Reg.getPreColoredReg(use, 32));
+                }
+            }
+            Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
+            for (Reg reg : saved) {
+                Address offset = StackManager.getInstance().getRegOffset(func.name, reg.toString(), reg.bits / 8);
+                RiscvInstruction store = new LS(func.getEntry(), reg, sp, offset,
+                        reg.regType == Reg.RegType.FPR ? LS.LSType.fsw : LS.LSType.sd,
+                        AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                func.getEntry().riscvInstructions.insertAfter(store, func.getEntry().riscvInstructions.getFirst());
+                for (RiscvBlock exit : func.exits) {
+                    RiscvInstruction load = new LS(exit, reg, sp, offset,
+                            reg.regType == Reg.RegType.FPR ? LS.LSType.flw : LS.LSType.ld,
+                            AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                    exit.riscvInstructions.insertBefore(load, exit.riscvInstructions.getLast());
+                }
+            }
+        }
         StackManager.getInstance().refill(func.name);
     }
 

@@ -21,6 +21,8 @@ public class FuncCache {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             FuncInfo funcInfo = AnalysisManager.getFuncInfo(function);
+//            if (funcInfo.hasMemoryAlloc || funcInfo.hasSideEffect || funcInfo.hasMemoryWrite)
+//                continue;
             if (!funcInfo.isRecursive || !funcInfo.isStateless || funcInfo.hasSideEffect)
                 continue;
             if (function.getRetType().equals(Type.VoidType.VOID_TYPE)) continue;

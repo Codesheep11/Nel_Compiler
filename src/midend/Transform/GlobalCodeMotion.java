@@ -218,7 +218,7 @@ public class GlobalCodeMotion {
 
     private boolean isPinned(Instruction inst) {
         return switch (inst.getInstType()) {
-            case PHI, PHICOPY, JUMP, BRANCH, RETURN, STORE, LOAD -> true;
+            case PHI, PHICOPY, JUMP, BRANCH, RETURN, STORE, LOAD, ATOMICADD -> true;
             case CALL -> {
                 Function func = ((Instruction.Call) inst).getDestFunction();
                 FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
