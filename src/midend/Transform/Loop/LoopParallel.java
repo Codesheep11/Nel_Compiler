@@ -22,7 +22,7 @@ public class LoopParallel {
     private static LinkedHashMap<Value, Integer> payLoad = new LinkedHashMap<>();
     private static HashSet<Value> InPayLoad = new HashSet<>();
     private static HashSet<Value> OutPayLoad = new HashSet<>();
-    private static ArrayList<Value> recList = new ArrayList<>();
+    private static LinkedHashMap<Instruction.Phi, ArrayList<Pair<Instruction, Value>>> recMap = new LinkedHashMap<>();
     private static int totalSize = 0;
 
     private static Module module;
@@ -282,14 +282,6 @@ public class LoopParallel {
         if (loop.exits.size() != 1) return false;
         ArrayList<BasicBlock> _pre = loop.getExit().getPreBlocks();
         if (_pre.size() > 1 || _pre.get(0) != loop.header) return false;
-//        int phiCnt = 0;
-//        for (Instruction.Phi phi : loop.header.getPhiInstructions()) {
-//            if (scevInfo.contains(phi)) {
-//                phiCnt++;
-//            }
-//        }
-//        //保证最多一个归纳变量 一个计算变量
-//        if (phiCnt > 2) return false;
         Instruction terminator = loop.header.getTerminator();
         if (!(terminator instanceof Instruction.Branch br)) return false;
         Value cond = br.getCond();
@@ -311,15 +303,15 @@ public class LoopParallel {
         init = scev.getInit();
         step = scev.getStep();
         if (step != 1) return false;
-
-        recList.clear();
+        //识别出循环中的累加量
+        recMap.clear();
         for (Instruction.Phi phi1 : loop.getExit().getPhiInstructions()) {
             if (!phi1.isLCSSA) continue;
+            //todo: 找到所有可以找到的rec 存储在recMap中<LCSSA_out, <inst,inc> >
             Value val = phi1.getOptionalValue(loop.header);
-            if (scevInfo.contains(val)) {
-                recList.add(val);
-            }
-            else {
+            if (!(val instanceof Instruction.Phi rec)) return false;
+            //这里的val是循环头中向外传递出去的val
+            if (!getRecPhi(rec, loop)) {
                 return false;
             }
         }
@@ -400,6 +392,26 @@ public class LoopParallel {
             load.delete();
         }
         return true;
+    }
+
+    private static boolean getRecPhi(Instruction.Phi rec, Loop curLoop) {
+        BasicBlock latch = curLoop.getLatch();
+        if (rec.getOptionalValue(latch) instanceof Instruction.Phi phi) {
+            if (phi.isLCSSA) {
+                phi.getOptionalValue();
+                return getRecPhi(phi, curLoop);
+            }
+        }
+        else if (rec.getOptionalValue(latch) instanceof Instruction.Add add) {
+//            recMap
+            return true;
+        }
+        else if (rec.getOptionalValue(latch) instanceof Instruction.FAdd fadd) {
+//            recList.add(fadd);
+            return true;
+        }
+        return false;
+
     }
 
     private static Value getBaseAddr(Value inst) {
