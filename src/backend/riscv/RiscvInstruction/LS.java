@@ -5,11 +5,15 @@ import backend.operand.Imm;
 import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
+import midend.Analysis.AlignmentAnalysis;
 
 import java.util.HashSet;
 
 public class LS extends RiscvInstruction {
     public LSType type;
+
+    public AlignmentAnalysis.AlignType align;
+    // 该属性代表了基指针的对齐程度,是4还是8
 
     public enum LSType {
         lw, ld, sw, sd, flw, fsw;
@@ -40,36 +44,38 @@ public class LS extends RiscvInstruction {
         }
     }
 
-    public Reg rs1, rs2;
+    public Reg val, base;
     public Operand addr;
 
 
     //标记是否是因为寄存器分配阶段由于寄存器溢出而产生的访存指令
     public boolean isSpilled = false;
 
-    public LS(RiscvBlock block, Reg rs1, Reg rs2, Operand addr, LSType type) {
+    public LS(RiscvBlock block, Reg val, Reg base, Operand addr, LSType type, AlignmentAnalysis.AlignType align) {
         super(block);
-        this.rs1 = rs1;
-        this.rs2 = rs2;
+        this.val = val;
+        this.base = base;
         this.addr = addr;
         this.type = type;
+        this.align = align;
     }
 
-    public LS(RiscvBlock block, Reg rs1, Reg rs2, Operand addr, LSType type, boolean isSpilled) {
+    public LS(RiscvBlock block, Reg val, Reg base, Operand addr, LSType type, boolean isSpilled, AlignmentAnalysis.AlignType align) {
         super(block);
-        this.rs1 = rs1;
-        this.rs2 = rs2;
+        this.val = val;
+        this.base = base;
         this.addr = addr;
         this.type = type;
         this.isSpilled = isSpilled;
+        this.align = align;
     }
 
     @Override
     public HashSet<Reg> getUse() {
         HashSet<Reg> use = new HashSet<>();
-        if (rs2 != null) use.add(rs2);
+        if (base != null) use.add(base);
         if (type == LSType.sw || type == LSType.sd || type == LSType.fsw) {
-            if (rs1 != null) use.add(rs1);
+            if (val != null) use.add(val);
         }
         return use;
     }
@@ -78,26 +84,35 @@ public class LS extends RiscvInstruction {
     public HashSet<Reg> getDef() {
         HashSet<Reg> def = new HashSet<>();
         if (type == LSType.lw || type == LSType.ld || type == LSType.flw) {
-            if (rs1 != null) def.add(rs1);
+            if (val != null) def.add(val);
         }
         return def;
     }
 
     @Override
     public String toString() {
-        return "\t" + type + "\t\t" + rs1 + ", " + addr + "(" + rs2 + ")" + (isSpilled ? " #spilled" : "");
+        return "\t" + type + "\t\t" + val + ", " + addr + "(" + base + ")" + (isSpilled ? " #spilled" : "") ;
     }
 
     public void replaceMe() {
-        if (addr instanceof Address) {
-            if (((Address) addr).getOffset() >= 2048 || ((Address) addr).getOffset() <= -2048) {
+        if (addr instanceof Address address) {
+            if (address.getOffset() >= 2048 || address.getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Li li = new Li(block, tmp, addr);
                 block.riscvInstructions.insertBefore(li, this);
-                R3 add = new R3(block, tmp, rs2, tmp, R3.R3Type.add);
+                R3 add = new R3(block, tmp, base, tmp, R3.R3Type.add);
                 block.riscvInstructions.insertBefore(add, this);
                 this.addr = new Imm(0);
-                this.rs2 = tmp;
+                this.base = tmp;
+                if (align == AlignmentAnalysis.AlignType.ALIGN_BYTE_8) {
+                    if (address.getOffset() % 8 != 0) {
+                        align = AlignmentAnalysis.AlignType.ALIGN_BYTE_4;
+                    }
+                } else if (align == AlignmentAnalysis.AlignType.ALIGN_BYTE_4) {
+                    if (address.getOffset() % 8 != 0) {
+                        align = AlignmentAnalysis.AlignType.ALIGN_BYTE_8;
+                    }
+                }
             }
         }
     }
@@ -106,8 +121,8 @@ public class LS extends RiscvInstruction {
     @Override
     public void replaceUseReg(Reg oldReg, Reg newReg) {
         super.replaceUseReg(oldReg, newReg);
-        if (rs2 == oldReg) rs2 = newReg;
-        if (rs1 == oldReg) rs1 = newReg;
+        if (base == oldReg) base = newReg;
+        if (val == oldReg) val = newReg;
 
         super.updateUseDef();
     }
@@ -136,7 +151,7 @@ public class LS extends RiscvInstruction {
 
     @Override
     public Reg getRegByIdx(int idx) {
-        return idx == 0 ? rs1 : rs2;
+        return idx == 0 ? val : base;
     }
 
     @Override
@@ -156,6 +171,6 @@ public class LS extends RiscvInstruction {
 
     @Override
     public RiscvInstruction myCopy(RiscvBlock newBlock) {
-        return new LS(newBlock, rs1, rs2, addr, type, isSpilled);
+        return new LS(newBlock, val, base, addr, type, isSpilled, align);
     }
 }

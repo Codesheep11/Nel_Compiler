@@ -28,7 +28,7 @@ public class RegCost {
         for (RiscvInstruction ri : LivenessAnalyze.RegUse.get(reg)) {
             int loopDepth = ri.block.loopDepth + 1;
             if (ri instanceof LS ls) {
-                if (ls.isSpilled && ls.rs1.equals(reg)) cost += 5 * 2000 * loopDepth;
+                if (ls.isSpilled && ls.val.equals(reg)) cost += 5 * 2000 * loopDepth;
                 else cost += 5 * 100 * loopDepth;
             }
             else cost += 1 * 100 * loopDepth;

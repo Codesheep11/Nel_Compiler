@@ -32,11 +32,11 @@ public class GlobalCodeMotion {
         if (!CentralControl._GCM_OPEN) return;
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
-            run(func);
+            runOnFunc(func);
         }
     }
 
-    public static void run(Function function) {
+    public static void runOnFunc(Function function) {
         if (!CentralControl._GCM_OPEN) return;
         GlobalCodeMotion gcm = new GlobalCodeMotion();
         gcm.entry = function.getEntry();
@@ -218,7 +218,7 @@ public class GlobalCodeMotion {
 
     private boolean isPinned(Instruction inst) {
         return switch (inst.getInstType()) {
-            case PHI, PHICOPY, JUMP, BRANCH, RETURN, STORE, LOAD -> true;
+            case PHI, PHICOPY, JUMP, BRANCH, RETURN, STORE, LOAD, ATOMICADD -> true;
             case CALL -> {
                 Function func = ((Instruction.Call) inst).getDestFunction();
                 FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);

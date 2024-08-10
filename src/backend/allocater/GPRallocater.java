@@ -8,6 +8,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.R2;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
+import midend.Analysis.AlignmentAnalysis;
 
 import java.util.*;
 
@@ -135,8 +136,8 @@ public class GPRallocater {
                 newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                RiscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
-                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
+                RiscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 ud.replaceUseReg(reg, tmp);
                 ud.block.riscvInstructions.insertAfter(store, ud);
                 ud.block.riscvInstructions.insertBefore(load, ud);
@@ -152,7 +153,7 @@ public class GPRallocater {
                 newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true);
+                store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 def.replaceUseReg(reg, tmp);
                 def.block.riscvInstructions.insertAfter(store, def);
             }
@@ -163,7 +164,7 @@ public class GPRallocater {
                 newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                load = new LS(use.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true);
+                load = new LS(use.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 use.replaceUseReg(reg, tmp);
                 use.block.riscvInstructions.insertBefore(load, use);
             }

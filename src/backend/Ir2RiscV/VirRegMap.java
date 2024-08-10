@@ -10,6 +10,7 @@ import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.La;
 import backend.riscv.RiscvInstruction.Li;
 import backend.riscv.RiscvInstruction.R2;
+import midend.Analysis.AlignmentAnalysis;
 import mir.*;
 
 import java.util.HashMap;
@@ -40,7 +41,7 @@ public class VirRegMap {
         if (type.isFloatTy()) {
             reg = Reg.getVirtualReg(Reg.RegType.FPR, 32);
         }
-        else if (type.isInt64Ty() || type.isPointerTy()) {
+        else if (type.isInt64Ty() || type.isPointerTy() || type.equals(Type.FunctionType.FUNC_TYPE)) {
             reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
         }
         else if (type.isInt1Ty() || type.isInt32Ty()) {
@@ -58,14 +59,14 @@ public class VirRegMap {
         if (type.isFloatTy()) {
             reg = Reg.getVirtualReg(Reg.RegType.FPR, 32);
         }
-        else if (type.isInt64Ty() || type.isPointerTy()) {
+        else if (type.isInt64Ty() || type.isPointerTy() || type.equals(Type.FunctionType.FUNC_TYPE)) {
             reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
         }
         else if (type.isInt1Ty() || type.isInt32Ty()) {
             reg = Reg.getVirtualReg(Reg.RegType.GPR, 32);
         }
         else {
-            throw new RuntimeException("alloc array to a reg");
+            throw new RuntimeException("alloc " + value.getType() + " to a reg");
         }
         // bits:位数，64，32?
         map.put(value, reg);
@@ -81,13 +82,13 @@ public class VirRegMap {
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
             Address address = nowFunction.getArgAddress((Function.Argument) value);
             if (value.getType().isFloatTy()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.flw));
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
             }
             else if (value.getType().isInt64Ty() || value.getType().isPointerTy()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.ld));
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.ld, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
             }
             else if (value.getType().isInt32Ty()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.lw));
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.lw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
             }
             else {
                 throw new RuntimeException("wrong type");
@@ -106,7 +107,7 @@ public class VirRegMap {
                 RiscvFloat rf = CodeGen.ansRis.getSameFloat(init);
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, tmp, rf));
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Imm(0), LS.LSType.flw));
+                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Imm(0), LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
             }
             else if (value instanceof Constant.ConstantInt) {
                 int init = ((Integer) ((Constant.ConstantInt) value).getConstValue());
@@ -121,7 +122,7 @@ public class VirRegMap {
                 CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, reg, rb));
             }
             else {
-                throw new RuntimeException("wrong const type"+value.getType());
+                throw new RuntimeException("wrong const type" + value.getType());
             }
             return reg;
         }

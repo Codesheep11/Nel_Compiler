@@ -21,6 +21,7 @@ import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
+import midend.Analysis.AlignmentAnalysis;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.*;
@@ -34,6 +35,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Module;
@@ -105,20 +107,31 @@ public class Manager {
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
-        LoopUnroll.run(module);
         LCSSA.remove(module);
         SCCP();
         DeadCodeEliminate();
+        LoopBuildAndNormalize();
+        LoopParallel.run(module);
+        FuncAnalysis.run(module);
+        LCSSA.remove(module);
+        LoopBuildAndNormalize();
+        FinalReplacement.run(module);
+        LoopUnroll.run(module);
+        LCSSA.remove(module);
         ArrayPasses();
         ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
         FuncCache.run(module);
         FuncAnalysis.run(module);
+        LoopBuildAndNormalize();
+        GepLift.run(module);
+        AlignmentAnalysis.run(module);
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
-        /*--------------------------------------------------------------------------*/
+        GepFold.run(module);
+//        /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
         AggressivePass();
@@ -134,7 +147,6 @@ public class Manager {
         RemovePhi.run(module);
         LoopInfo.run(module);
         BrPredction.run(module);
-        GepLift.run(module);
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
@@ -177,6 +189,7 @@ public class Manager {
             ArithReduce.run(module);
             modified |= DeadArgEliminate.run();
             modified |= DeadRetEliminate.run(module);
+            modified |= UseLessInstELiminate.run(module);
             modified |= DeadCodeEliminate.run(module);
         } while (modified);
     }
@@ -294,7 +307,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

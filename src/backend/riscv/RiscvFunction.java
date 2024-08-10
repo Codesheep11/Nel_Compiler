@@ -17,6 +17,8 @@ public class RiscvFunction {
     public boolean isMain;
 
     public boolean isExternal;
+
+    public boolean isParallLoopBody = false;
     /**
      * 0 表示没有返回值<br/>
      * 1 表示返回int<br/>
@@ -39,16 +41,20 @@ public class RiscvFunction {
         this.name = irFunction.getName();
         if (irFunction.isExternal()) {
             isExternal = true;
-        } else {
+        }
+        else {
             isExternal = false;
         }
         if (irFunction.getRetType().equals(VOID_TYPE)) {
             retTypeCode = 0;
-        } else if (irFunction.getRetType().isInt32Ty()) {
+        }
+        else if (irFunction.getRetType().isInt32Ty()) {
             retTypeCode = 1;
-        } else if (irFunction.getRetType().isFloatTy()) {
+        }
+        else if (irFunction.getRetType().isFloatTy()) {
             retTypeCode = -1;
-        } else {
+        }
+        else {
             retTypeCode = 1;
         }
     }
@@ -89,9 +95,9 @@ public class RiscvFunction {
     public static String funcNameWrap(String str) {
         return switch (str) {
             case "memset", "getint", "putint", "getch",
-                    "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
-                    "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main"
-                    , "NELCacheLookup","NELParallelFor" -> str;
+                 "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
+                 "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main"
+            , "NELCacheLookup", "NELParallelFor" -> str;
             default -> "f_" + str;
         };
     }
