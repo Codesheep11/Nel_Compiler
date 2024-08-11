@@ -90,6 +90,9 @@ public class DeadLoopEliminate {
         if (instr instanceof Instruction.Return) return true;
         if (instr instanceof Instruction.Call call) {
             Function callee = call.getDestFunction();
+            if (callee.getName().equals("NELParallelFor")) {
+                callee = (Function) call.getParams().get(2);
+            }
             FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
             return calleeInfo.hasSideEffect || calleeInfo.hasMemoryWrite || calleeInfo.hasPutOut || calleeInfo.hasReadIn;
         }
