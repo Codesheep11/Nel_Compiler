@@ -31,9 +31,6 @@ public class FuncAnalysis {
         funcTopoSort.clear();
         for (Function callee : module.getFuncSet()) {
             AnalysisManager.setFuncInfo(callee);
-            if (callee.isParallelLoopBody) {
-                addCall(main, callee);
-            }
             for (Instruction user : callee.getUsers()) {
                 if (user instanceof Instruction.Call call) {
                     Function caller = call.getParentBlock().getParentFunction();
