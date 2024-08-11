@@ -130,6 +130,7 @@ public class DeadCodeEliminate {
         FuncInfo funcInfo = AnalysisManager.getFuncInfo(callee);
         return usefulVar.contains(callee)
                 || (callee.isExternal() && !callee.getName().equals("memset"))
+                || callee.getName().equals("NELParallelFor")
                 || funcInfo.hasReadIn || funcInfo.hasPutOut;
     }
 

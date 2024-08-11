@@ -2,6 +2,7 @@ package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.*;
 import manager.CentralControl;
 import mir.Module;
@@ -11,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+
+import static manager.Manager.module;
 
 /**
  * 全局代码移动
@@ -85,6 +88,10 @@ public class GlobalCodeMotion {
         for (Value value : instr.getOperands()) {
             if (value instanceof Instruction instrValue) {
                 scheduleEarly(instrValue);
+                if (instrValue.earliest == null) {
+                    Print.output(module, "debug.txt");
+                    System.out.println(instrValue);
+                }
                 if (instrValue.earliest.getDomDepth() > instr.earliest.getDomDepth()) {
                     instr.earliest = instrValue.earliest;
                 }
