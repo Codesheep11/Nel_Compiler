@@ -1449,7 +1449,7 @@ public class Instruction extends User {
 
         @Override
         public String toString() {
-            return String.format("%s = atomic_add %s %s, %s %s", getDescriptor(),
+            return String.format("atomicrmw add %s %s, %s %s monotonic",
                     ptr.getType(), ptr.getDescriptor(), inc.getType(), inc.getDescriptor());
         }
 
