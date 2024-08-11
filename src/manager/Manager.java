@@ -111,10 +111,10 @@ public class Manager {
         SCCP();
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-        Print.output(module, "debug.txt");
         LoopParallel.run(module);
-        FuncAnalysis.run(module);
         LCSSA.remove(module);
+        FuncAnalysis.run(module);
+        DeadCodeEliminate();
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         LoopUnroll.run(module);

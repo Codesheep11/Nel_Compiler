@@ -159,25 +159,24 @@ public class LoopParallel {
         Instruction.Branch br = (Instruction.Branch) cloneLoop.header.getTerminator();
         br.replaceUseOfWith(loop.getExit(), funcRet);
 
+        //修改rec的指令和逻辑
         for (Value rec : recMap.keySet()) {
-            Instruction reflectedValue = (Instruction) info.getReflectedValue(rec);
-            Instruction.Add add = (Instruction.Add) ((Instruction.Phi) reflectedValue).getOptionalValue(cloneLoop.getLatch());
-            BasicBlock block = add.getParentBlock();
-            Value inc = add.getOperand_1().equals(reflectedValue) ? add.getOperand_2() : add.getOperand_1();
-            ArrayList<Value> offsets = new ArrayList<>();
-            offsets.add(Constant.ConstantInt.get(0));
-            offsets.add(Constant.ConstantInt.get(payLoad.get(rec) / 4));
-            Instruction ptr = new Instruction.GetElementPtr(funcRet, payloadVar, Type.BasicType.I32_TYPE, offsets);
-            ptr.remove();
-            block.getInstructions().insertBefore(ptr, add);
-            if (rec.getType().isFloatTy()) {
-                ptr = new Instruction.BitCast(funcRet, ptr, Type.BasicType.F32_TYPE);
+            for (Pair<Instruction, Value> pair : recMap.get(rec)) {
+                Instruction instruction = pair.getKey();
+                Value inc = pair.getValue();
+                Instruction reflectInst = (Instruction) info.getReflectedValue(instruction);
+                Value reflectInc = info.getReflectedValue(inc);
+                BasicBlock block = reflectInst.getParentBlock();
+                ArrayList<Value> offsets = new ArrayList<>();
+                offsets.add(Constant.ConstantInt.get(0));
+                offsets.add(Constant.ConstantInt.get(payLoad.get(rec) / 4));
+                Instruction ptr = new Instruction.GetElementPtr(block, payloadVar, Type.BasicType.I32_TYPE, offsets);
                 ptr.remove();
-                block.getInstructions().insertBefore(ptr, add);
+                block.getInstructions().insertBefore(ptr, reflectInst);
+                Instruction.AtomicAdd atomicAdd = new Instruction.AtomicAdd(block, instruction.getType(), ptr, reflectInc);
+                atomicAdd.remove();
+                block.getInstructions().insertBefore(atomicAdd, reflectInst);
             }
-            Instruction.AtomicAdd atomicAdd = new Instruction.AtomicAdd(add.getParentBlock(), reflectedValue.getType(), ptr, inc);
-            atomicAdd.remove();
-            block.getInstructions().insertBefore(atomicAdd, add);
         }
         // 修改原循环为函数调用
         BasicBlock callBlock = new BasicBlock(loop.header.getParentFunction().getBBName()
@@ -227,10 +226,10 @@ public class LoopParallel {
 //        new Instruction.Call(callBlock, loopFunc, args);
         //循环的出口换成payLoad
         for (Value v : OutPayLoad) {
-            Value reflectedValue = info.getReflectedValue(v);
+//            Value reflectedValue = info.getReflectedValue(v);
             ArrayList<Value> offsets = new ArrayList<>();
-//            offsets.add(Constant.ConstantInt.get(0));
-//            offsets.add(Constant.ConstantInt.get(payLoad.get(v) / 4));
+            offsets.add(Constant.ConstantInt.get(0));
+            offsets.add(Constant.ConstantInt.get(payLoad.get(v) / 4));
 //            Value ptr = new Instruction.GetElementPtr(funcRet, payloadVar, Type.BasicType.I32_TYPE, offsets);
 //            if (v.getType().isFloatTy()) {
 //                ptr = new Instruction.BitCast(funcRet, ptr, Type.BasicType.F32_TYPE);
@@ -240,23 +239,26 @@ public class LoopParallel {
 //            }
 //            new Instruction.Store(funcRet, reflectedValue, ptr);
             Value ptr1 = new Instruction.GetElementPtr(callBlock, payloadVar, Type.BasicType.I32_TYPE, new ArrayList<>(offsets));
-            if (v.getType().isFloatTy()) {
-                ptr1 = new Instruction.BitCast(callBlock, ptr1, Type.BasicType.F32_TYPE);
-            }
-            else if (v.getType().isPointerTy()) {
-                ptr1 = new Instruction.BitCast(callBlock, ptr1, Type.BasicType.I64_TYPE);
-            }
+//            if (v.getType().isFloatTy()) {
+//                ptr1 = new Instruction.BitCast(callBlock, ptr1, Type.BasicType.F32_TYPE);
+//            }
+//            else if (v.getType().isPointerTy()) {
+//                ptr1 = new Instruction.BitCast(callBlock, ptr1, Type.BasicType.I64_TYPE);
+//            }
             Instruction.Load load = new Instruction.Load(callBlock, ptr1);
-            //在退出块替换
-            ArrayList<Instruction> replaceUsers = new ArrayList<>();
-            for (Instruction user : v.getUsers()) {
-                if (user.getParentBlock().equals(loop.getExit())) {
-                    replaceUsers.add(user);
-                }
-            }
-            for (Instruction user : replaceUsers) {
-                user.replaceUseOfWith(v, load);
-            }
+            //在退出块的LCSSA替换
+            Instruction.Phi lcssa = (Instruction.Phi) v;
+            Value rec = lcssa.getOptionalValue(loop.header);
+            lcssa.replaceUseOfWith(rec, load);
+//            ArrayList<Instruction> replaceUsers = new ArrayList<>();
+//            for (Instruction user : v.getUsers()) {
+//                if (user.getParentBlock().equals(loop.getExit())) {
+//                    replaceUsers.add(user);
+//                }
+//            }
+//            for (Instruction user : replaceUsers) {
+//                user.replaceUseOfWith(v, load);
+//            }
         }
         new Instruction.Jump(callBlock, loop.getExit());
         new Instruction.Return(funcRet);
@@ -307,14 +309,33 @@ public class LoopParallel {
         recMap.clear();
         for (Instruction.Phi phi1 : loop.getExit().getPhiInstructions()) {
             if (!phi1.isLCSSA) continue;
-            return false;
-//            //todo: 找到所有可以找到的rec 存储在recMap中<LCSSA_out, <inst,inc> >
-//            Value val = phi1.getOptionalValue(loop.header);
-//            if (!(val instanceof Instruction.Phi rec)) return false;
-//            //这里的val是循环头中向外传递出去的val
-//            if (!getRecPhi(rec, loop)) {
-//                return false;
+            recMap.put(phi1, new ArrayList<>());
+            //此时的val是当前循环的phi，不需要考虑preheader，只需要考虑latch
+            Value val = phi1.getOptionalValue(loop.header);
+            if (!(val instanceof Instruction.Phi recPhi)) return false;
+            if (recPhi.getUsers().size() != 2) return false;
+            Value rec = recPhi.getOptionalValue(loop.getLatch());
+            if (rec instanceof Instruction.Add add) {
+                if (!add.getOperand_1().equals(recPhi) && !add.getOperand_2().equals(recPhi))
+                    return false;
+                Value inc = add.getOperand_1().equals(recPhi) ? add.getOperand_2() : add.getOperand_1();
+                recMap.get(phi1).add(new Pair<>(add, inc));
+            }
+            //todo:支持浮点数
+//            else if (rec instanceof Instruction.FAdd fadd) {
+//                recMap.put(phi1, new ArrayList<>());
+//                recMap.get(phi1).add(new Pair<>(fadd, rec));
 //            }
+            else if (rec instanceof Instruction.Phi phi2) {
+                if (!phi2.isLCSSA) return false;
+                Value subVal = phi2.getOptionalValue(phi2.getParentBlock().getPreBlocks().get(0));
+                if (!(subVal instanceof Instruction.Phi subPhi)) return false;
+                Loop subLoop = subPhi.getParentBlock().loop;
+                if (!getRecPhi(subPhi, subLoop, recPhi, phi1)) return false;
+            }
+            else {
+                return false;
+            }
         }
         //循环独立性检查
         //收集循环内所有的基地址
@@ -395,24 +416,49 @@ public class LoopParallel {
         return true;
     }
 
-    private static boolean getRecPhi(Instruction.Phi rec, Loop curLoop) {
+    /**
+     * @param phi     header的phi
+     * @param curLoop 当前循环
+     * @param val     上一个循环的别名
+     * @param out     根循环的LCSSA
+     * @return
+     */
+    private static boolean getRecPhi(Instruction.Phi phi, Loop curLoop, Instruction.Phi val, Instruction.Phi out) {
+        if (phi.getUsers().size() != 2) return false;
         BasicBlock latch = curLoop.getLatch();
-        if (rec.getOptionalValue(latch) instanceof Instruction.Phi phi) {
-            if (phi.isLCSSA) {
-//                phi.getOptionalValue();
-                return getRecPhi(phi, curLoop);
-            }
+        Value init = phi.getOptionalValue(curLoop.preHeader);
+        Value rec = phi.getOptionalValue(latch);
+        boolean ret = true;
+        //先处理rec
+        if (rec instanceof Instruction.Add add) {
+            if (!add.getOperand_1().equals(phi) && !add.getOperand_2().equals(phi))
+                return false;
+            Value inc = add.getOperand_1().equals(phi) ? add.getOperand_2() : add.getOperand_1();
+            recMap.get(out).add(new Pair<>(add, inc));
+            ret &= true;
         }
-        else if (rec.getOptionalValue(latch) instanceof Instruction.Add add) {
-//            recMap
-            return true;
+        else if (rec instanceof Instruction.Phi recPhi) {
+            if (!recPhi.isLCSSA) return false;
+            Value subVal = recPhi.getOptionalValue(recPhi.getParentBlock().getPreBlocks().get(0));
+            if (!(subVal instanceof Instruction.Phi subPhi)) return false;
+            Loop subLoop = subPhi.getParentBlock().loop;
+            ret &= getRecPhi(subPhi, subLoop, phi, out);
         }
-        else if (rec.getOptionalValue(latch) instanceof Instruction.FAdd fadd) {
-//            recList.add(fadd);
-            return true;
+        //再处理init
+        if (init.equals(val)) {
+            ret &= true;
         }
-        return false;
-
+        else if (init instanceof Instruction.Phi preLCSSA) {
+            if (!preLCSSA.isLCSSA) return false;
+            Value subVal = preLCSSA.getOptionalValue(preLCSSA.getParentBlock().getPreBlocks().get(0));
+            if (!(subVal instanceof Instruction.Phi subPhi)) return false;
+            Loop subLoop = subPhi.getParentBlock().loop;
+            ret &= getRecPhi(subPhi, subLoop, val, out);
+        }
+        else {
+            return false;
+        }
+        return ret;
     }
 
     private static Value getBaseAddr(Value inst) {
