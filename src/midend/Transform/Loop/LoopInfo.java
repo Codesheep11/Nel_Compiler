@@ -27,7 +27,6 @@ public class LoopInfo {
 
     public static void runOnFunc(Function function) {
         if (function.isExternal()) return;
-
         function.loopInfo = new LoopInfo(function);
     }
 
@@ -41,8 +40,6 @@ public class LoopInfo {
         LoopInfo4Func();
         for (Loop loop : TopLevelLoops) {
             genEnterExit4Loop(loop);
-//            LoopSimplifyForm.run(loop);
-//            LCSSA.run(loop);
         }
         AnalysisManager.refreshCFG(function);
 //        printLoopInfo();
@@ -64,6 +61,9 @@ public class LoopInfo {
             if (!allBB.contains(bb)) {
                 loop.enterings.add(bb);
             }
+        }
+        if (loop.enterings.size() == 1) {
+            loop.preHeader = loop.enterings.iterator().next();
         }
         for (BasicBlock bb : loop.nowLevelBB) {
             for (BasicBlock succ : bb.getSucBlocks()) {

@@ -13,6 +13,7 @@ import backend.Opt.MemoryOpt.KnownBaseLSOpt;
 import backend.Opt.MemoryOpt.RegAftExternCallLoadOpt;
 import backend.Opt.MemoryOpt.UnknownBaseLSOpt;
 import backend.allocater.Allocater;
+import backend.operand.Reg;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
 import frontend.exception.SemanticError;
@@ -112,8 +113,9 @@ public class Manager {
         DeadCodeEliminate();
         LoopBuildAndNormalize();
         LoopParallel.run(module);
-        FuncAnalysis.run(module);
         LCSSA.remove(module);
+        FuncAnalysis.run(module);
+        DeadCodeEliminate();
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         LoopUnroll.run(module);
