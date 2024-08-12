@@ -1,138 +1,127 @@
 package midend.Analysis;
 
-import midend.Analysis.result.DGinfo;
-import midend.Analysis.result.MemDepInfo;
-import mir.*;
+import midend.Transform.LocalValueNumbering;
+import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Module;
+import mir.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class MemDepAnalysis {
-    private static DGinfo dgInfo;
+    // 做分析可以得到PathSet集合
+    // 分析出每个块对A,B,A到B可能经过的块集合
+    //
 
-    private static MemDepInfo memDepInfo;
+    private static class PathSet {
+        private final ArrayList<ArrayList<HashSet<Integer>>> set = new ArrayList<>();
 
-    public static class MemObject {
-        private Value baseAddr; //global alloca argument
-        private int offset;
-        private int size;
+        private final HashMap<BasicBlock, Integer> blockIndex = new HashMap<>();
 
-        public MemObject(Value baseAddr, int offset, int size) {
-            this.baseAddr = baseAddr;
-            this.offset = offset;
-            this.size = size;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (!(other instanceof MemObject memObject)) return false;
-            return this.baseAddr.equals(memObject.baseAddr) &&
-                    this.offset == memObject.offset &&
-                    this.size == memObject.size;
-        }
-
-        public boolean contains(MemObject memObject) {
-            if (!baseAddr.equals(memObject.baseAddr)) return false;
-            if (this.offset <= memObject.offset && this.offset + this.size >= memObject.offset + memObject.size)
-                return true;
-            return false;
+        private Integer getId(BasicBlock block) {
+            return blockIndex.get(block);
         }
     }
 
-    //内存对象与Value的快速表
-    private static HashMap<Value, MemObject> memObjectMap = new HashMap<>();
+    private static  PathSet ps;
 
-    private static MemObject getMemObject(Value addr) {
-        if (!addr.getType().isPointerTy()) throw new RuntimeException("not a pointer");
-        if (memObjectMap.containsKey(addr)) return memObjectMap.get(addr);
-        Value baseAddr = getBaseAddr(addr);
-        MemObject memObject;
-        if (addr instanceof Instruction.BitCast bitcast) {
-            addr = bitcast.getSrc();
-        }
-        if (addr instanceof Instruction.GetElementPtr gep) {
-            Value idx = gep.getIdx();
-            if (idx instanceof Constant.ConstantInt c) {
-                int sizeCnt = gep.getType().queryBytesSizeOfType();
-                memObject = new MemObject(baseAddr, c.getIntValue() * sizeCnt, sizeCnt);
-            }
-            else {
-                int sizeCnt = ((Type.PointerType) baseAddr.getType()).getInnerType().queryBytesSizeOfType();
-                memObject = new MemObject(baseAddr, 0, sizeCnt);
+
+
+    public static boolean assureNotWritten(Function function, BasicBlock A, BasicBlock B, Value pointer) {
+        if (!pointer.getType().isPointerTy()) throw new RuntimeException("wrong type");
+        Integer i = ps.getId(A);
+        Integer j = ps.getId(B);
+        Value base = PointerBaseAnalysis.getBaseOrNull(pointer);
+        if (base == null) return false;
+        for (Integer k : ps.set.get(i).get(j)) {
+            BasicBlock block = function.getBlocks().get(k);
+            for (Instruction instruction : block.getInstructions()) {
+                if (instruction instanceof Instruction.Store store) {
+                    Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
+                    if (storeBase == null || storeBase.equals(base)) {
+                        return false;
+                    }
+                } else if (instruction instanceof Instruction.Call call) {
+                    FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
+                    if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
+                        return false;
+                    }
+                }
             }
         }
-        else {
-            int sizeCnt = ((Type.PointerType) addr.getType()).getInnerType().queryBytesSizeOfType();
-            memObject = new MemObject(baseAddr, 0, sizeCnt);
-        }
-        memObjectMap.put(addr, memObject);
-        return memObject;
-    }
-
-    //记录内存对象与上次定值语句
-    //baseAddr - MemObject - Store/Call
-    private static HashMap<Value, HashMap<MemObject, Instruction>> storeMap = new HashMap<>();
-
-    private static void run(Module module) {
-        for (Function func : module.getFuncSet()) {
-            if (func.isExternal()) continue;
-            runOnFunc(func);
-        }
-    }
-
-    private static void runOnFunc(Function func) {
-        dgInfo = AnalysisManager.getDG(func);
-        MemDepInfo memDepInfo = new MemDepInfo(func);
-        storeMap.clear();
-        memObjectMap.clear();
-        dfs(func.getEntry());
-        //AnalysisManager.setMemDepInfo(func, memDepInfo);
-    }
-
-    private static void dfs(BasicBlock block) {
-        HashMap<Value, HashMap<MemObject, Instruction>> curStoreMap = cloneMap(storeMap);
-        if (block.getPreBlocks().size() > 1) {
-            storeMap.clear();
-        }
-//        for (Instruction inst : block.getInstructions()) {
-//            if (inst instanceof Instruction.Store) {
-//                handleStore((Instruction.Store) inst);
-//            }
-//            else if (inst instanceof Instruction.Load) {
-//                handleLoad((Instruction.Load) inst);
-//            }
-//            else if (inst instanceof Instruction.Call) {
-//                handleCall((Instruction.Call) inst);
-//            }
-//        }
-        for (BasicBlock child : dgInfo.getDomTreeChildren(block)) {
-            dfs(child);
-        }
-        storeMap = curStoreMap;
-    }
-
-
-    private static HashMap<Value, HashMap<MemObject, Instruction>> cloneMap(HashMap<Value, HashMap<MemObject, Instruction>> map) {
-        HashMap<Value, HashMap<MemObject, Instruction>> res = new HashMap<>();
-        for (Value key : map.keySet()) {
-            res.put(key, new HashMap<>(map.get(key)));
-        }
-        return res;
-    }
-
-    private static Value getBaseAddr(Value inst) {
-        Value ret = inst;
-        while (ret instanceof Instruction.GetElementPtr || ret instanceof Instruction.BitCast) {
-            if (ret instanceof Instruction.GetElementPtr) {
-                Instruction.GetElementPtr gep = (Instruction.GetElementPtr) ret;
-                ret = gep.getBase();
-            }
-            if (ret instanceof Instruction.BitCast) {
-                Instruction.BitCast bitCast = (Instruction.BitCast) inst;
-                ret = bitCast.getSrc();
+        for (Instruction instruction : A.getInstructions()) {
+            if (instruction instanceof Instruction.Store store) {
+                Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
+                if (storeBase == null || storeBase.equals(base)) {
+                    return false;
+                }
+            } else if (instruction instanceof Instruction.Call call) {
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
+                if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
+                    return false;
+                }
             }
         }
-        return ret;
+        for (Instruction instruction : B.getInstructions()) {
+            if (instruction instanceof Instruction.Store store) {
+                Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
+                if (storeBase == null || storeBase.equals(base)) {
+                    return false;
+                }
+            } else if (instruction instanceof Instruction.Call call) {
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
+                if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
+    public static void runOnFunc(Function function) {
+        ps = new PathSet();
+        int cnt = 0;
+        for (BasicBlock block : function.getBlocks()) {
+            ps.blockIndex.put(block, cnt);
+            cnt++;
+        }
+        int n = cnt;
+        // Initialize reachability and intermediate nodes
+        boolean[][] reach = new boolean[n][n];
+
+        for (int i = 0; i < n; i++) {
+            ps.set.add(new ArrayList<>());
+            for (int j = 0; j < n; j++) {
+                ps.set.get(i).add(new HashSet<>());
+            }
+        }
+
+        // Setup initial reachability based on direct edges
+        for (BasicBlock block : function.getBlocks()) {
+            int u = ps.blockIndex.get(block);
+            for (BasicBlock succ : block.getSucBlocks()) {
+                int v = ps.blockIndex.get(succ);
+                reach[u][v] = true;
+            }
+        }
+
+        // Compute the transitive closure and track intermediate nodes
+        for (int k = 0; k < n; k++) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (reach[i][k] && reach[k][j]) {
+                        if (!reach[i][j]) {
+                            reach[i][j] = true;
+                        }
+                        ps.set.get(i).get(j).add(k);
+                        ps.set.get(i).get(j).addAll(ps.set.get(i).get(k));
+                        ps.set.get(i).get(j).addAll(ps.set.get(k).get(j));
+                    }
+                }
+            }
+        }
+    }
 }
+

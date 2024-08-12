@@ -93,6 +93,7 @@ public class Manager {
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
         LCSSA.remove(module);
+        LocalValueNumbering.run(module);
         SCCP();
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
