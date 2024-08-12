@@ -1,6 +1,8 @@
 package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
+import midend.Analysis.MemDepAnalysis;
+import midend.Analysis.PointerBaseAnalysis;
 import mir.*;
 import mir.Module;
 
@@ -22,6 +24,8 @@ public class LocalValueNumbering {
 
     public static boolean run(Module module) {
         boolean modified = false;
+        PointerBaseAnalysis.run(module);
+        MemDepAnalysis.run(module);
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
             modified |= runOnFunc(func);
@@ -43,7 +47,7 @@ public class LocalValueNumbering {
     private static boolean GVN4Block(BasicBlock block, HashSet<String> records, HashMap<String, Instruction> recordInstructions) {
         boolean modified = false;
         ArrayList<Instruction> delList = new ArrayList<>();
-        for (Instruction inst : block.getInstructions()){
+        for (Instruction inst : block.getInstructions()) {
             // 尝试常量折叠
             if (ConstantFolding.tryConstantFolding(inst)) {
                 delList.add(inst);
@@ -52,9 +56,22 @@ public class LocalValueNumbering {
             if (inst.gvnable()) {
                 String key = generateExpressionKey(inst);
                 if (records.contains(key)) {
-                    inst.replaceAllUsesWith(recordInstructions.get(key));
-                    delList.add(inst);
-                    modified = true;
+                    if (inst instanceof Instruction.Load load) {
+                        // 如果是load指令，需要检查是否有修改
+                        Instruction record = recordInstructions.get(key);
+                        if (MemDepAnalysis.assureNotWritten(block.getParentFunction(), record.getParentBlock(), block, load.getAddr())) {
+                            inst.replaceAllUsesWith(record);
+                            delList.add(inst);
+                            System.out.println("success replace load");
+                            modified = true;
+                        } else {
+                            recordInstructions.put(key, inst);
+                        }
+                    } else {
+                        inst.replaceAllUsesWith(recordInstructions.get(key));
+                        delList.add(inst);
+                        modified = true;
+                    }
                 } else {
                     records.add(key);
                     recordInstructions.put(key, inst);

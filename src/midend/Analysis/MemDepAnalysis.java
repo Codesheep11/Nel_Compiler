@@ -33,7 +33,7 @@ public class MemDepAnalysis {
         }
     }
 
-    public static boolean query(Function function, BasicBlock A, BasicBlock B, Value pointer) {
+    public static boolean assureNotWritten(Function function, BasicBlock A, BasicBlock B, Value pointer) {
         if (!pointer.getType().isPointerTy()) throw new RuntimeException("wrong type");
         PathSet ps = fps.get(function);
         Integer i = ps.getId(A);

@@ -118,7 +118,7 @@ public class Instruction extends User {
 
     public boolean gvnable() {
         return switch (instType) {
-            case ALLOC, LOAD, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
+            case ALLOC, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
             case SHL, AND, OR, XOR, ASHR, LSHR, ATOMICADD -> false; // 目前判断 gvn 位运算平均收益为负
             case Sext, TRUNC, FMADD -> false;
             case CALL -> {
