@@ -152,6 +152,7 @@ public class GlobalCodeMotion {
         while (instr.latest != instr.earliest) {
             instr.latest = dginfo.getIDom(instr.latest);
             if (instr.latest == null) {
+                Print.output(module, "debug.txt");
                 System.out.println("err");
             }
             if (instr.latest.getLoopDepth() < bestLoopDepth) {

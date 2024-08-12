@@ -59,7 +59,7 @@ public class CertainLoopExtract {
         // 保证子循环不包含父循环的计算结果
         ArrayList<Value> inComing = loop.getInComingValues();
         for (Value v : inComing) {
-            if (v instanceof Instruction inst && loop.LoopContains(inst.getParentBlock())) {
+            if (v instanceof Instruction inst && father.LoopContains(inst.getParentBlock())) {
                 return false;
             }
         }
