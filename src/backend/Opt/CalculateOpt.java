@@ -548,10 +548,10 @@ public class CalculateOpt {
                     if (next instanceof LS ls2 && !needReplace.containsKey(ls2)) {
                         if (ls1.base.equals(ls2.base)) {
                             if ((ls1.addr instanceof Imm imm1 && ls2.addr instanceof
-                                    Imm imm2 && imm2.getVal() - imm1.getVal() == 4 || (
+                                    Imm imm2 && imm2.getVal() - imm1.getVal() == 4) || (
                                     ls1.addr instanceof Address a1 && a1.hasFilled()
                                             && ls2.addr instanceof Address a2 && a2.hasFilled() &&
-                                            a2.getOffset() - a1.getOffset() == 4)))
+                                            a1.getOffset() - a2.getOffset() == 4))
                             {
                                 long off = ls1.addr instanceof Imm imm1 ? imm1.getVal() : ((Address) ls1.addr).getOffset();
                                 boolean can = (off % 8 == 0 && ls1.align == AlignmentAnalysis.AlignType.ALIGN_BYTE_8) ||

@@ -2,13 +2,12 @@ package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
 import midend.Transform.DCE.SimplifyCFGPass;
-import mir.Module;
 import mir.*;
+import mir.Module;
 
 import java.util.ArrayList;
 
-public class Branch2MinMax {
-
+public class Branch2FMinMax {
     private static final ArrayList<BasicBlock> visited = new ArrayList<>();
 
     public static void run(Module module) {
@@ -33,9 +32,9 @@ public class Branch2MinMax {
         Instruction.Terminator term = block.getTerminator();
         if (term instanceof Instruction.Branch branch) {
             Value cond = branch.getCond();
-            if (cond instanceof Instruction.Icmp icmp) {
-                Instruction.Icmp.CondCode condCode = icmp.getCondCode();
-                if (condCode == Instruction.Icmp.CondCode.EQ || condCode == Instruction.Icmp.CondCode.NE) return;
+            if (cond instanceof Instruction.Fcmp fcmp) {
+                Instruction.Fcmp.CondCode condCode = fcmp.getCondCode();
+                if (condCode == Instruction.Fcmp.CondCode.EQ || condCode == Instruction.Fcmp.CondCode.NE) return;
                 BasicBlock thenBlock = branch.getThenBlock();
                 BasicBlock elseBlock = branch.getElseBlock();
                 if (thenBlock.getPreBlocks().size() == 1 && elseBlock.getPreBlocks().size() == 1) {
@@ -48,7 +47,7 @@ public class Branch2MinMax {
                         //开始转换
                         BasicBlock endBlock = thenJump.getTargetBlock();
                         if (endBlock.getPreBlocks().size() > 2) return;
-                        br2MinMax(endBlock, thenBlock, icmp, branch);
+                        br2MinMax(endBlock, thenBlock, fcmp, branch);
                         if (endBlock.getPhiInstructions().size() == 0) {
                             if (thenBlock.getInstructions().size() == 1 && elseBlock.getInstructions().size() == 1) {
                                 block.getLastInst().delete();
@@ -63,7 +62,7 @@ public class Branch2MinMax {
                     if (!passBlock.getSucBlocks().contains(endBlock)) return;
                     visited.add(passBlock);
                     thenBlock = thenBlock.equals(endBlock) ? block : thenBlock;
-                    br2MinMax(endBlock, thenBlock, icmp, branch);
+                    br2MinMax(endBlock, thenBlock, fcmp, branch);
                     if (endBlock.getPhiInstructions().size() == 0) {
                         if (passBlock.getInstructions().size() == 1) {
                             block.getLastInst().delete();
@@ -76,10 +75,10 @@ public class Branch2MinMax {
     }
 
     private static void br2MinMax(BasicBlock endBlock, BasicBlock thenBlock, Instruction cmp, Instruction.Branch br) {
-        if (cmp instanceof Instruction.Icmp icmp) {
-            Value LHS = icmp.getSrc1();
-            Value RHS = icmp.getSrc2();
-            Instruction.Icmp.CondCode condCode = icmp.getCondCode();
+        if (cmp instanceof Instruction.Fcmp fcmp) {
+            Value LHS = fcmp.getSrc1();
+            Value RHS = fcmp.getSrc2();
+            Instruction.Fcmp.CondCode condCode = fcmp.getCondCode();
             ArrayList<Instruction.Phi> delPhiList = new ArrayList<>();
             for (Instruction.Phi phi : endBlock.getPhiInstructions()) {
                 boolean isMinMaxPhi = true;
@@ -90,24 +89,25 @@ public class Branch2MinMax {
                     }
                 }
                 if (!isMinMaxPhi) continue;
+                System.out.println("MinMaxPhi run!");
                 delPhiList.add(phi);
                 Value thenValue = phi.getOptionalValue(thenBlock);
                 Instruction.BinaryOperation inst = null;
                 switch (condCode) {
-                    case SGE, SGT -> {
+                    case OGE, OGT -> {
                         if (thenValue == LHS) {
-                            inst = new Instruction.Max(endBlock, LHS.getType(), LHS, RHS);
+                            inst = new Instruction.FMax(endBlock, LHS.getType(), LHS, RHS);
                         }
                         else {
-                            inst = new Instruction.Min(endBlock, LHS.getType(), LHS, RHS);
+                            inst = new Instruction.FMin(endBlock, LHS.getType(), LHS, RHS);
                         }
                     }
-                    case SLE, SLT -> {
+                    case OLE, OLT -> {
                         if (thenValue == LHS) {
-                            inst = new Instruction.Min(endBlock, LHS.getType(), LHS, RHS);
+                            inst = new Instruction.FMin(endBlock, LHS.getType(), LHS, RHS);
                         }
                         else {
-                            inst = new Instruction.Max(endBlock, LHS.getType(), LHS, RHS);
+                            inst = new Instruction.FMax(endBlock, LHS.getType(), LHS, RHS);
                         }
                     }
                     default -> throw new RuntimeException("Unexpected condCode: " + condCode);
