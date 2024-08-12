@@ -118,7 +118,7 @@ public class Manager {
         DeadCodeEliminate();
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
-//        LoopUnroll.run(module);
+        LoopUnroll.run(module);
         LCSSA.remove(module);
         ArrayPasses();
         ConstLoopUnRoll.run(module);
@@ -135,7 +135,7 @@ public class Manager {
 //        /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
-//        AggressivePass();
+        AggressivePass();
         SCCP();
         DeadCodeEliminate();
         FuncAnalysis.run(module);

@@ -403,7 +403,20 @@ public class LoopParallel {
                 continue;
                 // fixme: 测试的时候可以关了这个试试蒙一发，看看能不能通过
                 // 如果是对地址的写操作，则必须保证写的地址索引是一个随着归纳变量单调的量
-//                return false;
+//                for (BasicBlock block : loop.getAllBlocks()) {
+//                    for (Instruction inst : block.getInstructions()) {
+//                        if (inst instanceof Instruction.Store store) {
+//                            if (getBaseAddr(((Instruction.Store) inst).getAddr()) == key) {
+//                                Value ptr = store.getAddr();
+//                                if (ptr instanceof Instruction.GetElementPtr gep) {
+//                                    if (gep.getIdx() instanceof Instruction.Load) {
+//                                        return false;
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
             }
         }
         //将存储操作转化成原子指令
