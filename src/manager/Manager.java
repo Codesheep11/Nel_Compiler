@@ -118,7 +118,7 @@ public class Manager {
         DeadCodeEliminate();
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
-        LoopUnroll.run(module);
+//        LoopUnroll.run(module);
         LCSSA.remove(module);
         ArrayPasses();
         ConstLoopUnRoll.run(module);
@@ -132,11 +132,9 @@ public class Manager {
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
-        GepFold.run(module);
 //        /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
-        FABSPass.run(module);
         AggressivePass();
         SCCP();
         DeadCodeEliminate();
@@ -247,6 +245,7 @@ public class Manager {
      * 非常激进的优化，可能会导致误差错误
      */
     private void AggressivePass() {
+        FABSPass.run(module);
         FMAddSubPass.run(module);
     }
 

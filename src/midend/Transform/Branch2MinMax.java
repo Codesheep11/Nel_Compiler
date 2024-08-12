@@ -171,6 +171,7 @@ public class Branch2MinMax {
                     }
                 }
                 if (!isMinMaxPhi) continue;
+                System.out.println("MinMaxPhi run!");
                 delPhiList.add(phi);
                 Value thenValue = phi.getOptionalValue(thenBlock);
                 Instruction.BinaryOperation inst = null;
