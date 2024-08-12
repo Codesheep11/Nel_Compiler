@@ -82,6 +82,12 @@ public class LoadEliminate {
 
     private static void handleStore(Instruction.Store store) {
         Value baseAddr = store.getAddr();
+        while (baseAddr instanceof Instruction.BitCast bitCast) {
+            baseAddr = bitCast.getSrc();
+        }
+        if (baseAddr instanceof Instruction.Load) {
+            return;
+        }
         if (baseAddr instanceof Instruction.GetElementPtr) {
             Instruction.GetElementPtr gep = (Instruction.GetElementPtr) baseAddr;
             baseAddr = gep.getBase();
@@ -110,6 +116,12 @@ public class LoadEliminate {
 
     private static void handleLoad(Instruction.Load load) {
         Value addr = load.getAddr();
+        while (addr instanceof Instruction.BitCast bitCast) {
+            addr = bitCast.getSrc();
+        }
+        if (addr instanceof Instruction.Load) {
+            return;
+        }
         if (addr instanceof Instruction.GetElementPtr) {
             Instruction.GetElementPtr gep = (Instruction.GetElementPtr) addr;
             addr = gep.getBase();
@@ -143,6 +155,9 @@ public class LoadEliminate {
                 delList.add(load);
             }
             else {
+                if (!(addr instanceof GlobalVariable)) {
+                    System.out.println("Error");
+                }
                 Global2Load.put((GlobalVariable) addr, load);
             }
         }

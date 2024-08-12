@@ -1,6 +1,5 @@
 package mir;
 
-import midend.Analysis.AlignmentAnalysis;
 import midend.Analysis.AnalysisManager;
 import midend.Util.CloneInfo;
 import utils.NelLinkedList;
@@ -168,7 +167,7 @@ public class BasicBlock extends Value {
      * @param newBlock 新的后继块
      */
     public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
-        getTerminator().replaceSucc(oldBlock, newBlock);
+        getTerminator().replaceTarget(oldBlock, newBlock);
     }
 
 
