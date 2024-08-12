@@ -177,6 +177,7 @@ public class Instruction extends User {
         return false;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isNoSideEffect() {
         if (!canbeOperand()) {
             return false;
