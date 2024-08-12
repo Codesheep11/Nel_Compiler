@@ -50,12 +50,12 @@ public class DeadLoopEliminate {
             if (preHead == null) {
                 for (BasicBlock entering : loop.enterings) {
                     Instruction.Terminator term = entering.getTerminator();
-                    term.replaceSucc(head, exit);
+                    term.replaceTarget(head, exit);
                 }
             }
             else {
                 Instruction.Terminator term = preHead.getTerminator();
-                term.replaceSucc(head, exit);
+                term.replaceTarget(head, exit);
             }
             return true;
         }
