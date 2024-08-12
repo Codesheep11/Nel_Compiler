@@ -1,6 +1,7 @@
 package midend.Transform.Loop;
 
 import midend.Analysis.AnalysisManager;
+import midend.Analysis.PointerBaseAnalysis;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.LocalValueNumbering;
@@ -43,6 +44,7 @@ public class LoopUnroll {
             }
             DeadLoopEliminate.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
+            PointerBaseAnalysis.runOnFunc(function);
             LocalValueNumbering.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
         } while (modified);
