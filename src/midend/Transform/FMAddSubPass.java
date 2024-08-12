@@ -96,6 +96,16 @@ public class FMAddSubPass {
                     fmul.replaceAllUsesWith(fneg);
                 }
             }
+            else if (instr instanceof Instruction.FSub fsub) {
+                if (fsub.getOperand_1().equals(new Constant.ConstantFloat(0))) {
+//                    System.out.println("FNEG");
+                    Value fsubOp2 = fsub.getOperand_2();
+                    Instruction.Fneg fneg = new Instruction.Fneg(block, fsub.getType(), fsubOp2);
+                    fneg.remove();
+                    block.getInstructions().insertBefore(fneg, fsub);
+                    fsub.replaceAllUsesWith(fneg);
+                }
+            }
         }
     }
 

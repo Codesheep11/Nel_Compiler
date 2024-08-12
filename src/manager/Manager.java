@@ -134,7 +134,6 @@ public class Manager {
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
-        GepFold.run(module);
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
