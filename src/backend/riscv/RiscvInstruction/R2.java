@@ -27,7 +27,7 @@ public class R2 extends RiscvInstruction {
                 // fmove 一个浮点数移动到另一个浮点数
 
                 case fabs -> {
-                    return "fabs";
+                    return "fabs.s";
                 }
                 // fabs 浮点数的绝对值,现在看来不需要
 

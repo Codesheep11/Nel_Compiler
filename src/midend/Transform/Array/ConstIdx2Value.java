@@ -18,11 +18,13 @@ public class ConstIdx2Value {
         ArrayList<Instruction> UseInst = new ArrayList<>(gv.getUsers());
         while (!UseInst.isEmpty()) {
             Instruction inst = UseInst.remove(0);
-            if (inst instanceof Instruction.Store || inst instanceof Instruction.Call) return;
+            if (inst instanceof Instruction.Store || inst instanceof Instruction.Call || inst instanceof Instruction.AtomicAdd)
+                return;
             else if (inst instanceof Instruction.Load) LoadList.add(inst);
             else if (inst instanceof Instruction.GetElementPtr || inst instanceof Instruction.BitCast)
                 UseInst.addAll(inst.getUsers());
-            else throw new RuntimeException("gv use inst not handled!");
+            else
+                throw new RuntimeException("gv use inst not handled!");
         }
         ArrayList<Instruction.Load> delList = new ArrayList<>();
         for (Instruction load : LoadList) {

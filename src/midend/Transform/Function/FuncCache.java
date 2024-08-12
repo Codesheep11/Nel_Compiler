@@ -21,6 +21,8 @@ public class FuncCache {
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             FuncInfo funcInfo = AnalysisManager.getFuncInfo(function);
+//            if (funcInfo.hasMemoryAlloc || funcInfo.hasSideEffect || funcInfo.hasMemoryWrite)
+//                continue;
             if (!funcInfo.isRecursive || !funcInfo.isStateless || funcInfo.hasSideEffect)
                 continue;
             if (function.getRetType().equals(Type.VoidType.VOID_TYPE)) continue;
@@ -52,6 +54,7 @@ public class FuncCache {
         return Lookup;
     }
 
+    //todo:也许可以把查找表操作放在默认返回值的后面，可以快一点点
     public static void runOnFunc(Function function) {
         Function lookupFunc = getLookupLibFunc();
         GlobalVariable lut = new GlobalVariable(new Constant.ConstantArray(tableArrayType),

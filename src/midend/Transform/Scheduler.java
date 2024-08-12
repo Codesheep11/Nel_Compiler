@@ -218,9 +218,14 @@ public class Scheduler {
 
     //严格次序的指令
     private static boolean isPinedInstr(Instruction instruction) {
-        if (instruction instanceof Instruction.Load || instruction instanceof Instruction.Store) return true;
+        if (instruction instanceof Instruction.Load ||
+                instruction instanceof Instruction.Store ||
+                instruction instanceof Instruction.AtomicAdd)
+            return true;
         if (instruction instanceof Instruction.Call call) {
             Function callee = call.getDestFunction();
+            if (callee.getName().equals("NELParallelFor") || callee.getName().equals("NELCacheLookup"))
+                return true;
             FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
             if (!calleeInfo.isStateless || calleeInfo.hasPutOut || calleeInfo.hasReadIn)
                 return true;

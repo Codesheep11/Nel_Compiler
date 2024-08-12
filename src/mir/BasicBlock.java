@@ -1,6 +1,5 @@
 package mir;
 
-import midend.Analysis.AlignmentAnalysis;
 import midend.Analysis.AnalysisManager;
 import midend.Util.CloneInfo;
 import utils.NelLinkedList;
@@ -10,7 +9,7 @@ import java.util.HashSet;
 import java.util.Objects;
 
 public class BasicBlock extends Value {
-    private final Function parentFunction; // 父函数
+    private Function parentFunction; // 父函数
     private final String label;
     private final NelLinkedList<Instruction> instructions;
 
@@ -58,6 +57,10 @@ public class BasicBlock extends Value {
 
     public Function getParentFunction() {
         return parentFunction;
+    }
+
+    public void setParentFunction(Function parentFunction) {
+        this.parentFunction = parentFunction;
     }
 
     public String getLabel() {
@@ -164,7 +167,7 @@ public class BasicBlock extends Value {
      * @param newBlock 新的后继块
      */
     public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
-        getTerminator().replaceSucc(oldBlock, newBlock);
+        getTerminator().replaceTarget(oldBlock, newBlock);
     }
 
 
@@ -200,8 +203,8 @@ public class BasicBlock extends Value {
 
         for (Instruction instruction : instructions) {
             String out = "\t" + instruction.toString();
-            if (AnalysisManager.getAlignMap().containsKey(instruction))
-                out += "; " + (AnalysisManager.getAlignMap().get(instruction).equals(AlignmentAnalysis.AlignType.ALIGN_BYTE_8) ? 8 : 4);
+//            if (AnalysisManager.getAlignMap().containsKey(instruction))
+//                out += "; " + (AnalysisManager.getAlignMap().get(instruction).equals(AlignmentAnalysis.AlignType.ALIGN_BYTE_8) ? 8 : 4);
 //            if (instruction.getType().isInt32Ty())
 //                out += "; " + AnalysisManager.getValueRange(instruction, instruction.parentBlock);
             outputList.add(out);

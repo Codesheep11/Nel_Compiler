@@ -75,7 +75,7 @@ public class JumpThread {
             for (BasicBlock pre : trueTargets) {
 //                System.out.println("go true: " + pre.getLabel());
                 Instruction.Terminator preTerm = pre.getTerminator();
-                preTerm.replaceSucc(block, blockClone);
+                preTerm.replaceTarget(block, blockClone);
             }
             blockClone.fixClone(cloneInfo);
             Instruction.Terminator cloneTerm = blockClone.getTerminator();
@@ -132,7 +132,7 @@ public class JumpThread {
             for (BasicBlock pre : falseTargets) {
 //                System.out.println("go false: " + pre.getLabel());
                 Instruction.Terminator preTerm = pre.getTerminator();
-                preTerm.replaceSucc(block, blockClone);
+                preTerm.replaceTarget(block, blockClone);
             }
             blockClone.fixClone(cloneInfo);
             Instruction.Terminator cloneTerm = blockClone.getTerminator();

@@ -45,8 +45,13 @@ public class Instruction extends User {
         FNEG,
         FNMADD,
         FNMSUB,
+        FMIN,
+        FMAX,
+        FABS,
         MIN,
         MAX,
+        // Paralllel
+        ATOMICADD,
         // bitwise operation
         SHL,
         LSHR,
@@ -117,7 +122,22 @@ public class Instruction extends User {
     public boolean gvnable() {
         return switch (instType) {
             case ALLOC, LOAD, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
-            case SHL, AND, OR, XOR, ASHR, LSHR -> false; // 目前判断 gvn 位运算平均收益为负
+            case SHL, AND, OR, XOR, ASHR, LSHR, ATOMICADD -> false; // 目前判断 gvn 位运算平均收益为负
+            case Sext, TRUNC, FMADD -> false;
+            case CALL -> {
+                Function func = ((Call) this).getDestFunction();
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
+                yield funcInfo.hasReturn && !func.isExternal() && funcInfo.isStateless
+                        && !funcInfo.hasReadIn && !funcInfo.hasPutOut;
+            }
+            default -> true;
+        };
+    }
+
+    public boolean lvnable() {
+        return switch (instType) {
+            case ALLOC, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
+            case SHL, AND, OR, XOR, ASHR, LSHR, ATOMICADD -> false; // 目前判断 gvn 位运算平均收益为负
             case Sext, TRUNC, FMADD -> false;
             case CALL -> {
                 Function func = ((Call) this).getDestFunction();
@@ -174,6 +194,7 @@ public class Instruction extends User {
                 yield !calleeInfo.hasSideEffect && calleeInfo.isStateless && calleeInfo.hasReturn;
             }
             case STORE -> false;
+            case ATOMICADD -> false;
             default -> true;
         };
     }
@@ -232,7 +253,7 @@ public class Instruction extends User {
         }
 
         @Override
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             System.out.println("Warning: Return replaceSucc");
         }
 
@@ -377,7 +398,7 @@ public class Instruction extends User {
             super(parentBlock, type, instType);
         }
 
-        public abstract void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock);
+        public abstract void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock);
     }
 
     public static class Branch extends Terminator {
@@ -416,7 +437,7 @@ public class Instruction extends User {
             return elseBlock;
         }
 
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             super.replaceUseOfWith(oldBlock, newBlock);
             if (thenBlock.equals(oldBlock)) {
                 thenBlock = newBlock;
@@ -445,7 +466,7 @@ public class Instruction extends User {
 
         @Override
         public String toString() {
-            return String.format("br i1 %s, label %%%s, label %%%s", cond.getDescriptor(), thenBlock.getLabel(), elseBlock.getLabel());
+            return String.format("br i1 %s, label %%%s, label %%%s ;%f", cond.getDescriptor(), thenBlock.getLabel(), elseBlock.getLabel(), probability);
         }
 
         @Override
@@ -494,7 +515,7 @@ public class Instruction extends User {
             return targetBlock;
         }
 
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             super.replaceUseOfWith(oldBlock, newBlock);
             if (targetBlock.equals(oldBlock)) {
                 targetBlock = newBlock;
@@ -978,6 +999,18 @@ public class Instruction extends User {
             OGE("oge"),
             OLT("olt"),
             OLE("ole");
+
+            public Fcmp.CondCode swap() {
+                return switch (this) {
+                    case EQ -> EQ;
+                    case NE -> NE;
+                    case OGT -> OLT;
+                    case OGE -> OLE;
+                    case OLT -> OGT;
+                    case OLE -> OGE;
+                };
+            }
+
             private final String str;
 
             CondCode(final String str) {
@@ -989,7 +1022,7 @@ public class Instruction extends User {
             }
         }
 
-        private final CondCode condCode;
+        private CondCode condCode;
 
         public CondCode getCondCode() {
             return condCode;
@@ -1020,6 +1053,13 @@ public class Instruction extends User {
 
             addOperand(src1);
             addOperand(src2);
+        }
+
+        public void swap() {
+            Value _temp = src2;
+            src2 = src1;
+            src1 = _temp;
+            condCode = condCode.swap();
         }
 
         @Override
@@ -1409,6 +1449,120 @@ public class Instruction extends User {
         @Override
         public Max cloneToBB(BasicBlock block) {
             return new Max(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class FMin extends BinaryOperation {
+
+        public FMin(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.FMIN, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @llvm.fmin.%s(%s %s, %s %s)", getDescriptor(), resType.toString(),
+                    operand_1.getType(), operand_1.getDescriptor(),
+                    operand_2.getType(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public FMin cloneToBB(BasicBlock block) {
+            return new FMin(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class FMax extends BinaryOperation {
+
+        public FMax(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.FMAX, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @llvm.fmax.%s(%s %s, %s %s)", getDescriptor(), resType.toString(),
+                    operand_1.getType(), operand_1.getDescriptor(),
+                    operand_2.getType(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public FMax cloneToBB(BasicBlock block) {
+            return new FMax(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class FAbs extends Instruction {
+        private Value operand;
+
+        public FAbs(BasicBlock parentBlock, Type resType, Value operand) {
+            super(parentBlock, resType, InstType.FABS);
+            this.operand = operand;
+            addOperand(operand);
+        }
+
+        public Value getOperand() {
+            return operand;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @llvm.fabs.f32(float %s)", getDescriptor(), operand.getDescriptor());
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand.equals(value)) {
+                operand = v;
+            }
+        }
+
+        @Override
+        public FAbs cloneToBB(BasicBlock block) {
+            return new FAbs(block, operand.getType(), operand);
+        }
+    }
+
+    public static class AtomicAdd extends Instruction {
+
+        private Value ptr;
+        private Value inc;
+
+        public AtomicAdd(BasicBlock parentBlock, Type resType, Value ptr, Value operand) {
+            super(parentBlock, resType, InstType.ATOMICADD);
+            this.ptr = ptr;
+            this.inc = operand;
+            addOperand(ptr);
+            addOperand(inc);
+        }
+
+        public Value getInc() {
+            return inc;
+        }
+
+        public Value getPtr() {
+            return ptr;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (ptr.equals(value)) {
+                ptr = v;
+            }
+            if (inc.equals(value)) {
+                inc = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("atomicrmw add %s %s, %s %s monotonic",
+                    ptr.getType(), ptr.getDescriptor(), inc.getType(), inc.getDescriptor());
+        }
+
+        @Override
+        public AtomicAdd cloneToBB(BasicBlock block) {
+            return new AtomicAdd(block, getType(), ptr, inc);
         }
     }
 

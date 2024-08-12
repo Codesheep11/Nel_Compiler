@@ -42,11 +42,15 @@ public class Function extends Value {
 
     }
 
+    public boolean isParallelLoopBody = false;
+
     private Type retType; // 返回值类型
     private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
+
+    public Module module;
 
     private int countOfBB = 0;
 

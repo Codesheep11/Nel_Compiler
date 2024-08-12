@@ -94,7 +94,7 @@ public final class SCEVExpr implements Cloneable{
                     }
                 }
             }
-            return true;
+            return loop ==null || loop == this.loop;
         }
     }
 

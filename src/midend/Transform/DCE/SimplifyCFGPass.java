@@ -1,8 +1,6 @@
 package midend.Transform.DCE;
 
 import midend.Analysis.AnalysisManager;
-import midend.Pass.FunctionPass;
-import midend.Util.Print;
 import mir.*;
 import mir.Module;
 
@@ -14,7 +12,7 @@ import java.util.*;
  * 对于只有一个前驱的基本块，删除其PHI节点。1
  * 删除仅包含无条件分支的基本块。
  */
-public class SimplifyCFGPass extends FunctionPass {
+public class SimplifyCFGPass {
 
     public static boolean run(Module module) {
         boolean modified = false;
@@ -29,7 +27,7 @@ public class SimplifyCFGPass extends FunctionPass {
     public static boolean runOnFunc(Function function) {
         boolean modified = false;
         boolean changed;
-        do{
+        do {
             changed = false;
             changed |= Br2Jump(function);
             RemoveBlocks.runOnFunc(function);
@@ -38,6 +36,7 @@ public class SimplifyCFGPass extends FunctionPass {
             RemoveBlocks.runOnFunc(function);
             changed |= ChangeTarget(function);
             RemoveBlocks.runOnFunc(function);
+            changed |= MergePhi(function);
             modified |= changed;
         } while (changed);
         return modified;
@@ -131,7 +130,7 @@ public class SimplifyCFGPass extends FunctionPass {
     private static boolean ChangeTarget(Function function) {
         ArrayList<BasicBlock> onlyJumpBlocks = new ArrayList<>();
         for (BasicBlock block : function.getBlocks()) {
-            if (block.getFirstInst() instanceof Instruction.Jump ) {
+            if (block.getFirstInst() instanceof Instruction.Jump) {
                 BasicBlock suc = block.getSucBlocks().get(0);
                 if (suc.equals(block)) continue;
                 if (!(suc.getFirstInst() instanceof Instruction.Phi) && block.getPreBlocks().size() != 0) {
@@ -145,7 +144,7 @@ public class SimplifyCFGPass extends FunctionPass {
             BasicBlock suc = onlyJumpBlock.getSucBlocks().get(0);
             for (BasicBlock pre : onlyJumpBlock.getPreBlocks()) {
                 Instruction.Terminator term = (Instruction.Terminator) pre.getLastInst();
-                term.replaceSucc(onlyJumpBlock, suc);
+                term.replaceTarget(onlyJumpBlock, suc);
                 if (term instanceof Instruction.Branch) {
                     Instruction.Branch br = (Instruction.Branch) term;
                     if (br.getElseBlock().equals(br.getThenBlock())) {
@@ -159,19 +158,8 @@ public class SimplifyCFGPass extends FunctionPass {
         return !onlyJumpBlocks.isEmpty();
     }
 
-
-    @Override
-    public Boolean doInitialization(Module module) {
-        return null;
+    private static boolean MergePhi(Function function) {
+        return false;
     }
 
-    @Override
-    public Boolean runOnFunc(Module module) {
-        return null;
-    }
-
-    @Override
-    public Boolean doFinalization(Module module) {
-        return null;
-    }
 }

@@ -54,6 +54,12 @@ public class StoreEliminate {
 
     private static void handleStore(Instruction.Store store) {
         Value addr = store.getAddr();
+        while (addr instanceof Instruction.BitCast bitCast) {
+            addr = bitCast.getSrc();
+        }
+        if (addr instanceof Instruction.Load) {
+            return;
+        }
         if (addr instanceof GlobalVariable) {
             if (GlobalStoreMap.containsKey(addr)) delList.add(GlobalStoreMap.get(addr));
             GlobalStoreMap.put(addr, store);
@@ -78,6 +84,12 @@ public class StoreEliminate {
 
     private static void handleLoad(Instruction.Load load) {
         Value addr = load.getAddr();
+        while (addr instanceof Instruction.BitCast bitCast) {
+            addr = bitCast.getSrc();
+        }
+        if (addr instanceof Instruction.Load) {
+            return;
+        }
         if (addr instanceof GlobalVariable) {
             GlobalStoreMap.remove(addr);
         }

@@ -16,6 +16,7 @@ public class DeadLoopEliminate {
         boolean modified = false;
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
+//            if (function.isParallelLoopBody) continue;
             LoopInfo.runOnFunc(function);
             runOnFunc(function);
         }
@@ -49,12 +50,12 @@ public class DeadLoopEliminate {
             if (preHead == null) {
                 for (BasicBlock entering : loop.enterings) {
                     Instruction.Terminator term = entering.getTerminator();
-                    term.replaceSucc(head, exit);
+                    term.replaceTarget(head, exit);
                 }
             }
             else {
                 Instruction.Terminator term = preHead.getTerminator();
-                term.replaceSucc(head, exit);
+                term.replaceTarget(head, exit);
             }
             return true;
         }
@@ -84,10 +85,14 @@ public class DeadLoopEliminate {
 
     private static boolean hasStrongEffect(Instruction instr) {
         if (instr instanceof Instruction.Store) return true;
+        if (instr instanceof Instruction.AtomicAdd) return true;
         if (instr instanceof Instruction.Load) return true;
         if (instr instanceof Instruction.Return) return true;
         if (instr instanceof Instruction.Call call) {
             Function callee = call.getDestFunction();
+            if (callee.getName().equals("NELParallelFor")) {
+                callee = (Function) call.getParams().get(2);
+            }
             FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
             return calleeInfo.hasSideEffect || calleeInfo.hasMemoryWrite || calleeInfo.hasPutOut || calleeInfo.hasReadIn;
         }
