@@ -235,7 +235,7 @@ public class Instruction extends User {
         }
 
         @Override
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             System.out.println("Warning: Return replaceSucc");
         }
 
@@ -380,7 +380,7 @@ public class Instruction extends User {
             super(parentBlock, type, instType);
         }
 
-        public abstract void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock);
+        public abstract void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock);
     }
 
     public static class Branch extends Terminator {
@@ -419,7 +419,7 @@ public class Instruction extends User {
             return elseBlock;
         }
 
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             super.replaceUseOfWith(oldBlock, newBlock);
             if (thenBlock.equals(oldBlock)) {
                 thenBlock = newBlock;
@@ -497,7 +497,7 @@ public class Instruction extends User {
             return targetBlock;
         }
 
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             super.replaceUseOfWith(oldBlock, newBlock);
             if (targetBlock.equals(oldBlock)) {
                 targetBlock = newBlock;
@@ -1449,7 +1449,7 @@ public class Instruction extends User {
 
         @Override
         public String toString() {
-            return String.format("%s = atomic_add %s %s, %s %s", getDescriptor(),
+            return String.format("atomicrmw add %s %s, %s %s monotonic",
                     ptr.getType(), ptr.getDescriptor(), inc.getType(), inc.getDescriptor());
         }
 

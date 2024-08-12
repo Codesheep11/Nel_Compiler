@@ -103,13 +103,13 @@ public class LoopUnroll {
         }
 
         BasicBlock preHeader = loop.getPreHeader();
-        preHeader.getTerminator().delete();
-        new Instruction.Jump(preHeader, infos.get(0).cpy.header);
+        preHeader.getTerminator().replaceTarget(loop.header, infos.get(0).cpy.header);
+//        new Instruction.Jump(preHeader, infos.get(0).cpy.header);
 
         // 处理 remainder
         LoopCloneInfo begin = infos.get(0);
         LoopCloneInfo remainder = loop.cloneAndInfo();
-        begin.cpy.header.getTerminator().replaceSucc(loop.getExit(), remainder.cpy.header);
+        begin.cpy.header.getTerminator().replaceTarget(loop.getExit(), remainder.cpy.header);
         for (Instruction.Phi phi : loop.header.getPhiInstructions()) {
             Instruction.Phi reflectPhi = (Instruction.Phi) remainder.getReflectedValue(phi);
             reflectPhi.removeOptionalValue(preHeader);

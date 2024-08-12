@@ -1,7 +1,6 @@
 package midend.Transform.DCE;
 
 import midend.Analysis.AnalysisManager;
-import midend.Util.Print;
 import mir.*;
 import mir.Module;
 
@@ -145,7 +144,7 @@ public class SimplifyCFGPass {
             BasicBlock suc = onlyJumpBlock.getSucBlocks().get(0);
             for (BasicBlock pre : onlyJumpBlock.getPreBlocks()) {
                 Instruction.Terminator term = (Instruction.Terminator) pre.getLastInst();
-                term.replaceSucc(onlyJumpBlock, suc);
+                term.replaceTarget(onlyJumpBlock, suc);
                 if (term instanceof Instruction.Branch) {
                     Instruction.Branch br = (Instruction.Branch) term;
                     if (br.getElseBlock().equals(br.getThenBlock())) {
