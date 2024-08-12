@@ -134,6 +134,21 @@ public class Instruction extends User {
         };
     }
 
+    public boolean lvnable() {
+        return switch (instType) {
+            case ALLOC, STORE, PHI, RETURN, BitCast, SItofp, FPtosi, BRANCH, PHICOPY, MOVE, JUMP -> false;
+            case SHL, AND, OR, XOR, ASHR, LSHR, ATOMICADD -> false; // 目前判断 gvn 位运算平均收益为负
+            case Sext, TRUNC, FMADD -> false;
+            case CALL -> {
+                Function func = ((Call) this).getDestFunction();
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(func);
+                yield funcInfo.hasReturn && !func.isExternal() && funcInfo.isStateless
+                        && !funcInfo.hasReadIn && !funcInfo.hasPutOut;
+            }
+            default -> true;
+        };
+    }
+
     //public Instruction
     public void fix(CloneInfo cloneInfo) {
         ArrayList<Value> toReplace = new ArrayList<>();
@@ -238,7 +253,7 @@ public class Instruction extends User {
         }
 
         @Override
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             System.out.println("Warning: Return replaceSucc");
         }
 
@@ -383,7 +398,7 @@ public class Instruction extends User {
             super(parentBlock, type, instType);
         }
 
-        public abstract void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock);
+        public abstract void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock);
     }
 
     public static class Branch extends Terminator {
@@ -422,7 +437,7 @@ public class Instruction extends User {
             return elseBlock;
         }
 
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             super.replaceUseOfWith(oldBlock, newBlock);
             if (thenBlock.equals(oldBlock)) {
                 thenBlock = newBlock;
@@ -500,7 +515,7 @@ public class Instruction extends User {
             return targetBlock;
         }
 
-        public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
+        public void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock) {
             super.replaceUseOfWith(oldBlock, newBlock);
             if (targetBlock.equals(oldBlock)) {
                 targetBlock = newBlock;

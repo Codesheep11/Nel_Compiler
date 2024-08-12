@@ -93,6 +93,7 @@ public class Manager {
         GlobalCodeMotion.run(module);
         LoopUnSwitching.run(module);
         LCSSA.remove(module);
+        LocalValueNumbering.run(module);
         SCCP();
         DeadCodeEliminate();
         ConstLoopUnRoll.run(module);
@@ -105,6 +106,7 @@ public class Manager {
         SCCP();
         Branch2MinMax.run(module);
         DeadCodeEliminate();
+        StillLoopMotion.run(module);
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
@@ -132,7 +134,8 @@ public class Manager {
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
-//        /*--------------------------------------------------------------------------*/
+        GepFold.run(module);
+        /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
         AggressivePass();
@@ -245,8 +248,6 @@ public class Manager {
      * 非常激进的优化，可能会导致误差错误
      */
     private void AggressivePass() {
-        Branch2FMinMax.run(module);
-        FABSPass.run(module);
         FMAddSubPass.run(module);
     }
 
@@ -283,7 +284,6 @@ public class Manager {
         outputList.add("declare i32 @llvm.smax.i32(i32, i32)\n" +
                 "declare i32 @llvm.smin.i32(i32, i32)\n" +
                 "declare float @llvm.fmuladd.f32(float, float, float)\n" +
-                "declare float @llvm.fabs.f32(float)\n" +
                 "define float @fmulsub(float %a, float %b, float %c) {\n" +
                 "entry:\n" +
                 "    %mul = fmul float %a, %b\n" +

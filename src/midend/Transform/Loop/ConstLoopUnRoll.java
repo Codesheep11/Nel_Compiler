@@ -1,6 +1,7 @@
 package midend.Transform.Loop;
 
 import midend.Analysis.AnalysisManager;
+import midend.Analysis.PointerBaseAnalysis;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.LocalValueNumbering;
@@ -39,6 +40,7 @@ public class ConstLoopUnRoll {
             }
             DeadLoopEliminate.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
+            PointerBaseAnalysis.runOnFunc(function);
             LocalValueNumbering.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
         } while (modified);
@@ -79,7 +81,7 @@ public class ConstLoopUnRoll {
         }
 
         BasicBlock preHeader = loop.getPreHeader();
-        preHeader.getTerminator().delete();
+        preHeader.getTerminator().replaceTarget(loop.header, infos.get(0).cpy.header);
         new Instruction.Jump(preHeader, infos.get(0).cpy.header);
 
         // 处理出口块
