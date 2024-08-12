@@ -151,6 +151,9 @@ public class GlobalCodeMotion {
         int bestLoopDepth = instr.latest.getLoopDepth();
         while (instr.latest != instr.earliest) {
             instr.latest = dginfo.getIDom(instr.latest);
+            if (instr.latest == null) {
+                System.out.println("err");
+            }
             if (instr.latest.getLoopDepth() < bestLoopDepth) {
                 best = instr.latest;
                 bestDepth = instr.latest.getDomDepth();

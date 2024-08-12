@@ -28,6 +28,7 @@ public class Module {
     }
 
     public void addFunction(Function function) {
+        function.module = this;
         functions.putIfAbsent(function.getName(), function);
     }
 
