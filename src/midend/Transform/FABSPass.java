@@ -2,13 +2,12 @@ package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
 import midend.Transform.DCE.SimplifyCFGPass;
-import mir.Module;
 import mir.*;
+import mir.Module;
 
 import java.util.ArrayList;
 
-public class Branch2MinMax {
-
+public class FABSPass {
     private static final ArrayList<BasicBlock> visited = new ArrayList<>();
 
     public static void run(Module module) {
@@ -33,9 +32,16 @@ public class Branch2MinMax {
         Instruction.Terminator term = block.getTerminator();
         if (term instanceof Instruction.Branch branch) {
             Value cond = branch.getCond();
-            if (cond instanceof Instruction.Icmp icmp) {
-                Instruction.Icmp.CondCode condCode = icmp.getCondCode();
-                if (condCode == Instruction.Icmp.CondCode.EQ || condCode == Instruction.Icmp.CondCode.NE) return;
+            if (cond instanceof Instruction.Fcmp fcmp) {
+                Instruction.Fcmp.CondCode condCode = fcmp.getCondCode();
+                if (condCode == Instruction.Fcmp.CondCode.EQ || condCode == Instruction.Fcmp.CondCode.NE) return;
+                // 交换操作数，保证src1是非0的操作数
+                if (fcmp.getSrc1().equals(new Constant.ConstantFloat(0))) {
+                    fcmp.swap();
+                }
+                if (!fcmp.getSrc2().equals(new Constant.ConstantFloat(0))) {
+                    return;
+                }
                 BasicBlock thenBlock = branch.getThenBlock();
                 BasicBlock elseBlock = branch.getElseBlock();
                 if (thenBlock.getPreBlocks().size() == 1 && elseBlock.getPreBlocks().size() == 1) {
@@ -48,7 +54,7 @@ public class Branch2MinMax {
                         //开始转换
                         BasicBlock endBlock = thenJump.getTargetBlock();
                         if (endBlock.getPreBlocks().size() > 2) return;
-                        br2MinMax(endBlock, thenBlock, icmp, branch);
+                        br2FAbs(endBlock, thenBlock, fcmp, branch);
                         if (endBlock.getPhiInstructions().size() == 0) {
                             if (thenBlock.getInstructions().size() == 1 && elseBlock.getInstructions().size() == 1) {
                                 block.getLastInst().delete();
@@ -63,7 +69,7 @@ public class Branch2MinMax {
                     if (!passBlock.getSucBlocks().contains(endBlock)) return;
                     visited.add(passBlock);
                     thenBlock = thenBlock.equals(endBlock) ? block : thenBlock;
-                    br2MinMax(endBlock, thenBlock, icmp, branch);
+                    br2FAbs(endBlock, thenBlock, fcmp, branch);
                     if (endBlock.getPhiInstructions().size() == 0) {
                         if (passBlock.getInstructions().size() == 1) {
                             block.getLastInst().delete();
@@ -75,48 +81,53 @@ public class Branch2MinMax {
         }
     }
 
-    private static void br2MinMax(BasicBlock endBlock, BasicBlock thenBlock, Instruction cmp, Instruction.Branch br) {
-        if (cmp instanceof Instruction.Icmp icmp) {
-            Value LHS = icmp.getSrc1();
-            Value RHS = icmp.getSrc2();
-            Instruction.Icmp.CondCode condCode = icmp.getCondCode();
-            ArrayList<Instruction.Phi> delPhiList = new ArrayList<>();
-            for (Instruction.Phi phi : endBlock.getPhiInstructions()) {
-                boolean isMinMaxPhi = true;
-                for (Value v : phi.getIncomingValues()) {
-                    if (!v.equals(LHS) && !v.equals(RHS)) {
-                        isMinMaxPhi = false;
-                        break;
-                    }
+    private static void br2FAbs(BasicBlock endBlock, BasicBlock thenBlock, Instruction.Fcmp fcmp, Instruction.Branch br) {
+        Value LHS = fcmp.getSrc1();
+        Instruction.Fcmp.CondCode condCode = fcmp.getCondCode();
+        ArrayList<Instruction.Phi> delPhiList = new ArrayList<>();
+        for (Instruction.Phi phi : endBlock.getPhiInstructions()) {
+            boolean isABSPhi = true;
+            for (Value v : phi.getIncomingValues()) {
+                if (!(v.equals(LHS) || (v instanceof Instruction.FSub fSub &&
+                        fSub.getOperand_1().equals(new Constant.ConstantFloat(0)) && fSub.getOperand_2().equals(LHS))))
+                {
+                    isABSPhi = false;
+                    break;
                 }
-                if (!isMinMaxPhi) continue;
-                delPhiList.add(phi);
-                Value thenValue = phi.getOptionalValue(thenBlock);
-                Instruction.BinaryOperation inst = null;
-                switch (condCode) {
-                    case SGE, SGT -> {
-                        if (thenValue == LHS) {
-                            inst = new Instruction.Max(endBlock, LHS.getType(), LHS, RHS);
-                        }
-                        else {
-                            inst = new Instruction.Min(endBlock, LHS.getType(), LHS, RHS);
-                        }
-                    }
-                    case SLE, SLT -> {
-                        if (thenValue == LHS) {
-                            inst = new Instruction.Min(endBlock, LHS.getType(), LHS, RHS);
-                        }
-                        else {
-                            inst = new Instruction.Max(endBlock, LHS.getType(), LHS, RHS);
-                        }
-                    }
-                    default -> throw new RuntimeException("Unexpected condCode: " + condCode);
-                }
-                inst.remove();
-                phi.replaceAllUsesWith(inst);
-                endBlock.addInstAfterPhi(inst);
             }
-            delPhiList.forEach(Instruction::delete);
+            if (!isABSPhi) continue;
+            System.out.println("ABSPhi run!");
+            delPhiList.add(phi);
+            Instruction.FAbs fAbs = new Instruction.FAbs(endBlock, LHS.getType(), LHS);
+            fAbs.remove();
+            endBlock.addInstAfterPhi(fAbs);
+            Value thenValue = phi.getOptionalValue(thenBlock);
+            switch (condCode) {
+                case OGE, OGT -> {
+                    if (thenValue == LHS) {
+                        phi.replaceAllUsesWith(fAbs);
+                    }
+                    else {
+                        Instruction.FSub fSub = new Instruction.FSub(endBlock, LHS.getType(), new Constant.ConstantFloat(0), fAbs);
+                        fSub.remove();
+                        endBlock.getInstructions().insertAfter(fSub, fAbs);
+                        phi.replaceAllUsesWith(fSub);
+                    }
+                }
+                case OLE, OLT -> {
+                    if (thenValue == LHS) {
+                        Instruction.FSub fSub = new Instruction.FSub(endBlock, LHS.getType(), new Constant.ConstantFloat(0), fAbs);
+                        fSub.remove();
+                        endBlock.getInstructions().insertAfter(fSub, fAbs);
+                        phi.replaceAllUsesWith(fSub);
+                    }
+                    else {
+                        phi.replaceAllUsesWith(fAbs);
+                    }
+                }
+            }
         }
+        delPhiList.forEach(Instruction::delete);
     }
+
 }

@@ -154,6 +154,14 @@ public abstract class Constant extends User {
             return floatValue == 0;
         }
 
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ConstantFloat) {
+                return ((ConstantFloat) obj).floatValue == floatValue;
+            }
+            return false;
+        }
+
     }
 
     /**
