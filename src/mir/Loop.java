@@ -60,8 +60,6 @@ public class Loop {
     /**
      * 判断value是否在循环中被定义
      *
-     * @param value
-     * @return
      */
     public boolean defValue(Value value) {
         if (value instanceof Constant.ConstantInt) return false;
@@ -89,8 +87,6 @@ public class Loop {
 
     /**
      * 得到循环中的所有基本块
-     *
-     * @return
      */
     public HashSet<BasicBlock> getAllBlocks() {
         HashSet<BasicBlock> ret = new HashSet<>(nowLevelBB);
@@ -182,7 +178,6 @@ public class Loop {
             for (var inst : block.getInstructions()) {
                 for (var op : inst.getOperands()) {
                     if (op instanceof Constant) continue;
-                    if (op instanceof GlobalVariable) continue;
                     if (op instanceof Instruction) {
                         if (!LoopContains(((Instruction) op).getParentBlock())) {
                             ret.add(op);
@@ -199,6 +194,7 @@ public class Loop {
         return ret;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isNoSideEffect() {
         for (var block : nowLevelBB) {
             for (var inst : block.getInstructions()) {

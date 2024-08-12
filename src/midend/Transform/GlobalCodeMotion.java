@@ -89,7 +89,7 @@ public class GlobalCodeMotion {
             if (value instanceof Instruction instrValue) {
                 scheduleEarly(instrValue);
                 if (instrValue.earliest == null) {
-                    Print.output(module, "debug.txt");
+//                    Print.output(module, "debug.txt");
                     System.out.println(instrValue);
                 }
                 if (instrValue.earliest.getDomDepth() > instr.earliest.getDomDepth()) {

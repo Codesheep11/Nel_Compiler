@@ -107,6 +107,7 @@ public class Manager {
         Branch2MinMax.run(module);
         DeadCodeEliminate();
         StillLoopMotion.run(module);
+        CertainLoopExtract.run(module);
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
