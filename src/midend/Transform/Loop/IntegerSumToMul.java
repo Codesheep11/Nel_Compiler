@@ -126,20 +126,23 @@ public class IntegerSumToMul {
             }
         }
         if (sum_inc == null || rem_mod == null) return;
-        BasicBlock cond_block = new BasicBlock(loop.header.getDescriptor() + "_2mul_cond", loop.header.getParentFunction());
+//        BasicBlock cond_block = new BasicBlock(loop.header.getDescriptor() + "_2mul_cond", loop.header.getParentFunction());
         BasicBlock transformBlock = new BasicBlock(loop.header.getDescriptor() + "_2mul", loop.header.getParentFunction());
-        Instruction.Icmp newIcmp = new Instruction.Icmp(cond_block, indvar_cmp.getCondCode(), Constant.ConstantInt.get(init), indvar_cmp.getSrc2());
-        new Instruction.Branch(cond_block, newIcmp, transformBlock, loop.getExit());
+//        Instruction.Icmp newIcmp = new Instruction.Icmp(cond_block, indvar_cmp.getCondCode(), Constant.ConstantInt.get(init), indvar_cmp.getSrc2());
+//        new Instruction.Branch(cond_block, newIcmp, transformBlock, loop.getExit());
 
-        loop.getPreHeader().getTerminator().delete();
-        new Instruction.Jump(loop.getPreHeader(), cond_block);
-        // TODO: max改进
+//        loop.getPreHeader().getTerminator().replaceTarget(loop.header, cond_block);
+        loop.getPreHeader().getTerminator().replaceTarget(loop.header, transformBlock);
+
         // calc
         // slt: tripCount = (limit_i - initial_i) sle: tripCount = (limit_i - initial_i + 1)
         int _tmp = init;
         if (indvar_cmp.getCondCode() == Instruction.Icmp.CondCode.SLE)
             _tmp--;
-        Instruction.Sub tripCount = new Instruction.Sub(transformBlock, indvar_cmp.getSrc2().getType(), indvar_cmp.getSrc2(), Constant.ConstantInt.get(_tmp));
+        Instruction.Sub _tripCount = new Instruction.Sub(transformBlock, indvar_cmp.getSrc2().getType(), indvar_cmp.getSrc2(), Constant.ConstantInt.get(_tmp));
+        // max改进
+        Instruction.Max tripCount = new Instruction.Max(transformBlock, _tripCount.getType(), _tripCount, Constant.ConstantInt.get(0));
+
         Instruction.Sext sext_inc = new Instruction.Sext(transformBlock, sum_inc, Type.BasicType.I64_TYPE);
         Instruction.Sext sext_Count = new Instruction.Sext(transformBlock, tripCount, Type.BasicType.I64_TYPE);
         Instruction.Mul mul = new Instruction.Mul(transformBlock, sext_inc.getType(), sext_inc, sext_Count);
@@ -154,13 +157,14 @@ public class IntegerSumToMul {
             if (val == sum) {
                 phi.removeOptionalValue(loop.header);
                 phi.addOptionalValue(transformBlock, trunc);
-                phi.addOptionalValue(cond_block, initial_sum);
+//                phi.addOptionalValue(cond_block, initial_sum);
             } else if (val == indvar) {
                 phi.removeOptionalValue(loop.header);
+                // FIXME: 可能有误
                 phi.replaceOptionalValueAtWith(loop.header, tripCount);
-                phi.addOptionalValue(cond_block, Constant.ConstantInt.get(init));
+//                phi.addOptionalValue(cond_block, Constant.ConstantInt.get(init));
             } else {
-                phi.addOptionalValue(cond_block, val);
+//                phi.addOptionalValue(cond_block, val);
                 phi.addOptionalValue(transformBlock, val);
                 phi.removeOptionalValue(loop.header);
             }

@@ -137,7 +137,7 @@ public class LoopUnSwitching {
         }
 
         // modify preheader
-        oldPreHeader.getTerminator().replaceSucc(loop.header, condBlocks.get(0));
+        oldPreHeader.getTerminator().replaceTarget(loop.header, condBlocks.get(0));
 
         // modify exits
         for (BasicBlock exit : loop.exits) {
@@ -196,7 +196,7 @@ public class LoopUnSwitching {
         falseLoop.header.getPhiInstructions().forEach(phi -> phi.changePreBlock(preHeader, condBlock));
 
         // modify preheader
-        preHeader.getTerminator().replaceSucc(loop.header, condBlock);
+        preHeader.getTerminator().replaceTarget(loop.header, condBlock);
 
         for (BasicBlock exit : loop.exits) {
             for (Instruction.Phi phi : exit.getPhiInstructions()) {

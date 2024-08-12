@@ -92,7 +92,7 @@ public class SroaPass {
             }
             idx++;
         }
-        curDelList.forEach(SroaPass.delList::add);
+        SroaPass.delList.addAll(curDelList);
         return true;
     }
 }
