@@ -399,6 +399,12 @@ public class LoopParallel {
                 }
                 if (load != null) return false;
             }
+            else if (loadStoreMap.get(key) == 2) {
+                //fixme: 测试的时候可以关了这个试试蒙一发，看看能不能通过
+                //如果是对地址的写操作，则必须保证写的地址索引是一个随着归纳变量单调的量
+
+                return false;
+            }
         }
         //将存储操作转化成原子指令
         for (Pair<Instruction.Load, Instruction.Store> pair : workList) {

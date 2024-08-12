@@ -135,7 +135,7 @@ public class Manager {
 //        /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
-        AggressivePass();
+//        AggressivePass();
         SCCP();
         DeadCodeEliminate();
         FuncAnalysis.run(module);
@@ -245,6 +245,7 @@ public class Manager {
      * 非常激进的优化，可能会导致误差错误
      */
     private void AggressivePass() {
+        Branch2FMinMax.run(module);
         FABSPass.run(module);
         FMAddSubPass.run(module);
     }
