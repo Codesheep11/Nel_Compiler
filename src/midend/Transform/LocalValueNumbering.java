@@ -24,8 +24,6 @@ public class LocalValueNumbering {
 
     public static boolean run(Module module) {
         boolean modified = false;
-        PointerBaseAnalysis.run(module);
-        MemDepAnalysis.run(module);
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
             modified |= runOnFunc(func);
@@ -36,6 +34,8 @@ public class LocalValueNumbering {
 
     public static boolean runOnFunc(Function function) {
         AnalysisManager.refreshDG(function);
+        PointerBaseAnalysis.runOnFunc(function);
+        MemDepAnalysis.runOnFunc(function);
         return GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
     }
 
@@ -53,7 +53,7 @@ public class LocalValueNumbering {
                 delList.add(inst);
                 continue;
             }
-            if (inst.gvnable()) {
+            if (inst.lvnable()) {
                 String key = generateExpressionKey(inst);
                 if (records.contains(key)) {
                     if (inst instanceof Instruction.Load load) {

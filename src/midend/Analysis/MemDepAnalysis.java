@@ -1,6 +1,8 @@
 package midend.Analysis;
 
+import midend.Transform.LocalValueNumbering;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Module;
 import mir.*;
 
@@ -23,32 +25,25 @@ public class MemDepAnalysis {
         }
     }
 
-    private static final HashMap<Function, PathSet> fps = new HashMap<>();
+    private static  PathSet ps;
 
 
-    public static void run(Module module) {
-        for (Function function : module.getFuncSet()) {
-            if (function.isExternal()) continue;
-            runOnFunc(function);
-        }
-    }
 
     public static boolean assureNotWritten(Function function, BasicBlock A, BasicBlock B, Value pointer) {
         if (!pointer.getType().isPointerTy()) throw new RuntimeException("wrong type");
-        PathSet ps = fps.get(function);
         Integer i = ps.getId(A);
         Integer j = ps.getId(B);
         Value base = PointerBaseAnalysis.getBaseOrNull(pointer);
-        if (base == null) throw new RuntimeException("can't find base");
+        if (base == null) return false;
         for (Integer k : ps.set.get(i).get(j)) {
             BasicBlock block = function.getBlocks().get(k);
             for (Instruction instruction : block.getInstructions()) {
                 if (instruction instanceof Instruction.Store store) {
-                    if (PointerBaseAnalysis.getBaseOrNull(store.getAddr()).equals(base)) {
+                    Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
+                    if (storeBase == null || storeBase.equals(base)) {
                         return false;
                     }
-                }
-                else if (instruction instanceof Instruction.Call call) {
+                } else if (instruction instanceof Instruction.Call call) {
                     FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
                     if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
                         return false;
@@ -58,11 +53,11 @@ public class MemDepAnalysis {
         }
         for (Instruction instruction : A.getInstructions()) {
             if (instruction instanceof Instruction.Store store) {
-                if (PointerBaseAnalysis.getBaseOrNull(store.getAddr()).equals(base)) {
+                Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
+                if (storeBase == null || storeBase.equals(base)) {
                     return false;
                 }
-            }
-            else if (instruction instanceof Instruction.Call call) {
+            } else if (instruction instanceof Instruction.Call call) {
                 FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
                 if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
                     return false;
@@ -71,11 +66,11 @@ public class MemDepAnalysis {
         }
         for (Instruction instruction : B.getInstructions()) {
             if (instruction instanceof Instruction.Store store) {
-                if (PointerBaseAnalysis.getBaseOrNull(store.getAddr()).equals(base)) {
+                Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
+                if (storeBase == null || storeBase.equals(base)) {
                     return false;
                 }
-            }
-            else if (instruction instanceof Instruction.Call call) {
+            } else if (instruction instanceof Instruction.Call call) {
                 FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
                 if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
                     return false;
@@ -85,14 +80,14 @@ public class MemDepAnalysis {
         return true;
     }
 
-    private static void runOnFunc(Function function) {
-        PathSet ps = new PathSet();
-        int n = function.getBlocks().size();
-        fps.put(function, ps);
-        for (int i = 0; i < n; i++) {
-            ps.blockIndex.put(function.getBlocks().get(i), i);
+    public static void runOnFunc(Function function) {
+        ps = new PathSet();
+        int cnt = 0;
+        for (BasicBlock block : function.getBlocks()) {
+            ps.blockIndex.put(block, cnt);
+            cnt++;
         }
-
+        int n = cnt;
         // Initialize reachability and intermediate nodes
         boolean[][] reach = new boolean[n][n];
 
