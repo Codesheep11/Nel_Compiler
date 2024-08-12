@@ -55,6 +55,30 @@ public class MemChangeAnalysis {
                 }
             }
         }
+        for (Instruction instruction : A.getInstructions()) {
+            if (instruction instanceof Instruction.Store store) {
+                if (PointerBaseAnalysis.getBaseOrNull(store.getAddr()).equals(base)) {
+                    return false;
+                }
+            } else if (instruction instanceof Instruction.Call call) {
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
+                if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
+                    return false;
+                }
+            }
+        }
+        for (Instruction instruction : B.getInstructions()) {
+            if (instruction instanceof Instruction.Store store) {
+                if (PointerBaseAnalysis.getBaseOrNull(store.getAddr()).equals(base)) {
+                    return false;
+                }
+            } else if (instruction instanceof Instruction.Call call) {
+                FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
+                if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
+                    return false;
+                }
+            }
+        }
         return true;
     }
 
