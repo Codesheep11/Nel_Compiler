@@ -136,6 +136,7 @@ public class Manager {
 //        /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
+        FABSPass.run(module);
         AggressivePass();
         SCCP();
         DeadCodeEliminate();
@@ -282,6 +283,7 @@ public class Manager {
         outputList.add("declare i32 @llvm.smax.i32(i32, i32)\n" +
                 "declare i32 @llvm.smin.i32(i32, i32)\n" +
                 "declare float @llvm.fmuladd.f32(float, float, float)\n" +
+                "declare float @llvm.fabs.f32(float)\n" +
                 "define float @fmulsub(float %a, float %b, float %c) {\n" +
                 "entry:\n" +
                 "    %mul = fmul float %a, %b\n" +

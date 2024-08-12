@@ -1091,6 +1091,29 @@ public class CodeGen {
         nowBlock.riscvInstructions.addLast(new AMOadd(nowBlock, ans, val, addr));
     }
 
+    private void solveFmax(Instruction.FMax fMax)
+    {
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fMax);
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fMax.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fMax.getOperand_2());
+        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmax));
+    }
+
+    private void solveFmin(Instruction.FMin fMin)
+    {
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fMin);
+        Reg op1 = VirRegMap.VRM.ensureRegForValue(fMin.getOperand_1());
+        Reg op2 = VirRegMap.VRM.ensureRegForValue(fMin.getOperand_2());
+        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmin));
+    }
+
+    private void solveFAbs(Instruction.FAbs fAbs)
+    {
+        Reg ans = VirRegMap.VRM.ensureRegForValue(fAbs);
+        Reg op = VirRegMap.VRM.ensureRegForValue(fAbs.getOperand());
+        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, op, R2.R2Type.fabs));
+    }
+
     private void visitBlock(BasicBlock block) {
         nowBlock = blockMap.get(block);
         for (Instruction instruction : block.getInstructions()) {
@@ -1217,6 +1240,15 @@ public class CodeGen {
             }
             else if (instruction instanceof Instruction.AtomicAdd) {
                 solveAtomicAdd((Instruction.AtomicAdd) instruction);
+            }
+            else if (instruction instanceof Instruction.FAbs) {
+                solveFAbs((Instruction.FAbs) instruction);
+            }
+            else if (instruction instanceof Instruction.FMax) {
+                solveFmax((Instruction.FMax) instruction);
+            }
+            else if (instruction instanceof Instruction.FMin) {
+                solveFmin((Instruction.FMin) instruction);
             }
             else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
