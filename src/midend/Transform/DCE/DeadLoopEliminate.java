@@ -52,8 +52,7 @@ public class DeadLoopEliminate {
                     Instruction.Terminator term = entering.getTerminator();
                     term.replaceTarget(head, exit);
                 }
-            }
-            else {
+            } else {
                 Instruction.Terminator term = preHead.getTerminator();
                 term.replaceTarget(head, exit);
             }
@@ -71,12 +70,9 @@ public class DeadLoopEliminate {
         for (BasicBlock block : loop.nowLevelBB) {
             for (Instruction instr : block.getInstructions()) {
                 if (hasStrongEffect(instr)) return false;
-                for (Use use : instr.getUses()) {
-                    Instruction user = (Instruction) use.getUser();
-                    Loop userLoop = user.getParentBlock().loop;
-                    if (!loop.equals(userLoop) || hasStrongEffect(user)) {
+                for (Instruction user : instr.getUsers()) {
+                    if (user.getParentBlock().loop != loop)
                         return false;
-                    }
                 }
             }
         }
