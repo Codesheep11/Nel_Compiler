@@ -13,7 +13,7 @@ public class MemDepAnalysis {
     // 分析出每个块对A,B,A到B可能经过的块集合
     //
 
-    private static final int max_block = 0;
+    private static final int max_block = 500;
 
 
     public static boolean assureNotWritten(Function function, BasicBlock A, BasicBlock B, Value pointer) {
@@ -21,9 +21,9 @@ public class MemDepAnalysis {
         Value base = PointerBaseAnalysis.getBaseOrNull(pointer);
         if (base == null) return false;
         if (function.getBlocks().size() > max_block) return false;
-        System.out.println("begin");
         HashSet<BasicBlock> set = queryPasser(A, B);
-        System.out.println("end");
+        set.add(A);
+        set.add(B);
         for (BasicBlock block : set) {
             for (Instruction instruction : block.getInstructions()) {
                 if (instruction instanceof Instruction.Store store) {
@@ -46,24 +46,31 @@ public class MemDepAnalysis {
         HashSet<BasicBlock> visitedBlocks = new HashSet<>();
         HashSet<BasicBlock> passingBlocks = new HashSet<>();
 
-        dfs(A, B, visitedBlocks, passingBlocks);
+        if (dfs(A, B, visitedBlocks, passingBlocks)) {
+            passingBlocks.remove(A);  // A不应该在passingBlocks中
+        }
 
         return passingBlocks;
     }
 
-    private static void dfs(BasicBlock current, BasicBlock target, HashSet<BasicBlock> visitedBlocks, HashSet<BasicBlock> passingBlocks) {
+    private static boolean dfs(BasicBlock current, BasicBlock target, HashSet<BasicBlock> visitedBlocks, HashSet<BasicBlock> passingBlocks) {
         if (current.equals(target)) {
-            return;
+            return true;
         }
-
         visitedBlocks.add(current);
-
         for (BasicBlock next : current.getSucBlocks()) {
             if (!visitedBlocks.contains(next)) {
                 passingBlocks.add(next);
-                dfs(next, target, visitedBlocks, passingBlocks);
+
+                if (dfs(next, target, visitedBlocks, passingBlocks)) {
+                    return true;  // 找到目标块，终止搜索
+                } else {
+                    passingBlocks.remove(next);  // 移除不通向目标块的路径上的块
+                }
             }
         }
+        return false;  // 没有找到目标块
     }
+
 }
 
