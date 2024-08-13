@@ -113,6 +113,7 @@ public class Manager {
         IntegerSumToMul.run(module);
         LCSSA.remove(module);
         SCCP();
+        ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
         LoopParallel.run(module);
