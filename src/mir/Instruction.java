@@ -45,6 +45,9 @@ public class Instruction extends User {
         FNEG,
         FNMADD,
         FNMSUB,
+        FMIN,
+        FMAX,
+        FABS,
         MIN,
         MAX,
         // Paralllel
@@ -996,6 +999,18 @@ public class Instruction extends User {
             OGE("oge"),
             OLT("olt"),
             OLE("ole");
+
+            public Fcmp.CondCode swap() {
+                return switch (this) {
+                    case EQ -> EQ;
+                    case NE -> NE;
+                    case OGT -> OLT;
+                    case OGE -> OLE;
+                    case OLT -> OGT;
+                    case OLE -> OGE;
+                };
+            }
+
             private final String str;
 
             CondCode(final String str) {
@@ -1007,7 +1022,7 @@ public class Instruction extends User {
             }
         }
 
-        private final CondCode condCode;
+        private CondCode condCode;
 
         public CondCode getCondCode() {
             return condCode;
@@ -1038,6 +1053,13 @@ public class Instruction extends User {
 
             addOperand(src1);
             addOperand(src2);
+        }
+
+        public void swap() {
+            Value _temp = src2;
+            src2 = src1;
+            src1 = _temp;
+            condCode = condCode.swap();
         }
 
         @Override
@@ -1427,6 +1449,76 @@ public class Instruction extends User {
         @Override
         public Max cloneToBB(BasicBlock block) {
             return new Max(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class FMin extends BinaryOperation {
+
+        public FMin(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.FMIN, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @llvm.fmin.%s(%s %s, %s %s)", getDescriptor(), resType.toString(),
+                    operand_1.getType(), operand_1.getDescriptor(),
+                    operand_2.getType(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public FMin cloneToBB(BasicBlock block) {
+            return new FMin(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class FMax extends BinaryOperation {
+
+        public FMax(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
+            super(parentBlock, resType, InstType.FMAX, operand_1, operand_2);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @llvm.fmax.%s(%s %s, %s %s)", getDescriptor(), resType.toString(),
+                    operand_1.getType(), operand_1.getDescriptor(),
+                    operand_2.getType(), operand_2.getDescriptor());
+        }
+
+        @Override
+        public FMax cloneToBB(BasicBlock block) {
+            return new FMax(block, resType, operand_1, operand_2);
+        }
+    }
+
+    public static class FAbs extends Instruction {
+        private Value operand;
+
+        public FAbs(BasicBlock parentBlock, Type resType, Value operand) {
+            super(parentBlock, resType, InstType.FABS);
+            this.operand = operand;
+            addOperand(operand);
+        }
+
+        public Value getOperand() {
+            return operand;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s = call float @llvm.fabs.f32(float %s)", getDescriptor(), operand.getDescriptor());
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (operand.equals(value)) {
+                operand = v;
+            }
+        }
+
+        @Override
+        public FAbs cloneToBB(BasicBlock block) {
+            return new FAbs(block, operand.getType(), operand);
         }
     }
 

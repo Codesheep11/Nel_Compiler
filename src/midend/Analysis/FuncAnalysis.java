@@ -66,13 +66,11 @@ public class FuncAnalysis {
         }
         ExternFuncInit();
         for (Function func : module.getFuncSet()) {
-            if (func.isExternal()) continue;
-            if (func.getName().equals("NELCacheLookup") || func.getName().equals("NELParallelFor")) {
+            if (func.getName().equals("NELCacheLookup") || func.getName().equals("NELParallelFor") || func.getName().equals("NELReduceAddF32")) {
                 BuildLibAttribute(func);
             }
-            else {
-                BuildAttribute(func);
-            }
+            if (func.isExternal()) continue;
+            BuildAttribute(func);
         }
         TransAttribute();
     }

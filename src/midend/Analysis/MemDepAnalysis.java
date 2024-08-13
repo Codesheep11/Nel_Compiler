@@ -1,10 +1,10 @@
 package midend.Analysis;
 
-import midend.Transform.LocalValueNumbering;
 import midend.Util.FuncInfo;
-import midend.Util.Print;
-import mir.Module;
-import mir.*;
+import mir.BasicBlock;
+import mir.Function;
+import mir.Instruction;
+import mir.Value;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,11 +25,13 @@ public class MemDepAnalysis {
         }
     }
 
-    private static  PathSet ps;
+    private static PathSet ps;
 
+    private static final int max_block = 500;
 
 
     public static boolean assureNotWritten(Function function, BasicBlock A, BasicBlock B, Value pointer) {
+        if (function.getBlocks().size() > max_block) return false;
         if (!pointer.getType().isPointerTy()) throw new RuntimeException("wrong type");
         Integer i = ps.getId(A);
         Integer j = ps.getId(B);
@@ -87,6 +89,7 @@ public class MemDepAnalysis {
             ps.blockIndex.put(block, cnt);
             cnt++;
         }
+        if (cnt > max_block) return;
         int n = cnt;
         // Initialize reachability and intermediate nodes
         boolean[][] reach = new boolean[n][n];
