@@ -6,6 +6,7 @@ import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.Ir2RiscV.CodeGen;
+import backend.riscv.RiscvModule;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -122,8 +123,10 @@ public class LivenessAnalyze {
                 }
             }
         }
+        RiscvModule module = CodeGen.ansRis;
         for (J call : function.calls) {
-            if (CodeGen.ansRis.getFunction(call.funcName).isExternal) {
+            RiscvFunction rf = module.getFunction(call.funcName);
+            if (rf.isSaveOut) {
                 //此处只考虑VirtualReg，不考虑预着色寄存器,因为这里只为着色服务
                 for (Reg reg : Out.get(call)) {
                     if (reg.preColored) continue;
