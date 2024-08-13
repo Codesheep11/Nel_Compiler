@@ -23,6 +23,9 @@ public class LoopSimplifyForm {
 
     private static int count = 0;
 
+    // 是否要保证preheader的纯粹性
+    private static final boolean PURE = false;
+
     /**
      *
      * @param module 模块
@@ -52,7 +55,19 @@ public class LoopSimplifyForm {
 
     private static void simplifyPreHeader(Loop loop) {
         if (loop.enterings.size() <= 1) {
-            if (loop.enterings.size() == 1) loop.preHeader = loop.enterings.iterator().next();
+            if (loop.enterings.size() == 1) {
+                loop.preHeader = loop.enterings.iterator().next();
+                if (PURE && !(loop.preHeader.getTerminator() instanceof Instruction.Jump)) {
+                    BasicBlock purePreHeader = new BasicBlock(getNewLabel(loop.header.getParentFunction(), "PreHeader"), loop.header.getParentFunction());
+                    for (Instruction.Phi phi : loop.header.getPhiInstructions()) {
+                        phi.changePreBlock(loop.preHeader, purePreHeader);
+                    }
+                    loop.preHeader.getTerminator().replaceTarget(loop.header, purePreHeader);
+                    loop.preHeader = purePreHeader;
+                    loop.enterings.clear();
+                    loop.enterings.add(purePreHeader);
+                }
+            }
             else {
                 Function parentFunction = loop.header.getParentFunction();
                 loop.preHeader = new BasicBlock(getNewLabel(parentFunction, "preHeader"), parentFunction);

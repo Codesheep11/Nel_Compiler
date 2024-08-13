@@ -88,6 +88,7 @@ public class Manager {
         GlobalVarLocalize.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
+
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
@@ -96,6 +97,7 @@ public class Manager {
         LocalValueNumbering.run(module);
         SCCP();
         DeadCodeEliminate();
+
         ConstLoopUnRoll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
@@ -107,6 +109,7 @@ public class Manager {
         Branch2MinMax.run(module);
         DeadCodeEliminate();
         StillLoopMotion.run(module);
+        CertainLoopExtract.run(module);
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
@@ -137,7 +140,7 @@ public class Manager {
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
-        AggressivePass();
+//        AggressivePass();
         SCCP();
         DeadCodeEliminate();
         FuncAnalysis.run(module);
