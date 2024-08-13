@@ -1,16 +1,14 @@
 package midend.Analysis;
 
 import midend.Util.FuncInfo;
-import mir.BasicBlock;
-import mir.Function;
-import mir.Instruction;
-import mir.Value;
+import mir.Module;
+import mir.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class MemDepAnalysis {
+public class MemChangeAnalysis {
     // 做分析可以得到PathSet集合
     // 分析出每个块对A,B,A到B可能经过的块集合
     //
@@ -25,24 +23,28 @@ public class MemDepAnalysis {
         }
     }
 
-    private static PathSet ps;
-
-    private static final int max_block = 500;
+    private static final HashMap<Function, PathSet> fps = new HashMap<>();
 
 
-    public static boolean assureNotWritten(Function function, BasicBlock A, BasicBlock B, Value pointer) {
-        if (function.getBlocks().size() > max_block) return false;
+    public static void run(Module module) {
+        for (Function function : module.getFuncSet()) {
+            if (function.isExternal()) continue;
+            runOnFunc(function);
+        }
+    }
+
+    public static boolean query(Function function, BasicBlock A, BasicBlock B, Value pointer) {
         if (!pointer.getType().isPointerTy()) throw new RuntimeException("wrong type");
+        PathSet ps = fps.get(function);
         Integer i = ps.getId(A);
         Integer j = ps.getId(B);
         Value base = PointerBaseAnalysis.getBaseOrNull(pointer);
-        if (base == null) return false;
+        if (base == null) throw new RuntimeException("can't find base");
         for (Integer k : ps.set.get(i).get(j)) {
             BasicBlock block = function.getBlocks().get(k);
             for (Instruction instruction : block.getInstructions()) {
                 if (instruction instanceof Instruction.Store store) {
-                    Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
-                    if (storeBase == null || storeBase.equals(base)) {
+                    if (PointerBaseAnalysis.getBaseOrNull(store.getAddr()).equals(base)) {
                         return false;
                     }
                 } else if (instruction instanceof Instruction.Call call) {
@@ -53,44 +55,17 @@ public class MemDepAnalysis {
                 }
             }
         }
-        for (Instruction instruction : A.getInstructions()) {
-            if (instruction instanceof Instruction.Store store) {
-                Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
-                if (storeBase == null || storeBase.equals(base)) {
-                    return false;
-                }
-            } else if (instruction instanceof Instruction.Call call) {
-                FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
-                if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
-                    return false;
-                }
-            }
-        }
-        for (Instruction instruction : B.getInstructions()) {
-            if (instruction instanceof Instruction.Store store) {
-                Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
-                if (storeBase == null || storeBase.equals(base)) {
-                    return false;
-                }
-            } else if (instruction instanceof Instruction.Call call) {
-                FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
-                if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
-                    return false;
-                }
-            }
-        }
         return true;
     }
 
-    public static void runOnFunc(Function function) {
-        ps = new PathSet();
-        int cnt = 0;
-        for (BasicBlock block : function.getBlocks()) {
-            ps.blockIndex.put(block, cnt);
-            cnt++;
+    private static void runOnFunc(Function function) {
+        PathSet ps = new PathSet();
+        int n = function.getBlocks().size();
+        fps.put(function, ps);
+        for (int i = 0; i < n; i++) {
+            ps.blockIndex.put(function.getBlocks().get(i), i);
         }
-        if (cnt > max_block) return;
-        int n = cnt;
+
         // Initialize reachability and intermediate nodes
         boolean[][] reach = new boolean[n][n];
 
