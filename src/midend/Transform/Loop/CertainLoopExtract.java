@@ -29,7 +29,6 @@ public class CertainLoopExtract {
             AnalysisManager.refreshCFG(function);
             LoopReBuildAndNormalize(function);
             PointerBaseAnalysis.runOnFunc(function);
-            MemDepAnalysis.runOnFunc(function);
             for (Loop loop : function.loopInfo.TopLevelLoops) {
                 if (tryExtractLoop(loop)) {
                     modified = true;
