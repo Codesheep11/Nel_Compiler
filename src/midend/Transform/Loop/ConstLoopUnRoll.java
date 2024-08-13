@@ -5,6 +5,7 @@ import midend.Analysis.PointerBaseAnalysis;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.LocalValueNumbering;
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 import midend.Analysis.result.SCEVinfo;

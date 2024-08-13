@@ -134,7 +134,8 @@ public class Manager {
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
-        PhiMerge.run(module);
+        BrPredction.run(module);
+//        PhiMerge.run(module);
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
@@ -151,7 +152,6 @@ public class Manager {
         RemovePhi.run(module);
         LoopInfo.run(module);
         BrPredction.run(module);
-        Print.output(module, "debug.txt");
         /*--------------------------------------------------------------------------*/
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
