@@ -18,6 +18,8 @@ public class RiscvFunction {
 
     public boolean isExternal;
 
+    public boolean isSaveOut = false;
+
     public boolean isParallLoopBody = false;
     /**
      * 0 表示没有返回值<br/>
