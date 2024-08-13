@@ -1,6 +1,6 @@
 package midend.Analysis;
 
-import midend.Util.Print;
+
 import mir.*;
 
 import java.util.ArrayList;
@@ -15,7 +15,9 @@ public class PointerBaseAnalysis {
         return pointBaseInfo.getOrDefault(value, null);
     }
 
+
     private static final HashMap<Value, Value> pointBaseInfo = new HashMap<>();
+
     private static final int max_depth = 8;
 
     /**
@@ -88,6 +90,7 @@ public class PointerBaseAnalysis {
         }
         graph.get(key).add(instruction);
     }
+
 
     public static void runOnFunc(Function function) {
         pointBaseInfo.clear();
@@ -170,6 +173,7 @@ public class PointerBaseAnalysis {
                 if (same && src != null) setStorage.accept(instruction, src);
             }
         }
+
     }
 
 
