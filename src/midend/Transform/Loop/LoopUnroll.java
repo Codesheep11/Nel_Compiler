@@ -44,7 +44,6 @@ public class LoopUnroll {
             }
             DeadLoopEliminate.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
-            PointerBaseAnalysis.runOnFunc(function);
             LocalValueNumbering.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
         } while (modified);
