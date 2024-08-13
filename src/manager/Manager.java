@@ -106,8 +106,9 @@ public class Manager {
         SCCP();
         Branch2MinMax.run(module);
         DeadCodeEliminate();
-        StillLoopMotion.run(module);
-        CertainLoopExtract.run(module);
+//        StillLoopMotion.run(module);
+//        System.out.println("StillLoopMotion");
+//        CertainLoopExtract.run(module);
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
@@ -115,7 +116,7 @@ public class Manager {
         SCCP();
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-        LoopParallel.run(module);
+//        LoopParallel.run(module);
         LCSSA.remove(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -127,7 +128,7 @@ public class Manager {
         ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
-        FuncCache.run(module);
+//        FuncCache.run(module);
         FuncAnalysis.run(module);
         LoopBuildAndNormalize();
         GepLift.run(module);
@@ -138,7 +139,7 @@ public class Manager {
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
-        AggressivePass();
+//        AggressivePass();
         SCCP();
         DeadCodeEliminate();
         FuncAnalysis.run(module);

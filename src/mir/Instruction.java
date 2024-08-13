@@ -263,8 +263,7 @@ public class Instruction extends User {
             Value retValue = getRetValue();
             if (retValue != null) {
                 return String.format("ret %s %s", retValue.getType().toString(), retValue.getDescriptor());
-            }
-            else {
+            } else {
                 return "ret void";
             }
         }
@@ -346,8 +345,7 @@ public class Instruction extends User {
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());
-            }
-            else {
+            } else {
                 return String.format("%s = call %s @%s(%s)", getDescriptor(), destFunction.getRetType().toString(), destFunction.name, paramsToString());
             }
         }
@@ -1948,6 +1946,18 @@ public class Instruction extends User {
             return values.size() == 1;
         }
 
+        public Value getConstantPhiValue() {
+            HashSet<Value> values = new HashSet<>(optionalValues.values());
+            if (values.size() == 2) {
+                Value value1 = (Value) values.toArray()[0];
+                Value value2 = (Value) values.toArray()[1];
+                if (value1 == this) return value2;
+                if (value2 == this) return value1;
+                return null;
+            }
+            return null;
+        }
+
         public boolean containsBlock(BasicBlock block) {
             return optionalValues.containsKey(block);
         }
@@ -1986,8 +1996,7 @@ public class Instruction extends User {
                 Value val = optionalValues.get(value);
                 optionalValues.remove(value);
                 optionalValues.put((BasicBlock) v, val);
-            }
-            else {
+            } else {
                 for (BasicBlock block : optionalValues.keySet()) {
                     if (optionalValues.get(block).equals(value)) {
                         optionalValues.put(block, v);
