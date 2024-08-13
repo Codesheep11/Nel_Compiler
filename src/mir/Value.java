@@ -10,6 +10,8 @@ public class Value extends NelLinkedList.NelLinkNode {
 
     protected String name;
     protected Type type;
+    private static int vid = 0;
+    private final int id;
 
     /**
      * 维护了集合性质，乱序，不重地维护了双向边关系
@@ -21,12 +23,14 @@ public class Value extends NelLinkedList.NelLinkNode {
         this.name = name;
         this.type = type;
         uses = new LinkedList<>();
+        id = vid++;
     }
 
     public Value(Type type) {
         this.type = type;
         uses = new LinkedList<>();
         name = "";
+        id = vid++;
     }
 
     public void setName(String name) {
@@ -121,4 +125,8 @@ public class Value extends NelLinkedList.NelLinkNode {
         return users;
     }
 
+    @Override
+    public int hashCode() {
+        return id;
+    }
 }
