@@ -27,7 +27,7 @@ public class MemDepAnalysis {
 
     private static PathSet ps;
 
-    private static final int max_block = 0;
+    private static final int max_block = 500;
 
 
     public static boolean assureNotWritten(Function function, BasicBlock A, BasicBlock B, Value pointer) {
