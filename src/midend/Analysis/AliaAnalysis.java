@@ -3,16 +3,14 @@ package midend.Analysis;
 import midend.Analysis.result.AliasInfo;
 import mir.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class AliaAnalysis {
 
     private static class InheritEdge {
-        private Value dst;
-        private Value src1;
-        private Value src2;
+        private final Value dst;
+        private final Value src1;
+        private final Value src2;
 
         private InheritEdge(Value dst, Value src) {
             this.dst = dst;
@@ -27,22 +25,18 @@ public class AliaAnalysis {
         }
     }
 
-    private static int allocID;
     public static AliasInfo aliasInfo;
 
     public static void runOnFunc(Function function) {
-        allocID = 0;
+        int allocID = 0;
         aliasInfo = new AliasInfo();
         int globalID = allocID++;
         int stackID = allocID++;
         aliasInfo.addPair(globalID, stackID);
-        HashSet<GlobalVariable> globals = new HashSet<>();
         HashSet<Integer> globalGroups = new HashSet<>();
         HashSet<Integer> stackGroups = new HashSet<>();
-        ArrayList<Instruction.GetElementPtr> geps = new ArrayList<>();
-        HashSet<InheritEdge>inheritGraph=new HashSet<>();
+        HashSet<InheritEdge> inheritGraph = new HashSet<>();
         for (GlobalVariable glo : function.module.getGlobalValues()) {
-            globals.add(glo);
             int id = allocID++;
             aliasInfo.addValue(glo, new ArrayList<>(List.of(globalID, id)));
             globalGroups.add(id);
@@ -63,7 +57,32 @@ public class AliaAnalysis {
                     aliasInfo.addPair(id, argID);
                     aliasInfo.addValue(alloc, new ArrayList<>(List.of(stackID, id)));
                 } else if (instruction instanceof Instruction.GetElementPtr gep) {
-
+                    //todo:由于GEP被规约,因此判断优化时有巨大的局限性
+                    ArrayList<Integer> attrs = new ArrayList<>();
+                    Instruction.GetElementPtr cur = gep;
+                    while (true) {
+                        Value base = gep.getBase();
+                        Value off = gep.getOffsets().get(gep.getOffsets().size() - 1);
+                        if (off instanceof Constant.ConstantInt c && c.getIntValue() == 0) {
+                            inheritGraph.add(new InheritEdge(gep, base));
+                            break;
+                        }
+                        if (cur == gep) {
+                            if (off instanceof Constant.ConstantInt c && c.getIntValue() != 0) {
+                                int a1 = allocID++;
+                                int a2 = allocID++;
+                                aliasInfo.addPair(a1, a2);
+                                attrs.add(a1);
+                                aliasInfo.appendAttr(cur.getBase(), a2);
+                            }
+                        }
+                        if (base instanceof Instruction.GetElementPtr) {
+                            cur = (Instruction.GetElementPtr) base;
+                        } else {
+                            break;
+                        }
+                        aliasInfo.addValue(gep, attrs);
+                    }
                 } else if (instruction instanceof Instruction.BitCast bitcast) {
                     aliasInfo.addValue(bitcast, new ArrayList<>());
                 } else if (instruction instanceof Instruction.Load ||
@@ -71,12 +90,61 @@ public class AliaAnalysis {
                     aliasInfo.addValue(instruction, new ArrayList<>());
                 } else if (instruction instanceof Instruction.Phi phi) {
                     aliasInfo.addValue(phi, new ArrayList<>());
-                    HashSet<Value> inheritSet;
-
+                    HashSet<Value> inheritSet = new HashSet<>();
+                    for (Value value : phi.getIncomingValues()) {
+                        if (value instanceof Constant) continue;
+                        inheritSet.add(value);
+                        if (inheritSet.size() > 2) break;
+                    }
+                    Iterator<Value> iterator = inheritSet.iterator();
+                    if (inheritSet.size() == 1) {
+                        inheritGraph.add(new InheritEdge(phi, iterator.next()));
+                    } else if (inheritSet.size() == 2) {
+                        inheritGraph.add(new InheritEdge(phi, iterator.next(), iterator.next()));
+                    }
                 }
             }
         }
-
+        //TBAA
+        HashMap<Type.PointerType, Integer> types = new HashMap<>();
+        for (var key : aliasInfo.mPointerAttributes.keySet()) {
+            if (types.containsKey((Type.PointerType) key.getType())) continue;
+            types.put((Type.PointerType) key.getType(), allocID++);
+        }
+        for (var typei : types.keySet()) {
+            Type inner1 = typei.getInnerType();
+            for (var typej : types.keySet()) {
+                Type inner2 = typej.getInnerType();
+                if (TBAAisDistinct(inner1, inner2)) {
+                    aliasInfo.addPair(types.get(typei), types.get(typej));
+                }
+            }
+        }
+        for (var key : aliasInfo.mPointerAttributes.keySet()) {
+            int attr = types.get((Type.PointerType) key.getType());
+            aliasInfo.appendAttr(key, attr);
+        }
+        //stack/global
+        aliasInfo.addDistinctGroup(globalGroups);
+        aliasInfo.addDistinctGroup(stackGroups);
+        // trans
+        while (true) {
+            boolean modify = false;
+            for (InheritEdge inheritEdge : inheritGraph) {
+                if (inheritEdge.src2 != null) {
+                    var lhs = aliasInfo.inheritFrom(inheritEdge.src1);
+                    Collections.sort(lhs);
+                    var rhs = aliasInfo.inheritFrom(inheritEdge.src2);
+                    Collections.sort(rhs);
+                    ArrayList<Integer> insc = new ArrayList<>(lhs);
+                    insc.retainAll(rhs);
+                    modify |= aliasInfo.appendAttr(inheritEdge.dst, insc);
+                } else {
+                    modify |= aliasInfo.appendAttr(inheritEdge.dst, aliasInfo.inheritFrom(inheritEdge.src1));
+                }
+            }
+            if (!modify) break;
+        }
     }
 
     private static boolean TBAAincludes(Type a, Type b)//A类型是否可能包含B?例如对二维数组的指针和对一维数组的指针
