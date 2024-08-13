@@ -35,7 +35,6 @@ public class LocalValueNumbering {
     public static boolean runOnFunc(Function function) {
         AnalysisManager.refreshDG(function);
         PointerBaseAnalysis.runOnFunc(function);
-        MemDepAnalysis.runOnFunc(function);
         return GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
     }
 
