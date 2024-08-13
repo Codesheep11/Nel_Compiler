@@ -116,6 +116,7 @@ public class ScalarEvolution {
             if (op1 == aimPhi || op2 == aimPhi) {
                 // 获取递增量
                 Value c = (op1 == aimPhi) ? op2 : op1;
+                if (!(c instanceof Constant.ConstantInt))  return;
                 SCEVExpr initialSCEV = res.query(initial);
                 SCEVExpr incSCEV = res.query(c);
                 if (initialSCEV != null && incSCEV != null) {
@@ -169,6 +170,9 @@ public class ScalarEvolution {
                 SCEVExpr lhs = res.query(add.getOperand_1());
                 SCEVExpr rhs = res.query(add.getOperand_2());
                 if (lhs != null && rhs != null) {
+                    if (lhs.loop != null && rhs.loop != null && lhs.loop != rhs.loop) {
+                        return;
+                    }
                     SCEVExpr scev = foldAdd(res, lhs, rhs);
                     if (scev != null) {
                         res.addSCEV(inst, scev);

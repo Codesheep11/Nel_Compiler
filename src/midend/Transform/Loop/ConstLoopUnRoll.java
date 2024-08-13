@@ -81,7 +81,7 @@ public class ConstLoopUnRoll {
 
         BasicBlock preHeader = loop.getPreHeader();
         preHeader.getTerminator().replaceTarget(loop.header, infos.get(0).cpy.header);
-        new Instruction.Jump(preHeader, infos.get(0).cpy.header);
+//        new Instruction.Jump(preHeader, infos.get(0).cpy.header);
 
         // 处理出口块
         for (var exit : loop.exits) {
