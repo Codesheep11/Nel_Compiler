@@ -1,5 +1,7 @@
 package midend.Analysis.result;
 
+import midend.Analysis.AliaAnalysis;
+import mir.Instruction;
 import mir.Value;
 
 import java.util.ArrayList;
@@ -81,6 +83,6 @@ public class AliasInfo {
     }
 
     public ArrayList<Value> inheritFrom(Value ptr) {
-
+        return mPointerAttributes.getOrDefault(ptr, empty);
     }
 }
