@@ -41,6 +41,10 @@ public abstract class Constant extends User {
             return val == 0 ? _CONST_FALSE : _CONST_TRUE;
         }
 
+        public static ConstantBool get(boolean val) {
+            return val ? _CONST_TRUE : _CONST_FALSE;
+        }
+
         int boolValue;//0 or 1
 
         private ConstantBool(int val) {

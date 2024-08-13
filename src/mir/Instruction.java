@@ -428,6 +428,16 @@ public class Instruction extends User {
             return cond;
         }
 
+        public void setCond(Value cond) {
+            super.replaceUseOfWith(this.cond, cond);
+            this.cond = cond;
+            if (cond instanceof Icmp icmp) {
+                if (icmp.getCondCode() == Icmp.CondCode.EQ) probability = 0.2f;
+                else if (icmp.getCondCode() == Icmp.CondCode.NE) probability = 0.8f;
+                else probability = 0.5f;
+            }
+        }
+
         public BasicBlock getThenBlock() {
             return thenBlock;
         }
