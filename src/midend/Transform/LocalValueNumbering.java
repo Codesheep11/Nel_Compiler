@@ -62,7 +62,7 @@ public class LocalValueNumbering {
                         if (MemDepAnalysis.assureNotWritten(block.getParentFunction(), record.getParentBlock(), block, load.getAddr())) {
                             inst.replaceAllUsesWith(record);
                             delList.add(inst);
-                            System.out.println("success replace load");
+//                            System.out.println("success replace load");
                             modified = true;
                         } else {
                             recordInstructions.put(key, inst);
