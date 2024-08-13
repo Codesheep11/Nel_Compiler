@@ -24,7 +24,6 @@ public class ConstLoopUnRoll {
             if (function.isExternal()) continue;
             runOnFunc(function);
         }
-//        Print.output(module, "store.txt");
     }
 
     public static void runOnFunc(Function function) {
