@@ -166,6 +166,7 @@ public class BasicBlock extends Value {
      * @param oldBlock 要替换掉的后继块
      * @param newBlock 新的后继块
      */
+    @Deprecated
     public void replaceSucc(BasicBlock oldBlock, BasicBlock newBlock) {
         getTerminator().replaceTarget(oldBlock, newBlock);
     }

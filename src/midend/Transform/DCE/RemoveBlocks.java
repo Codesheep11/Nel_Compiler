@@ -72,6 +72,12 @@ public class RemoveBlocks {
                     Value value = phi.getOptionalValue(phi.getPreBlocks().get(0));
                     phi.replaceAllUsesWith(value);
                     phi.delete();
+                } else {
+                    Value v = phi.getConstantPhiValue();
+                    if (v != null) {
+                        phi.replaceAllUsesWith(v);
+                        phi.delete();
+                    }
                 }
             }
         }
