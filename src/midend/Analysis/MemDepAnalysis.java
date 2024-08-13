@@ -7,6 +7,8 @@ import mir.Instruction;
 import mir.Value;
 
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class MemDepAnalysis {
     // 做分析可以得到PathSet集合
@@ -21,9 +23,8 @@ public class MemDepAnalysis {
         Value base = PointerBaseAnalysis.getBaseOrNull(pointer);
         if (base == null) return false;
         if (function.getBlocks().size() > max_block) return false;
-        HashSet<BasicBlock> set = queryPasser(A, B);
-        set.add(A);
-        set.add(B);
+        HashSet<BasicBlock> set = bfs(A, B);
+        if (set == null) return false;
         for (BasicBlock block : set) {
             for (Instruction instruction : block.getInstructions()) {
                 if (instruction instanceof Instruction.Store store) {
@@ -42,34 +43,30 @@ public class MemDepAnalysis {
         return true;
     }
 
-    private static HashSet<BasicBlock> queryPasser(BasicBlock A, BasicBlock B) {
-        HashSet<BasicBlock> visitedBlocks = new HashSet<>();
+
+    private static HashSet<BasicBlock> bfs(BasicBlock start, BasicBlock target) {
         HashSet<BasicBlock> passingBlocks = new HashSet<>();
-
-        if (dfs(A, B, visitedBlocks, passingBlocks)) {
-            passingBlocks.remove(A);  // A不应该在passingBlocks中
-        }
-
-        return passingBlocks;
-    }
-
-    private static boolean dfs(BasicBlock current, BasicBlock target, HashSet<BasicBlock> visitedBlocks, HashSet<BasicBlock> passingBlocks) {
-        if (current.equals(target)) {
-            return true;
-        }
-        visitedBlocks.add(current);
-        for (BasicBlock next : current.getSucBlocks()) {
-            if (!visitedBlocks.contains(next)) {
-                passingBlocks.add(next);
-
-                if (dfs(next, target, visitedBlocks, passingBlocks)) {
-                    return true;  // 找到目标块，终止搜索
-                } else {
-                    passingBlocks.remove(next);  // 移除不通向目标块的路径上的块
+        Queue<BasicBlock> queue = new LinkedList<>();
+        HashSet<BasicBlock> visitedBlocks = new HashSet<>();
+        queue.add(start);
+        visitedBlocks.add(start);
+        boolean found = false;
+        while (!queue.isEmpty()) {
+            BasicBlock current = queue.poll();
+            passingBlocks.add(current);
+            if (current.equals(target)) {
+                // 如果找到了目标块，可以选择立即返回，也可以继续搜索所有路径
+                found = true;
+                continue;  // 在这里继续搜索以确保找到所有可能路径
+            }
+            for (BasicBlock next : current.getSucBlocks()) {
+                if (!visitedBlocks.contains(next)) {
+                    queue.add(next);
+                    visitedBlocks.add(next);
                 }
             }
         }
-        return false;  // 没有找到目标块
+        return found ? passingBlocks : null;
     }
 
 }
