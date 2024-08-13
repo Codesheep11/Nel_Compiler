@@ -107,6 +107,7 @@ public class Manager {
         Branch2MinMax.run(module);
         DeadCodeEliminate();
         StillLoopMotion.run(module);
+        CertainLoopExtract.run(module);
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
@@ -134,6 +135,7 @@ public class Manager {
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
+        BrPredction.run(module);
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
@@ -247,6 +249,8 @@ public class Manager {
      * 非常激进的优化，可能会导致误差错误
      */
     private void AggressivePass() {
+        Branch2FMinMax.run(module);
+        FABSPass.run(module);
         FMAddSubPass.run(module);
     }
 
@@ -340,7 +344,6 @@ public class Manager {
         DeadCodeEliminate.run(module);
         LoopInfo.run(module);
         LoopSimplifyForm.run(module);
-//        GlobalCodeMotion.run(module);
         LCSSA.run(module);
         DeadCodeEliminate();
         LoopInfo.run(module);
@@ -365,7 +368,6 @@ public class Manager {
         AfterRA.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
-//        AfterRAScheduler.postRASchedule(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }
 

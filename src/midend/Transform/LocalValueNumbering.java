@@ -35,7 +35,6 @@ public class LocalValueNumbering {
     public static boolean runOnFunc(Function function) {
         AnalysisManager.refreshDG(function);
         PointerBaseAnalysis.runOnFunc(function);
-        MemDepAnalysis.runOnFunc(function);
         return GVN4Block(function.getEntry(), new HashSet<>(), new HashMap<>());
     }
 
@@ -62,7 +61,6 @@ public class LocalValueNumbering {
                         if (MemDepAnalysis.assureNotWritten(block.getParentFunction(), record.getParentBlock(), block, load.getAddr())) {
                             inst.replaceAllUsesWith(record);
                             delList.add(inst);
-                            System.out.println("success replace load");
                             modified = true;
                         } else {
                             recordInstructions.put(key, inst);
@@ -120,7 +118,7 @@ public class LocalValueNumbering {
                 }
                 yield inst.getInstType().name() + "," + operand1 + "," + operand2 + "," + operand3;
             }
-            case FNEG -> inst.getInstType().name() + "," + inst.getOperands().get(0).getDescriptor();
+            case FNEG, LOAD -> inst.getInstType().name() + "," + inst.getOperands().get(0).getDescriptor();
             case Fcmp, Icmp -> {
                 Instruction.Condition compare = (Instruction.Condition) inst;
                 String operand1 = compare.getSrc1().getDescriptor();
@@ -147,9 +145,8 @@ public class LocalValueNumbering {
                 }
                 yield inst.getInstType() + "," + call.getDestFunction().getDescriptor() + "," + args;
             }
-            case LOAD -> inst.getInstType().name() + "," + inst.getOperands().get(0).getDescriptor();
             default -> {
-                System.out.println("Warning: GVN 未处理类型: " + inst.getInstType() + "!");
+                System.out.println("Warning: LVN 未处理类型: " + inst.getInstType() + "!");
                 yield inst.toString();
             }
         };

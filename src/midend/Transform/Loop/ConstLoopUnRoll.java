@@ -5,6 +5,7 @@ import midend.Analysis.PointerBaseAnalysis;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.LocalValueNumbering;
+import midend.Util.Print;
 import mir.*;
 import mir.Module;
 import midend.Analysis.result.SCEVinfo;
@@ -24,7 +25,6 @@ public class ConstLoopUnRoll {
             if (function.isExternal()) continue;
             runOnFunc(function);
         }
-//        Print.output(module, "store.txt");
     }
 
     public static void runOnFunc(Function function) {
@@ -40,7 +40,6 @@ public class ConstLoopUnRoll {
             }
             DeadLoopEliminate.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
-            PointerBaseAnalysis.runOnFunc(function);
             LocalValueNumbering.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
         } while (modified);
@@ -82,7 +81,7 @@ public class ConstLoopUnRoll {
 
         BasicBlock preHeader = loop.getPreHeader();
         preHeader.getTerminator().replaceTarget(loop.header, infos.get(0).cpy.header);
-        new Instruction.Jump(preHeader, infos.get(0).cpy.header);
+//        new Instruction.Jump(preHeader, infos.get(0).cpy.header);
 
         // 处理出口块
         for (var exit : loop.exits) {

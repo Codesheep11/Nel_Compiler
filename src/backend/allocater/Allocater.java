@@ -43,10 +43,18 @@ public class Allocater {
         }};
         for (RiscvFunction func : module.TopoSort) {
             if (func.isExternal) {
+                func.isSaveOut = true;
                 HashSet<Reg.PhyReg> used = new HashSet<>();
                 used.addAll(allRegs);
                 UsedRegs.put(func.name, used);
                 continue;
+            }
+            //判断函数是否存在隐含的外部函数调用
+            for (J call : func.calls) {
+                if (module.getFunction(call.funcName).isSaveOut) {
+                    func.isSaveOut = true;
+                    break;
+                }
             }
             UsedRegs.put(func.name, new HashSet<>());
             LivelessDCE.runOnFunc(func);
