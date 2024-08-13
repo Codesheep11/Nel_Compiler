@@ -1,9 +1,6 @@
 package midend.Transform.Loop;
 
-import backend.Opt.BackLoop.LoopConstLift;
 import midend.Analysis.AnalysisManager;
-import midend.Util.CloneInfo;
-import midend.Util.Print;
 import mir.*;
 import mir.Module;
 import midend.Analysis.result.SCEVinfo;

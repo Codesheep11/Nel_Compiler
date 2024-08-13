@@ -67,6 +67,7 @@ public class FABSPass {
                     BasicBlock endBlock = thenBlock.getPreBlocks().size() == 2 ? thenBlock : elseBlock;
                     BasicBlock passBlock = thenBlock.getPreBlocks().size() == 2 ? elseBlock : thenBlock;
                     if (!passBlock.getSucBlocks().contains(endBlock)) return;
+                    if (!(passBlock.getTerminator() instanceof Instruction.Jump)) return;
                     visited.add(passBlock);
                     thenBlock = thenBlock.equals(endBlock) ? block : thenBlock;
                     br2FAbs(endBlock, thenBlock, fcmp, branch);

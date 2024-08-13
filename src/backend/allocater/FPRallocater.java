@@ -42,8 +42,14 @@ public class FPRallocater {
             )
     );
 
-    private static final HashSet<Reg.PhyReg> unAllocateRegs = new HashSet<>(
-
+    private static final ArrayList<Reg.PhyReg> Regs4CallOut = new ArrayList<>(
+            Arrays.asList(Reg.PhyReg.fs0, Reg.PhyReg.fs1, Reg.PhyReg.fs2, Reg.PhyReg.fs3, Reg.PhyReg.fs4,
+                    Reg.PhyReg.fs5, Reg.PhyReg.fs6, Reg.PhyReg.fs7, Reg.PhyReg.fs8, Reg.PhyReg.fs9,
+                    Reg.PhyReg.fs10, Reg.PhyReg.fs11,
+                    Reg.PhyReg.fa0, Reg.PhyReg.fa1, Reg.PhyReg.fa2, Reg.PhyReg.fa3, Reg.PhyReg.fa4,
+                    Reg.PhyReg.fa5, Reg.PhyReg.fa6, Reg.PhyReg.fa7,
+                    Reg.PhyReg.ft1, Reg.PhyReg.ft2, Reg.PhyReg.ft3, Reg.PhyReg.ft4, Reg.PhyReg.ft5, Reg.PhyReg.ft6, Reg.PhyReg.ft7,
+                    Reg.PhyReg.ft8, Reg.PhyReg.ft9, Reg.PhyReg.ft10, Reg.PhyReg.ft11)
     );
 
     private static HashSet<Reg.PhyReg> curUsedRegs = new HashSet<>();
@@ -102,7 +108,7 @@ public class FPRallocater {
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
                 RiscvInstruction store = new LS(ud.block, tmp, sp, offset, LS.LSType.fsw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, LS.LSType.flw, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, LS.LSType.flw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 ud.replaceUseReg(reg, tmp);
                 ud.block.riscvInstructions.insertAfter(store, ud);
                 ud.block.riscvInstructions.insertBefore(load, ud);
@@ -119,7 +125,7 @@ public class FPRallocater {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                store = new LS(def.block, tmp, sp, offset, LS.LSType.fsw, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                store = new LS(def.block, tmp, sp, offset, LS.LSType.fsw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 def.replaceUseReg(reg, tmp);
                 def.block.riscvInstructions.insertAfter(store, def);
             }
@@ -130,7 +136,7 @@ public class FPRallocater {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                load = new LS(use.block, tmp, sp, offset, LS.LSType.flw, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                load = new LS(use.block, tmp, sp, offset, LS.LSType.flw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 use.replaceUseReg(reg, tmp);
                 use.block.riscvInstructions.insertBefore(load, use);
             }
@@ -179,7 +185,13 @@ public class FPRallocater {
         if (v.preColored) {
             return true;
         }
-        LinkedHashSet<Reg.PhyReg> regs2Assign = new LinkedHashSet<>(Regs);
+        ArrayList<Reg.PhyReg> regs2Assign;
+        if (!callSaved.contains(v)) {
+            regs2Assign = new ArrayList<>(Regs);
+        }
+        else {
+            regs2Assign = new ArrayList<>(Regs4CallOut);
+        }
         for (Reg u : curCG.get(v)) {
             regs2Assign.remove(u.phyReg);
         }
@@ -316,7 +328,7 @@ public class FPRallocater {
             }
             else size++;
         }
-        regs.removeAll(unAllocateRegs);
+//        regs.removeAll(unAllocateRegs);
         return regs.size() + size;
     }
 
