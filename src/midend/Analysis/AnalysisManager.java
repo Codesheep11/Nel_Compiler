@@ -153,6 +153,11 @@ public final class AnalysisManager {
         return dgMap.get(block.getParentFunction()).getDomDepth(block);
     }
 
+    public static BasicBlock getLCA(BasicBlock a, BasicBlock b) {
+        checkDG(a.getParentFunction());
+        return dgMap.get(a.getParentFunction()).getLCA(a, b);
+    }
+
     public static void dirtyDG(Function function) {
         dirtyDG.put(function, true);
     }
