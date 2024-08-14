@@ -16,7 +16,7 @@ import java.util.ArrayList;
 public class UnknownBaseLSOpt {
     // 为什么要拆开呢?因为要避免耦合
     // 在memopt之后优化
-    static class UBRecord {
+    public static class UBRecord {
         private final Reg reg;
         private final long offset;
 
@@ -54,13 +54,13 @@ public class UnknownBaseLSOpt {
         }
     }
 
-    private static final ArrayList<UBRecord> records = new ArrayList<>();
+    public static final ArrayList<UBRecord> records = new ArrayList<>();
 
-    private static void removeByBase(Reg base) {
+    public static void removeByBase(Reg base) {
         records.removeIf(ubRecord -> ubRecord.base.equals(base));
     }
 
-    private static void removeByReg(Reg reg) {
+    public static void removeByReg(Reg reg) {
         records.removeIf(ubRecord -> ubRecord.reg.equals(reg));
     }
 
@@ -68,7 +68,7 @@ public class UnknownBaseLSOpt {
         records.removeIf(ubRecord -> ubRecord.base.equals(cord.base) && ubRecord.offset == cord.offset);
     }
 
-    private static ArrayList<UBRecord> queryByOff(Reg bestReg, Reg base, long offset) {
+    public static ArrayList<UBRecord> queryByOff(Reg bestReg, Reg base, long offset) {
         ArrayList<UBRecord> ans = new ArrayList<>();
         for (UBRecord br : records) {
             if (br.offset == offset && br.getBase().equals(base)) {
