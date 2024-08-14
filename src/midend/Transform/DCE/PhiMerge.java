@@ -45,6 +45,8 @@ public class PhiMerge {
                 if (users.size() != targetUsers.size()) return false;
             }
             // merge
+            ArrayList<BasicBlock> curPreBBs = new ArrayList<>(phiInstructions.get(0).getPreBlocks());
+            ArrayList<Instruction.Phi> fixPhis = new ArrayList<>();
             for (Instruction.Phi phi : phiInstructions) {
                 ArrayList<Instruction> users = phi.getUsers();
                 for (Instruction inst : users) {
@@ -54,8 +56,17 @@ public class PhiMerge {
                         pre.getTerminator().replaceTarget(block, target);
                         targetPhi.addOptionalValue(pre, phi.getOptionalValue(pre));
                     }
+                    fixPhis.add(targetPhi);
                 }
                 phi.delete();
+            }
+            // fix
+            for (Instruction.Phi targetPhi : targetPhiInstructions) {
+                if (fixPhis.contains(targetPhi)) continue;
+                for (BasicBlock pre : curPreBBs) {
+                    targetPhi.addOptionalValue(pre, targetPhi.getOptionalValue(block));
+                }
+                targetPhi.removeOptionalValue(block);
             }
         }
         return true;
