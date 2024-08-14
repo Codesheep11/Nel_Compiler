@@ -9,7 +9,7 @@ import utils.NelLinkedList;
 import java.util.*;
 
 
-public class Function extends Value {
+public final class Function extends Value {
 
     //Note that Function is a GlobalValue and therefore also a Constant.
     // The value of the function

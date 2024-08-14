@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 public class Value extends NelLinkedList.NelLinkNode {
-
+    // TODO: value 应该是 abstract 的 但是mem2reg中存在value的实例化
     protected String name;
     protected Type type;
     private static int vid = 0;

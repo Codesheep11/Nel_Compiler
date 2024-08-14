@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class Module {
+public final class Module {
     private final HashMap<String, Function> functions = new HashMap<>();
     private final ArrayList<String> globalStrings;
     private final ArrayList<GlobalVariable> globalVariables;
