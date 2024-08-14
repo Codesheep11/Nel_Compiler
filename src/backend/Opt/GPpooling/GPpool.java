@@ -41,7 +41,7 @@ public class GPpool extends RiscvGlobalVar {
     public String toString() {
         if (glos.size() == 0) return "";
         StringBuilder sb = new StringBuilder();
-        sb.append(".section .rodata\n.p2align 2\npool:\n");
+        sb.append(".section .rodata\n.p2align 3\npool:\n");
         for (RiscvFloat rb : glos) {
             sb.append(rb.getContent());
         }
