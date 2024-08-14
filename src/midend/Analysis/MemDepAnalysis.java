@@ -7,8 +7,6 @@ import mir.Instruction;
 import mir.Value;
 
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
 
 public class MemDepAnalysis {
     // 做分析可以得到PathSet集合
@@ -23,9 +21,13 @@ public class MemDepAnalysis {
         Value base = PointerBaseAnalysis.getBaseOrNull(pointer);
         if (base == null) return false;
         if (function.getBlocks().size() > max_block) return false;
-        HashSet<BasicBlock> set = bfs(A, B);
-        if (set == null) return false;
-        for (BasicBlock block : set) {
+        HashSet<BasicBlock> visited = new HashSet<>();
+        HashSet<BasicBlock> pass = new HashSet<>();
+        visited.add(A);
+        if (!dfs(A, B, visited, pass)) return false;
+        pass.add(A);
+        pass.add(B);
+        for (BasicBlock block : pass) {
             for (Instruction instruction : block.getInstructions()) {
                 if (instruction instanceof Instruction.Store store) {
                     Value storeBase = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
@@ -42,32 +44,19 @@ public class MemDepAnalysis {
         }
         return true;
     }
-
-
-    private static HashSet<BasicBlock> bfs(BasicBlock start, BasicBlock target) {
-        HashSet<BasicBlock> passingBlocks = new HashSet<>();
-        Queue<BasicBlock> queue = new LinkedList<>();
-        HashSet<BasicBlock> visitedBlocks = new HashSet<>();
-        queue.add(start);
-        visitedBlocks.add(start);
+    private static boolean dfs(BasicBlock start, BasicBlock target, HashSet<BasicBlock> visited, HashSet<BasicBlock> pass) {
         boolean found = false;
-        while (!queue.isEmpty()) {
-            BasicBlock current = queue.poll();
-            passingBlocks.add(current);
-            if (current.equals(target)) {
-                // 如果找到了目标块，可以选择立即返回，也可以继续搜索所有路径
-                found = true;
-                continue;  // 在这里继续搜索以确保找到所有可能路径
-            }
-            for (BasicBlock next : current.getSucBlocks()) {
-                if (!visitedBlocks.contains(next)) {
-                    queue.add(next);
-                    visitedBlocks.add(next);
-                }
-            }
+        if (start == target) {
+            pass.addAll(visited);
+            found = true;
         }
-        return found ? passingBlocks : null;
+        if (visited.contains(start)) return found;
+        for (BasicBlock block : start.getSucBlocks()) {
+            visited.add(block);
+            found |= dfs(block, target, visited, pass);
+            visited.remove(block);
+        }
+        return found;
     }
-
 }
 

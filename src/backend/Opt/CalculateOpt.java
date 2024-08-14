@@ -24,9 +24,11 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 uselessLoadRemove(block);
                 PreRAConstValueReUse(block);
+//                PreRAConstImmCalReuse(block);
                 PreRAConstPointerReUse(block);
                 addZero2Mv(block);
                 addiLS2LSoffset(block);
+//                One2ZeroBeq(block);
             }
         }
         for (RiscvFunction function : riscvModule.funcList) {
@@ -35,6 +37,7 @@ public class CalculateOpt {
                 icmpBranchToBranch(block);
                 SraSll2And(block);
                 Lsw2Lsd(block);
+//                Li2Lui(block);
             }
         }
     }
@@ -51,8 +54,7 @@ public class CalculateOpt {
                             if (ans <= -2047) {
                                 pair.second.add(new Li(block, (Reg) r2.rd, new Imm(ans)));
                                 pair.second.add(new R3(block, r2.rd, r1.rs1, r2.rd, R3.R3Type.and));
-                            }
-                            else {
+                            } else {
                                 pair.second.add(new R3(block, r2.rd, r1.rs1, new Imm(ans), R3.R3Type.andi));
                             }
                             needRemove.add(pair);
@@ -86,18 +88,15 @@ public class CalculateOpt {
                                 if (((Imm) addi.rs2).getVal() % 8 != 0) {
                                     ls.align = AlignmentAnalysis.AlignType.ALIGN_BYTE_4;
                                 }
-                            }
-                            else if (ls.align == AlignmentAnalysis.AlignType.ALIGN_BYTE_4) {
+                            } else if (ls.align == AlignmentAnalysis.AlignType.ALIGN_BYTE_4) {
                                 if (((Imm) addi.rs2).getVal() % 8 != 0) {
                                     ls.align = AlignmentAnalysis.AlignType.ALIGN_BYTE_8;
                                 }
                             }
-                        }
-                        else if (ls.val.equals(addi.rd)) {
+                        } else if (ls.val.equals(addi.rd)) {
                             canRemove = false;
                         }
-                    }
-                    else {
+                    } else {
                         // 如果是ls的话但是使用了这个呢?
                         if (LivenessAnalyze.Use.get(inst).contains((Reg) addi.rd)) {
                             canRemove = false;
@@ -131,6 +130,44 @@ public class CalculateOpt {
     }
 
     /**
+     * >-1:>=0
+     * <1:<=0
+     * 1>:0>=
+     * -1<\:0<=
+     **/
+    private static void One2ZeroBeq(RiscvBlock block) {
+        HashMap<Pair<Li, B>, B> need = new HashMap<>();
+        for (int i = 0; i < block.riscvInstructions.size() - 1; i++) {
+            RiscvInstruction now = block.riscvInstructions.get(i);
+            RiscvInstruction next = block.riscvInstructions.get(i + 1);
+            if (now instanceof Li li && li.imm instanceof Imm imm && next instanceof B b) {
+                if (imm.getVal() == 1 && b.rs1.equals(li.reg) && b.type == B.BType.bgt) {
+                    need.put(new Pair<>(li, b),
+                            new B(block, B.BType.bge, Reg.getPreColoredReg(Reg.PhyReg.zero, 32),
+                                    b.rs2, b.targetBlock, b.getYesProb()));
+                } else if (imm.getVal() == 1 && b.rs2.equals(li.reg) && b.type == B.BType.blt) {
+                    need.put(new Pair<>(li, b),
+                            new B(block, B.BType.ble, b.rs1,
+                                    Reg.getPreColoredReg(Reg.PhyReg.zero, 32), b.targetBlock, b.getYesProb()));
+                } else if (imm.getVal() == -1 && b.rs2.equals(li.reg) && b.type == B.BType.bgt) {
+                    need.put(new Pair<>(li, b),
+                            new B(block, B.BType.bge, b.rs1, Reg.getPreColoredReg(Reg.PhyReg.zero, 32),
+                                    b.targetBlock, b.getYesProb()));
+                } else if (imm.getVal() == -1 && b.rs1.equals(li.reg) && b.type == B.BType.blt) {
+                    need.put(new Pair<>(li, b),
+                            new B(block, B.BType.ble, Reg.getPreColoredReg(Reg.PhyReg.zero, 32), b.rs2,
+                                    b.targetBlock, b.getYesProb()));
+                }
+            }
+        }
+        for (var pair : need.keySet()) {
+            block.riscvInstructions.insertBefore(need.get(pair), pair.first);
+            pair.first.remove();
+            pair.second.remove();
+        }
+    }
+
+    /**
      * 警惕！：可能会出现位扩展不对的情况
      **/
     private static void addZero2Mv(RiscvBlock block) {
@@ -140,8 +177,7 @@ public class CalculateOpt {
                 if (((Reg) r3.rs2).phyReg == Reg.PhyReg.zero) {
                     needReplace.add(new Pair<>(r3,
                             new R2(block, ((R3) ri).rd, ((R3) ri).rs1, R2.R2Type.mv)));
-                }
-                else if (((Reg) r3.rs1).phyReg == Reg.PhyReg.zero) {
+                } else if (((Reg) r3.rs1).phyReg == Reg.PhyReg.zero) {
                     needReplace.add(new Pair<>(r3,
                             new R2(block, ((R3) ri).rd, ((R3) ri).rs2, R2.R2Type.mv)));
                 }
@@ -155,8 +191,7 @@ public class CalculateOpt {
 
     private static boolean matchEQ(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
         if (now instanceof R3 && ((R3) now).type == R3.R3Type.subw && next instanceof R2 &&
-                ((R2) next).type == R2.R2Type.seqz && farNext instanceof B)
-        {
+                ((R2) next).type == R2.R2Type.seqz && farNext instanceof B) {
             return ((R3) now).rd.equals(((R2) next).rs) &&
                     (((R2) next).rd.equals(((B) farNext).rs1) || ((R2) next).rd.equals(((B) farNext).rs2));
         }
@@ -165,8 +200,7 @@ public class CalculateOpt {
 
     private static boolean matchNE(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
         if (now instanceof R3 && ((R3) now).type == R3.R3Type.subw && next instanceof R2 &&
-                ((R2) next).type == R2.R2Type.snez && farNext instanceof B)
-        {
+                ((R2) next).type == R2.R2Type.snez && farNext instanceof B) {
             return ((R3) now).rd.equals(((R2) next).rs) &&
                     (((R2) next).rd.equals(((B) farNext).rs1) || ((R2) next).rd.equals(((B) farNext).rs2));
         }
@@ -175,8 +209,7 @@ public class CalculateOpt {
 
     private static boolean matchSGEAndSLE(RiscvInstruction now, RiscvInstruction next, RiscvInstruction farNext) {
         if (now instanceof R3 && ((R3) now).type == R3.R3Type.slt && next instanceof R2 &&
-                ((R2) next).type == R2.R2Type.seqz && farNext instanceof B)
-        {
+                ((R2) next).type == R2.R2Type.seqz && farNext instanceof B) {
             return ((R3) now).rd.equals(((R2) next).rs) &&
                     (((R2) next).rd.equals(((B) farNext).rs1) || ((R2) next).rd.equals(((B) farNext).rs2));
         }
@@ -212,8 +245,7 @@ public class CalculateOpt {
                         if (((B) next).type == B.BType.bne) {
                             newList.add(new B(block, B.BType.blt, ((R3) now).rs1,
                                     (((R3) now).rs2), ((B) next).targetBlock, prob));
-                        }
-                        else {
+                        } else {
                             newList.add(new B(block, B.BType.bge, ((R3) now).rs1,
                                     (((R3) now).rs2), ((B) next).targetBlock, prob));
                         }
@@ -221,8 +253,7 @@ public class CalculateOpt {
                         // 将next忽略
                         modified = true;
                     }
-                }
-                else if (i < block.riscvInstructions.size() - 2) {
+                } else if (i < block.riscvInstructions.size() - 2) {
                     RiscvInstruction farNext = block.riscvInstructions.get(i + 2);
                     if (matchFarNext(now, next, farNext)) {
                         B.BType type;
@@ -230,15 +261,12 @@ public class CalculateOpt {
                         if (matchEQ(now, next, farNext)) {
                             // subw,seqz,看看是不是0
                             type = reverse ? B.BType.bne : B.BType.beq;
-                        }
-                        else if (matchNE(now, next, farNext)) {
+                        } else if (matchNE(now, next, farNext)) {
                             type = reverse ? B.BType.beq : B.BType.bne;
-                        }
-                        else if (matchSGEAndSLE(now, next, farNext)) {
+                        } else if (matchSGEAndSLE(now, next, farNext)) {
                             // 这个存起来就看后面的是不是大于等于前面的
                             type = reverse ? B.BType.blt : B.BType.bge;
-                        }
-                        else throw new RuntimeException("wrong match");
+                        } else throw new RuntimeException("wrong match");
                         assert next instanceof R2;
                         Reg reg = (Reg) ((R2) next).rd;
                         if (VirRegMap.bUseReg.get(reg) <= 1) {
@@ -281,8 +309,7 @@ public class CalculateOpt {
                     if (!now.equals(def)) now.mergeReg(def);
                     map.get(value).second = range;// 刷新生存周期
                     continue;
-                }
-                else {
+                } else {
                     map.keySet().removeIf(key -> map.get(key).first.equals(((Li) instr).reg));
                     map.put(value, new Pair<>(((Li) instr).reg, range));
                 }
@@ -305,6 +332,22 @@ public class CalculateOpt {
         }
     }
 
+    private static void Li2Lui(RiscvBlock block) {
+        HashMap<Li, Lui> needReplace = new HashMap<>();
+        for (RiscvInstruction ri : block.riscvInstructions) {
+            if (ri instanceof Li li) {
+                long value = li.getVal();
+                if (value <= Integer.MAX_VALUE && ((value >> 12) << 12) == value) {
+                    needReplace.put(li, new Lui(block, li.reg, new Imm(li.getVal() >> 12)));
+                }
+            }
+        }
+        for (Li key : needReplace.keySet()) {
+            block.riscvInstructions.insertBefore(needReplace.get(key), key);
+            key.remove();
+        }
+    }
+
     private static void PreRAConstImmCalReuse(RiscvBlock block) {
         Queue<Pair<Reg, Long>> queue = new LinkedList<>();
         final int windowsize = 4;
@@ -319,46 +362,38 @@ public class CalculateOpt {
                         needReplace.put(now, new R2(block, now.reg, pair.first, R2.R2Type.mv));
                         modify = true;
                         break;
-                    }
-                    else if (imm - pair.second <= 2047 && imm - pair.second >= -2047) {
+                    } else if (imm - pair.second <= 2047 && imm - pair.second >= -2047) {
                         needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(imm - pair.second), R3.R3Type.addi));
                         modify = true;
                         break;
-                    }
-                    else if (-imm == pair.second) {
+                    } else if (-imm == pair.second) {
                         needReplace.put(now, new R3(block, now.reg, Reg.getPreColoredReg(Reg.PhyReg.zero, 64), pair.first, R3.R3Type.sub));
                         modify = true;
                         break;
-                    }
-                    else if (~imm == pair.second) {
+                    } else if (~imm == pair.second) {
                         needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(-1), R3.R3Type.xori));
                         modify = true;
                         break;
-                    }
-                    else if (imm == 3 * pair.second) {
+                    } else if (imm == 3 * pair.second) {
                         needReplace.put(now, new R3(block, now.reg, pair.first, pair.first, R3.R3Type.sh1add));
                         modify = true;
                         break;
-                    }
-                    else if (imm == 5 * pair.second) {
+                    } else if (imm == 5 * pair.second) {
                         needReplace.put(now, new R3(block, now.reg, pair.first, pair.first, R3.R3Type.sh2add));
                         modify = true;
                         break;
-                    }
-                    else if (imm == 9 * pair.second) {
+                    } else if (imm == 9 * pair.second) {
                         needReplace.put(now, new R3(block, now.reg, pair.first, pair.first, R3.R3Type.sh3add));
                         modify = true;
                         break;
-                    }
-                    else {
+                    } else {
                         int maxK = 8;
                         for (int k = 1; k <= maxK; k++) {
-                            if (imm << k == pair.second) {
+                            if (imm == pair.second << k) {
                                 needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(k), R3.R3Type.slliw));
                                 modify = true;
                                 break;
-                            }
-                            else if (imm >> k == pair.second) {
+                            } else if (imm == pair.second >> k) {
                                 needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(k), R3.R3Type.srliw));
                                 modify = true;
                                 break;
@@ -403,8 +438,7 @@ public class CalculateOpt {
                     if (!now.equals(def)) now.mergeReg(def);
                     map.get(((La) instr).content).second = range;// 刷新生存周期
                     continue;
-                }
-                else {
+                } else {
                     map.keySet().removeIf(key -> map.get(key).first.equals(((La) instr).reg));
                     map.put(((La) instr).content, new Pair<>(((La) instr).reg, range));
                 }
@@ -481,21 +515,17 @@ public class CalculateOpt {
                 if (r2.rd.equals(r2.rs)) continue;
                 re2Int.remove((Reg) r2.rd);
                 mvCopy((Reg) r2.rs, (Reg) r2.rd);
-            }
-            else if (ri instanceof Li li) {
+            } else if (ri instanceof Li li) {
                 Reg same = liFind(li.reg, li.getVal());
                 if (same == null) {
                     re2Int.put(li.reg, li.getVal());
-                }
-                else {
+                } else {
                     needReplace.add(new Pair<>(li, new R2(block, li.reg, same, R2.R2Type.mv)));
                     mvCopy(same, li.reg);
                 }
-            }
-            else if (ri instanceof J) {
+            } else if (ri instanceof J) {
                 re2Int.clear();
-            }
-            else {
+            } else {
                 for (int i = 0; i < ri.getOperandNum(); i++) {
                     if (ri.isDef(i)) {
                         Reg reg = ri.getRegByIdx(i);
@@ -522,15 +552,13 @@ public class CalculateOpt {
                         if (s.type == LS.LSType.sw || s.type == LS.LSType.sd || s.type == LS.LSType.fsw) {
                             return off == offset + 4;
                         }
-                    }
-                    else {
+                    } else {
                         if (s.type == LS.LSType.lw || s.type == LS.LSType.ld || s.type == LS.LSType.flw) {
                             return off == offset;
                         }
                     }
                 }
-            }
-            else if (ri instanceof J jjj && jjj.type == J.JType.call) {
+            } else if (ri instanceof J jjj && jjj.type == J.JType.call) {
                 return false;
             }
         }
@@ -551,8 +579,7 @@ public class CalculateOpt {
                                     Imm imm2 && imm2.getVal() - imm1.getVal() == 4) || (
                                     ls1.addr instanceof Address a1 && a1.hasFilled()
                                             && ls2.addr instanceof Address a2 && a2.hasFilled() &&
-                                            a1.getOffset() - a2.getOffset() == 4))
-                            {
+                                            a1.getOffset() - a2.getOffset() == 4)) {
                                 long off = ls1.addr instanceof Imm imm1 ? imm1.getVal() : ((Address) ls1.addr).getOffset();
                                 boolean can = (off % 8 == 0 && ls1.align == AlignmentAnalysis.AlignType.ALIGN_BYTE_8) ||
                                         (off % 8 != 0 && ls1.align == AlignmentAnalysis.AlignType.ALIGN_BYTE_4);
@@ -563,12 +590,10 @@ public class CalculateOpt {
                                     if (lsConflict(block, i, j, false, ls1.base, off)) break;
                                     ArrayList<RiscvInstruction> list = new ArrayList<>();
                                     if (ls1.val.preColored && ls1.val.phyReg == Reg.PhyReg.zero
-                                            && ls2.val.preColored && ls2.val.phyReg == Reg.PhyReg.zero)
-                                    {
+                                            && ls2.val.preColored && ls2.val.phyReg == Reg.PhyReg.zero) {
                                         list.add(new LS(block, Reg.getPreColoredReg(Reg.PhyReg.zero, 64),
                                                 ls2.base, ls1.addr, LS.LSType.sd, AlignmentAnalysis.AlignType.ALIGN_BYTE_4));
-                                    }
-                                    else {
+                                    } else {
                                         //如果不是俩zero,那么就需要sli,or然后sd
                                         Reg reg = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                                         list.add(new R3(block, reg, ls2.val, new Imm(32), R3.R3Type.slli));
@@ -577,8 +602,7 @@ public class CalculateOpt {
                                     }
                                     needReplace.put(ls1, new ArrayList<>());
                                     needReplace.put(ls2, list);
-                                }
-                                else if (ls1.type == LS.LSType.lw && ls2.type == LS.LSType.lw) {
+                                } else if (ls1.type == LS.LSType.lw && ls2.type == LS.LSType.lw) {
                                     if (lsConflict(block, i, j, true, ls1.base, off)) break;
                                     ArrayList<RiscvInstruction> list1 = new ArrayList<>();
                                     ArrayList<RiscvInstruction> list2 = new ArrayList<>();

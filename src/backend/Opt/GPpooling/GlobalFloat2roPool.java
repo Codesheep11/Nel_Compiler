@@ -11,7 +11,7 @@ import java.util.Iterator;
 public class GlobalFloat2roPool {
     // 全局非数组变量当作常量池,然后用gp来存取,省的每次都专门la一下地址很麻烦
     // 在寄存器分配前搞
-    private static final GPpool gPpool = new GPpool();
+    public static final GPpool gPpool = new GPpool();
 
     public static void run(RiscvModule riscvModule) {
 
