@@ -71,7 +71,7 @@ public class Lui extends RiscvInstruction {
 
     @Override
     public RiscvInstruction myCopy(RiscvBlock newBlock) {
-        return new Li(newBlock, reg, imm);
+        return new Lui(newBlock, reg, imm);
     }
 
     public long getVal() {

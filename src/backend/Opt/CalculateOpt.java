@@ -24,11 +24,11 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 uselessLoadRemove(block);
                 PreRAConstValueReUse(block);
-//                PreRAConstImmCalReuse(block);
+                PreRAConstImmCalReuse(block);
                 PreRAConstPointerReUse(block);
                 addZero2Mv(block);
                 addiLS2LSoffset(block);
-//                One2ZeroBeq(block);
+                One2ZeroBeq(block);
             }
         }
         for (RiscvFunction function : riscvModule.funcList) {
@@ -37,7 +37,7 @@ public class CalculateOpt {
                 icmpBranchToBranch(block);
                 SraSll2And(block);
                 Lsw2Lsd(block);
-//                Li2Lui(block);
+                Li2Lui(block);
             }
         }
     }
@@ -363,7 +363,7 @@ public class CalculateOpt {
                         modify = true;
                         break;
                     } else if (imm - pair.second <= 2047 && imm - pair.second >= -2047) {
-                        needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(imm - pair.second), R3.R3Type.addi));
+                        needReplace.put(now, new R3(block, now.reg, pair.first, new Imm(imm - pair.second), R3.R3Type.addiw));
                         modify = true;
                         break;
                     } else if (-imm == pair.second) {
