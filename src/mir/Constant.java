@@ -10,7 +10,6 @@ public abstract class Constant extends User {
      * llvm 中的常量
      * 抽象概念，包括整数常量，浮点数常量，数组常量，指针常量
      * 由静态内部类实现
-     * @param type
      */
     public Constant(Type type) {
         super(type);

@@ -2,7 +2,7 @@ package mir;
 
 import java.util.LinkedList;
 
-public class User extends Value {
+public abstract class User extends Value {
 
     /**
      * 维护了集合性质，乱序，不重地维护了操作数
