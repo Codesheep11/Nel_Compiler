@@ -258,7 +258,8 @@ public abstract class Instruction extends User {
             Value retValue = getRetValue();
             if (retValue != null) {
                 return String.format("ret %s %s", retValue.getType().toString(), retValue.getDescriptor());
-            } else {
+            }
+            else {
                 return "ret void";
             }
         }
@@ -340,7 +341,8 @@ public abstract class Instruction extends User {
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());
-            } else {
+            }
+            else {
                 return String.format("%s = call %s @%s(%s)", getDescriptor(), destFunction.getRetType().toString(), destFunction.name, paramsToString());
             }
         }
@@ -965,6 +967,13 @@ public abstract class Instruction extends User {
             src2 = src1;
             src1 = _temp;
             condCode = condCode.swap();
+            for (Instruction user : this.getUsers()) {
+                if (user instanceof Branch branch) {
+                    if (branch.getCond().equals(this)) {
+                        branch.setProbability(1 - branch.getProbability());
+                    }
+                }
+            }
         }
 
         public void reverse() {
@@ -2010,7 +2019,8 @@ public abstract class Instruction extends User {
                 Value val = optionalValues.get(value);
                 optionalValues.remove(value);
                 optionalValues.put((BasicBlock) v, val);
-            } else {
+            }
+            else {
                 for (BasicBlock block : optionalValues.keySet()) {
                     if (optionalValues.get(block).equals(value)) {
                         optionalValues.put(block, v);
