@@ -9,9 +9,9 @@ import java.util.HashSet;
 
 public class AliasInfo {
 
-    public HashSet<Long> mDistinctPairs;
-    public ArrayList<HashSet<Integer>> mDistinctGroups;
-    public HashMap<Value, ArrayList<Integer>> mPointerAttributes;
+    public HashSet<Long> mDistinctPairs = new HashSet<>();
+    public ArrayList<HashSet<Integer>> mDistinctGroups = new ArrayList<>();
+    public HashMap<Value, ArrayList<Integer>> mPointerAttributes = new HashMap<>();
     public static final ArrayList<Integer> empty = new ArrayList<>();
 
     private static long code(int v1, int v2) {

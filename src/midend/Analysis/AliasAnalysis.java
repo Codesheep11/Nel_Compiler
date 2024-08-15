@@ -5,7 +5,7 @@ import mir.*;
 
 import java.util.*;
 
-public class AliaAnalysis {
+public class AliasAnalysis {
 
     private static class InheritEdge {
         private final Value dst;
@@ -25,7 +25,11 @@ public class AliaAnalysis {
         }
     }
 
-    public static AliasInfo aliasInfo;
+    private static AliasInfo aliasInfo;
+
+    public static boolean isDistinct(Value v1, Value v2) {
+        return aliasInfo.isDistinct(v1, v2);
+    }
 
     public static void runOnFunc(Function function) {
         int allocID = 0;

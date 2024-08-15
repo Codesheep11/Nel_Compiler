@@ -106,6 +106,10 @@ public class Manager {
         DeadCodeEliminate();
         StillLoopMotion.run(module);
         CertainLoopExtract.run(module);
+        outputLLVM("debug.txt", module);
+        LoopBuildAndNormalize();
+        LICMMemory.run(module);
+        outputLLVM("store.txt", module);
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
