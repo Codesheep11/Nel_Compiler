@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
 
-public class BasicBlock extends Value {
+public final class BasicBlock extends Value {
     private Function parentFunction; // 父函数
     private final String label;
     private final NelLinkedList<Instruction> instructions;
