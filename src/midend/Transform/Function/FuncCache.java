@@ -12,9 +12,9 @@ public class FuncCache {
 
     private static Function Lookup = null;
 
-    private static int tableSize = 1021;
+    private static final int tableSize = 1021;
 
-    private static Type.ArrayType tableArrayType = new Type.ArrayType(tableSize * 4, Type.BasicType.I32_TYPE);
+    private static final Type.ArrayType tableArrayType = new Type.ArrayType(tableSize * 4, Type.BasicType.I32_TYPE);
 
     public static void run(Module module) {
         FuncCache.module = module;
@@ -65,7 +65,7 @@ public class FuncCache {
         BasicBlock oldEntry = function.getEntry();
         BasicBlock newEntry = new BasicBlock(function.getBBName() + "_LUT", function);
         newEntry.remove();
-        function.getBlocks().insertBefore(newEntry, function.getEntry());
+        function.insertBlockBefore(newEntry, function.getEntry());
         for (Function.Argument arg : function.getFuncRArguments()) {
             if (arg.getType().isInt32Ty()) {
                 lut_args.add(arg);
@@ -83,8 +83,7 @@ public class FuncCache {
         offsets.add(Constant.ConstantInt.get(2));
         Instruction valPtr = new Instruction.GetElementPtr(newEntry, call, Type.BasicType.I32_TYPE, offsets);
         if (!((Type.PointerType) valPtr.getType()).getInnerType().equals(function.getRetType())) {
-            Instruction.BitCast bitCast = new Instruction.BitCast(newEntry, valPtr, new Type.PointerType(function.getRetType()));
-            valPtr = bitCast;
+            valPtr = new Instruction.BitCast(newEntry, valPtr, new Type.PointerType(function.getRetType()));
         }
         offsets = new ArrayList<>();
         offsets.add(Constant.ConstantInt.get(3));
@@ -104,10 +103,10 @@ public class FuncCache {
                 Value retValue = ret.getRetValue();
                 Instruction.Store store1 = new Instruction.Store(block, Constant.ConstantInt.get(1), hasValPtr);
                 store1.remove();
-                block.getInstructions().insertBefore(store1, ret);
+                block.insertInstBefore(store1, ret);
                 Instruction.Store store2 = new Instruction.Store(block, retValue, valPtr);
                 store2.remove();
-                block.getInstructions().insertBefore(store2, ret);
+                block.insertInstBefore(store2, ret);
             }
         }
     }

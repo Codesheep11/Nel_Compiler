@@ -7,7 +7,7 @@ import backend.riscv.RiscvBlock;
 import java.util.HashSet;
 
 public class R2 extends RiscvInstruction {
-    public R2Type type;
+    public final R2Type type;
 
     public enum R2Type {
         mv, fmv, fabs, fneg, fmvwx, fmvxw, fcvtws, fcvtsw, sgtz, seqz, snez, sextw;
@@ -69,9 +69,7 @@ public class R2 extends RiscvInstruction {
                 case sextw -> {
                     return "sext.w";
                 }
-                default -> {
-                    throw new AssertionError();
-                }
+                default -> throw new AssertionError();
             }
         }
     }

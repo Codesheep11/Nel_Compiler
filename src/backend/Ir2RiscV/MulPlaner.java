@@ -46,7 +46,7 @@ public class MulPlaner {
         }
         optStepsByShadd();
         for (RiscvInstruction instr : steps) {
-            block.riscvInstructions.addLast(instr);
+            block.addInstLast(instr);
         }
     }
 

@@ -26,7 +26,7 @@ public class AfterRA {
         for (RiscvFunction function : riscvModule.funcList) {
             if (function.isExternal) continue;
             int size = StackManager.getInstance().getFuncSize(function.name);
-            function.getEntry().riscvInstructions.addFirst(new R3(function.getEntry(),
+            function.getEntry().addInstFirst(new R3(function.getEntry(),
                     Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                     Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                     new Address(size, function.name),
@@ -37,7 +37,7 @@ public class AfterRA {
                         Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                         new Address(-size, function.name),
                         R3.R3Type.addi);
-                rb.riscvInstructions.insertBefore(r3, rb.riscvInstructions.getLast());
+                rb.insertInstBefore(r3, rb.riscvInstructions.getLast());
             }
         }
     }

@@ -1,6 +1,5 @@
 package midend.Transform.Array;
 
-import frontend.syntaxChecker.Ast;
 import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
 import mir.*;
@@ -13,9 +12,9 @@ import java.util.HashMap;
  * 数组飞升
  */
 public class LocalArrayLift {
-    private static HashMap<Instruction.Alloc, HashMap<Integer, Constant>> arrayInitMap = new HashMap<>();
+    private static final HashMap<Instruction.Alloc, HashMap<Integer, Constant>> arrayInitMap = new HashMap<>();
 
-    private static ArrayList<Instruction> delList = new ArrayList<>();
+    private static final ArrayList<Instruction> delList = new ArrayList<>();
 
     private static Function func;
 
@@ -65,8 +64,7 @@ public class LocalArrayLift {
     private static void CollectArrayInfo(Instruction.Alloc alloc) {
         ArrayList<Instruction> stores = new ArrayList<>();
         ArrayList<Instruction> loads = new ArrayList<>();
-        ArrayList<Instruction> use = new ArrayList<>();
-        use.addAll(alloc.getUsers());
+        ArrayList<Instruction> use = new ArrayList<>(alloc.getUsers());
         while (!use.isEmpty()) {
             Instruction useInst = use.remove(0);
             if (useInst instanceof Instruction.Load) loads.add(useInst);

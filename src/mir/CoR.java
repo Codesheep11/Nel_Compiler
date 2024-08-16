@@ -8,11 +8,11 @@ import java.util.ArrayList;
  */
 public class CoR {
 
-    public ArrayList<CoR> operands;
+    public final ArrayList<CoR> operands;
 
     public Value val;
 
-    public CoRType type;
+    public final CoRType type;
 
     public Loop loop;
 

@@ -45,7 +45,7 @@ public class FMAddSubPass {
                     Value faddOp2 = fadd.getOperand_2();
                     Instruction.Fmadd fmadd = new Instruction.Fmadd(block, fadd.getType(), fmulOp1, fmulOp2, faddOp2);
                     fmadd.remove();
-                    block.getInstructions().insertBefore(fmadd, fadd);
+                    block.insertInstBefore(fmadd, fadd);
                     fadd.replaceAllUsesWith(fmadd);
                 }
                 else if (fadd.getOperand_2() instanceof Instruction.FMul fmul && fmul.getUsers().size() == 1) {
@@ -55,7 +55,7 @@ public class FMAddSubPass {
                     Value faddOp1 = fadd.getOperand_1();
                     Instruction.Fmadd fmadd = new Instruction.Fmadd(block, fadd.getType(), fmulOp1, fmulOp2, faddOp1);
                     fmadd.remove();
-                    block.getInstructions().insertBefore(fmadd, fadd);
+                    block.insertInstBefore(fmadd, fadd);
                     fadd.replaceAllUsesWith(fmadd);
                 }
             }
@@ -68,7 +68,7 @@ public class FMAddSubPass {
                     Value fsubOp2 = fsub.getOperand_2();
                     Instruction.Fmsub fmsub = new Instruction.Fmsub(block, fsub.getType(), fmulOp1, fmulOp2, fsubOp2);
                     fmsub.remove();
-                    block.getInstructions().insertBefore(fmsub, fsub);
+                    block.insertInstBefore(fmsub, fsub);
                     fsub.replaceAllUsesWith(fmsub);
                 }
             }
@@ -84,7 +84,7 @@ public class FMAddSubPass {
                     Value fmulOp2 = fmul.getOperand_2();
                     Instruction.Fneg fneg = new Instruction.Fneg(block, fmul.getType(), fmulOp2);
                     fneg.remove();
-                    block.getInstructions().insertBefore(fneg, fmul);
+                    block.insertInstBefore(fneg, fmul);
                     fmul.replaceAllUsesWith(fneg);
                 }
                 else if (fmul.getOperand_2().equals(new Constant.ConstantFloat(-1))) {
@@ -92,7 +92,7 @@ public class FMAddSubPass {
                     Value fmulOp1 = fmul.getOperand_1();
                     Instruction.Fneg fneg = new Instruction.Fneg(block, fmul.getType(), fmulOp1);
                     fneg.remove();
-                    block.getInstructions().insertBefore(fneg, fmul);
+                    block.insertInstBefore(fneg, fmul);
                     fmul.replaceAllUsesWith(fneg);
                 }
             }
@@ -102,7 +102,7 @@ public class FMAddSubPass {
                     Value fsubOp2 = fsub.getOperand_2();
                     Instruction.Fneg fneg = new Instruction.Fneg(block, fsub.getType(), fsubOp2);
                     fneg.remove();
-                    block.getInstructions().insertBefore(fneg, fsub);
+                    block.insertInstBefore(fneg, fsub);
                     fsub.replaceAllUsesWith(fneg);
                 }
             }
@@ -120,7 +120,7 @@ public class FMAddSubPass {
                     Value fmaddOp3 = fmadd.getOperand_3();
                     Instruction.Fnmadd fnmadd = new Instruction.Fnmadd(block, fmadd.getType(), fmaddOp1, fmaddOp2, fmaddOp3);
                     fnmadd.remove();
-                    block.getInstructions().insertBefore(fnmadd, fneg);
+                    block.insertInstBefore(fnmadd, fneg);
                     fneg.replaceAllUsesWith(fnmadd);
                 }
                 else if (fneg.getOperand() instanceof Instruction.Fmsub fmsub && fmsub.getUsers().size() == 1) {
@@ -130,7 +130,7 @@ public class FMAddSubPass {
                     Value fmsubOp3 = fmsub.getOperand_3();
                     Instruction.Fnmsub fnmsub = new Instruction.Fnmsub(block, fmsub.getType(), fmsubOp1, fmsubOp2, fmsubOp3);
                     fnmsub.remove();
-                    block.getInstructions().insertBefore(fnmsub, fneg);
+                    block.insertInstBefore(fnmsub, fneg);
                     fneg.replaceAllUsesWith(fnmsub);
                 }
             }
@@ -143,7 +143,7 @@ public class FMAddSubPass {
                     Value fsubOp1 = fsub.getOperand_1();
                     Instruction.Fnmsub fnmsub = new Instruction.Fnmsub(block, fsub.getType(), fmulOp1, fmulOp2, fsubOp1);
                     fnmsub.remove();
-                    block.getInstructions().insertBefore(fnmsub, fsub);
+                    block.insertInstBefore(fnmsub, fsub);
                     fsub.replaceAllUsesWith(fnmsub);
                 }
             }

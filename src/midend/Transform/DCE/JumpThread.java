@@ -24,7 +24,7 @@ public class JumpThread {
 
     private static I32RangeAnalysis irAnalyzer;
 
-    private static ArrayList<BasicBlock> workList = new ArrayList<>();
+    private static final ArrayList<BasicBlock> workList = new ArrayList<>();
 
     private static final int LIMIT_BLOCK_SIZE = 1;
 
@@ -40,12 +40,10 @@ public class JumpThread {
         irAnalyzer = AnalysisManager.getI32Range(function);
         workList.clear();
         //考虑迭代
-        for (BasicBlock block : function.getDomTreeLayerSort()) {
-            workList.add(block);
-        }
+        workList.addAll(function.getDomTreeLayerSort());
         while (!workList.isEmpty()) {
             BasicBlock block = workList.remove(0);
-            if (block.getInstructions().size() != 0)
+            if (!block.getInstructions().isEmpty())
                 runOnBlock(block);
         }
     }

@@ -27,8 +27,8 @@ public class ShortInst extends RiscvInstruction {
     }
 
     public static class ShortMove extends ShortInst {
-        Reg dst;
-        Reg src;
+        final Reg dst;
+        final Reg src;
 
         public ShortMove(RiscvBlock block, Reg dst, Reg src) {
             super(block);

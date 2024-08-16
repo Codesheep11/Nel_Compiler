@@ -3,7 +3,6 @@ package midend.Transform.DCE;
 import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
 import mir.*;
-import mir.Function;
 import mir.Module;
 
 import java.util.ArrayList;
@@ -23,7 +22,7 @@ public class LoadEliminate {
     private static HashMap<GlobalVariable, Value> Global2Store = new HashMap<>();
     private static HashMap<GlobalVariable, Value> Global2Load = new HashMap<>();
     //指针 - <idx - Load>
-    private static ArrayList<Instruction> delList = new ArrayList<>();
+    private static final ArrayList<Instruction> delList = new ArrayList<>();
 
 
     public static void run(Module module) {

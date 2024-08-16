@@ -1,9 +1,7 @@
 package midend.Transform.Function;
 
 import midend.Analysis.AnalysisManager;
-import midend.Transform.DCE.RemoveBlocks;
 import midend.Util.CloneInfo;
-import midend.Util.Print;
 import mir.*;
 import mir.Module;
 import utils.NelLinkedList;
@@ -16,15 +14,15 @@ public class FunctionInline {
     private static final int INLINE_SIZE_THRESHOLD = 150000;
     private static Collection<Function> functions;
     private static Module module;
-    private static ArrayList<Function> funcCanInline = new ArrayList<>();
-    private static HashMap<Function, Integer> funcSize = new HashMap<>();
+    private static final ArrayList<Function> funcCanInline = new ArrayList<>();
+    private static final HashMap<Function, Integer> funcSize = new HashMap<>();
     //A调用B则存在B->A
-    private static HashMap<Function, HashSet<Function>> reserveMap = new HashMap<>();
+    private static final HashMap<Function, HashSet<Function>> reserveMap = new HashMap<>();
     //记录反图的入度
-    private static HashMap<Function, Integer> inNum = new HashMap<>();
+    private static final HashMap<Function, Integer> inNum = new HashMap<>();
     //A调用B则存在A->B
-    private static HashMap<Function, HashSet<Function>> Map = new HashMap<>();
-    private static Queue<Function> queue = new LinkedList<>();
+    private static final HashMap<Function, HashSet<Function>> Map = new HashMap<>();
+    private static final Queue<Function> queue = new LinkedList<>();
 
     /***
      * 函数内联
@@ -190,9 +188,8 @@ public class FunctionInline {
 //        CallbbCut.add(afterCallBB);
 //        Print.output(inFunction,"store.txt");
         for (BasicBlock suc : afterCallBBs) {
-            for (Instruction instr : suc.getPhiInstructions()) {
-                Instruction.Phi phi = (Instruction.Phi) instr;
-                phi.changePreBlock(beforeCallBB, afterCallBB);
+            for (Instruction.Phi instr : suc.getPhiInstructions()) {
+                instr.changePreBlock(beforeCallBB, afterCallBB);
             }
         }
         LinkedList<Instruction> instrs = new LinkedList<>();
@@ -219,13 +216,12 @@ public class FunctionInline {
 
         Instruction jumpToCallBB = new Instruction.Jump(beforeCallBB, (BasicBlock) cloneInfo.getReflectedValue(function.getFirstBlock()));
         jumpToCallBB.remove();
-        beforeCallBB.getInstructions().insertBefore(jumpToCallBB, inst);
+        beforeCallBB.insertInstBefore(jumpToCallBB, inst);
         Instruction jumpToAfterCallBB = new Instruction.Jump(retBB, afterCallBB);
-        if (ret != null && ret instanceof Instruction.Phi && ((Instruction.Phi) ret).getParentBlock().equals(retBB)) {
+        if (ret instanceof Instruction.Phi && ((Instruction.Phi) ret).getParentBlock().equals(retBB)) {
             ret.remove();
-            retBB.getInstructions().insertBefore((Instruction.Phi) ret, retBB.getFirstInst());
+            retBB.insertInstBefore((Instruction.Phi) ret, retBB.getFirstInst());
         }
-
 
         if (ret != null) {
             ArrayList<Use> toFix = new ArrayList<>(inst.getUses());

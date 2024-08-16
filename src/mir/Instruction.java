@@ -110,6 +110,16 @@ public abstract class Instruction extends User {
         return parentBlock;
     }
 
+    public void addPrev(Instruction instruction){
+        super.addPrev(instruction);
+        instruction.setParentBlock(parentBlock);
+    }
+
+    public void addNext(Instruction instruction) {
+        super.addNext(instruction);
+        instruction.setParentBlock(parentBlock);
+    }
+
     public abstract Instruction cloneToBB(BasicBlock newBlock);
 
     public Instruction cloneToBBAndAddInfo(CloneInfo cloneInfo, BasicBlock newBlock) {
@@ -2060,7 +2070,7 @@ public abstract class Instruction extends User {
     /**
      * 寻址指令，我们规定每次仅能寻址一维，即只支持base[offset]，对于高维数组的寻址可通过多个该指令完成
      */
-    public static final class GetElementPtr extends Instruction {
+    public static class GetElementPtr extends Instruction {
         private Value base;
         private final Type eleType;
         private final ArrayList<Value> offsets;
@@ -2140,5 +2150,6 @@ public abstract class Instruction extends User {
             return new GetElementPtr(newBlock, base, eleType, offsets);
         }
     }
+
 
 }

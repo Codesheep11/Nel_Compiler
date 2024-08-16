@@ -40,8 +40,6 @@ public abstract class User extends Value {
     /**
      * 同时删除双向边关系
      *
-     * @param oldValue
-     * @param newValue
      */
     public void replaceUseOfWith(Value oldValue, Value newValue) {
         // 在 Value 的 operands 中更新

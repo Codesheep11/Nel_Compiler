@@ -1,4 +1,4 @@
-package backend.allocater;
+package backend.allocator;
 
 import backend.Opt.Liveness.LivelessDCE;
 import backend.StackManager;
@@ -11,14 +11,13 @@ import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
 import midend.Analysis.AlignmentAnalysis;
-import mir.BasicBlock;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import static backend.allocater.LivenessAnalyze.In;
-import static backend.allocater.LivenessAnalyze.Out;
+import static backend.allocator.LivenessAnalyze.In;
+import static backend.allocator.LivenessAnalyze.Out;
 import static backend.operand.Reg.PhyReg.*;
 
 /**
@@ -27,14 +26,14 @@ import static backend.operand.Reg.PhyReg.*;
  * 2.跨函数寄存器保护
  * 3.栈帧回填
  */
-public class Allocater {
+public class Allocator {
     private static RiscvModule module;
 
-    public static HashMap<String, HashSet<Reg.PhyReg>> UsedRegs = new HashMap<>();
+    public static final HashMap<String, HashSet<Reg.PhyReg>> UsedRegs = new HashMap<>();
 
     public static void run(RiscvModule riscvModule) {
         module = riscvModule;
-        HashSet<Reg.PhyReg> allRegs = new HashSet<Reg.PhyReg>() {{
+        HashSet<Reg.PhyReg> allRegs = new HashSet<>() {{
             for (int i = 3; i <= 7; i++) add(getPhyRegByOrder(i));
             for (int i = 10; i <= 17; i++) add(getPhyRegByOrder(i));
             for (int i = 28; i <= 39; i++) add(getPhyRegByOrder(i));
@@ -44,8 +43,7 @@ public class Allocater {
         for (RiscvFunction func : module.TopoSort) {
             if (func.isExternal) {
                 func.isSaveOut = true;
-                HashSet<Reg.PhyReg> used = new HashSet<>();
-                used.addAll(allRegs);
+                HashSet<Reg.PhyReg> used = new HashSet<>(allRegs);
                 UsedRegs.put(func.name, used);
                 continue;
             }
@@ -58,8 +56,8 @@ public class Allocater {
             }
             UsedRegs.put(func.name, new HashSet<>());
             LivelessDCE.runOnFunc(func);
-            GPRallocater.runOnFunc(func);
-            FPRallocater.runOnFunc(func);
+            GPRallocator.runOnFunc(func);
+            FPRallocator.runOnFunc(func);
             LivenessAnalyze.RunOnFunc(func);
             SaveReg4Call(func);
         }
@@ -91,16 +89,16 @@ public class Allocater {
                 Address offset = StackManager.getInstance().getRegOffset(func.name, reg.toString(), reg.bits / 8);
                 store = new LS(call.block, reg, Reg.getPreColoredReg(sp, 64), offset,
                         reg.regType == Reg.RegType.FPR ? LS.LSType.fsw : (reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd), AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                call.block.riscvInstructions.insertBefore(store, call);
+                call.block.insertInstBefore(store, call);
                 load = new LS(call.block, reg, Reg.getPreColoredReg(sp, 64), offset,
                         reg.regType == Reg.RegType.FPR ? LS.LSType.flw : (reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld), AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                call.block.riscvInstructions.insertAfter(load, call);
+                call.block.insertInstAfter(load, call);
             }
             if (UsedRegs.containsKey(call.funcName))
                 UsedRegs.get(func.name).addAll(UsedRegs.get(call.funcName));
         }
         //如果是并行循环体，则需要保护所有用到的全局寄存器
-        if (func.isParallLoopBody) {
+        if (func.isParallelLoopBody) {
             ArrayList<Reg> saved = new ArrayList<>();
             for (Reg.PhyReg use : UsedRegs.get(func.name)) {
                 int idx = use.ordinal();
@@ -116,12 +114,12 @@ public class Allocater {
                 RiscvInstruction store = new LS(func.getEntry(), reg, sp, offset,
                         reg.regType == Reg.RegType.FPR ? LS.LSType.fsw : LS.LSType.sd,
                         AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                func.getEntry().riscvInstructions.insertAfter(store, func.getEntry().riscvInstructions.getFirst());
+                func.getEntry().insertInstAfter(store, func.getEntry().riscvInstructions.getFirst());
                 for (RiscvBlock exit : func.exits) {
                     RiscvInstruction load = new LS(exit, reg, sp, offset,
                             reg.regType == Reg.RegType.FPR ? LS.LSType.flw : LS.LSType.ld,
                             AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                    exit.riscvInstructions.insertBefore(load, exit.riscvInstructions.getLast());
+                    exit.insertInstBefore(load, exit.riscvInstructions.getLast());
                 }
             }
         }

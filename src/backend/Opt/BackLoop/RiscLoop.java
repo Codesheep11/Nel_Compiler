@@ -13,11 +13,11 @@ import java.util.HashSet;
 public class RiscLoop {
     // 有若干个header，不在循环节中
     // 一个函数的
-    public HashSet<RiscvBlock> blocks = new HashSet<>();
-    public HashSet<RiscvBlock> enterings = new HashSet<>();
+    public final HashSet<RiscvBlock> blocks = new HashSet<>();
+    public final HashSet<RiscvBlock> enterings = new HashSet<>();
 
 
-    public HashSet<RiscLoop> subLoops = new HashSet<>();
+    public final HashSet<RiscLoop> subLoops = new HashSet<>();
     // 都提到外面可能开的内容有些太多了
 
     public static void buildLoops(RiscvFunction rf, Function mf, HashMap<BasicBlock, RiscvBlock> map) {

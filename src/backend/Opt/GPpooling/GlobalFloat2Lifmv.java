@@ -42,8 +42,8 @@ public class GlobalFloat2Lifmv {
         }
         for (var pair : needReplace.keySet()) {
             var _pair = needReplace.get(pair);
-            block.riscvInstructions.insertBefore(_pair.first, pair.first);
-            block.riscvInstructions.insertBefore(_pair.second, pair.first);
+            block.insertInstBefore(_pair.first, pair.first);
+            block.insertInstBefore(_pair.second, pair.first);
             pair.first.remove();
             pair.second.remove();
         }

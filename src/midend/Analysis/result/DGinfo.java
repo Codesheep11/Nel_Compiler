@@ -38,6 +38,7 @@ public final class DGinfo {
             this.domDepth = -1;
         }
 
+        @SuppressWarnings({"FieldCanBeLocal", "unused"})
         private final BasicBlock block;
     }
 

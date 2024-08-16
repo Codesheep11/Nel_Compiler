@@ -23,7 +23,7 @@ public class MemDepAnalysis {
         dfs(A, visitedA, false);
         dfs(B, visitedB, true);
         visitedA.retainAll(visitedB);
-        if (visitedA.size() == 0) return false;
+        if (visitedA.isEmpty()) return false;
         for (BasicBlock block : visitedA) {
             for (Instruction instruction : block.getInstructions()) {
                 if (instruction instanceof Instruction.Store store) {

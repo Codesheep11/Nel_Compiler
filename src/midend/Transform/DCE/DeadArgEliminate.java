@@ -57,12 +57,11 @@ public class DeadArgEliminate {
             }
             for (Instruction.Call call : calls) {
 //                System.out.println("DeadArgEliminate: " + call.getDescriptor());
-                ArrayList<Value> args = new ArrayList<>();
-                args.addAll(call.getParams());
+                ArrayList<Value> args = new ArrayList<>(call.getParams());
                 args.remove(idx);
                 Instruction.Call newCall = new Instruction.Call(call.getParentBlock(), call.getDestFunction(), args);
                 newCall.remove();
-                call.getParentBlock().getInstructions().insertBefore(newCall, call);
+                call.getParentBlock().insertInstBefore(newCall, call);
                 call.replaceAllUsesWith(newCall);
                 call.delete();
             }
