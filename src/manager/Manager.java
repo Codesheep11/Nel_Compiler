@@ -192,7 +192,6 @@ public class Manager {
             modified |= SimplifyCFGPass.run(module);
             modified |= RemoveBlocks.run(module);
             modified |= DeadCondEliminate.run(module);
-//            Print.output(module, "debug.txt");
             modified |= GlobalValueNumbering.run(module);
             ArithReduce.run(module);
             modified |= DeadArgEliminate.run();
