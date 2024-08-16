@@ -51,6 +51,7 @@ public class RemoveCRH {
                     block.succBlock.clear();
                     for (RiscvBlock other : newBlock2.succBlock) {
                         other.preBlock.remove(block);
+                        other.preBlock.add(newBlock2);
                     }
                     block.addInstLast(new B(block, B.BType.bge, c.src,
                             Reg.getPreColoredReg(Reg.PhyReg.zero, 32), newBlock2, 1.0));

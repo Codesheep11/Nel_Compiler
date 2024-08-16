@@ -26,17 +26,6 @@ public class LivelessDCE {
         LivenessAnalyze.RunOnFunc(function);
         ArrayList<RiscvInstruction> delList = new ArrayList<>();
         for (RiscvBlock block : function.blocks) {
-            System.out.println(block.name + ":");
-            System.out.println("pres:");
-            for (RiscvBlock rb : block.preBlock) {
-                System.out.print(" " + rb.name);
-            }
-            System.out.println();
-            System.out.println("sucs:");
-            for (RiscvBlock rb : block.succBlock) {
-                System.out.print(" " + rb.name);
-            }
-            System.out.println();
             for (RiscvInstruction inst : block.riscvInstructions) {
                 if (canbeDelete(inst)) delList.add(inst);
             }
