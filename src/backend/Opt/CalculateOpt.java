@@ -29,6 +29,7 @@ public class CalculateOpt {
                 addZero2Mv(block);
                 addiLS2LSoffset(block);
                 One2ZeroBeq(block);
+                seqzBranchReverse(block);
             }
         }
         for (RiscvFunction function : riscvModule.funcList) {
@@ -38,6 +39,30 @@ public class CalculateOpt {
                 SraSll2And(block);
                 Lsw2Lsd(block);
                 Li2Lui(block);
+            }
+        }
+    }
+
+    private static void seqzBranchReverse(RiscvBlock block) {
+        Iterator<RiscvInstruction> iterator = block.riscvInstructions.iterator();
+        while (iterator.hasNext()) {
+            RiscvInstruction ri = iterator.next();
+            if (ri instanceof R2 r2 && r2.type == R2.R2Type.seqz) {
+                HashSet<RiscvInstruction> used = LivenessAnalyze.RegUse.get((Reg) r2.rd);
+                if (used.size() == 1) {
+                    RiscvInstruction next = used.iterator().next();
+                    if (next instanceof B b && ((Reg) b.rs2).phyReg == Reg.PhyReg.zero) {
+                        if (b.type == B.BType.bne) {
+                            iterator.remove();
+                            b.type = B.BType.beq;
+                            b.rs1 = r2.rs;
+                        } else if (b.type == B.BType.beq) {
+                            iterator.remove();
+                            b.type = B.BType.bne;
+                            b.rs1 = r2.rs;
+                        }
+                    }
+                }
             }
         }
     }
@@ -470,10 +495,22 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 AftBinConstValueReuse(block);
                 removeSameMv(block);
+                subZeroRemove(block);
             }
         }
     }
 
+    private static void subZeroRemove(RiscvBlock block) {
+        Iterator<RiscvInstruction> iterator = block.riscvInstructions.iterator();
+        while (iterator.hasNext()) {
+            RiscvInstruction ri = iterator.next();
+            if (ri instanceof R3 r3 && (r3.type == R3.R3Type.sub || r3.type == R3.R3Type.subw)) {
+                if (r3.rd.equals(r3.rs1) && r3.rs2 instanceof Reg reg && reg.phyReg == Reg.PhyReg.zero) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
 
     private static void removeSameMv(RiscvBlock riscvBlock) {
         Iterator<RiscvInstruction> iterator = riscvBlock.riscvInstructions.iterator();
