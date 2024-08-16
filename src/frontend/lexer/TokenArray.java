@@ -5,8 +5,8 @@ import java.util.Arrays;
 import frontend.exception.*;
 
 public class TokenArray {
-    public ArrayList<Token> tokens = new ArrayList<>();
-    private static boolean DEBUG_MODE = false;
+    public final ArrayList<Token> tokens = new ArrayList<>();
+    private static final boolean DEBUG_MODE = false;
 
     public int index = 0;
 

@@ -43,7 +43,7 @@ public class BlockInline {
         HashSet<RiscvBlock> visited = new HashSet<>();
         Queue<RiscvBlock> q = new LinkedList<>();
         q.add(blocks.get(0));
-        while (q.size() != 0) {
+        while (!q.isEmpty()) {
             RiscvBlock now = q.poll();
             visited.add(now);
             for (RiscvInstruction ri : now.riscvInstructions) {
@@ -82,13 +82,13 @@ public class BlockInline {
                         }
                         block.riscvInstructions.removeLast();
                         for (RiscvInstruction ri : tmp) {
-                            block.riscvInstructions.addLast(ri);
+                            block.addInstLast(ri);
                         }
                     }// 不是自指块，那么指向了一个块
                     else {
                         block.riscvInstructions.removeLast();
                         for (RiscvInstruction ri : to.riscvInstructions) {
-                            block.riscvInstructions.addLast(ri.myCopy(block));
+                            block.addInstLast(ri.myCopy(block));
                         }
                     }
                     modify = true;

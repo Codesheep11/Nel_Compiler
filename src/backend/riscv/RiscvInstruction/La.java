@@ -35,12 +35,12 @@ public class La extends RiscvInstruction {
 
     @Override
     public HashSet<Reg> getUse() {
-        return new HashSet<>();
+        return super.getUse();
     }
 
     @Override
     public HashSet<Reg> getDef() {
-        HashSet def = new HashSet<>();
+        HashSet<Reg> def = new HashSet<>();
         def.add(reg);
         return def;
     }
@@ -57,7 +57,7 @@ public class La extends RiscvInstruction {
 
     @Override
     public boolean isUse(int idx) {
-        return false;
+        return super.isUse(idx);
     }
 
     @Override

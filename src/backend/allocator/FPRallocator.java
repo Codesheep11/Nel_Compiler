@@ -1,4 +1,4 @@
-package backend.allocater;
+package backend.allocator;
 
 import backend.StackManager;
 import backend.operand.Address;
@@ -12,102 +12,77 @@ import midend.Analysis.AlignmentAnalysis;
 
 import java.util.*;
 
-import static backend.allocater.LivenessAnalyze.*;
+import static backend.allocator.LivenessAnalyze.*;
+import static backend.operand.Reg.PhyReg.zero;
 
-public class GPRallocater {
+public class FPRallocator {
 
     public static RiscvFunction curFunc; //当前分配的函数
 
-    public static LinkedHashMap<Reg, LinkedHashSet<Reg>> conflictGraph = new LinkedHashMap<>();
-    public static LinkedHashMap<Reg, LinkedHashSet<Reg>> curCG = new LinkedHashMap<>();
+    public static final HashMap<Reg, HashSet<Reg>> conflictGraph = new HashMap<>();
+    public static HashMap<Reg, HashSet<Reg>> curCG = new HashMap<>();
 
-    public static ArrayList<Reg> outNodes = new ArrayList<>();
-    public static LinkedHashSet<Reg> spillNodes = new LinkedHashSet<>();
+    public static final ArrayList<Reg> outNodes = new ArrayList<>();
+    public static final LinkedHashSet<Reg> spillNodes = new LinkedHashSet<>();
 
-    public static LinkedHashSet<R2> moveList = new LinkedHashSet<>();
+    public static final LinkedHashSet<R2> moveList = new LinkedHashSet<>();
 
-    public static LinkedHashSet<Reg> moveNodes = new LinkedHashSet<>();
+    public static final LinkedHashSet<Reg> moveNodes = new LinkedHashSet<>();
 
     public static int pass;
 
-    /*
-    x5 - x31均可分配
-     */
-    private static int K = 26;
-    //t0作为临时寄存器，不参与图着色寄存器分配
+    private static final int K = 32;
 
-    private static final ArrayList<Reg.PhyReg> Regs = new ArrayList<>(
-            Arrays.asList(Reg.PhyReg.t1, Reg.PhyReg.t2, Reg.PhyReg.t3,
-                    Reg.PhyReg.t4, Reg.PhyReg.t5, Reg.PhyReg.t6,
-                    Reg.PhyReg.a0, Reg.PhyReg.a1, Reg.PhyReg.a2, Reg.PhyReg.a3, Reg.PhyReg.a4,
-                    Reg.PhyReg.a5, Reg.PhyReg.a6, Reg.PhyReg.a7,
-                    Reg.PhyReg.s0, Reg.PhyReg.s1, Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4,
-                    Reg.PhyReg.s5, Reg.PhyReg.s6, Reg.PhyReg.s7, Reg.PhyReg.s8, Reg.PhyReg.s9,
-                    Reg.PhyReg.s10, Reg.PhyReg.s11)
-    );
-
-    private static final ArrayList<Reg.PhyReg> Regs4CallOut = new ArrayList<>(
-            Arrays.asList(Reg.PhyReg.s0, Reg.PhyReg.s1, Reg.PhyReg.s2, Reg.PhyReg.s3, Reg.PhyReg.s4,
-                    Reg.PhyReg.s5, Reg.PhyReg.s6, Reg.PhyReg.s7, Reg.PhyReg.s8, Reg.PhyReg.s9,
-                    Reg.PhyReg.s10, Reg.PhyReg.s11,
-                    Reg.PhyReg.a0, Reg.PhyReg.a1, Reg.PhyReg.a2, Reg.PhyReg.a3, Reg.PhyReg.a4,
-                    Reg.PhyReg.a5, Reg.PhyReg.a6, Reg.PhyReg.a7,
-                    Reg.PhyReg.t1, Reg.PhyReg.t2, Reg.PhyReg.t3, Reg.PhyReg.t4, Reg.PhyReg.t5,
-                    Reg.PhyReg.t6)
-    );
-
-    private static final HashSet<Reg.PhyReg> unAllocateRegs = new HashSet<>(
-            Arrays.asList(Reg.PhyReg.zero, Reg.PhyReg.ra, Reg.PhyReg.sp, Reg.PhyReg.gp, Reg.PhyReg.tp, Reg.PhyReg.t0
+    private static final LinkedHashSet<Reg.PhyReg> Regs = new LinkedHashSet<>(
+            Arrays.asList(Reg.PhyReg.ft0, Reg.PhyReg.ft1, Reg.PhyReg.ft2, Reg.PhyReg.ft3, Reg.PhyReg.ft4, Reg.PhyReg.ft5, Reg.PhyReg.ft6, Reg.PhyReg.ft7,
+                    Reg.PhyReg.fs0, Reg.PhyReg.fs1,
+                    Reg.PhyReg.fa0, Reg.PhyReg.fa1, Reg.PhyReg.fa2, Reg.PhyReg.fa3, Reg.PhyReg.fa4, Reg.PhyReg.fa5, Reg.PhyReg.fa6, Reg.PhyReg.fa7,
+                    Reg.PhyReg.fs2, Reg.PhyReg.fs3, Reg.PhyReg.fs4, Reg.PhyReg.fs5, Reg.PhyReg.fs6, Reg.PhyReg.fs7, Reg.PhyReg.fs8, Reg.PhyReg.fs9, Reg.PhyReg.fs10, Reg.PhyReg.fs11,
+                    Reg.PhyReg.ft8, Reg.PhyReg.ft9, Reg.PhyReg.ft10, Reg.PhyReg.ft11
             )
     );
 
-    private static HashSet<Reg.PhyReg> curUsedRegs = new HashSet<>();
+    private static final ArrayList<Reg.PhyReg> Regs4CallOut = new ArrayList<>(
+            Arrays.asList(Reg.PhyReg.fs0, Reg.PhyReg.fs1, Reg.PhyReg.fs2, Reg.PhyReg.fs3, Reg.PhyReg.fs4,
+                    Reg.PhyReg.fs5, Reg.PhyReg.fs6, Reg.PhyReg.fs7, Reg.PhyReg.fs8, Reg.PhyReg.fs9,
+                    Reg.PhyReg.fs10, Reg.PhyReg.fs11,
+                    Reg.PhyReg.fa0, Reg.PhyReg.fa1, Reg.PhyReg.fa2, Reg.PhyReg.fa3, Reg.PhyReg.fa4,
+                    Reg.PhyReg.fa5, Reg.PhyReg.fa6, Reg.PhyReg.fa7,
+                    Reg.PhyReg.ft1, Reg.PhyReg.ft2, Reg.PhyReg.ft3, Reg.PhyReg.ft4, Reg.PhyReg.ft5, Reg.PhyReg.ft6, Reg.PhyReg.ft7,
+                    Reg.PhyReg.ft8, Reg.PhyReg.ft9, Reg.PhyReg.ft10, Reg.PhyReg.ft11)
+    );
 
-    private static class RegNode {
-        public Reg reg;
-        public int degree;
-
-        public RegNode(Reg reg) {
-            this.reg = reg;
-            this.degree = getDegree(curCG.get(reg));
-        }
-    }
-
-    private static PriorityQueue<RegNode> regQueue = new PriorityQueue<>(Comparator.comparingInt(o -> o.degree));
-
+    private static final HashSet<Reg.PhyReg> curUsedRegs = new HashSet<>();
 
     private static void clear() {
         curUsedRegs.clear();
         curCG.clear();
-//        conflictGraph.clear();
+        conflictGraph.clear();
         outNodes.clear();
         spillNodes.clear();
+        moveList.clear();
+        moveNodes.clear();
+        pass = 0;
     }
 
     public static void runOnFunc(RiscvFunction func) {
         curFunc = func;
-        pass = 0;
-        buildConflictGraph();
-        MoveInit();
         while (true) {
             clear();
-            buildCurCG();
             //标记第几轮循环
-//            System.out.println(func.name + " GPR round: " + pass++);
-//            System.out.println(func);
+//            System.out.println(func.name + " FPR round: " + pass++);
+////            System.out.println(func);
             //建立冲突图
+            buildConflictGraph();
+            MoveInit();
             while (!curCG.isEmpty()) {
                 SimplifyCoalesce();
                 FreezeSpill();
             }
             if (Select()) break;
             ReWrite();
-            for (Reg reg : conflictGraph.keySet()) {
-                if (reg.preColored) continue;
-                reg.phyReg = null;
-            }
         }
-        Allocater.UsedRegs.get(func.name).addAll(curUsedRegs);
+        Allocator.UsedRegs.get(func.name).addAll(curUsedRegs);
     }
 
     /**
@@ -116,10 +91,7 @@ public class GPRallocater {
      * 再在变量使用处从内存中取出
      */
     private static void ReWrite() {
-        RegCost.buildSpillCost(spillNodes);
-        ArrayList<Reg> spills = RegCost.getSpillArray();
-        ArrayList<Reg> newNodes = new ArrayList<>();
-        for (Reg reg : spills) {
+        for (Reg reg : spillNodes) {
 //            System.out.println("spill: " + reg);
             ArrayList<RiscvInstruction> contains = new ArrayList<>(RegUse.get(reg));
             ArrayList<RiscvInstruction> uses = new ArrayList<>();
@@ -133,68 +105,40 @@ public class GPRallocater {
             }
             for (RiscvInstruction ud : uds) {
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
-                newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                RiscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                RiscvInstruction store = new LS(ud.block, tmp, sp, offset, LS.LSType.fsw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, LS.LSType.flw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 ud.replaceUseReg(reg, tmp);
-                ud.block.riscvInstructions.insertAfter(store, ud);
-                ud.block.riscvInstructions.insertBefore(load, ud);
+                ud.block.insertInstAfter(store, ud);
+                ud.block.insertInstBefore(load, ud);
             }
             for (RiscvInstruction def : defs) {
                 //如果定义点是lw或者ld指令，则不需要sw保护？
-                //其实应该是溢出点不能重复保护，之后需要对寄存器增加cost属性来进行限制
                 //错误的，定义点也可能会溢出，比如call多个load或者多个arg
                 //非 ssa 在使用点使用新的虚拟寄存器
-//                System.out.println("def: " + def);
+                if (def instanceof LS && ((LS) def).isSpilled && ((LS) def).val.equals(reg)) {
+                    LS.LSType type = ((LS) def).type;
+                    if (type == LS.LSType.fsw) continue;
+                }
                 RiscvInstruction store;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
-                newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                store = new LS(def.block, tmp, sp, offset, LS.LSType.fsw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 def.replaceUseReg(reg, tmp);
-                def.block.riscvInstructions.insertAfter(store, def);
+                def.block.insertInstAfter(store, def);
             }
             for (RiscvInstruction use : uses) {
                 //在使用点使用新的虚拟寄存器
+                if (use instanceof LS && ((LS) use).isSpilled && ((LS) use).val.equals(reg)) continue;
                 RiscvInstruction load;
                 Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
-                newNodes.add(tmp);
                 Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
                 StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                load = new LS(use.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                load = new LS(use.block, tmp, sp, offset, LS.LSType.flw, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
                 use.replaceUseReg(reg, tmp);
-                use.block.riscvInstructions.insertBefore(load, use);
-            }
-            DeleteNode(reg, conflictGraph);
-        }
-        LivenessAnalyze.RunOnFunc(curFunc);
-        for (Reg reg : newNodes) {
-            conflictGraph.put(reg, new LinkedHashSet<>());
-        }
-        conflictGraph.putIfAbsent(Reg.getPreColoredReg(Reg.PhyReg.sp, 64), new LinkedHashSet<>());
-        for (Reg reg : newNodes) {
-            for (RiscvInstruction ins : RegUse.get(reg)) {
-                for (Reg def : Def.get(ins)) {
-                    if (def.regType == Reg.RegType.GPR) {
-                        for (Reg out : Out.get(ins)) {
-                            if (out.regType == Reg.RegType.GPR) {
-                                addConflict(def, out);
-                            }
-                        }
-                    }
-                }
-                for (Reg o1 : Out.get(ins)) {
-                    if (o1.regType == Reg.RegType.GPR) {
-                        for (Reg o2 : Out.get(ins)) {
-                            if (o2.regType == Reg.RegType.GPR) {
-                                addConflict(o1, o2);
-                            }
-                        }
-                    }
-                }
+                use.block.insertInstBefore(load, use);
             }
         }
     }
@@ -202,13 +146,15 @@ public class GPRallocater {
     /**
      * 初始化两个队列，并将所有非预着色虚拟寄存器的物理寄存器置空
      **/
-    private static void MoveInit() {
-        moveList.clear();
-        moveNodes.clear();
+    public static void MoveInit() {
+        for (Reg reg : conflictGraph.keySet()) {
+            if (reg.preColored) continue;
+            reg.phyReg = null;
+        }
         //维护moveList
         for (RiscvBlock block : curFunc.blocks) {
             for (RiscvInstruction ins : block.riscvInstructions) {
-                if (ins instanceof R2 && ((R2) ins).type == R2.R2Type.mv) {
+                if (ins instanceof R2 && ((R2) ins).type == R2.R2Type.fmv) {
                     moveList.add((R2) ins);
                 }
             }
@@ -236,15 +182,21 @@ public class GPRallocater {
      * @return 分配结果
      */
     private static boolean AssignPhy(Reg v) {
-        if (v.preColored) return true;
+        if (v.preColored) {
+            return true;
+        }
         ArrayList<Reg.PhyReg> regs2Assign;
-        if (!callSaved.contains(v)) regs2Assign = new ArrayList<>(Regs);
-        else regs2Assign = new ArrayList<>(Regs4CallOut);
+        if (!callSaved.contains(v)) {
+            regs2Assign = new ArrayList<>(Regs);
+        }
+        else {
+            regs2Assign = new ArrayList<>(Regs4CallOut);
+        }
         for (Reg u : curCG.get(v)) {
             regs2Assign.remove(u.phyReg);
         }
-        if (regs2Assign.size() != 0) {
-            v.phyReg = regs2Assign.get(0);
+        if (!regs2Assign.isEmpty()) {
+            v.phyReg = regs2Assign.iterator().next();
             return true;
         }
         return false;
@@ -282,7 +234,7 @@ public class GPRallocater {
             }
             else {
                 spillNodes.add(node);
-                DeleteNode(node, curCG);
+                DeleteNode(node);
             }
         }
         if (spillNodes.isEmpty()) return true;
@@ -296,7 +248,7 @@ public class GPRallocater {
      * @param v 加入的寄存器节点
      */
     private static void AddNode(Reg v) {
-        curCG.putIfAbsent(v, new LinkedHashSet<>());
+        curCG.putIfAbsent(v, new HashSet<>());
         for (Reg t : conflictGraph.get(v)) {
             if (curCG.containsKey(t)) {
                 curCG.get(v).add(t);
@@ -335,23 +287,23 @@ public class GPRallocater {
         //如果找不到高度数的非预着色节点，说明图中剩余高度数节点全为预着色节点,则全部清空
         if (maxReg == null) {
             if (!curCG.isEmpty()) {
-                ArrayList<Reg> PreRegs = new ArrayList<>(curCG.keySet());
+                HashSet<Reg> PreRegs = new HashSet<>(curCG.keySet());
                 for (Reg reg : PreRegs) {
-                    DeleteNode(reg, curCG);
+                    DeleteNode(reg);
                 }
             }
             return;
         }
 //        System.out.println("spill: " + maxReg);
-        DeleteNode(maxReg, curCG);
+        DeleteNode(maxReg);
         spillNodes.add(maxReg);
         outNodes.add(maxReg);
     }
 
     private static void FreezeMoveNode(Reg node) {
 //        System.out.println("freeze: " + node);
-        LinkedHashSet<R2> freezeMoves = new LinkedHashSet<>();
-        LinkedHashSet<Reg> TryFreezeReg = new LinkedHashSet<>();
+        HashSet<R2> freezeMoves = new HashSet<>();
+        HashSet<Reg> TryFreezeReg = new HashSet<>();
         for (R2 mv : moveList) {
             Reg rd = (Reg) mv.rd;
             Reg rs = (Reg) mv.rs;
@@ -367,7 +319,7 @@ public class GPRallocater {
         }
     }
 
-    private static int getDegree(LinkedHashSet<Reg> nodes) {
+    private static int getDegree(HashSet<Reg> nodes) {
         int size = 0;
         HashSet<Reg.PhyReg> regs = new HashSet<>();
         for (Reg reg : nodes) {
@@ -376,7 +328,7 @@ public class GPRallocater {
             }
             else size++;
         }
-        regs.removeAll(unAllocateRegs);
+//        regs.removeAll(unAllocateRegs);
         return regs.size() + size;
     }
 
@@ -388,26 +340,19 @@ public class GPRallocater {
         while (change) {
             change = false;
             //先进行传送无关节点的删除
-            regQueue.clear();
-            for (Reg node : curCG.keySet()) {
-                if (!moveNodes.contains(node)) regQueue.add(new RegNode(node));
-            }
-            while (!regQueue.isEmpty()) {
-                RegNode cur = regQueue.remove();
-                if (!curCG.containsKey(cur.reg)) continue;
-                if (cur.degree != getDegree(curCG.get(cur.reg))) continue;
-                Reg node = cur.reg;
-//                System.out.println("simplify: " + node + " " + getDegree(curCG.get(node)));
-                if (getDegree(curCG.get(node)) < K) {
-                    LinkedHashSet<Reg> neighbors = new LinkedHashSet<>(curCG.get(node));
-                    DeleteNode(node, curCG);
-                    for (Reg neighbor : neighbors) {
-                        if (!moveNodes.contains(neighbor)) regQueue.add(new RegNode(neighbor));
-                        if (neighbor.equals(node)) System.out.println("error");
+            boolean simplify = true;
+            while (simplify) {
+                simplify = false;
+                for (Reg node : curCG.keySet()) {
+                    //mv相关指令不在这里处理
+                    if (moveNodes.contains(node)) continue;
+                    if (getDegree(curCG.get(node)) < K) {
+                        simplify = true;
+                        DeleteNode(node);
+                        if (!node.preColored) outNodes.add(node);
+                        break;
                     }
-                    if (!node.preColored) outNodes.add(node);
                 }
-                else break;
             }
             //如果没有可以删除的低度数传送无关节点，尝试删除一条move来合并一对move相关节点
             boolean merge = true;
@@ -417,6 +362,7 @@ public class GPRallocater {
                     Reg r1 = (Reg) move.rs;
                     Reg r2 = (Reg) move.rd;
                     if (CanBeMerged(r1, r2)) {
+//                        System.out.println("merge: " + r1 + " " + r2);
                         Reg newReg;
                         if (!r1.equals(r2)) {
                             Reg oldReg;
@@ -462,7 +408,6 @@ public class GPRallocater {
             conflictGraph.get(neighbor).add(newReg);
         }
         conflictGraph.remove(oldReg);
-        if (callSaved.contains(oldReg)) callSaved.add(newReg);
     }
 
     private static void TryThrowMoveNode(Reg node) {
@@ -488,19 +433,16 @@ public class GPRallocater {
     /**
      * 判断两个节点是否可以合并
      *
-     * @param r1
-     * @param r2
-     * @return
      */
     public static boolean CanBeMerged(Reg r1, Reg r2) {
         if (r1.equals(r2)) return true;
         if (r1.preColored && r2.preColored)
             if (r1.phyReg == r2.phyReg) return true;
             else return false;
-        if (r1.phyReg == Reg.PhyReg.zero || r2.phyReg == Reg.PhyReg.zero) return false;
+        if (r1.phyReg == zero || r2.phyReg == zero) return false;
         if (curCG.get(r1).contains(r2)) return false;
         //合并策略1：如果两个节点的合并节点度数小于K，则可以合并
-        LinkedHashSet<Reg> neighbors = new LinkedHashSet<>();
+        HashSet<Reg> neighbors = new HashSet<>();
         neighbors.addAll(curCG.get(r1));
         neighbors.addAll(curCG.get(r2));
         if (getDegree(neighbors) < K) {
@@ -520,11 +462,11 @@ public class GPRallocater {
      *
      * @param node 删除的节点
      */
-    private static void DeleteNode(Reg node, LinkedHashMap<Reg, LinkedHashSet<Reg>> graph) {
-        for (Reg neighbor : graph.get(node)) {
-            graph.get(neighbor).remove(node);
+    private static void DeleteNode(Reg node) {
+        for (Reg neighbor : curCG.get(node)) {
+            curCG.get(neighbor).remove(node);
         }
-        graph.remove(node);
+        curCG.remove(node);
     }
 
 
@@ -538,61 +480,50 @@ public class GPRallocater {
      */
     public static void buildConflictGraph() {
         LivenessAnalyze.RunOnFunc(curFunc);
-        conflictGraph.clear();
-        for (Reg reg : RegUse.keySet()) {
-            if (reg.regType == Reg.RegType.GPR) {
-                conflictGraph.put(reg, new LinkedHashSet<>());
-            }
-        }
         for (RiscvBlock block : curFunc.blocks) {
             for (RiscvInstruction ins : block.riscvInstructions) {
+                for (Reg reg : ins.getReg()) {
+                    if (reg.regType == Reg.RegType.FPR) conflictGraph.putIfAbsent(reg, new HashSet<>());
+                }
                 for (Reg def : Def.get(ins)) {
-                    if (def.regType == Reg.RegType.GPR) {
+                    if (def.regType == Reg.RegType.FPR) {
                         for (Reg out : Out.get(ins)) {
-                            if (out.regType == Reg.RegType.GPR) {
-                                addConflict(def, out);
-                            }
+                            if (out.regType == Reg.RegType.FPR) addConflict(def, out);
                         }
                     }
                 }
                 for (Reg o1 : Out.get(ins)) {
-                    if (o1.regType == Reg.RegType.GPR) {
-                        for (Reg o2 : Out.get(ins)) {
-                            if (o2.regType == Reg.RegType.GPR) {
-                                addConflict(o1, o2);
-                            }
-                        }
-                    }
+                    for (Reg o2 : Out.get(ins)) addConflict(o1, o2);
+
                 }
             }
         }
         //检查conflictGraph是否有自环
         for (Reg reg : conflictGraph.keySet()) {
             if (conflictGraph.get(reg).contains(reg)) {
-//                System.out.println("self conflict: " + reg);
+                System.out.println("self conflict: " + reg);
                 conflictGraph.get(reg).remove(reg);
             }
         }
-//        System.out.println(conflictGraph);
-    }
 
-    private static void buildCurCG() {
         //深拷贝删除图
-        curCG = new LinkedHashMap<>();
+        curCG = new HashMap<>();
         for (Reg reg : conflictGraph.keySet()) {
-            curCG.put(reg, new LinkedHashSet<>(conflictGraph.get(reg)));
+            curCG.put(reg, new HashSet<>(conflictGraph.get(reg)));
         }
+//        System.out.println(conflictGraph);
     }
 
     /**
      * 向冲突图中添加冲突
      *
-     * @param reg1
-     * @param reg2
      */
     private static void addConflict(Reg reg1, Reg reg2) {
         if (reg1.equals(reg2)) return;
-        if ((reg1).regType != Reg.RegType.GPR || reg2.regType != Reg.RegType.GPR) return;
+        if ((reg1).regType != Reg.RegType.FPR || reg2.regType != Reg.RegType.FPR) return;
+        if (conflictGraph.containsKey(reg1) && conflictGraph.get(reg1).contains(reg2)) return;
+        conflictGraph.putIfAbsent(reg1, new HashSet<>());
+        conflictGraph.putIfAbsent(reg2, new HashSet<>());
         conflictGraph.get(reg1).add(reg2);
         conflictGraph.get(reg2).add(reg1);
     }

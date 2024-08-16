@@ -6,9 +6,7 @@ import backend.operand.Reg;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 
 public class ScheduleState {
-    public class PipeLine{
 
-    }
     private int cycleCount;
     private final HashMap<RiscvInstruction, HashMap<Integer, Reg>> regRenameHashMap;
     private int issuedFlag;

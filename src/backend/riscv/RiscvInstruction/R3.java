@@ -171,9 +171,7 @@ public class R3 extends RiscvInstruction {
                 case fmin -> {
                     return "fmin.s";
                 }
-                default -> {
-                    throw new AssertionError();
-                }
+                default -> throw new AssertionError();
             }
         }
     }
@@ -257,7 +255,7 @@ public class R3 extends RiscvInstruction {
             if (add.getOffset() >= 2048 || add.getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
                 Li li = new Li(block, tmp, add);
-                block.riscvInstructions.insertBefore(li, this);
+                block.insertInstBefore(li, this);
                 this.rs2 = tmp;
                 this.type = type == R3Type.addi ? R3Type.add : R3Type.addw;
             }

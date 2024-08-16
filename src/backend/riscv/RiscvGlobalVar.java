@@ -14,8 +14,8 @@ import java.util.ArrayList;
  */
 // xxx: RiscvGlobalVar 应该继承 Operand
 public class RiscvGlobalVar extends Operand {
-    public String name;//即显示出来的label
-    public GlobType type;
+    public final String name;//即显示出来的label
+    public final GlobType type;
 
     public enum GlobType {
         STRING, FLOAT, INT

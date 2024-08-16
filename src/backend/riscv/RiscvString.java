@@ -18,7 +18,7 @@ public class RiscvString extends RiscvGlobalVar {
         RS.add(this);
     }
 
-    public static ArrayList<RiscvString> RS = new ArrayList<>();
+    public static final ArrayList<RiscvString> RS = new ArrayList<>();
 
     public String getData() {
         return data;
@@ -32,6 +32,6 @@ public class RiscvString extends RiscvGlobalVar {
 
     @Override
     public boolean hasInit() {
-        return true;
+        return super.hasInit();
     }
 }

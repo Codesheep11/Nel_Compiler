@@ -3,7 +3,6 @@ package frontend.semantic;
 import mir.Constant;
 import mir.Type;
 import mir.Value;
-import utils.NelLinkedList;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -56,7 +55,6 @@ public abstract class InitValue {
             StringBuilder str = new StringBuilder(getType().toString() + " ");
             str.append("[");
             Iterator<InitValue> iter = arrayValues.iterator();
-            ;
             while (iter.hasNext()) {
                 str.append(iter.next().toString());
                 if (iter.hasNext()) {
@@ -90,7 +88,7 @@ public abstract class InitValue {
     }
 
     public static class ZeroArrayInit extends ArrayInit {
-        public ArrayList<InitValue> arrayValues;
+        public final ArrayList<InitValue> arrayValues;
 
         public int solve(Type ele)
         {
@@ -215,7 +213,7 @@ public abstract class InitValue {
         }
 
         public static class Slice {
-            public Value value;
+            public final Value value;
             public int count = 1;
             public Flatten flatten;
 

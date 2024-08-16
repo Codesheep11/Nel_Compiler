@@ -2,7 +2,6 @@ package midend.Transform.Function;
 
 
 import midend.Analysis.AnalysisManager;
-import midend.Transform.DCE.RemoveBlocks;
 import midend.Util.FuncInfo;
 import mir.*;
 import mir.Module;
@@ -75,13 +74,13 @@ public class TailCall2Loop {
         BasicBlock newEntry = new BasicBlock(curFunc.getBBName() + "_C2L_header", curFunc);
         new Instruction.Jump(newEntry, oldEntry);
         newEntry.remove();
-        curFunc.getBlocks().addFirst(newEntry);
+        curFunc.addBlockFirst(newEntry);
         for (int i = curFunc.getFuncRArguments().size() - 1; i >= 0; i--) {
             Function.Argument arg = curFunc.getFuncRArguments().get(i);
             Instruction.Phi phi = new Instruction.Phi(oldEntry, arg.getType(), new LinkedHashMap<>());
             phi.remove();
             arg.replaceAllUsesWith(phi);
-            oldEntry.getInstructions().addFirst(phi);
+            oldEntry.addInstFirst(phi);
             phi.addOptionalValue(newEntry, arg);
             phi.addOptionalValue(block, call.getParams().get(i));
         }

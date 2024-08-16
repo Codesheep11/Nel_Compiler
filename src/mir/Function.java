@@ -4,13 +4,12 @@ import backend.operand.Address;
 import midend.Analysis.AnalysisManager;
 import midend.Transform.Loop.LoopInfo;
 import midend.Util.CloneInfo;
-import midend.Util.Print;
 import utils.NelLinkedList;
 
 import java.util.*;
 
-
-public final class Function extends Value {
+@SuppressWarnings("unused")
+public class Function extends Value {
 
     //Note that Function is a GlobalValue and therefore also a Constant.
     // The value of the function
@@ -46,8 +45,9 @@ public final class Function extends Value {
     public boolean isParallelLoopBody = false;
 
     private Type retType; // 返回值类型
-    private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
+    private ArrayList<Argument> funcRArguments; //
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
+    private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
 
     public Module module;
@@ -56,6 +56,7 @@ public final class Function extends Value {
 
     public Function(Type type, String name, Type... argumentTypes) {
         super(Type.FunctionType.FUNC_TYPE);
+        entry = null;
         setName(name);
         retType = type;
         blocks = new NelLinkedList<>();
@@ -71,6 +72,7 @@ public final class Function extends Value {
     public Function(Type type, String name, ArrayList<Type> argumentTypes) {
         super(Type.FunctionType.FUNC_TYPE);
         setName(name);
+        entry = null;
         retType = type;
         blocks = new NelLinkedList<>();
         ArrayList<Argument> arguments = new ArrayList<>();
@@ -90,7 +92,7 @@ public final class Function extends Value {
     }
 
     public BasicBlock getEntry() {
-        return getBlocks().getFirst();
+        return blocks.getFirst();
     }
 
     public BasicBlock getFirstBlock() {
@@ -106,8 +108,33 @@ public final class Function extends Value {
     }
 
     public void appendBlock(BasicBlock block) {
-        blocks.addLast(block);
+        if (blocks.isEmpty()) {
+            entry = block;
+        }
+        new FunctionAsNelListFriend().addLast(block);
+        block.setParentFunction(this);
     }
+
+    public void addBlockFirst(BasicBlock block) {
+        new FunctionAsNelListFriend().addFirst(block);
+        block.setParentFunction(this);
+    }
+
+    public void addBlockLast(BasicBlock block) {
+        new FunctionAsNelListFriend().addLast(block);
+        block.setParentFunction(this);
+    }
+
+    public void insertBlockBefore(BasicBlock block, BasicBlock pos) {
+        new FunctionAsNelListFriend().insertBefore(block, pos);
+        block.setParentFunction(this);
+    }
+
+    public void insertBlockAfter(BasicBlock block, BasicBlock pos) {
+        new FunctionAsNelListFriend().insertAfter(block, pos);
+        block.setParentFunction(this);
+    }
+
 
     //region outputLLVMIR
     public String FArgsToString() {
@@ -127,7 +154,7 @@ public final class Function extends Value {
         Iterator<Argument> iter = getFuncRArguments().iterator();
         while (iter.hasNext()) {
             Argument arg = iter.next();
-            str.append(arg.getType().toString() + " ");
+            str.append(arg.getType().toString()).append(" ");
             str.append(arg.getDescriptor());
             if (iter.hasNext()) {
                 str.append(", ");
@@ -240,7 +267,7 @@ public final class Function extends Value {
                 if (inst instanceof Instruction.Return && ((Instruction.Return) inst).hasValue()) {
                     Instruction jumpToRetBB = new Instruction.Jump(needFixBB, retBB);
                     jumpToRetBB.remove();
-                    needFixBB.getInstructions().insertBefore(jumpToRetBB, inst);
+                    needFixBB.insertInstBefore(jumpToRetBB, inst);
                     //instr.insertBefore(jumpToRetBB);
 //                    retBB.getPreBlocks().add(needFixBB);
 //                    needFixBB.setSucBlocks(retSucc);
@@ -259,7 +286,7 @@ public final class Function extends Value {
                 else if (inst instanceof Instruction.Return) {
                     Instruction jumpToRetBB = new Instruction.Jump(needFixBB, retBB);
                     jumpToRetBB.remove();
-                    needFixBB.getInstructions().insertBefore(jumpToRetBB, inst);
+                    needFixBB.insertInstBefore(jumpToRetBB, inst);
                     //instr.insertBefore(jumpToRetBB);
 //                    retBB.getPreBlocks().add(needFixBB);
 //                    needFixBB.setSucBlocks(retSucc);
@@ -337,11 +364,9 @@ public final class Function extends Value {
 
     /**
      * 获取函数的dom树层序遍历
-     *
-     * @return
      */
     public ArrayList<BasicBlock> getDomTreeLayerSort() {
-        if (getEntry() == null) return new ArrayList<>();
+        if (entry == null) return new ArrayList<>();
         BasicBlock entry = getEntry();
         ArrayList<BasicBlock> layerSort = new ArrayList<>();
         Queue<BasicBlock> queue = new LinkedList<>();
@@ -362,12 +387,12 @@ public final class Function extends Value {
      * @return 返回支配树后序遍历顺序的基本块列表
      */
     public ArrayList<BasicBlock> getDomTreePostOrder() {
-        if (getEntry() == null) return new ArrayList<>();
+        if (entry == null) return new ArrayList<>();
         ArrayList<BasicBlock> postOrder = new ArrayList<>();
         Stack<BasicBlock> stack = new Stack<>();
-        stack.push(getEntry());
+        stack.push(entry);
         Set<BasicBlock> visited = new HashSet<>();
-        visited.add(getEntry());
+        visited.add(entry);
 
         while (!stack.isEmpty()) {
             BasicBlock cur = stack.peek();
@@ -393,7 +418,6 @@ public final class Function extends Value {
     /**
      * 获取函数的反向后序遍历，即dfs的反序
      *
-     * @return
      */
     public ArrayList<BasicBlock> buildReversePostOrderTraversal() {
         ArrayList<BasicBlock> rpot = new ArrayList<>();
@@ -422,72 +446,23 @@ public final class Function extends Value {
         return rpot;
     }
 
-    /**
-     * 获取不考虑latch边的cfg图的拓扑排序
-     *
-     * @return
-     */
-    public ArrayList<BasicBlock> getTopoSortWithoutLatch() {
-        ArrayList<BasicBlock> blocks = new ArrayList<>();
-        HashMap<BasicBlock, Integer> bbMap = new HashMap<>();
-        for (BasicBlock bb : getBlocks()) {
-            // 如果是循环的头结点，那么入度不考虑latch边
-            Loop loop = bb.loop;
-            if (loop == null || !loop.header.equals(bb)) {
-                bbMap.put(bb, bb.getPreBlocks().size());
-            }
-            else {
-                int inNum = 0;
-                for (BasicBlock pre : bb.getPreBlocks()) {
-                    if (!loop.latchs.contains(pre)) {
-                        inNum++;
-                    }
-                }
-                bbMap.put(bb, inNum);
-            }
+    private final class FunctionAsNelListFriend extends NelLinkedList.NelList_Friend {
+        private void insertBefore(BasicBlock newNode, BasicBlock node) {
+            super.insertBefore(blocks, newNode, node);
         }
-        Queue<BasicBlock> queue = new LinkedList<>();
-        queue.add(getEntry());
-        while (!queue.isEmpty()) {
-            BasicBlock now = queue.poll();
-            blocks.add(now);
-            for (BasicBlock succ : now.getSucBlocks()) {
-                Loop loop = succ.loop;
-                if (loop != null && loop.header.equals(succ) && loop.latchs.contains(now)) {
-                    continue;
-                }
-                bbMap.put(succ, bbMap.get(succ) - 1);
-                if (bbMap.get(succ) == 0)
-                    queue.offer(succ);
-                if (bbMap.get(succ) < 0)
-                    throw new IllegalStateException("negative degree!");
-            }
+
+        private void insertAfter(BasicBlock newNode, BasicBlock node) {
+            super.insertAfter(blocks, newNode, node);
         }
-        if (blocks.size() != getBlocks().size()) {
-            for (BasicBlock block : bbMap.keySet()) {
-                if (bbMap.get(block) > 0) {
-                    System.err.println("remain: " + block.getLabel());
-                }
-            }
-            throw new RuntimeException("not accessed node");
+
+        private void addFirst(BasicBlock newNode) {
+            super.addFirst(blocks, newNode);
         }
-//        while (!bbMap.isEmpty()) {
-//            for (BasicBlock bb : bbMap.keySet()) {
-//                if (bbMap.get(bb) == 0) {
-//                    blocks.add(bb);
-//                    bbMap.remove(bb);
-//                    for (BasicBlock succ : bb.getSucBlocks()) {
-//                        Loop loop = succ.loop;
-//                        if (loop != null && loop.header.equals(succ) && loop.latchs.contains(bb)) {
-//                            continue;
-//                        }
-//                        bbMap.put(succ, bbMap.get(succ) - 1);
-//                    }
-//                    break;
-//                }
-//            }
-//        }
-        return blocks;
+
+        private void addLast(BasicBlock newNode) {
+            super.addLast(blocks, newNode);
+        }
+
     }
 
     @Override

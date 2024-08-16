@@ -2,15 +2,13 @@ package backend.riscv.RiscvInstruction;
 
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
-import backend.riscv.RiscvFunction;
-import backend.riscv.RiscvGlobalVar;
 
 import java.util.HashSet;
 
 public class FuncLa extends RiscvInstruction {
 
     // 所取函数的地址
-    public String content;
+    public final String content;
 
     public Reg reg;
 
@@ -36,12 +34,12 @@ public class FuncLa extends RiscvInstruction {
 
     @Override
     public HashSet<Reg> getUse() {
-        return new HashSet<>();
+        return super.getUse();
     }
 
     @Override
     public HashSet<Reg> getDef() {
-        HashSet def = new HashSet<>();
+        HashSet<Reg> def = new HashSet<>();
         def.add(reg);
         return def;
     }
@@ -58,7 +56,7 @@ public class FuncLa extends RiscvInstruction {
 
     @Override
     public boolean isUse(int idx) {
-        return false;
+        return super.isUse(idx);
     }
 
     @Override

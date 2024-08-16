@@ -9,11 +9,12 @@ import java.util.HashMap;
 
 public class MemDepInfo {
     //Load 与其上次定值点(Store Call BasicBlock)
-    private HashMap<Instruction.Load, Value> loadMap = new HashMap<>();
+    private final HashMap<Instruction.Load, Value> loadMap = new HashMap<>();
     //Store 与其可能的使用点
-    private HashMap<Instruction.Store, Instruction> storeMap = new HashMap<>();
+    private final HashMap<Instruction.Store, Instruction> storeMap = new HashMap<>();
 
-    private Function function;
+    @SuppressWarnings("FieldCanBeLocal")
+    private final Function function;
 
     public MemDepInfo(Function function) {
         this.function = function;

@@ -97,7 +97,7 @@ public class CodeGen {
     private void visitFunction(Function function) {
         nowFunc = new RiscvFunction(function);
         if (function.isParallelLoopBody)
-            nowFunc.isParallLoopBody = true;
+            nowFunc.isParallelLoopBody = true;
         ansRis.addFunction(nowFunc);
         for (BasicBlock block : function.getBlocks()) {
             RiscvBlock riscvBlock = new RiscvBlock(nowFunc, block);
@@ -106,9 +106,9 @@ public class CodeGen {
         }
         if (Manager.isO1) RiscLoop.buildLoops(nowFunc, function, blockMap);
         Address offset = null;
-        if (!function.isExternal() && FuncAnalysis.callGraph.get(function).size() != 0) {
+        if (!function.isExternal() && !FuncAnalysis.callGraph.get(function).isEmpty()) {
             offset = StackManager.getInstance().getRegOffset(nowFunc.name, "ra", 8);
-            blockMap.get(function.getEntry()).addInstrucion(new LS(blockMap.get(function.getEntry()),
+            blockMap.get(function.getEntry()).addInstLast(new LS(blockMap.get(function.getEntry()),
                     Reg.getPreColoredReg(Reg.PhyReg.ra, 64),
                     Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                     offset,
@@ -168,7 +168,7 @@ public class CodeGen {
         if (function.isExternal()) return;
         for (Loop loop : function.loopInfo.TopLevelLoops) setBlockLoopDepth(loop);
         for (RiscvInstruction riscvInstruction : paramPassing) {
-            nowBlock.riscvInstructions.addLast(riscvInstruction);
+            nowBlock.addInstLast(riscvInstruction);
         }
         for (BasicBlock block : function.getDomTreeLayerSort()) {
             visitBlock(block);
@@ -180,7 +180,7 @@ public class CodeGen {
                         Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                         offset,
                         LS.LSType.ld, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                rb.riscvInstructions.insertBefore(ld, rb.riscvInstructions.getLast());
+                rb.insertInstBefore(ld, rb.riscvInstructions.getLast());
             }
         }
     }
@@ -201,14 +201,14 @@ public class CodeGen {
         if (type.isFloatTy()) {
             Reg fa0 = Reg.getPreColoredReg(Reg.PhyReg.fa0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
-            nowBlock.riscvInstructions.addLast(new R2(nowBlock, fa0, src, R2.R2Type.fmv));
+            nowBlock.addInstLast(new R2(nowBlock, fa0, src, R2.R2Type.fmv));
         }
         else if (type.isInt32Ty()) {
             Reg a0 = Reg.getPreColoredReg(Reg.PhyReg.a0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
-            nowBlock.riscvInstructions.addLast(new R2(nowBlock, a0, src, R2.R2Type.mv));
+            nowBlock.addInstLast(new R2(nowBlock, a0, src, R2.R2Type.mv));
         }
-        nowBlock.riscvInstructions.addLast(ret);
+        nowBlock.addInstLast(ret);
         nowFunc.exits.add(nowBlock);
     }
 
@@ -222,14 +222,14 @@ public class CodeGen {
             Reg pa0 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(0));
             Reg pa1 = VirRegMap.VRM.ensureRegForValue(callInstr.getParams().get(1));
             Reg pa2 = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-            nowBlock.riscvInstructions.addLast(new FuncLa(nowBlock, pa2, "f_" + callInstr.getParams().get(2).getName()));
-            nowBlock.riscvInstructions.addLast(new R2(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a0, 32), pa0, R2.R2Type.mv));
-            nowBlock.riscvInstructions.addLast(new R2(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a1, 32), pa1, R2.R2Type.mv));
-            nowBlock.riscvInstructions.addLast(new R2(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a2, 64), pa2, R2.R2Type.mv));
+            nowBlock.addInstLast(new FuncLa(nowBlock, pa2, "f_" + callInstr.getParams().get(2).getName()));
+            nowBlock.addInstLast(new R2(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a0, 32), pa0, R2.R2Type.mv));
+            nowBlock.addInstLast(new R2(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a1, 32), pa1, R2.R2Type.mv));
+            nowBlock.addInstLast(new R2(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a2, 64), pa2, R2.R2Type.mv));
             String funcName = callInstr.getDestFunction().getName();
             J call = new J(nowBlock, J.JType.call, funcName);
             nowFunc.calls.add(call);
-            nowBlock.riscvInstructions.addLast(call);
+            nowBlock.addInstLast(call);
             return;
         }
         String funcName = callInstr.getDestFunction().getName();
@@ -245,7 +245,7 @@ public class CodeGen {
         // 如果是对字符串输出的话,需要将第一个参数设置成地址
         if (callInstr.strIdx != -1) {
             count_int++;
-            nowBlock.riscvInstructions.addLast(new La(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a0, 64), RiscvString.RS.get(callInstr.strIdx - 1)));
+            nowBlock.addInstLast(new La(nowBlock, Reg.getPreColoredReg(Reg.PhyReg.a0, 64), RiscvString.RS.get(callInstr.strIdx - 1)));
         }
         for (Value para : paras) {
             Reg paraReg = VirRegMap.VRM.ensureRegForValue(para);
@@ -253,14 +253,14 @@ public class CodeGen {
             if (StackManager.getInstance().canBeCalAsOffset(nowFunc.name, para)) {
                 int byte_off = StackManager.getInstance().getSpOffset(nowFunc.name, para).getOffset();
                 Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, paraReg, sp, new Address(byte_off, nowFunc.name), R3.R3Type.addi));
+                nowBlock.addInstLast(new R3(nowBlock, paraReg, sp, new Address(byte_off, nowFunc.name), R3.R3Type.addi));
             }
             // 如果是alloc得到的，
             if (para.getType().isFloatTy()) {
                 if (count_float < 8) {
                     int fa0order = Reg.PhyReg.getOrder(Reg.PhyReg.fa0);
                     // 从浮点参数寄存器到目标虚拟寄存器
-                    nowBlock.riscvInstructions.addLast(new R2(nowBlock,
+                    nowBlock.addInstLast(new R2(nowBlock,
                             Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(fa0order + count_float), 32),
                             paraReg,
                             R2.R2Type.fmv));
@@ -270,7 +270,7 @@ public class CodeGen {
                     // 获取当前的偏移地址
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 4);
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock,
+                    nowBlock.addInstLast(new LS(nowBlock,
                             paraReg,
                             Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                             address,
@@ -280,7 +280,7 @@ public class CodeGen {
             else if (para.getType().isPointerTy()) {
                 if (count_int < 8) {
                     int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
-                    nowBlock.riscvInstructions.addLast(new R2(nowBlock,
+                    nowBlock.addInstLast(new R2(nowBlock,
                             Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(a0order + count_int), 64),
                             paraReg,
                             R2.R2Type.mv
@@ -290,7 +290,7 @@ public class CodeGen {
                 else {
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 8);
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock,
+                    nowBlock.addInstLast(new LS(nowBlock,
                             paraReg,
                             Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                             address,
@@ -300,7 +300,7 @@ public class CodeGen {
             else if (para.getType().isInt32Ty()) {
                 if (count_int < 8) {
                     int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
-                    nowBlock.riscvInstructions.addLast(new R2(nowBlock,
+                    nowBlock.addInstLast(new R2(nowBlock,
                             Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(a0order + count_int), 32),
                             paraReg,
                             R2.R2Type.mv
@@ -310,7 +310,7 @@ public class CodeGen {
                 else {
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 4);
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock,
+                    nowBlock.addInstLast(new LS(nowBlock,
                             paraReg,
                             Reg.getPreColoredReg(Reg.PhyReg.sp, 64),
                             address,
@@ -320,17 +320,17 @@ public class CodeGen {
         }
         // 起跳
         nowFunc.calls.add(call);
-        nowBlock.riscvInstructions.addLast(call);
+        nowBlock.addInstLast(call);
         // 将call返回值放到对应的寄存器里面
         if (reg != null) {
             if (type.isInt32Ty()) {
-                nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.a0, 32), R2.R2Type.mv));
+                nowBlock.addInstLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.a0, 32), R2.R2Type.mv));
             }
             else if (type.isFloatTy()) {
-                nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.fa0, 32), R2.R2Type.fmv));
+                nowBlock.addInstLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.fa0, 32), R2.R2Type.fmv));
             }
             else {
-                nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.a0, 64), R2.R2Type.mv));
+                nowBlock.addInstLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.a0, 64), R2.R2Type.mv));
             }
         }
     }
@@ -377,19 +377,19 @@ public class CodeGen {
                 else {
                     lstype = LS.LSType.flw;
                 }
-                nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, lstype, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                nowBlock.addInstLast(new LS(nowBlock, reg, sp, address, lstype, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 return;
             }
             // 如果是对全局变量的访问
             if (loadInstr.getAddr() instanceof GlobalVariable) {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 RiscvGlobalVar label = gloMap.get(((GlobalVariable) loadInstr.getAddr()).label);
-                nowBlock.riscvInstructions.addLast(new La(nowBlock, tmp, label));
+                nowBlock.addInstLast(new La(nowBlock, tmp, label));
                 if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
                 else {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.lw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.lw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
             }
             else {
@@ -397,13 +397,13 @@ public class CodeGen {
                 Reg addr = VirRegMap.VRM.ensureRegForValue(loadInstr.getAddr());
                 AlignmentAnalysis.AlignType align = alignMap.get(loadInstr.getAddr());
                 if (type.isInt64Ty() || type.isPointerTy()) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.ld, align));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.ld, align));
                 }
                 else if (type.isInt32Ty() || type.isInt1Ty()) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.lw, align));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.lw, align));
                 }
                 else {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.flw, align));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.flw, align));
                 }
             }
         }
@@ -433,19 +433,19 @@ public class CodeGen {
                 else {
                     lstype = LS.LSType.fsw;
                 }
-                nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, sp, address, lstype, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                nowBlock.addInstLast(new LS(nowBlock, reg, sp, address, lstype, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 return;
             }
             // 如果是对全局变量的访问
             if (storeInstr.getAddr() instanceof GlobalVariable) {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 RiscvGlobalVar label = gloMap.get(((GlobalVariable) storeInstr.getAddr()).label);
-                nowBlock.riscvInstructions.addLast(new La(nowBlock, tmp, label));
+                nowBlock.addInstLast(new La(nowBlock, tmp, label));
                 if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.fsw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.fsw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
                 else {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.sw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.sw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
             }
             else {
@@ -453,13 +453,13 @@ public class CodeGen {
                 Reg addr = VirRegMap.VRM.ensureRegForValue(storeInstr.getAddr());
                 AlignmentAnalysis.AlignType align = alignMap.get(storeInstr.getAddr());
                 if (type.isInt64Ty() || type.isPointerTy()) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sd, align));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sd, align));
                 }
                 else if (type.isInt32Ty() || type.isInt1Ty()) {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sw, align));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sw, align));
                 }
                 else {
-                    nowBlock.riscvInstructions.addLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.fsw, align));
+                    nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.fsw, align));
                 }
             }
         }
@@ -483,7 +483,7 @@ public class CodeGen {
             if (getElementPtr.getBase() instanceof GlobalVariable) {
                 base = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 RiscvGlobalVar globalVar = gloMap.get(((GlobalVariable) getElementPtr.getBase()).label);
-                nowBlock.riscvInstructions.addLast(new La(nowBlock, base, globalVar));
+                nowBlock.addInstLast(new La(nowBlock, base, globalVar));
             }
             else {
                 base = VirRegMap.VRM.ensureRegForValue(getElementPtr.getBase());
@@ -492,12 +492,12 @@ public class CodeGen {
                 int of = (Integer) ((Constant.ConstantInt) offset).getConstValue();
                 int byte_off = of * size;
                 if (byte_off >= -2047 && byte_off <= 2047) {
-                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, new Imm(byte_off), R3.R3Type.addi));
+                    nowBlock.addInstLast(new R3(nowBlock, pointer, base, new Imm(byte_off), R3.R3Type.addi));
                 }
                 else {
                     Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-                    nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(byte_off)));
-                    nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, tmp, R3.R3Type.add));
+                    nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(byte_off)));
+                    nowBlock.addInstLast(new R3(nowBlock, pointer, base, tmp, R3.R3Type.add));
                 }
                 return;
             }
@@ -514,7 +514,7 @@ public class CodeGen {
                 int baseOffset = StackManager.getInstance().getPointerAddress(nowFunc.name, getElementPtr.getBase());
                 base = new Reg(Reg.RegType.GPR, 64);
                 Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, base, sp, new Address(baseOffset, nowFunc.name), R3.R3Type.addi));
+                nowBlock.addInstLast(new R3(nowBlock, base, sp, new Address(baseOffset, nowFunc.name), R3.R3Type.addi));
             }
         }
         // 给偏移找一个寄存器,方便计算
@@ -524,23 +524,23 @@ public class CodeGen {
         if ((size & (size - 1)) == 0) {
             int shift = Integer.toBinaryString(size).length() - 1;
             if (shift == 1) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh1add));
+                nowBlock.addInstLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh1add));
                 return;
             }
             else if (shift == 2) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh2add));
+                nowBlock.addInstLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh2add));
                 return;
             }
             else if (shift == 3) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh3add));
+                nowBlock.addInstLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh3add));
                 return;
             }
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp_offset, reg_for_offset, new Imm(shift), R3.R3Type.slliw));
+            nowBlock.addInstLast(new R3(nowBlock, tmp_offset, reg_for_offset, new Imm(shift), R3.R3Type.slliw));
         }
         else {
             MulPlaner.MulConst(tmp_offset, reg_for_offset, size);
         }
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, pointer, base, tmp_offset, R3.R3Type.add));
+        nowBlock.addInstLast(new R3(nowBlock, pointer, base, tmp_offset, R3.R3Type.add));
     }
 
     /**
@@ -562,14 +562,14 @@ public class CodeGen {
         double prob = branchInstr.getProbability();
         // 如果概率跳转概率比50大，那么就应当反转，让j尽可能大
         if (prob >= 0.5) {
-            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.beq, reg, Reg.getPreColoredReg
+            nowBlock.addInstLast(new B(nowBlock, B.BType.beq, reg, Reg.getPreColoredReg
                     (Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getElseBlock()), 1 - prob));
-            nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getThenBlock())));
+            nowBlock.addInstLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getThenBlock())));
         }
         else {
-            nowBlock.riscvInstructions.addLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg
+            nowBlock.addInstLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg
                     (Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock()), prob));
-            nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getElseBlock())));
+            nowBlock.addInstLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getElseBlock())));
         }
     }
 
@@ -579,7 +579,7 @@ public class CodeGen {
      */
     private void solveJump(Instruction.Jump jumpInstr) {
         RiscvBlock rb = blockMap.get(jumpInstr.getTargetBlock());
-        nowBlock.riscvInstructions.addLast(new J(nowBlock, J.JType.j, rb));
+        nowBlock.addInstLast(new J(nowBlock, J.JType.j, rb));
     }
 
     /**
@@ -591,7 +591,7 @@ public class CodeGen {
         }
         Reg src = VirRegMap.VRM.ensureRegForValue(sItofp.getSrc());
         Reg dst = VirRegMap.VRM.ensureRegForValue(sItofp);
-        nowBlock.riscvInstructions.addLast(new R2(nowBlock, dst, src, R2.R2Type.fcvtsw));
+        nowBlock.addInstLast(new R2(nowBlock, dst, src, R2.R2Type.fcvtsw));
     }
 
     /**
@@ -603,7 +603,7 @@ public class CodeGen {
         }
         Reg src = VirRegMap.VRM.ensureRegForValue(fPtosi.getSrc());
         Reg dst = VirRegMap.VRM.ensureRegForValue(fPtosi);
-        nowBlock.riscvInstructions.addLast(new R2(nowBlock, dst, src, R2.R2Type.fcvtws));
+        nowBlock.addInstLast(new R2(nowBlock, dst, src, R2.R2Type.fcvtws));
     }
 
     /**
@@ -635,26 +635,26 @@ public class CodeGen {
         switch (condCode) {
             case EQ -> {
                 Reg tmp = new Reg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp, reg1, reg2, R3.R3Type.subw));
-                nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, tmp, R2.R2Type.seqz));
+                nowBlock.addInstLast(new R3(nowBlock, tmp, reg1, reg2, R3.R3Type.subw));
+                nowBlock.addInstLast(new R2(nowBlock, ans, tmp, R2.R2Type.seqz));
             }
             case NE -> {
                 Reg tmp = new Reg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp, reg1, reg2, R3.R3Type.subw));
-                nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, tmp, R2.R2Type.snez));
+                nowBlock.addInstLast(new R3(nowBlock, tmp, reg1, reg2, R3.R3Type.subw));
+                nowBlock.addInstLast(new R2(nowBlock, ans, tmp, R2.R2Type.snez));
             }
             case SGE -> {
                 Reg tmp = new Reg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp, reg1, reg2, R3.R3Type.slt));
-                nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, tmp, R2.R2Type.seqz));
+                nowBlock.addInstLast(new R3(nowBlock, tmp, reg1, reg2, R3.R3Type.slt));
+                nowBlock.addInstLast(new R2(nowBlock, ans, tmp, R2.R2Type.seqz));
             }
-            case SGT -> nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg2, reg1, R3.R3Type.slt));
+            case SGT -> nowBlock.addInstLast(new R3(nowBlock, ans, reg2, reg1, R3.R3Type.slt));
             case SLE -> {
                 Reg tmp = new Reg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp, reg2, reg1, R3.R3Type.slt));
-                nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, tmp, R2.R2Type.seqz));
+                nowBlock.addInstLast(new R3(nowBlock, tmp, reg2, reg1, R3.R3Type.slt));
+                nowBlock.addInstLast(new R2(nowBlock, ans, tmp, R2.R2Type.seqz));
             }
-            case SLT -> nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.slt));
+            case SLT -> nowBlock.addInstLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.slt));
             default -> throw new RuntimeException("wrong icmp code!");
         }
     }
@@ -674,16 +674,16 @@ public class CodeGen {
         Reg reg2 = VirRegMap.VRM.ensureRegForValue(fcmp.getSrc2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fcmp);
         switch (condCode) {
-            case EQ -> nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.feq));
+            case EQ -> nowBlock.addInstLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.feq));
             case NE -> {
                 Reg tmp = new Reg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, tmp, reg1, reg2, R3.R3Type.feq));
-                nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, tmp, R2.R2Type.seqz));
+                nowBlock.addInstLast(new R3(nowBlock, tmp, reg1, reg2, R3.R3Type.feq));
+                nowBlock.addInstLast(new R2(nowBlock, ans, tmp, R2.R2Type.seqz));
             }
-            case OGE -> nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg2, reg1, R3.R3Type.fle));
-            case OGT -> nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg2, reg1, R3.R3Type.flt));
-            case OLE -> nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.fle));
-            case OLT -> nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.flt));
+            case OGE -> nowBlock.addInstLast(new R3(nowBlock, ans, reg2, reg1, R3.R3Type.fle));
+            case OGT -> nowBlock.addInstLast(new R3(nowBlock, ans, reg2, reg1, R3.R3Type.flt));
+            case OLE -> nowBlock.addInstLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.fle));
+            case OLT -> nowBlock.addInstLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.flt));
             default -> throw new RuntimeException("wrong fcmp code!");
         }
     }
@@ -700,7 +700,7 @@ public class CodeGen {
         if (bitCast.getSrc().getType().isFloatTy() && !bitCast.getType().isFloatTy()) {
             Reg reg = VirRegMap.VRM.ensureRegForValue(bitCast.getSrc());
             Reg ans = VirRegMap.VRM.ensureRegForValue(bitCast);
-            nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, reg, R2.R2Type.fmvxw));
+            nowBlock.addInstLast(new R2(nowBlock, ans, reg, R2.R2Type.fmvxw));
         }
         else {
             VirRegMap.VRM.binding(bitCast.getSrc(), bitCast);
@@ -729,22 +729,22 @@ public class CodeGen {
                 value = (int) ((Constant.ConstantInt) add.getOperand_2()).getConstValue();
             }
             if (value >= -2047 && value <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(value), all32 ? R3.R3Type.addiw : R3.R3Type.addi));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(value), all32 ? R3.R3Type.addiw : R3.R3Type.addi));
             }
             else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(value)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, all32 ? R3.R3Type.addw : R3.R3Type.add));
+                nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(value)));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, all32 ? R3.R3Type.addw : R3.R3Type.add));
             }
         }
         else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(add.getOperand_2());
             if (all32) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.addw));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.addw));
             }
             else {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.add));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.add));
             }
         }
     }
@@ -759,22 +759,22 @@ public class CodeGen {
             Reg op = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             int value = (int) ((Constant.ConstantInt) sub.getOperand_2()).getConstValue();
             if (value >= -2047 && value <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(-1 * value), all32 ? R3.R3Type.addiw : R3.R3Type.addi));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(-1 * value), all32 ? R3.R3Type.addiw : R3.R3Type.addi));
             }
             else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(-1 * value)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, all32 ? R3.R3Type.addw : R3.R3Type.add));
+                nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(-1 * value)));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, all32 ? R3.R3Type.addw : R3.R3Type.add));
             }
         }
         else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_2());
             if (all32) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.subw));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.subw));
             }
             else {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.sub));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.sub));
             }
         }
     }
@@ -791,7 +791,7 @@ public class CodeGen {
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fAdd.getOperand_1());
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fAdd.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fAdd);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fadd));
+        nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fadd));
     }
 
     /**
@@ -806,7 +806,7 @@ public class CodeGen {
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fSub.getOperand_1());
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fSub.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fSub);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fsub));
+        nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fsub));
     }
 
     private void solveMul(Instruction.Mul mul) {
@@ -824,10 +824,10 @@ public class CodeGen {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
             if (all32) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
             }
             else {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mul));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mul));
             }
         }
     }
@@ -842,10 +842,10 @@ public class CodeGen {
         }
         Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
         if (all32) {
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
+            nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
         }
         else {
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.div));
+            nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.div));
         }
     }
 
@@ -853,14 +853,14 @@ public class CodeGen {
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fmul.getOperand_1());
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fmul.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fmul);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmul));
+        nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmul));
     }
 
     private void solveFDiv(Instruction.FDiv fdiv) {
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fdiv.getOperand_1());
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fdiv.getOperand_2());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fdiv);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fdiv));
+        nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fdiv));
     }
 
     /**
@@ -876,10 +876,10 @@ public class CodeGen {
         }
         Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
         if (all32) {
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
+            nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
         }
         else {
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.rem));
+            nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.rem));
         }
 
     }
@@ -897,14 +897,14 @@ public class CodeGen {
         // 把第一个浮点数转化为整数并且加入转换指令
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fRem.getOperand_1());
         Reg reg1 = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-        nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg1, op1, R2.R2Type.fcvtsw));
+        nowBlock.addInstLast(new R2(nowBlock, reg1, op1, R2.R2Type.fcvtsw));
         // 把第二个浮点数转化为整数并且加入转换指令
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fRem.getOperand_2());
         Reg reg2 = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-        nowBlock.riscvInstructions.addLast(new R2(nowBlock, reg2, op2, R2.R2Type.fcvtsw));
+        nowBlock.addInstLast(new R2(nowBlock, reg2, op2, R2.R2Type.fcvtsw));
         // 对于该指令的结果分配一个虚拟寄存器,并且将上述的操作存入虚拟寄存器中
         Reg ans = VirRegMap.VRM.ensureRegForValue(fRem);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.remw));
+        nowBlock.addInstLast(new R3(nowBlock, ans, reg1, reg2, R3.R3Type.remw));
     }
 
     /**
@@ -915,10 +915,10 @@ public class CodeGen {
         Reg src = VirRegMap.VRM.ensureRegForValue(move.getSrc());
         Reg dst = VirRegMap.VRM.ensureRegForValue(move.getTarget());
         if (move.getSrc().getType().isFloatTy()) {
-            nowBlock.riscvInstructions.addLast(new R2(nowBlock, dst, src, R2.R2Type.fmv));
+            nowBlock.addInstLast(new R2(nowBlock, dst, src, R2.R2Type.fmv));
         }
         else {
-            nowBlock.riscvInstructions.addLast(new R2(nowBlock, dst, src, R2.R2Type.mv));
+            nowBlock.addInstLast(new R2(nowBlock, dst, src, R2.R2Type.mv));
         }
     }
 
@@ -929,7 +929,7 @@ public class CodeGen {
         Reg op = VirRegMap.VRM.ensureRegForValue(value1);
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.slliw));
+            nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.slliw));
         }
     }
 
@@ -941,12 +941,12 @@ public class CodeGen {
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
             if (val >= -2047 && val <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.andi));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.andi));
             }
             else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.and));
+                nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.and));
             }
         }
     }
@@ -958,7 +958,7 @@ public class CodeGen {
         Reg op = VirRegMap.VRM.ensureRegForValue(value1);
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.srliw));
+            nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.srliw));
         }
     }
 
@@ -969,7 +969,7 @@ public class CodeGen {
         Reg op = VirRegMap.VRM.ensureRegForValue(value1);
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
-            nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.sraiw));
+            nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.sraiw));
         }
     }
 
@@ -981,12 +981,12 @@ public class CodeGen {
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
             if (val >= -2047 && val <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.xoriw));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.xoriw));
             }
             else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.xorw));
+                nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.xorw));
             }
         }
     }
@@ -999,12 +999,12 @@ public class CodeGen {
         if (value2 instanceof Constant.ConstantInt) {
             int val = ((Constant.ConstantInt) value2).getIntValue();
             if (val >= -2047 && val <= 2047) {
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.ori));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.ori));
             }
             else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                nowBlock.riscvInstructions.addLast(new Li(nowBlock, tmp, new Imm(val)));
-                nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.or));
+                nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(val)));
+                nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.or));
             }
         }
     }
@@ -1015,7 +1015,7 @@ public class CodeGen {
         Reg ans = VirRegMap.VRM.ensureRegForValue(min);
         Reg op1 = VirRegMap.VRM.ensureRegForValue(value1);
         Reg op2 = VirRegMap.VRM.ensureRegForValue(value2);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.min));
+        nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.min));
     }
 
     private void solveMax(Instruction.Max max) {
@@ -1024,7 +1024,7 @@ public class CodeGen {
         Reg ans = VirRegMap.VRM.ensureRegForValue(max);
         Reg op1 = VirRegMap.VRM.ensureRegForValue(value1);
         Reg op2 = VirRegMap.VRM.ensureRegForValue(value2);
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.max));
+        nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.max));
     }
 
     private void solveFmadd(Instruction.Fmadd fmadd) {
@@ -1032,7 +1032,7 @@ public class CodeGen {
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fmadd.getOperand_2());
         Reg op3 = VirRegMap.VRM.ensureRegForValue(fmadd.getOperand_3());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fmadd);
-        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fmadd));
+        nowBlock.addInstLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fmadd));
     }
 
     private void solveFmsub(Instruction.Fmsub fmsub) {
@@ -1040,7 +1040,7 @@ public class CodeGen {
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fmsub.getOperand_2());
         Reg op3 = VirRegMap.VRM.ensureRegForValue(fmsub.getOperand_3());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fmsub);
-        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fmsub));
+        nowBlock.addInstLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fmsub));
     }
 
     private void solveFnmadd(Instruction.Fnmadd fnmadd) {
@@ -1048,7 +1048,7 @@ public class CodeGen {
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fnmadd.getOperand_2());
         Reg op3 = VirRegMap.VRM.ensureRegForValue(fnmadd.getOperand_3());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fnmadd);
-        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fnmadd));
+        nowBlock.addInstLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fnmadd));
     }
 
     private void solveFnmsub(Instruction.Fnmsub fnmsub) {
@@ -1056,13 +1056,13 @@ public class CodeGen {
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fnmsub.getOperand_2());
         Reg op3 = VirRegMap.VRM.ensureRegForValue(fnmsub.getOperand_3());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fnmsub);
-        nowBlock.riscvInstructions.addLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fnmsub));
+        nowBlock.addInstLast(new R4(nowBlock, ans, op1, op2, op3, R4.R4Type.fnmsub));
     }
 
     private void solveFneg(Instruction.Fneg fneg) {
         Reg op = VirRegMap.VRM.ensureRegForValue(fneg.getOperand());
         Reg ans = VirRegMap.VRM.ensureRegForValue(fneg);
-        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, op, R2.R2Type.fneg));
+        nowBlock.addInstLast(new R2(nowBlock, ans, op, R2.R2Type.fneg));
     }
 
     /**
@@ -1071,7 +1071,7 @@ public class CodeGen {
     private void solveSext(Instruction.Sext sext) {
         Reg reg = VirRegMap.VRM.ensureRegForValue(sext.getSrc());
         Reg ans = VirRegMap.VRM.ensureRegForValue(sext);
-        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
+        nowBlock.addInstLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
     }
 
     /**
@@ -1080,7 +1080,7 @@ public class CodeGen {
     private void solveTrunc(Instruction.Trunc trunc) {
         Reg reg = VirRegMap.VRM.ensureRegForValue(trunc.getSrc());
         Reg ans = VirRegMap.VRM.ensureRegForValue(trunc);
-        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
+        nowBlock.addInstLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
     }
 
     private void solveAtomicAdd(Instruction.AtomicAdd atomicAdd)
@@ -1088,7 +1088,7 @@ public class CodeGen {
         Reg ans = Reg.getPreColoredReg(Reg.PhyReg.zero, 32);
         Reg addr = VirRegMap.VRM.ensureRegForValue(atomicAdd.getPtr());
         Reg val = VirRegMap.VRM.ensureRegForValue(atomicAdd.getInc());
-        nowBlock.riscvInstructions.addLast(new AMOadd(nowBlock, ans, val, addr));
+        nowBlock.addInstLast(new AMOadd(nowBlock, ans, val, addr));
     }
 
     private void solveFmax(Instruction.FMax fMax)
@@ -1096,7 +1096,7 @@ public class CodeGen {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fMax);
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fMax.getOperand_1());
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fMax.getOperand_2());
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmax));
+        nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmax));
     }
 
     private void solveFmin(Instruction.FMin fMin)
@@ -1104,14 +1104,14 @@ public class CodeGen {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fMin);
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fMin.getOperand_1());
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fMin.getOperand_2());
-        nowBlock.riscvInstructions.addLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmin));
+        nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmin));
     }
 
     private void solveFAbs(Instruction.FAbs fAbs)
     {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fAbs);
         Reg op = VirRegMap.VRM.ensureRegForValue(fAbs.getOperand());
-        nowBlock.riscvInstructions.addLast(new R2(nowBlock, ans, op, R2.R2Type.fabs));
+        nowBlock.addInstLast(new R2(nowBlock, ans, op, R2.R2Type.fabs));
     }
 
     private void visitBlock(BasicBlock block) {

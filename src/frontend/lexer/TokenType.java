@@ -48,7 +48,8 @@ public enum TokenType {
 
 
     private final String content;
-    private boolean reserved;
+    private final boolean reserved;
+
     TokenType(String content) {
         this.content = content;
         this.reserved = false;

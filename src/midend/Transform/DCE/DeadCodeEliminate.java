@@ -3,16 +3,12 @@ package midend.Transform.DCE;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Util.FuncInfo;
-import mir.Function;
 import mir.Module;
 import mir.*;
 
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
-
-import static manager.CentralControl._DCD_OPEN;
 
 public class DeadCodeEliminate {
     private final static HashSet<Value> usefulVar = new HashSet<>();//所有有用的Value
@@ -61,7 +57,6 @@ public class DeadCodeEliminate {
     /**
      * 将传入的Value的use进行更新
      *
-     * @param value
      */
     public static void updateUse(Value value) {
 //        System.out.println("updateUse: " + value);
@@ -74,7 +69,7 @@ public class DeadCodeEliminate {
                     newUsefulVar.add(inst);
                     continue;
                 }
-                if (inst.getUses().size() != 0) newUsefulVar.add(inst);
+                if (!inst.getUses().isEmpty()) newUsefulVar.add(inst);
             }
         }
         if (value instanceof Instruction inst) {

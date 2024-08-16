@@ -7,12 +7,12 @@ import java.util.regex.Pattern;
 
 
 public class Lexer {
-    private TokenArray tokenArray;
-    private BufferedInputStream src;
+    private final TokenArray tokenArray;
+    private final BufferedInputStream src;
 
-    private StringHandler stringHandler;
+    private final StringHandler stringHandler;
 
-    private boolean debugMode;
+    private final boolean debugMode;
 
     public Lexer(BufferedInputStream src, TokenArray tokenArray) {
         this.src = src;
@@ -32,7 +32,7 @@ public class Lexer {
         for (TokenType tokenType : TokenType.values()) {
             Pattern p = tokenType.getPattern();
             if (p.matcher(str).matches()) {
-                if (debugMode) System.out.println(tokenType.toString() + "\t" + str);
+                if (debugMode) System.out.println(tokenType + "\t" + str);
                 tokenArray.append(new Token(tokenType, str));
                 return 0;
             }
@@ -59,7 +59,7 @@ public class Lexer {
         if (stringHandler.reachEOF()) {
             tokenArray.append(new Token(TokenType.EOF, ""));
             if (debugMode) {
-                System.out.println(TokenType.EOF.toString() + "\t" + "");
+                System.out.println(TokenType.EOF + "\t" + "");
             }
         }
     }

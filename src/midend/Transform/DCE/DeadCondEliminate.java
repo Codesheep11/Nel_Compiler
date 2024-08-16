@@ -8,9 +8,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class DeadCondEliminate {
-    private static HashSet<BasicBlock> visited = new HashSet<>();
+    private static final HashSet<BasicBlock> visited = new HashSet<>();
 
-    private static HashMap<Instruction, Instruction> instMap = new HashMap<>();
+    private static final HashMap<Instruction, Instruction> instMap = new HashMap<>();
 
     public static boolean run(Module module) {
         boolean modified = false;

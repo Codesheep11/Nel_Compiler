@@ -59,7 +59,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         return (Type) (tail.prev);
     }
 
-    public void insertBefore(NelLinkNode newNode, NelLinkNode node) {
+    private void insertBefore(NelLinkNode newNode, NelLinkNode node) {
         newNode.setParent(this);
         newNode.setPrev(node.prev);
         newNode.setNext(node);
@@ -69,7 +69,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         ++modCount;
     }
 
-    public void insertAfter(NelLinkNode newNode, NelLinkNode node) {
+    private void insertAfter(NelLinkNode newNode, NelLinkNode node) {
         newNode.setParent(this);
         newNode.setNext(node.next);
         newNode.setPrev(node);
@@ -79,7 +79,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         ++modCount;
     }
 
-    public void addFirst(Type newNode) {
+    private void addFirst(NelLinkNode newNode) {
         newNode.setParent(this);
         newNode.setPrev(head);
         newNode.setNext(head.next);
@@ -89,7 +89,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         ++modCount;
     }
 
-    public void addLast(Type newNode) {
+    private void addLast(NelLinkNode newNode) {
         newNode.setParent(this);
         newNode.setPrev(tail.prev);
         newNode.setNext(tail);
@@ -250,11 +250,14 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
             parent = null;
         }
 
-        public void addNext(NelLinkNode newNode) {
+        /**
+         * 设置为 protected 仅允许子类重写时调用
+         */
+        protected void addNext(NelLinkNode newNode) {
             parent.insertAfter(newNode, this);
         }
 
-        public void addPrev(NelLinkNode newNode) {
+        protected void addPrev(NelLinkNode newNode) {
             parent.insertBefore(newNode, this);
         }
 
@@ -267,6 +270,28 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
                 idx++;
             }
             throw new NoSuchElementException("parent doesn't have this ele");
+        }
+    }
+
+    /**
+     * java 实现友元访问
+     */
+    public static abstract class NelList_Friend {
+
+        protected void insertBefore(NelLinkedList<? extends NelLinkNode> list, NelLinkNode newNode, NelLinkNode node) {
+            list.insertBefore(newNode, node);
+        }
+
+        protected void insertAfter(NelLinkedList<? extends NelLinkNode> list, NelLinkNode newNode, NelLinkNode node) {
+            list.insertAfter(newNode, node);
+        }
+
+        protected void addFirst(NelLinkedList<? extends NelLinkNode> list, NelLinkNode newNode) {
+            list.addFirst(newNode);
+        }
+
+        protected void addLast(NelLinkedList<? extends NelLinkNode> list, NelLinkNode newNode) {
+            list.addLast(newNode);
         }
     }
 

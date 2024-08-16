@@ -13,15 +13,12 @@ import mir.*;
 import mir.Module;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class Visitor {
     public Module module;
     private final SymTable globalSymTable = new SymTable();
-    public ArrayList<String> globalStr = new ArrayList<>();
+    public final ArrayList<String> globalStr = new ArrayList<>();
     private final ArrayList<GlobalVariable> globalVariables = new ArrayList<>();
     private SymTable currentSymTable = globalSymTable;
     private BasicBlock currentBB = null;
@@ -31,13 +28,12 @@ public class Visitor {
 
     private boolean isGlobal = true;
 
-    private int countOfBB = 0;
 
     private final Stack<Recorder> recorders = new Stack<>();
 
     private final Stack<Ast.Cond> conds = new Stack<>();
 
-
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean isInLoop() {
         return !recorders.isEmpty();
     }
@@ -985,7 +981,6 @@ public class Visitor {
         currentEntry = null;
         currentBB = null;
         isGlobal = true;
-        countOfBB = 0;
         currentSymTable = currentSymTable.getParent();
 
     }
@@ -1050,6 +1045,7 @@ public class Visitor {
         }
     }
 
+    @SuppressWarnings("EmptyMethod")
     private void visitVoidStmt() {
 
     }
@@ -1228,6 +1224,7 @@ public class Visitor {
                 }
             }
         }
+        assert last != null;
         return castType(last, Type.BasicType.I1_TYPE);
     }
 
@@ -1309,7 +1306,7 @@ public class Visitor {
             }
         }
 
-        assert last.getType() instanceof Type.BasicType;
+        assert Objects.requireNonNull(last).getType() instanceof Type.BasicType;
         return last;
     }
 

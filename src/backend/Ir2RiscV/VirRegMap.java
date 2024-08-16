@@ -82,13 +82,13 @@ public class VirRegMap {
             Reg sp = Reg.getPreColoredReg(Reg.PhyReg.sp, 64);
             Address address = nowFunction.getArgAddress((Function.Argument) value);
             if (value.getType().isFloatTy()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                CodeGen.nowBlock.addInstLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
             }
             else if (value.getType().isInt64Ty() || value.getType().isPointerTy()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.ld, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                CodeGen.nowBlock.addInstLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.ld, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
             }
             else if (value.getType().isInt32Ty()) {
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.lw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                CodeGen.nowBlock.addInstLast(new LS(CodeGen.nowBlock, reg, sp, address, LS.LSType.lw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
             }
             else {
                 throw new RuntimeException("wrong type");
@@ -106,20 +106,20 @@ public class VirRegMap {
                 Float init = ((Float) ((Constant.ConstantFloat) value).getConstValue());
                 RiscvFloat rf = CodeGen.ansRis.getSameFloat(init);
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-                CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, tmp, rf));
-                CodeGen.nowBlock.riscvInstructions.addLast(new LS(CodeGen.nowBlock, reg, tmp, new Imm(0), LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
+                CodeGen.nowBlock.addInstLast(new La(CodeGen.nowBlock, tmp, rf));
+                CodeGen.nowBlock.addInstLast(new LS(CodeGen.nowBlock, reg, tmp, new Imm(0), LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
             }
             else if (value instanceof Constant.ConstantInt) {
                 int init = ((Integer) ((Constant.ConstantInt) value).getConstValue());
-                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
+                CodeGen.nowBlock.addInstLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
             }
             else if (value instanceof Constant.ConstantBool) {
                 int init = ((Integer) ((Constant.ConstantBool) value).getConstValue());
-                CodeGen.nowBlock.riscvInstructions.addLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
+                CodeGen.nowBlock.addInstLast(new Li(CodeGen.nowBlock, reg, new Imm(init)));
             }
             else if (value instanceof GlobalVariable) {
                 RiscvGlobalVar rb = CodeGen.gloMap.get(((GlobalVariable) value).label);
-                CodeGen.nowBlock.riscvInstructions.addLast(new La(CodeGen.nowBlock, reg, rb));
+                CodeGen.nowBlock.addInstLast(new La(CodeGen.nowBlock, reg, rb));
             }
             else {
                 throw new RuntimeException("wrong const type" + value.getType());
@@ -140,7 +140,7 @@ public class VirRegMap {
         //绑定在控制流变化后会有bug，如果这个本身的寄存器提前出现呢?
         //所以答案是，提前先看看原本有没有这个寄存器
         if (map.containsKey(b)) {
-            CodeGen.nowBlock.riscvInstructions.addLast(new R2(CodeGen.nowBlock, map.get(b), reg, R2.R2Type.mv));
+            CodeGen.nowBlock.addInstLast(new R2(CodeGen.nowBlock, map.get(b), reg, R2.R2Type.mv));
         }
         else {
             map.put(b, reg);

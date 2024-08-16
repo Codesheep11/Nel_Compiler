@@ -6,19 +6,20 @@ import utils.NelLinkedList;
 
 import java.util.HashSet;
 
+@SuppressWarnings("unused")
 public class RiscvBlock {
-    public String name;
+    public final String name;
 
-    public RiscvFunction function;
+    public final RiscvFunction function;
 
-    public NelLinkedList<RiscvInstruction> riscvInstructions = new NelLinkedList<>();//便于插入指令
+    public final NelLinkedList<RiscvInstruction> riscvInstructions = new NelLinkedList<>();//便于插入指令
 
     public int loopDepth = 0; //循环深度
 
     //riscvBlock的前驱和后继,在codegen时维护
 
-    public HashSet<RiscvBlock> preBlock = new HashSet<>();
-    public HashSet<RiscvBlock> succBlock = new HashSet<>();
+    public final HashSet<RiscvBlock> preBlock = new HashSet<>();
+    public final HashSet<RiscvBlock> succBlock = new HashSet<>();
 
     public RiscvBlock(RiscvFunction rf, BasicBlock irBlock) {
         this.function = rf;
@@ -30,8 +31,24 @@ public class RiscvBlock {
         this.name = name;
     }
 
-    public void addInstrucion(RiscvInstruction ri) {
-        riscvInstructions.addLast(ri);
+    public void addInstFirst(RiscvInstruction inst) {
+        new RiscvBlockAsNelListFriend().addFirst(inst);
+        inst.block = this;
+    }
+
+    public void addInstLast(RiscvInstruction inst) {
+        new RiscvBlockAsNelListFriend().addLast(inst);
+        inst.block = this;
+    }
+
+    public void insertInstBefore(RiscvInstruction inst, RiscvInstruction pos) {
+        new RiscvBlockAsNelListFriend().insertBefore(inst, pos);
+        inst.block = this;
+    }
+
+    public void insertInstAfter(RiscvInstruction inst, RiscvInstruction pos) {
+        new RiscvBlockAsNelListFriend().insertAfter(inst, pos);
+        inst.block = this;
     }
 
     public RiscvInstruction getFirst() {
@@ -40,6 +57,25 @@ public class RiscvBlock {
 
     public RiscvInstruction getLast() {
         return riscvInstructions.getLast();
+    }
+
+    private final class RiscvBlockAsNelListFriend extends NelLinkedList.NelList_Friend {
+        private void insertBefore(RiscvInstruction newNode, RiscvInstruction node) {
+            super.insertBefore(riscvInstructions, newNode, node);
+        }
+
+        private void insertAfter(RiscvInstruction newNode, RiscvInstruction node) {
+            super.insertAfter(riscvInstructions, newNode, node);
+        }
+
+        private void addFirst(RiscvInstruction newNode) {
+            super.addFirst(riscvInstructions, newNode);
+        }
+
+        private void addLast(RiscvInstruction newNode) {
+            super.addLast(riscvInstructions, newNode);
+        }
+
     }
 
 
