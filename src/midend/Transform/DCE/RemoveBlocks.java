@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 
 public class RemoveBlocks {
-    private static HashSet<BasicBlock> vis = new HashSet<>();
+    private static final HashSet<BasicBlock> vis = new HashSet<>();
 
     public static boolean run(Module module) {
         boolean modified = false;

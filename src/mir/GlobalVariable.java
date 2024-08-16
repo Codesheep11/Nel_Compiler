@@ -1,7 +1,5 @@
 package mir;
 
-import frontend.lexer.Token;
-import frontend.lexer.TokenType;
 import frontend.semantic.InitValue;
 import frontend.syntaxChecker.Ast;
 
@@ -11,7 +9,7 @@ public class GlobalVariable extends Constant {
     //constant fixed address (after linking).
     //对应 llvm 类型系统的 global variable
     //拥有@的全局标识符
-    public String label;
+    public final String label;
     public Constant value;
 
     // llvm 要求对于未初始化值需要一个指定的初值， 涉及到类型问题

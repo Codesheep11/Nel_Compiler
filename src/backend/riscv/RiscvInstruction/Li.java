@@ -10,7 +10,7 @@ import java.util.HashSet;
 
 public class Li extends RiscvInstruction {
 
-    public Operand imm;
+    public final Operand imm;
 
 
     public Reg reg;
@@ -36,7 +36,7 @@ public class Li extends RiscvInstruction {
 
     @Override
     public HashSet<Reg> getUse() {
-        return new HashSet<>();
+        return super.getUse();
     }
 
     @Override
@@ -53,7 +53,7 @@ public class Li extends RiscvInstruction {
 
     @Override
     public boolean isUse(int idx) {
-        return false;
+        return super.isUse(idx);
     }
 
     @Override

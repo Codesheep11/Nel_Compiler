@@ -5,7 +5,7 @@ import mir.Value;
 import java.util.HashMap;
 
 public class CloneInfo {
-    public HashMap<Value, Value> valueMap;
+    public final HashMap<Value, Value> valueMap;
 
     public CloneInfo() {
         valueMap = new HashMap<>();

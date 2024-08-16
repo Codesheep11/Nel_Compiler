@@ -22,7 +22,7 @@ public class Ast {
      * Decl → ConstDecl | VarDecl | FuncDef
      */
     public static class Decl implements CompUnit, BlockItem {
-        private Token type;
+        private final Token type;
 
         public Decl(Token type) {
             assert type.tokenType == TokenType.INT || type.tokenType == TokenType.FLOAT ||  type.tokenType == TokenType.VOID;
@@ -61,8 +61,8 @@ public class Ast {
      * VarDecl → BType VarDef { ‘,’ VarDef } ‘;’
      */
     public static class VarDecl extends Decl {
-        private Btype btype;
-        private ArrayList<VarDef> varDefs;
+        private final Btype btype;
+        private final ArrayList<VarDef> varDefs;
 
 
         public VarDecl(Btype btype, ArrayList<VarDef> varDefs) {
@@ -84,9 +84,9 @@ public class Ast {
      * FuncDef → FuncType Ident ‘(’ [FuncFParams] ‘)’ Block
      */
     public static class FuncDef extends Decl {
-        private Ident ident;
+        private final Ident ident;
         private ArrayList<FuncFParam> funcFParams = new ArrayList<>();
-        private Block block;
+        private final Block block;
         public FuncDef(Token funcType, Ident ident, Block block) {
             super(funcType);
             this.ident = ident;
@@ -120,7 +120,7 @@ public class Ast {
      */
     public static class Block {
 
-        private ArrayList<BlockItem> blockItems;
+        private final ArrayList<BlockItem> blockItems;
 
         public Block(ArrayList<BlockItem> blockItems) {
             this.blockItems = blockItems;
@@ -145,8 +145,8 @@ public class Ast {
     public static class Stmt  implements BlockItem {}
 
     public static class AssignStmt extends Stmt {
-        private Lval lval;
-        private AddExp exp;
+        private final Lval lval;
+        private final AddExp exp;
 
         public AssignStmt(Lval lval, AddExp exp) {
             this.lval = lval;
@@ -163,7 +163,7 @@ public class Ast {
     }
 
     public static class ExpStmt extends Stmt {
-        private AddExp exp;
+        private final AddExp exp;
 
         public ExpStmt(AddExp exp) {
             this.exp = exp;
@@ -175,7 +175,7 @@ public class Ast {
     }
 
     public static class BlockStmt extends Stmt {
-        private Block block;
+        private final Block block;
 
         public BlockStmt(Block block) {
             this.block = block;
@@ -187,8 +187,8 @@ public class Ast {
     }
 
     public static class IfStmt extends Stmt {
-        private Cond cond;
-        private Stmt stmt;
+        private final Cond cond;
+        private final Stmt stmt;
 
         public IfStmt(Cond cond, Stmt stmt) {
             this.cond = cond;
@@ -206,8 +206,8 @@ public class Ast {
     }
 
     public static class WhileStmt extends Stmt {
-        private Cond cond;
-        private Stmt stmt;
+        private final Cond cond;
+        private final Stmt stmt;
 
         public WhileStmt(Cond cond, Stmt stmt) {
             this.cond = cond;
@@ -225,9 +225,9 @@ public class Ast {
     }
 
     public static class IfElStmt extends Stmt {
-        private Cond cond;
-        private Stmt stmt;
-        private Stmt stmt1;
+        private final Cond cond;
+        private final Stmt stmt;
+        private final Stmt stmt1;
 
         public IfElStmt(Cond cond, Stmt stmt, Stmt stmt1) {
             this.cond = cond;
@@ -280,9 +280,9 @@ public class Ast {
      * FuncFParam → BType Ident VarSuffix
      */
     public static class FuncFParam {
-        private Btype btype;
-        private Ident ident;
-        private ArrayList<VarSuffix> varSuffixes;
+        private final Btype btype;
+        private final Ident ident;
+        private final ArrayList<VarSuffix> varSuffixes;
 
         public FuncFParam(Btype btype, Ident ident, ArrayList<VarSuffix> varSuffixes) {
             this.ident = ident;
@@ -322,7 +322,7 @@ public class Ast {
      */
     public static class ConstDef {
         private final Ident ident;
-        private ArrayList<AddExp> constExps = new ArrayList<AddExp>();
+        private ArrayList<AddExp> constExps = new ArrayList<>();
         private final ConstInitVal constInitVal;
 
         public ConstDef(Ident ident, ConstInitVal constInitVal) {
@@ -354,22 +354,19 @@ public class Ast {
      * VarDef → Ident { '[' ConstExp ']' }['=' InitVal]
      */
     public static class VarDef {
-        private Ident ident;
-        private ArrayList<VarSuffix> varSuffixes = null;
+        private final Ident ident;
 
         private ArrayList<AddExp> addExps = new ArrayList<>();
 
-        private VarInitVal initVal;
+        private final VarInitVal initVal;
 
         public VarDef(Ident ident, ArrayList<AddExp> addExps, VarInitVal initVal) {
-            this.varSuffixes = varSuffixes;
             this.ident = ident;
             this.addExps = addExps;
             this.initVal = initVal;
         }
 
         public VarDef(Ident ident, ArrayList<AddExp> addExps) {
-            this.varSuffixes = varSuffixes;
             this.ident = ident;
             this.addExps = addExps;
             this.initVal = new VarInitVal();
@@ -429,7 +426,7 @@ public class Ast {
      */
     public static class VarSuffix {
         private AddExp exp;
-        private boolean omitExp;
+        private final boolean omitExp;
 
         public VarSuffix(AddExp exp) {
             this.exp = exp;
@@ -477,7 +474,7 @@ public class Ast {
     public static abstract class InitVal {
         public abstract boolean hasInitVal();
         public abstract AddExp getExp();
-        public abstract <T extends InitVal> ArrayList<T> getInitVals();
+        public abstract  ArrayList<? extends InitVal> getInitVals();
         public int getFlattenSize() {
             if (!hasInitVal()) {
                 return 0;
@@ -801,7 +798,7 @@ public class Ast {
      * Exp → AddExp
      */
     public static class FuncRParams {
-        private ArrayList<AddExp> params;
+        private final ArrayList<AddExp> params;
 
         public FuncRParams(ArrayList<AddExp> params) {
             this.params = params;
@@ -891,7 +888,7 @@ public class Ast {
      * LOrExp → [{LAndExp LOrOp}] LAndExp
      */
     public static class LOrExp extends Cond {
-        private ArrayList<LAndExp> lAndExps;
+        private final ArrayList<LAndExp> lAndExps;
 
         public LOrExp(ArrayList<LAndExp> lAndExps) {
             this.lAndExps = lAndExps;
@@ -906,7 +903,7 @@ public class Ast {
      * LAndExp → [{EqExp LAndOp}] EqExp
      */
     public static class LAndExp {
-        private ArrayList<EqExp> eqExps;
+        private final ArrayList<EqExp> eqExps;
 
         public LAndExp(ArrayList<EqExp> eqExps) {
             this.eqExps = eqExps;
@@ -921,9 +918,9 @@ public class Ast {
      * EqExp → [{RelExp EqOp}] RelExp
      */
     public static class EqExp {
-        private ArrayList<RelExp> relExps;
+        private final ArrayList<RelExp> relExps;
 
-        private ArrayList<Token> eqOps;
+        private final ArrayList<Token> eqOps;
 
         public EqExp(ArrayList<RelExp> relExps, ArrayList<Token> eqOps) {
             this.relExps = relExps;
@@ -943,9 +940,9 @@ public class Ast {
      * RelExp → [{AddExp RelOp}] AddExp
      */
     public static class RelExp {
-        private ArrayList<AddExp> addExps;
+        private final ArrayList<AddExp> addExps;
 
-        private ArrayList<Token> relOps;
+        private final ArrayList<Token> relOps;
 
         public RelExp(ArrayList<AddExp> addExps, ArrayList<Token> relOps) {
             this.addExps = addExps;

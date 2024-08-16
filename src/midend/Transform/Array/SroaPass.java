@@ -9,11 +9,11 @@ import java.util.HashMap;
 
 public class SroaPass {
     //alloc-> index -> use
-    private static HashMap<Instruction.Alloc, HashMap<Integer, ArrayList<Instruction.GetElementPtr>>> Alloc2Idx2Gep = new HashMap<>();
+    private static final HashMap<Instruction.Alloc, HashMap<Integer, ArrayList<Instruction.GetElementPtr>>> Alloc2Idx2Gep = new HashMap<>();
 
     private static HashMap<Integer, ArrayList<Instruction.GetElementPtr>> Idx2Use = new HashMap<>();
 
-    private static ArrayList<Instruction> delList = new ArrayList<>();
+    private static final ArrayList<Instruction> delList = new ArrayList<>();
 
     public static void run(Module module) {
 
@@ -47,7 +47,7 @@ public class SroaPass {
                 ArrayList<Instruction.GetElementPtr> geps = idx2Use.get(idx);
                 Instruction.Alloc newAlloc = new Instruction.Alloc(alloc.getParentBlock(), ((Type.ArrayType) alloc.getContentType()).getBasicEleType());
                 newAlloc.remove();
-                alloc.getParentBlock().getInstructions().insertAfter(newAlloc, alloc);
+                alloc.getParentBlock().insertInstAfter(newAlloc, alloc);
                 for (Instruction.GetElementPtr gep : geps) {
                     gep.replaceAllUsesWith(newAlloc);
                     delList.add(gep);
@@ -67,10 +67,9 @@ public class SroaPass {
     }
 
     private static boolean onlyConstantIndex(Value alloc) {
-        ArrayList<Instruction> users = new ArrayList<>();
         ArrayList<Instruction> curDelList = new ArrayList<>();
         int idx = 0;
-        users.addAll(alloc.getUsers());
+        ArrayList<Instruction> users = new ArrayList<>(alloc.getUsers());
         while (idx < users.size()) {
             Instruction inst = users.get(idx);
             if (inst instanceof Instruction.GetElementPtr gep) {

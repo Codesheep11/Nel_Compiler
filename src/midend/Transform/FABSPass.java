@@ -55,7 +55,7 @@ public class FABSPass {
                         BasicBlock endBlock = thenJump.getTargetBlock();
                         if (endBlock.getPreBlocks().size() > 2) return;
                         br2FAbs(endBlock, thenBlock, fcmp, branch);
-                        if (endBlock.getPhiInstructions().size() == 0) {
+                        if (endBlock.getPhiInstructions().isEmpty()) {
                             if (thenBlock.getInstructions().size() == 1 && elseBlock.getInstructions().size() == 1) {
                                 block.getLastInst().delete();
                                 new Instruction.Jump(block, endBlock);
@@ -71,7 +71,7 @@ public class FABSPass {
                     visited.add(passBlock);
                     thenBlock = thenBlock.equals(endBlock) ? block : thenBlock;
                     br2FAbs(endBlock, thenBlock, fcmp, branch);
-                    if (endBlock.getPhiInstructions().size() == 0) {
+                    if (endBlock.getPhiInstructions().isEmpty()) {
                         if (passBlock.getInstructions().size() == 1) {
                             block.getLastInst().delete();
                             new Instruction.Jump(block, endBlock);
@@ -111,7 +111,7 @@ public class FABSPass {
                     else {
                         Instruction.FSub fSub = new Instruction.FSub(endBlock, LHS.getType(), new Constant.ConstantFloat(0), fAbs);
                         fSub.remove();
-                        endBlock.getInstructions().insertAfter(fSub, fAbs);
+                        endBlock.insertInstAfter(fSub, fAbs);
                         phi.replaceAllUsesWith(fSub);
                     }
                 }
@@ -119,7 +119,7 @@ public class FABSPass {
                     if (thenValue == LHS) {
                         Instruction.FSub fSub = new Instruction.FSub(endBlock, LHS.getType(), new Constant.ConstantFloat(0), fAbs);
                         fSub.remove();
-                        endBlock.getInstructions().insertAfter(fSub, fAbs);
+                        endBlock.insertInstAfter(fSub, fAbs);
                         phi.replaceAllUsesWith(fSub);
                     }
                     else {

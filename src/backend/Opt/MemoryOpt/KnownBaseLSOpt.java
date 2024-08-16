@@ -159,7 +159,7 @@ public class KnownBaseLSOpt {
                         coverByReg(ls.val);
                         // 如果找到了,那么说明该地址对应的值已经存起来了,直接move即可
                         // 同时需要保证如果是原本有的话，也能将记录补上
-                        if (list.size() != 0) {
+                        if (!list.isEmpty()) {
                             R2.R2Type r2Type = ls.val.regType == Reg.RegType.GPR ? R2.R2Type.mv : R2.R2Type.fmv;
                             ls2move.add(new Pair<>(ls, new R2(block, ls.val, list.get(0).reg, r2Type)));
                         }
@@ -171,7 +171,7 @@ public class KnownBaseLSOpt {
                         coverByReg(ls.val);
                         // 如果找到了,那么说明该地址对应的值已经存起来了,直接move即可
                         // 同时需要保证如果是原本有的话，也能将记录补上
-                        if (list.size() != 0) {
+                        if (!list.isEmpty()) {
                             R2.R2Type r2Type = ls.val.regType == Reg.RegType.GPR ? R2.R2Type.mv : R2.R2Type.fmv;
                             ls2move.add(new Pair<>(ls, new R2(block, ls.val, list.get(0).reg, r2Type)));
                         }
@@ -211,7 +211,7 @@ public class KnownBaseLSOpt {
             }
         }
         for (Pair<LS, R2> entry : ls2move) {
-            block.riscvInstructions.insertBefore(entry.second, entry.first);
+            block.insertInstBefore(entry.second, entry.first);
             entry.first.remove();
         }
     }

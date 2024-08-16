@@ -14,7 +14,7 @@ import java.util.Iterator;
  */
 public class GlobalVarLocalize {
 
-    private static HashSet<GlobalVariable> GlobalReplace = new HashSet<>();
+    private static final HashSet<GlobalVariable> GlobalReplace = new HashSet<>();
 
     public static void run(Module module) {
         //对于只读的全局变量，将其替换为常数
@@ -77,14 +77,14 @@ public class GlobalVarLocalize {
                 useFunctions.add(((Instruction) use.getUser()).getParentBlock().getParentFunction());
             }
             if (useFunctions.size() > 1) continue;
-            else if (useFunctions.size() == 0) module.getGlobalValues().remove(gv);
+            else if (useFunctions.isEmpty()) module.getGlobalValues().remove(gv);
             else if (useFunctions.iterator().next().getName().equals("main")) {
                 //todo 考虑非main的情况下将全局变量作为参数进行传递
                 GlobalReplace.add(gv);
                 FuncReplace(useFunctions.iterator().next(), gv);
             }
         }
-        if (GlobalReplace.size() > 0) Mem2Reg.run(module);
+        if (!GlobalReplace.isEmpty()) Mem2Reg.run(module);
         for (GlobalVariable gv : GlobalReplace) {
             module.getGlobalValues().remove(gv);
         }
@@ -100,8 +100,8 @@ public class GlobalVarLocalize {
         alloca.remove();
         Instruction store = new Instruction.Store(entry, gv.getConstValue(), alloca);
         store.remove();
-        entry.getInstructions().insertBefore(alloca, entry.getFirstInst());
-        entry.getInstructions().insertAfter(store, alloca);
+        entry.insertInstBefore(alloca, entry.getFirstInst());
+        entry.insertInstAfter(store, alloca);
         gv.replaceAllUsesWith(alloca);
 //        LinkedList<Use> uses = new LinkedList<>(gv.getUses());
 //        Iterator<Use> useIterator = uses.iterator();
@@ -115,8 +115,6 @@ public class GlobalVarLocalize {
     /**
      * 判断是否是全局变量
      *
-     * @param addr
-     * @return
      */
 
     public static Value isGlobalAddr(Value addr) {

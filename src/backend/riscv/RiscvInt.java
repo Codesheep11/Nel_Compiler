@@ -27,7 +27,7 @@ public class RiscvInt extends RiscvGlobalVar {
         } else {
             sb.append("\t.word ").append(data);
         }
-        return sb.toString() + "\n";
+        return sb + "\n";
     }
 
     @Override

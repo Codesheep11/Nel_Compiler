@@ -1,14 +1,13 @@
 package frontend.semantic;
 
 import frontend.syntaxChecker.Ast;
-import mir.Constant;
 import mir.Type;
 import mir.Value;
 
 public class Symbol {
     private final String name;
     private final Type type;
-    private InitValue value;
+    private final InitValue value;
     private final boolean isConstant;
     private final Value allocInst;
 

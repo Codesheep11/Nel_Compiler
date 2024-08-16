@@ -1,6 +1,6 @@
 package backend.Opt.Liveness;
 
-import backend.allocater.LivenessAnalyze;
+import backend.allocator.LivenessAnalyze;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
@@ -8,12 +8,11 @@ import backend.riscv.RiscvInstruction.AMOadd;
 import backend.riscv.RiscvInstruction.J;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import backend.riscv.RiscvModule;
-import mir.Instruction;
 import utils.NelLinkedList;
 
 import java.util.ArrayList;
 
-import static backend.allocater.LivenessAnalyze.*;
+import static backend.allocator.LivenessAnalyze.*;
 
 public class LivelessDCE {
     public static void run(RiscvModule module) {

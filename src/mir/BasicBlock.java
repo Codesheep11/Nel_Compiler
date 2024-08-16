@@ -8,14 +8,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
 
-public final class BasicBlock extends Value {
+@SuppressWarnings("unused")
+public class BasicBlock extends Value {
     private Function parentFunction; // 父函数
     private final String label;
     private final NelLinkedList<Instruction> instructions;
 
     public Loop loop = null;// 循环信息
     public boolean isDeleted = false;
-
     private int cpcnt = 0;
 
     public BasicBlock(String label, Function parentFunction) {
@@ -80,7 +80,8 @@ public final class BasicBlock extends Value {
     }
 
     public void addInstFirst(Instruction inst) {
-        instructions.addFirst(inst);
+        new BlockAsNelListFriend().addFirst(inst);
+        inst.setParentBlock(this);
     }
 
     public void addInstAfterPhi(Instruction inst) {
@@ -88,12 +89,24 @@ public final class BasicBlock extends Value {
         while (pos.getInstType() == Instruction.InstType.PHI) {
             pos = (Instruction) pos.getNext();
         }
-        instructions.insertBefore(inst, pos);
+        new BlockAsNelListFriend().insertBefore(inst, pos);
+        inst.setParentBlock(this);
     }
 
     public void addInstLast(Instruction inst) {
-        instructions.addLast(inst);
+        new BlockAsNelListFriend().addLast(inst);
     }
+
+    public void insertInstBefore(Instruction inst, Instruction pos) {
+        new BlockAsNelListFriend().insertBefore(inst, pos);
+        inst.setParentBlock(this);
+    }
+
+    public void insertInstAfter(Instruction inst, Instruction pos) {
+        new BlockAsNelListFriend().insertAfter(inst, pos);
+        inst.setParentBlock(this);
+    }
+
 
     public NelLinkedList<Instruction> getInstructions() {
         return instructions;
@@ -238,6 +251,25 @@ public final class BasicBlock extends Value {
             delList.add(instr);
         }
         delList.forEach(Instruction::delete);
+    }
+
+    private final class BlockAsNelListFriend extends NelLinkedList.NelList_Friend {
+        private void insertBefore(Instruction newNode, Instruction node) {
+            super.insertBefore(instructions, newNode, node);
+        }
+
+        private void insertAfter(Instruction newNode, Instruction node) {
+            super.insertAfter(instructions, newNode, node);
+        }
+
+        private void addFirst(Instruction newNode) {
+            super.addFirst(instructions, newNode);
+        }
+
+        private void addLast(Instruction newNode) {
+            super.addLast(instructions, newNode);
+        }
+
     }
 
 }

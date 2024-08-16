@@ -10,14 +10,16 @@ import java.util.ArrayList;
 public class Recorder {
     public Recorder() {}
 
-    private ArrayList<Mark> marks = new ArrayList<>();
-    public ArrayList<Instruction.Jump> jumps = new ArrayList<>();
+    private final ArrayList<Mark> marks = new ArrayList<>();
+    public final ArrayList<Instruction.Jump> jumps = new ArrayList<>();
 
     public enum Mark {
         BREAK("break"),
         CONTINUE("continue");
 
+        @SuppressWarnings({"FieldCanBeLocal", "unused"})
         private final String name;
+
         Mark(String name) {
             this.name = name;
         }

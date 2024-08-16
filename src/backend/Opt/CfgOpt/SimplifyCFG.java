@@ -73,9 +73,9 @@ public class SimplifyCFG {
         LinkedList<RiscvBlock> q = new LinkedList<>();
         q.add(func.blocks.get(0));
         usedLabels.add(func.blocks.get(0));
-        while (q.size() != 0) {
+        while (!q.isEmpty()) {
             RiscvBlock block = q.poll();
-            if (block.riscvInstructions.size() == 0) {
+            if (block.riscvInstructions.isEmpty()) {
                 int idx = func.blocks.indexOf(block);
                 if (idx >= func.blocks.size() - 1) continue;
                 RiscvBlock next = func.blocks.get(idx + 1);
@@ -132,7 +132,7 @@ public class SimplifyCFG {
             if (instr instanceof B) {
                 if (((B) instr).targetBlock == nextBlock) {
                     block.riscvInstructions.removeLast();
-                    block.riscvInstructions.addLast(new J(block, J.JType.j, nextBlock));
+                    block.addInstLast(new J(block, J.JType.j, nextBlock));
                     modified = true;
                 }
             }
@@ -176,7 +176,7 @@ public class SimplifyCFG {
                 ((B) terminator).targetBlock = nextTargetBlock;
                 RiscvInstruction needMove = targetBlock.riscvInstructions.getFirst();
                 needMove.remove();
-                block.riscvInstructions.addLast(needMove);
+                block.addInstLast(needMove);
                 modified = true;
             }
         }
