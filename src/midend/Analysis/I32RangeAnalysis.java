@@ -1,5 +1,8 @@
 package midend.Analysis;
 
+import midend.Analysis.result.SCEVinfo;
+import midend.Transform.DCE.SimplifyCFGPass;
+import midend.Transform.Loop.LoopInfo;
 import midend.Transform.RangeFolding;
 import mir.*;
 import midend.Analysis.result.DGinfo;
@@ -8,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Math.*;
+import static java.lang.Math.max;
 
 
 public class I32RangeAnalysis {
@@ -15,18 +19,23 @@ public class I32RangeAnalysis {
     /**
      * 存储当前块定义的非Any的I32Range
      */
-    public final HashMap<BasicBlock, HashMap<Instruction, I32Range>> I32RangeBufferMap = new HashMap<>();
+    public HashMap<BasicBlock, HashMap<Instruction, I32Range>> I32RangeBufferMap = new HashMap<>();
 
     /**
-     * 基本块入口的I32Range
+     * 通过branch语句的icmp计算的Value值域
      */
-    public final HashMap<BasicBlock, HashMap<Value, I32Range>> BlockEntryRange = new HashMap<>();
+    public HashMap<BasicBlock, HashMap<Value, I32Range>> BlockEntryRange = new HashMap<>();
 
-    private final DGinfo DGinfo;
+    private DGinfo DGinfo;
 
+    private SCEVinfo SCEVinfo;
+
+    /**
+     * 值域 闭区间
+     */
     public static class I32Range {
-        private final int minValue;
-        private final int maxValue;
+        private int minValue;
+        private int maxValue;
 
         private I32Range(int min, int max) {
             this.minValue = min;
@@ -54,9 +63,10 @@ public class I32RangeAnalysis {
             return "[" + minValue + ", " + maxValue + "]";
         }
 
-        private static final I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+        private static I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-        private static final HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
+        //常量区间复用
+        private static HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
 
 
         public static I32Range Any() {
@@ -71,23 +81,63 @@ public class I32RangeAnalysis {
 
     public I32RangeAnalysis(Function function) {
         DGinfo = AnalysisManager.getDG(function);
+        LoopInfo.runOnFunc(function);
+        SCEVinfo = AnalysisManager.getSCEV(function);
         runAnalysis(function);
     }
 
     public void runAnalysis(Function function) {
-        for (BasicBlock bb : function.getDomTreeLayerSort()) {
-            calBlockEntryRange(bb);
+        ArrayList<BasicBlock> blocks = function.getTopoSortWithoutLatch();
+        for (BasicBlock bb : blocks) {
+            I32RangeBufferMap.put(bb, new HashMap<>());
             runOnBasicBlock(bb);
         }
         Update(function);
     }
 
     private void runOnBasicBlock(BasicBlock bb) {
-//        System.out.println("runOnBasicBlock " + bb.getLabel());
-//        Function func = bb.getParentFunction();
-        I32RangeBufferMap.put(bb, new HashMap<>());
-        for (Instruction inst : bb.getInstructions()) {
-            if (inst.getType().isInt32Ty()) calculateI32Range(inst);
+        //计算当前块的入口值域
+        calBlockEntryRange(bb);
+        //计算并更新当前块的phi值域
+        if (bb.loop != null && bb.loop.header.equals(bb)) {
+            //如果循环头块，则循环头的phi值域很难分析
+            for (Instruction.Phi phi : bb.getPhiInstructions()) {
+                if (!phi.getType().isInt32Ty()) continue;
+                if (SCEVinfo.contains(phi)) {
+                    SCEVExpr expr = SCEVinfo.query(phi);
+                    if (expr.getStep() > 0) {
+                        I32RangeBufferMap.get(bb).put(phi, new I32Range(expr.getInit(), Integer.MAX_VALUE));
+                    }
+                    else {
+                        I32RangeBufferMap.get(bb).put(phi, new I32Range(Integer.MIN_VALUE, expr.getInit()));
+                    }
+                }
+                else {
+                    I32RangeBufferMap.get(bb).put(phi, I32Range.Any());
+                }
+            }
+        }
+        else {
+            for (Instruction.Phi phi : bb.getPhiInstructions()) {
+                if (phi.getType().isInt32Ty()) {
+                    int minValue = Integer.MAX_VALUE;
+                    int maxValue = Integer.MIN_VALUE;
+                    for (BasicBlock pre : phi.getPreBlocks()) {
+                        Value preValue = phi.getOptionalValue(pre);
+                        I32Range ir = getPhiRange(preValue, pre, bb);
+                        minValue = min(minValue, ir.minValue);
+                        maxValue = max(maxValue, ir.maxValue);
+                    }
+                    I32Range result = new I32Range(minValue, maxValue);
+                    if (!result.equals(I32Range.Any()))
+                        I32RangeBufferMap.get(bb).put(phi, result);
+                }
+            }
+        }
+        for (Instruction inst : bb.getMainInstructions()) {
+            if (inst.getType().isInt32Ty()) {
+                calculateI32Range(inst);
+            }
         }
     }
 
@@ -95,7 +145,6 @@ public class I32RangeAnalysis {
         HashMap<Value, I32Range> EntryMap = new HashMap<>();
         BlockEntryRange.put(block, EntryMap);
         if (block.equals(block.getParentFunction().getEntry())) return;
-
         BasicBlock idom = DGinfo.getIDom(block);
         for (Value key : BlockEntryRange.get(idom).keySet()) {
             EntryMap.put(key, BlockEntryRange.get(idom).get(key));
@@ -109,7 +158,6 @@ public class I32RangeAnalysis {
                 }
             }
         }
-
     }
 
     private void addRange2Map(Instruction.Branch branch, Instruction.Icmp icmp, BasicBlock block, HashMap<Value, I32Range> EntryMap) {
@@ -172,21 +220,38 @@ public class I32RangeAnalysis {
                 }
             }
         }
+        else {
+            I32Range ir1 = getOperandRange(src1, branchBlock);
+            I32Range ir2 = getOperandRange(src2, branchBlock);
+            if (!ir1.equals(I32Range.Any()) || !ir2.equals(I32Range.Any())) {
+                int min1 = ir1.minValue;
+                int max1 = ir1.maxValue;
+                int min2 = ir2.minValue;
+                int max2 = ir2.maxValue;
+                switch (condCode) {
+                    case EQ -> {
+                        if (thenBlock) {
+                            EntryMap.put(src1, new I32Range(max(min1, min2), min(max1, max2)));
+                            EntryMap.put(src2, new I32Range(max(min1, min2), min(max1, max2)));
+                        }
+                    }
+                    case NE -> {
+                        if (elseBlock) {
+                            EntryMap.put(src1, new I32Range(max(min1, min2), min(max1, max2)));
+                            EntryMap.put(src2, new I32Range(max(min1, min2), min(max1, max2)));
+                        }
+                    }
+                    //todo:其他情况
+                }
+            }
+        }
     }
 
     private void Update(Function func) {
-        ArrayList<Instruction> queue = new ArrayList<>();
         for (BasicBlock bb : func.getDomTreeLayerSort()) {
             for (Instruction.Phi phi : bb.getPhiInstructions()) {
                 if (phi.getType().isInt32Ty()) {
-                    I32Range ir = getOperandRange(phi, bb);
-                    I32Range ret = calculateI32Range(phi);
-                    if (!ir.equals(ret)) {
-                        for (Instruction user : phi.getUsers()) {
-                            if (user.getType().isInt32Ty())
-                                queue.add(user);
-                        }
-                    }
+                    calculateI32Range(phi);
                 }
             }
         }
@@ -207,6 +272,8 @@ public class I32RangeAnalysis {
     /**
      * 对于给定的Inst 计算 I32Range
      *
+     * @param inst
+     * @return
      */
     private I32Range calculateI32Range(Instruction inst) {
 //        System.out.println(value);
@@ -398,13 +465,14 @@ public class I32RangeAnalysis {
             }
         }
         else if (inst instanceof Instruction.Phi phi) {
-            int minValue = Integer.MAX_VALUE;
-            int maxValue = Integer.MIN_VALUE;
+            I32Range ir = getOperandRange(phi, bb);
+            int minValue = ir.getMinValue();
+            int maxValue = ir.getMaxValue();
             for (BasicBlock pre : phi.getPreBlocks()) {
                 Value preValue = phi.getOptionalValue(pre);
-                I32Range ir = getOperandRange(preValue, pre);
-                minValue = min(minValue, ir.minValue);
-                maxValue = max(maxValue, ir.maxValue);
+                I32Range newIr = getPhiRange(preValue, pre, bb);
+                minValue = min(minValue, newIr.minValue);
+                maxValue = max(maxValue, newIr.maxValue);
             }
             result = new I32Range(minValue, maxValue);
         }
@@ -418,9 +486,81 @@ public class I32RangeAnalysis {
         }
     }
 
+
+    private I32Range getPhiRange(Value value, BasicBlock pre, BasicBlock bb) {
+        if (!value.getType().isInt32Ty())
+            throw new RuntimeException("Value is not I32 Type!");
+        if (value instanceof Constant.ConstantInt)
+            return I32Range.gerConstRange(((Constant.ConstantInt) value).getIntValue());
+        if (!(pre.getTerminator() instanceof Instruction.Branch br)) return getOperandRange(value, pre);
+        if (br.getCond() instanceof Instruction.Icmp icmp) {
+            if (icmp.getSrc1() instanceof Constant.ConstantInt) {
+                icmp.swap();
+            }
+            Value src1 = icmp.getSrc1();
+            Value src2 = icmp.getSrc2();
+            if (src1.equals(value) && src2 instanceof Constant.ConstantInt c2) {
+                int num = c2.getIntValue();
+                boolean thenBlock = br.getThenBlock().equals(bb);
+                I32Range vr = getOperandRange(src1, pre);
+                int min = vr.minValue;
+                int max = vr.maxValue;
+                Instruction.Icmp.CondCode condCode = icmp.getCondCode();
+                switch (condCode) {
+                    case EQ -> {
+                        if (thenBlock) {
+                            return I32Range.gerConstRange(num);
+                        }
+                    }
+                    case NE -> {
+                        if (!thenBlock) {
+                            return I32Range.gerConstRange(num);
+                        }
+                    }
+                    case SGE -> {
+                        if (thenBlock) {
+                            return new I32Range(num, max);
+                        }
+                        else {
+                            return new I32Range(min, num - 1);
+                        }
+                    }
+                    case SGT -> {
+                        if (thenBlock) {
+                            return new I32Range(num + 1, max);
+                        }
+                        else {
+                            return new I32Range(min, num);
+                        }
+                    }
+                    case SLE -> {
+                        if (thenBlock) {
+                            return new I32Range(min, num);
+                        }
+                        else {
+                            return new I32Range(num + 1, max);
+                        }
+                    }
+                    case SLT -> {
+                        if (thenBlock) {
+                            return new I32Range(min, num - 1);
+                        }
+                        else {
+                            return new I32Range(num, max);
+                        }
+                    }
+                }
+            }
+        }
+        return getOperandRange(value, pre);
+    }
+
     /**
      * 仅被calculateI32Range调用
      *
+     * @param value
+     * @param bb
+     * @return
      */
     private I32Range getOperandRange(Value value, BasicBlock bb) {
         if (!value.getType().isInt32Ty())
@@ -454,6 +594,13 @@ public class I32RangeAnalysis {
             throw new RuntimeException("Value is not I32 Type!");
         if (value instanceof Constant.ConstantInt)
             return I32Range.gerConstRange(((Constant.ConstantInt) value).getIntValue());
+        if (!BlockEntryRange.containsKey(cur)) {
+            //关键边
+            if (cur.getPreBlocks().size() != 1) {
+                throw new RuntimeException("BlockEntryRange not contains key " + cur.getLabel());
+            }
+            return getValueRange(value, cur.getPreBlocks().get(0));
+        }
         if (BlockEntryRange.get(cur).containsKey(value)) return BlockEntryRange.get(cur).get(value);
         if (value instanceof Function.Argument) return I32Range.Any();
         if (value instanceof Instruction inst) return getInstRange(inst);

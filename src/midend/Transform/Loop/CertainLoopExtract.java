@@ -3,6 +3,7 @@ package midend.Transform.Loop;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.MemDepAnalysis;
 import midend.Analysis.PointerBaseAnalysis;
+import midend.Pass;
 import midend.Transform.DCE.SimplifyCFGPass;
 import mir.Module;
 import mir.*;
@@ -14,11 +15,15 @@ import java.util.ArrayList;
  */
 public class CertainLoopExtract {
 
-    public static void run(Module module) {
+    private static boolean changed = false;
+
+    public static boolean run(Module module) {
+        changed = false;
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
             runOnFunc(function);
         }
+        return changed;
     }
 
     public static void runOnFunc(Function function) {
@@ -31,6 +36,7 @@ public class CertainLoopExtract {
             for (Loop loop : function.loopInfo.TopLevelLoops) {
                 if (tryExtractLoop(loop)) {
                     modified = true;
+                    changed = true;
                     break;
                 }
             }

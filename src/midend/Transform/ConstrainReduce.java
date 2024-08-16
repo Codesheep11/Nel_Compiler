@@ -7,6 +7,7 @@ import midend.Analysis.result.DGinfo;
 import mir.*;
 import mir.Module;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 
@@ -44,11 +45,9 @@ public class ConstrainReduce {
         public final BitSet[] leqSet = new BitSet[ANALYSIS_DEPTH];
 
         public Constrain() {
-            for (int i = 0; i < ANALYSIS_DEPTH; i++) {
-                eqSet[i] = new BitSet(ANALYSIS_DEPTH);
-                ltSet[i] = new BitSet(ANALYSIS_DEPTH);
-                leqSet[i] = new BitSet(ANALYSIS_DEPTH);
-            }
+            Arrays.setAll(eqSet, i -> new BitSet(ANALYSIS_DEPTH));
+            Arrays.setAll(ltSet, i -> new BitSet(ANALYSIS_DEPTH));
+            Arrays.setAll(leqSet, i -> new BitSet(ANALYSIS_DEPTH));
         }
 
         public Constrain(Constrain constrain) {

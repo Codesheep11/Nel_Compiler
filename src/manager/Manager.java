@@ -137,6 +137,7 @@ public class Manager {
         GlobalCodeMotion.run(module);
         LCSSA.remove(module);
         BrPredction.run(module);
+        PhiMerge.run(module);
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
@@ -212,16 +213,11 @@ public class Manager {
             do {
                 modified = false;
                 modified |= ConstantFolding.runOnFunc(func);
-//                System.out.println("ConstFoling "+modified);
                 modified |= SimplifyCFGPass.runOnFunc(func);
                 if (modified) {
                     RemoveBlocks.runOnFunc(func);
                 }
-//                System.out.println("SimplifyCFGPass "+modified);
-                AnalysisManager.refreshI32Range(func);
                 modified |= RangeFolding.runOnFunc(func);
-//                System.out.println("RangeFolding "+modified);
-//                System.out.println();
             } while (modified);
         }
         DeadCodeEliminate.run(module);

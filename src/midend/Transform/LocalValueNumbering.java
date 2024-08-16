@@ -106,7 +106,7 @@ public class LocalValueNumbering {
                 yield inst.getInstType().name() + "," + operand1 + "," + operand2;
             }
             case FMADD, FMSUB, FNMADD, FNMSUB -> {
-                Instruction.TripleOperation tripleOp = (Instruction.TripleOperation) inst;
+                Instruction.TernaryOperation tripleOp = (Instruction.TernaryOperation) inst;
                 String operand1 = tripleOp.getOperand_1().getDescriptor();
                 String operand2 = tripleOp.getOperand_2().getDescriptor();
                 String operand3 = tripleOp.getOperand_3().getDescriptor();

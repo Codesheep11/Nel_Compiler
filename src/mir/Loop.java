@@ -6,9 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 
-//import static midend.Util.CloneInfo.bbMap;
-
-public class Loop {
+public final class Loop {
     private static int loopCounter = 0;
     private final int hash;
     public Loop parent = null;

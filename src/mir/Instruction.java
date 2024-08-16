@@ -7,8 +7,8 @@ import midend.Util.FuncInfo;
 
 import java.util.*;
 
-
-public class Instruction extends User {
+@SuppressWarnings("unused")
+public abstract class Instruction extends User {
 
     public enum InstType {
         VOID, // null
@@ -120,9 +120,7 @@ public class Instruction extends User {
         instruction.setParentBlock(parentBlock);
     }
 
-    public Instruction cloneToBB(BasicBlock newBlock) {
-        return new Instruction(newBlock, type, instType);
-    }
+    public abstract Instruction cloneToBB(BasicBlock newBlock);
 
     public Instruction cloneToBBAndAddInfo(CloneInfo cloneInfo, BasicBlock newBlock) {
         cloneInfo.addValueReflect(this, cloneToBB(newBlock));
@@ -184,10 +182,7 @@ public class Instruction extends User {
     }
 
     public boolean mayHaveNonDefUseDependency() {
-        if (this instanceof Load || this instanceof Call || this instanceof Store || this instanceof Terminator) {
-            return true;
-        }
-        return false;
+        return this instanceof Load || this instanceof Call || this instanceof Store || this instanceof Terminator;
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -241,7 +236,7 @@ public class Instruction extends User {
     /**
      * 返回值决定指令Type
      */
-    public static class Return extends Terminator {
+    public static final class Return extends Terminator {
 
         private Value retValue;
 
@@ -273,7 +268,8 @@ public class Instruction extends User {
             Value retValue = getRetValue();
             if (retValue != null) {
                 return String.format("ret %s %s", retValue.getType().toString(), retValue.getDescriptor());
-            } else {
+            }
+            else {
                 return "ret void";
             }
         }
@@ -295,7 +291,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Call extends Instruction {
+    public static final class Call extends Instruction {
         private final ArrayList<Value> params;
         private Function destFunction;
         public int strIdx = -1;
@@ -355,7 +351,8 @@ public class Instruction extends User {
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());
-            } else {
+            }
+            else {
                 return String.format("%s = call %s @%s(%s)", getDescriptor(), destFunction.getRetType().toString(), destFunction.name, paramsToString());
             }
         }
@@ -410,7 +407,7 @@ public class Instruction extends User {
         public abstract void replaceTarget(BasicBlock oldBlock, BasicBlock newBlock);
     }
 
-    public static class Branch extends Terminator {
+    public static final class Branch extends Terminator {
         private Value cond;
         private BasicBlock thenBlock;
         private BasicBlock elseBlock;
@@ -508,7 +505,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Jump extends Terminator {
+    public static final class Jump extends Terminator {
         private BasicBlock targetBlock;
         private Recorder.Mark mark;
 
@@ -564,7 +561,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Alloc extends Instruction {
+    public static final class Alloc extends Instruction {
         private final Type contentType;
 
         public Alloc(BasicBlock parentBlock, Type contentType) {
@@ -591,7 +588,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Load extends Instruction {
+    public static final class Load extends Instruction {
         private Value addr;
 
         public Load(BasicBlock parentBlock, Value addr) {
@@ -631,7 +628,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Store extends Instruction {
+    public static final class Store extends Instruction {
         private Value value;
         private Value addr;
 
@@ -678,7 +675,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class SItofp extends TypeCast {
+    public static final class SItofp extends TypeCast {
         private Value src;
 
         public Value getSrc() {
@@ -712,7 +709,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class FPtosi extends TypeCast {
+    public static final class FPtosi extends TypeCast {
         private Value src;
 
         public Value getSrc() {
@@ -745,8 +742,7 @@ public class Instruction extends User {
         }
     }
 
-
-    public abstract static class TypeCast extends Instruction {
+    public static abstract class TypeCast extends Instruction {
         public TypeCast(BasicBlock parentBlock, Type type, InstType instType) {
             super(parentBlock, type, instType);
         }
@@ -755,7 +751,7 @@ public class Instruction extends User {
     }
 
     //zero extend I1 to I32
-    public static class Zext extends TypeCast {
+    public static final class Zext extends TypeCast {
         private Value src;
 
         public Zext(BasicBlock parentBlock, Value src) {
@@ -789,7 +785,7 @@ public class Instruction extends User {
     }
 
     //zero extend I32 to I64
-    public static class Sext extends TypeCast {
+    public static final class Sext extends TypeCast {
         private Value src;
 
         public Sext(BasicBlock parentBlock, Value src, Type targetType) {
@@ -822,7 +818,7 @@ public class Instruction extends User {
     }
 
     //trunc I64 to I32
-    public static class Trunc extends TypeCast {
+    public static final class Trunc extends TypeCast {
         private Value src;
 
         public Trunc(BasicBlock parentBlock, Value src, Type targetType) {
@@ -855,7 +851,7 @@ public class Instruction extends User {
     }
 
 
-    public static class BitCast extends TypeCast {
+    public static final class BitCast extends TypeCast {
         private Value src;
 
         public BitCast(BasicBlock parentBlock, Value src, Type targetType) {
@@ -889,15 +885,20 @@ public class Instruction extends User {
         }
     }
 
-    public interface Condition {
-        Value getSrc1();
+    public static abstract class Condition extends Instruction {
 
-        Value getSrc2();
+        public Condition(BasicBlock parentBlock, Type type, InstType instType) {
+            super(parentBlock, type, instType);
+        }
 
-        String getCmpOp();
+        public abstract Value getSrc1();
+
+        public abstract Value getSrc2();
+
+        public abstract String getCmpOp();
     }
 
-    public static class Icmp extends Instruction implements Condition {
+    public static final class Icmp extends Condition {
         public enum CondCode {
             EQ("eq"),
             NE("ne"),
@@ -976,6 +977,13 @@ public class Instruction extends User {
             src2 = src1;
             src1 = _temp;
             condCode = condCode.swap();
+            for (Instruction user : this.getUsers()) {
+                if (user instanceof Branch branch) {
+                    if (branch.getCond().equals(this)) {
+                        branch.setProbability(1 - branch.getProbability());
+                    }
+                }
+            }
         }
 
         public void reverse() {
@@ -1010,7 +1018,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Fcmp extends Instruction implements Condition {
+    public static final class Fcmp extends Condition {
         public enum CondCode {
             EQ("oeq"),
             NE("one"),
@@ -1148,7 +1156,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Add extends BinaryOperation {
+    public static final class Add extends BinaryOperation {
         public Add(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.ADD, operand_1, operand_2);
         }
@@ -1165,7 +1173,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Sub extends BinaryOperation {
+    public static final class Sub extends BinaryOperation {
 
         public Sub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.SUB, operand_1, operand_2);
@@ -1182,7 +1190,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class FAdd extends BinaryOperation {
+    public static final class FAdd extends BinaryOperation {
 
         public FAdd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.FADD, operand_1, operand_2);
@@ -1200,7 +1208,7 @@ public class Instruction extends User {
 
     }
 
-    public static class FSub extends BinaryOperation {
+    public static final class FSub extends BinaryOperation {
 
         public FSub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.FSUB, operand_1, operand_2);
@@ -1218,7 +1226,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Mul extends BinaryOperation {
+    public static final class Mul extends BinaryOperation {
         public Mul(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.MUL, operand_1, operand_2);
         }
@@ -1235,7 +1243,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Div extends BinaryOperation {
+    public static final class Div extends BinaryOperation {
 
         public Div(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.DIV, operand_1, operand_2);
@@ -1253,7 +1261,7 @@ public class Instruction extends User {
 
     }
 
-    public static class FMul extends BinaryOperation {
+    public static final class FMul extends BinaryOperation {
 
         public FMul(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.FMUL, operand_1, operand_2);
@@ -1271,7 +1279,7 @@ public class Instruction extends User {
 
     }
 
-    public static class FDiv extends BinaryOperation {
+    public static final class FDiv extends BinaryOperation {
         public FDiv(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.FDIV, operand_1, operand_2);
         }
@@ -1288,7 +1296,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Rem extends BinaryOperation {
+    public static final class Rem extends BinaryOperation {
 
         public Rem(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.REM, operand_1, operand_2);
@@ -1306,7 +1314,7 @@ public class Instruction extends User {
 
     }
 
-    public static class FRem extends BinaryOperation {
+    public static final class FRem extends BinaryOperation {
 
         public FRem(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.FREM, operand_1, operand_2);
@@ -1324,7 +1332,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Shl extends BinaryOperation {
+    public static final class Shl extends BinaryOperation {
 
         public Shl(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.SHL, operand_1, operand_2);
@@ -1342,7 +1350,7 @@ public class Instruction extends User {
 
     }
 
-    public static class LShr extends BinaryOperation {
+    public static final class LShr extends BinaryOperation {
 
         public LShr(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.LSHR, operand_1, operand_2);
@@ -1360,7 +1368,7 @@ public class Instruction extends User {
 
     }
 
-    public static class AShr extends BinaryOperation {
+    public static final class AShr extends BinaryOperation {
 
         public AShr(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.ASHR, operand_1, operand_2);
@@ -1378,7 +1386,7 @@ public class Instruction extends User {
 
     }
 
-    public static class And extends BinaryOperation {
+    public static final class And extends BinaryOperation {
 
         public And(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.AND, operand_1, operand_2);
@@ -1396,7 +1404,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Or extends BinaryOperation {
+    public static final class Or extends BinaryOperation {
 
         public Or(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.OR, operand_1, operand_2);
@@ -1414,7 +1422,7 @@ public class Instruction extends User {
 
     }
 
-    public static class Xor extends BinaryOperation {
+    public static final class Xor extends BinaryOperation {
 
         public Xor(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.XOR, operand_1, operand_2);
@@ -1433,7 +1441,7 @@ public class Instruction extends User {
     }
 
 
-    public static class Min extends BinaryOperation {
+    public static final class Min extends BinaryOperation {
 
         public Min(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.MIN, operand_1, operand_2);
@@ -1452,7 +1460,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Max extends BinaryOperation {
+    public static final class Max extends BinaryOperation {
 
         public Max(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.MAX, operand_1, operand_2);
@@ -1471,7 +1479,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class FMin extends BinaryOperation {
+    public static final class FMin extends BinaryOperation {
 
         public FMin(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.FMIN, operand_1, operand_2);
@@ -1490,7 +1498,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class FMax extends BinaryOperation {
+    public static final class FMax extends BinaryOperation {
 
         public FMax(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2) {
             super(parentBlock, resType, InstType.FMAX, operand_1, operand_2);
@@ -1509,7 +1517,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class FAbs extends Instruction {
+    public static final class FAbs extends Instruction {
         private Value operand;
 
         public FAbs(BasicBlock parentBlock, Type resType, Value operand) {
@@ -1541,7 +1549,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class AtomicAdd extends Instruction {
+    public static final class AtomicAdd extends Instruction {
 
         private Value ptr;
         private Value inc;
@@ -1585,14 +1593,14 @@ public class Instruction extends User {
         }
     }
 
-    public static class TripleOperation extends Instruction {
+    public static abstract class TernaryOperation extends Instruction {
 
         protected Value operand_1;
         protected Value operand_2;
         protected Value operand_3;
 
 
-        public TripleOperation(BasicBlock parentBlock, Type resType, InstType instType, Value operand_1, Value operand_2, Value operand_3) {
+        public TernaryOperation(BasicBlock parentBlock, Type resType, InstType instType, Value operand_1, Value operand_2, Value operand_3) {
             super(parentBlock, resType, instType);
             this.operand_1 = operand_1;
             this.operand_2 = operand_2;
@@ -1615,7 +1623,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Fmadd extends TripleOperation {
+    public static final class Fmadd extends TernaryOperation {
 
         public Fmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
             super(parentBlock, resType, InstType.FMADD, operand_1, operand_2, operand_3);
@@ -1647,7 +1655,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Fmsub extends TripleOperation {
+    public static final class Fmsub extends TernaryOperation {
 
         public Fmsub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
             super(parentBlock, resType, InstType.FMSUB, operand_1, operand_2, operand_3);
@@ -1679,7 +1687,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Fneg extends Instruction {
+    public static final class Fneg extends Instruction {
         private Value operand;
 
         public Fneg(BasicBlock parentBlock, Type resType, Value operand) {
@@ -1711,7 +1719,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Fnmadd extends TripleOperation {
+    public static final class Fnmadd extends TernaryOperation {
 
         public Fnmadd(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
             super(parentBlock, resType, InstType.FNMADD, operand_1, operand_2, operand_3);
@@ -1743,7 +1751,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class Fnmsub extends TripleOperation {
+    public static final class Fnmsub extends TernaryOperation {
 
         public Fnmsub(BasicBlock parentBlock, Type resType, Value operand_1, Value operand_2, Value operand_3) {
             super(parentBlock, resType, InstType.FNMSUB, operand_1, operand_2, operand_3);
@@ -1775,7 +1783,7 @@ public class Instruction extends User {
         }
     }
 
-    public static class PhiCopy extends Instruction {
+    public static final class PhiCopy extends Instruction {
 
         private final ArrayList<Value> LHS;
         private final ArrayList<Value> RHS;
@@ -1825,9 +1833,14 @@ public class Instruction extends User {
             return ret.toString();
         }
 
+        @Override
+        public PhiCopy cloneToBB(BasicBlock block) {
+            return new PhiCopy(block, LHS, RHS);
+        }
+
     }
 
-    public static class Move extends Instruction {
+    public static final class Move extends Instruction {
         private final Value src;
         private final Value target;
 
@@ -1851,9 +1864,13 @@ public class Instruction extends User {
             return target;
         }
 
+        public Move cloneToBB(BasicBlock block) {
+            return new Move(block, getType(), src, target);
+        }
+
     }
 
-    public static class Phi extends Instruction {
+    public static final class Phi extends Instruction {
         // 等同于返回值类型
         private final Type type;
         public boolean isLCSSA = false;
@@ -2012,7 +2029,8 @@ public class Instruction extends User {
                 Value val = optionalValues.get(value);
                 optionalValues.remove(value);
                 optionalValues.put((BasicBlock) v, val);
-            } else {
+            }
+            else {
                 for (BasicBlock block : optionalValues.keySet()) {
                     if (optionalValues.get(block).equals(value)) {
                         optionalValues.put(block, v);

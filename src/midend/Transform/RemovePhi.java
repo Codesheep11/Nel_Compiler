@@ -17,6 +17,7 @@ public class RemovePhi {
             if (function.isExternal()) {
                 continue;
             }
+            AnalysisManager.refreshI32Range(function);
             cfGinfo = AnalysisManager.getCFG(function);
             if (function.isExternal()) continue;
             cfGinfo = AnalysisManager.getCFG(function);
@@ -24,7 +25,6 @@ public class RemovePhi {
             PhiCopy2move(function);
             AnalysisManager.refreshCFG(function);
             AnalysisManager.refreshDG(function);
-            AnalysisManager.refreshI32Range(function);
         }
     }
 
