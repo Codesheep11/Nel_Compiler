@@ -48,10 +48,10 @@ public class LivenessAftBin {
         return ans;
     }
 
-    public static HashMap<RiscvBlock, HashSet<Reg>> BlockIn = new HashMap<>();
-    public static HashMap<RiscvBlock, HashSet<Reg>> BlockOut = new HashMap<>();
-    public static HashMap<RiscvBlock, HashSet<Reg>> BlockUse = new HashMap<>();
-    public static HashMap<RiscvBlock, HashSet<Reg>> BlockDef = new HashMap<>();
+    public static final HashMap<RiscvBlock, HashSet<Reg>> BlockIn = new HashMap<>();
+    public static final HashMap<RiscvBlock, HashSet<Reg>> BlockOut = new HashMap<>();
+    public static final HashMap<RiscvBlock, HashSet<Reg>> BlockUse = new HashMap<>();
+    public static final HashMap<RiscvBlock, HashSet<Reg>> BlockDef = new HashMap<>();
 
     private static final HashMap<RiscvInstruction, HashSet<Reg>> In = new HashMap<>();
     public static final HashMap<RiscvInstruction, HashSet<Reg>> Out = new HashMap<>();
@@ -127,7 +127,7 @@ public class LivenessAftBin {
             }
         }
         for (RiscvBlock block : topoSort) {
-            if (block.riscvInstructions.size() == 0) continue;
+            if (block.riscvInstructions.isEmpty()) continue;
             In.put(block.getFirst(), BlockIn.get(block));
             Out.put(block.getLast(), BlockOut.get(block));
             int size = block.riscvInstructions.size();

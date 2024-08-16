@@ -4,7 +4,6 @@ import frontend.lexer.Token;
 import frontend.lexer.TokenArray;
 import frontend.exception.*;
 import frontend.lexer.TokenType;
-import manager.Manager;
 import midend.Util.FuncInfo;
 
 import java.util.ArrayList;

@@ -94,24 +94,30 @@ public class LICMMemory {
                 before.add(load);
             }
         }
-        modify |= before.size() != 0 || after.size() != 0;
+        modify |= !before.isEmpty() || !after.isEmpty();
         for (Instruction instruction : before) {
-            inesert(loop, instruction, true);
+            insert(loop, instruction, true);
         }
         for (Instruction instruction : after) {
-            inesert(loop, instruction, false);
+            insert(loop, instruction, false);
         }
         return modify;
     }
 
     // 每有必要新开一个，就移动到preHeader或者Exit即可
-    // 如果是用了但是没有被修改，就放到循环前,如果没有用,那么就放到循环后的latch的最前面
-    private static void inesert(Loop loop, Instruction instr, boolean placeHeader) {
+    // 如果是用了但是没有被修改，就放到循环前,如果没有用,那么就放到循环后的exit的最后一条phi后
+    private static void insert(Loop loop, Instruction instr, boolean placeHeader) {
         instr.remove();
         if (placeHeader) {
-            loop.getPreHeader().getInstructions().insertBefore(instr, loop.getPreHeader().getInstructions().getLast());
+            instr.setParentBlock(loop.getPreHeader());
+            loop.getPreHeader().insertInstBefore(instr, loop.getPreHeader().getInstructions().getLast());
         } else {
-            loop.getExit().getInstructions().insertBefore(instr, loop.getExit().getInstructions().getLast());
+            instr.setParentBlock(loop.getExit());
+            Instruction inst = loop.getExit().getInstructions().getFirst();
+            while (inst instanceof Instruction.Phi) {
+                inst = (Instruction) inst.getNext();
+            }
+            inst.addPrev(instr);
         }
     }
 

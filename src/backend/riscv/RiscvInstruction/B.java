@@ -89,7 +89,7 @@ public class B extends RiscvInstruction {
 
     @Override
     public HashSet<Reg> getDef() {
-        return new HashSet<>();
+        return super.getDef();
     }
 
     @Override
@@ -99,7 +99,7 @@ public class B extends RiscvInstruction {
 
     @Override
     public boolean isDef(int idx) {
-        return false;
+        return super.isDef(idx);
     }
 
     @Override

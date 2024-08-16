@@ -2,7 +2,6 @@ package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
 import midend.Transform.DCE.RemoveBlocks;
-import midend.Util.Print;
 import mir.*;
 import mir.Module;
 
@@ -11,9 +10,9 @@ import java.util.HashSet;
 
 public class Cond2MinMax {
 
-    private static ArrayList<BasicBlock> queue = new ArrayList<>();
+    private static final ArrayList<BasicBlock> queue = new ArrayList<>();
 
-    private static HashSet<BasicBlock> visited = new HashSet<>();
+    private static final HashSet<BasicBlock> visited = new HashSet<>();
 
     public static void run(Module module) {
         for (Function func : module.getFuncSet()) {
@@ -25,9 +24,7 @@ public class Cond2MinMax {
     public static void runOnFunction(Function func) {
         visited.clear();
         queue.clear();
-        for (BasicBlock block : func.getDomTreePostOrder()) {
-            queue.add(block);
-        }
+        queue.addAll(func.getDomTreePostOrder());
         while (!queue.isEmpty()) {
             BasicBlock block = queue.remove(0);
             if (visited.contains(block)) continue;
@@ -72,7 +69,7 @@ public class Cond2MinMax {
                                 new Instruction.Max(block, a.getType(), icmp.getSrc2(), thenIcmp.getSrc2());
                         condInst.remove();
                         icmp.replaceUseOfWith(icmp.getSrc2(), condInst);
-                        block.getInstructions().insertBefore(condInst, icmp);
+                        block.insertInstBefore(condInst, icmp);
                         branch.delete();
                         new Instruction.Branch(block, icmp, thenBlockTrue, thenBlockFalse);
                         queue.add(block);
@@ -105,7 +102,7 @@ public class Cond2MinMax {
                                 new Instruction.Min(block, a.getType(), icmp.getSrc2(), elseIcmp.getSrc2());
                         condInst.remove();
                         icmp.replaceUseOfWith(icmp.getSrc2(), condInst);
-                        block.getInstructions().insertBefore(condInst, icmp);
+                        block.insertInstBefore(condInst, icmp);
                         branch.delete();
                         new Instruction.Branch(block, icmp, elseBlockTrue, elseBlockFalse);
                         queue.add(block);
@@ -117,7 +114,7 @@ public class Cond2MinMax {
         }
     }
 
-
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private static boolean isOnlyJumpBlock(BasicBlock block) {
         for (Instruction inst : block.getInstructions()) {
             if (!(inst instanceof Instruction.Terminator) &&

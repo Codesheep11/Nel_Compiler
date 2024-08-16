@@ -44,7 +44,7 @@ public class RiscvFloat extends RiscvGlobalVar {
         } else {
             sb.append("\t.word ").append(floatBits);
         }
-        return sb.toString() + "\n";
+        return sb + "\n";
     }
 
     @Override

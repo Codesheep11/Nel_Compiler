@@ -110,6 +110,16 @@ public class Instruction extends User {
         return parentBlock;
     }
 
+    public void addPrev(Instruction instruction){
+        super.addPrev(instruction);
+        instruction.setParentBlock(parentBlock);
+    }
+
+    public void addNext(Instruction instruction) {
+        super.addNext(instruction);
+        instruction.setParentBlock(parentBlock);
+    }
+
     public Instruction cloneToBB(BasicBlock newBlock) {
         return new Instruction(newBlock, type, instType);
     }
@@ -1739,10 +1749,6 @@ public class Instruction extends User {
             super(parentBlock, resType, InstType.FNMSUB, operand_1, operand_2, operand_3);
         }
 
-        public Value getOperand_3() {
-            return operand_3;
-        }
-
         @Override
         public void replaceUseOfWith(Value value, Value v) {
             super.replaceUseOfWith(value, v);
@@ -1771,8 +1777,8 @@ public class Instruction extends User {
 
     public static class PhiCopy extends Instruction {
 
-        private ArrayList<Value> LHS;
-        private ArrayList<Value> RHS;
+        private final ArrayList<Value> LHS;
+        private final ArrayList<Value> RHS;
 
 
         public PhiCopy(BasicBlock parentBlock, ArrayList<Value> LHS, ArrayList<Value> RHS) {
@@ -1822,8 +1828,8 @@ public class Instruction extends User {
     }
 
     public static class Move extends Instruction {
-        private Value src;
-        private Value target;
+        private final Value src;
+        private final Value target;
 
         public Move(BasicBlock parentBlock, Type type, Value src, Value target) {
             super(parentBlock, type, InstType.MOVE);

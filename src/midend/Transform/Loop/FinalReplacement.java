@@ -11,6 +11,7 @@ public class FinalReplacement {
 
     private static SCEVinfo scevInfo;
     private static int init;
+    @SuppressWarnings({"FieldCanBeLocal"})
     private static int step;
     private static Instruction.Icmp indvar_cmp;
 

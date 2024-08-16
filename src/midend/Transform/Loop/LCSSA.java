@@ -48,6 +48,7 @@ public class LCSSA {
         }
     }
 
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     private static void addPhiAtExitBB(Instruction instr, BasicBlock exit, Loop loop) {
 //        System.out.println("addPhiAtExitBB: " + instr + " " + exit.getLabel());
         LinkedHashMap<BasicBlock, Value> phiMap = new LinkedHashMap<>();

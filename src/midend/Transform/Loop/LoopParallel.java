@@ -13,13 +13,14 @@ public class LoopParallel {
     private static Instruction.Icmp indvar_cmp;
 
     private static int init;
+    @SuppressWarnings("FieldCanBeLocal")
     private static int step;
     private static SCEVinfo scevInfo;
     private static Instruction indvar;
-    private static LinkedHashMap<Value, Integer> payLoad = new LinkedHashMap<>();
-    private static HashSet<Value> InPayLoad = new HashSet<>();
-    private static HashSet<Value> OutPayLoad = new HashSet<>();
-    private static LinkedHashMap<Instruction.Phi, ArrayList<Pair<Instruction, Value>>> recMap = new LinkedHashMap<>();
+    private static final LinkedHashMap<Value, Integer> payLoad = new LinkedHashMap<>();
+    private static final HashSet<Value> InPayLoad = new HashSet<>();
+    private static final HashSet<Value> OutPayLoad = new HashSet<>();
+    private static final LinkedHashMap<Instruction.Phi, ArrayList<Pair<Instruction, Value>>> recMap = new LinkedHashMap<>();
     private static int totalSize = 0;
 
     private static Module module;
@@ -175,23 +176,23 @@ public class LoopParallel {
                 offsets.add(Constant.ConstantInt.get(payLoad.get(rec) / 4));
                 Instruction ptr = new Instruction.GetElementPtr(block, payloadVar, Type.BasicType.I32_TYPE, offsets);
                 ptr.remove();
-                block.getInstructions().insertBefore(ptr, reflectInst);
+                block.insertInstBefore(ptr, reflectInst);
 //                if (rec.getType().isFloatTy()) {
 //                    ptr = new Instruction.BitCast(block, ptr, new Type.PointerType(rec.getType()));
 //                    ptr.remove();
-//                    block.getInstructions().insertBefore(ptr, reflectInst);
+//                    block.insertInstBefore(ptr, reflectInst);
 //                    Function reduceFAdd = getReduceAddF32FuncLib();
 //                    ArrayList<Value> args = new ArrayList<>();
 //                    args.add(ptr);
 //                    args.add(reflectInc);
 //                    Instruction.Call call = new Instruction.Call(block, reduceFAdd, args);
 //                    call.remove();
-//                    block.getInstructions().insertBefore(call, reflectInst);
+//                    block.insertInstBefore(call, reflectInst);
 //                }
 //                else {
                 Instruction.AtomicAdd atomicAdd = new Instruction.AtomicAdd(block, instruction.getType(), ptr, reflectInc);
                 atomicAdd.remove();
-                block.getInstructions().insertBefore(atomicAdd, reflectInst);
+                block.insertInstBefore(atomicAdd, reflectInst);
 //                }
             }
         }
@@ -426,7 +427,7 @@ public class LoopParallel {
             Value inc = add.getOperand_1().equals(load) ? add.getOperand_2() : add.getOperand_1();
             Instruction.AtomicAdd atomicAdd = new Instruction.AtomicAdd(block, load.getType(), ptr, inc);
             atomicAdd.remove();
-            block.getInstructions().insertBefore(atomicAdd, store);
+            block.insertInstBefore(atomicAdd, store);
             store.delete();
             add.delete();
             load.delete();
@@ -446,10 +447,10 @@ public class LoopParallel {
                 BasicBlock block = sub.getParentBlock();
                 Instruction.Sub newSub = new Instruction.Sub(sub.getParentBlock(), sub.getType(), Constant.ConstantInt.get(0), inc);
                 newSub.remove();
-                block.getInstructions().insertBefore(newSub, sub);
+                block.insertInstBefore(newSub, sub);
                 Instruction.Add add = new Instruction.Add(inst.getParentBlock(), inst.getType(), sub.getOperand_1(), newSub);
                 add.remove();
-                block.getInstructions().insertBefore(add, sub);
+                block.insertInstBefore(add, sub);
                 sub.replaceAllUsesWith(add);
                 sub.delete();
                 recMap.get(rec).add(new Pair<>(add, newSub));
@@ -463,7 +464,6 @@ public class LoopParallel {
      * @param curLoop 当前循环
      * @param val     上一个循环的别名
      * @param out     根循环的LCSSA
-     * @return
      */
     private static boolean getRecPhi(Instruction.Phi phi, Loop curLoop, Instruction.Phi val, Instruction.Phi out) {
         if (phi.getUsers().size() != 2) return false;
@@ -477,14 +477,12 @@ public class LoopParallel {
                 return false;
             Value inc = add.getOperand_1().equals(phi) ? add.getOperand_2() : add.getOperand_1();
             recMap.get(out).add(new Pair<>(add, inc));
-            ret &= true;
         }
         else if (rec instanceof Instruction.Sub sub) {
             if (!sub.getOperand_1().equals(phi))
                 return false;
             Value inc = sub.getOperand_2();
             recMap.get(out).add(new Pair<>(sub, inc));
-            ret &= true;
         }
 //        else if (rec instanceof Instruction.FAdd fadd) {
 //            if (!fadd.getOperand_1().equals(phi) && !fadd.getOperand_2().equals(phi))
@@ -505,7 +503,6 @@ public class LoopParallel {
         }
         //再处理init
         if (init.equals(val)) {
-            ret &= true;
         }
         else if (init instanceof Instruction.Phi preLCSSA) {
             if (!preLCSSA.isLCSSA) return false;
@@ -523,12 +520,10 @@ public class LoopParallel {
     private static Value getBaseAddr(Value inst) {
         Value ret = inst;
         while (ret instanceof Instruction.GetElementPtr || ret instanceof Instruction.BitCast) {
-            if (ret instanceof Instruction.GetElementPtr) {
-                Instruction.GetElementPtr gep = (Instruction.GetElementPtr) ret;
+            if (ret instanceof Instruction.GetElementPtr gep) {
                 ret = gep.getBase();
             }
-            if (ret instanceof Instruction.BitCast) {
-                Instruction.BitCast bitCast = (Instruction.BitCast) inst;
+            if (ret instanceof Instruction.BitCast bitCast) {
                 ret = bitCast.getSrc();
             }
         }

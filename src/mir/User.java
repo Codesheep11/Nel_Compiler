@@ -2,7 +2,7 @@ package mir;
 
 import java.util.LinkedList;
 
-public class User extends Value {
+public abstract class User extends Value {
 
     /**
      * 维护了集合性质，乱序，不重地维护了操作数
@@ -40,8 +40,6 @@ public class User extends Value {
     /**
      * 同时删除双向边关系
      *
-     * @param oldValue
-     * @param newValue
      */
     public void replaceUseOfWith(Value oldValue, Value newValue) {
         // 在 Value 的 operands 中更新

@@ -4,7 +4,6 @@ import midend.Analysis.AnalysisManager;
 import mir.*;
 import mir.Module;
 
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 

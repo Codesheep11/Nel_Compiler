@@ -2,9 +2,6 @@ package midend.Transform.Loop;
 
 import midend.Analysis.AnalysisManager;
 import midend.Transform.DCE.SimplifyCFGPass;
-import midend.Transform.GlobalCodeMotion;
-import midend.Transform.GlobalValueNumbering;
-import midend.Util.Print;
 import mir.*;
 import mir.Module;
 

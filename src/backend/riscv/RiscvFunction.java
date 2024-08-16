@@ -12,15 +12,15 @@ import java.util.HashSet;
 import static mir.Type.VoidType.VOID_TYPE;
 
 public class RiscvFunction {
-    public String name;
+    public final String name;
 
     public boolean isMain;
 
-    public boolean isExternal;
+    public final boolean isExternal;
 
     public boolean isSaveOut = false;
 
-    public boolean isParallLoopBody = false;
+    public boolean isParallelLoopBody = false;
     /**
      * 0 表示没有返回值<br/>
      * 1 表示返回int<br/>
@@ -29,24 +29,19 @@ public class RiscvFunction {
     public final int retTypeCode;
 
 
-    public ArrayList<RiscvBlock> blocks = new ArrayList<>();
+    public final ArrayList<RiscvBlock> blocks = new ArrayList<>();
 
-    public HashSet<Reg> defs = new HashSet<>();
+    public final HashSet<Reg> defs = new HashSet<>();
 
-    public HashSet<J> calls = new HashSet<>();
+    public final HashSet<J> calls = new HashSet<>();
 
-    public HashSet<RiscvBlock> exits = new HashSet<>();
+    public final HashSet<RiscvBlock> exits = new HashSet<>();
 
     public final ArrayList<RiscLoop> loops = new ArrayList<>();
 
     public RiscvFunction(Function irFunction) {
         this.name = irFunction.getName();
-        if (irFunction.isExternal()) {
-            isExternal = true;
-        }
-        else {
-            isExternal = false;
-        }
+        isExternal = irFunction.isExternal();
         if (irFunction.getRetType().equals(VOID_TYPE)) {
             retTypeCode = 0;
         }

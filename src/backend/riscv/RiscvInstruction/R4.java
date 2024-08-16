@@ -1,6 +1,5 @@
 package backend.riscv.RiscvInstruction;
 
-import backend.operand.Address;
 import backend.operand.Operand;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
@@ -8,7 +7,7 @@ import backend.riscv.RiscvBlock;
 import java.util.HashSet;
 
 public class R4 extends RiscvInstruction {
-    public R4Type type;
+    public final R4Type type;
 
     public enum R4Type {
         fmadd, fmsub, fnmadd, fnmsub;
@@ -28,9 +27,7 @@ public class R4 extends RiscvInstruction {
                 case fnmsub -> {
                     return "fnmsub.s";
                 }
-                default -> {
-                    throw new AssertionError();
-                }
+                default -> throw new AssertionError();
             }
         }
     }

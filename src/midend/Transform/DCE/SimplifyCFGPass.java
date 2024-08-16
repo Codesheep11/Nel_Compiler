@@ -133,7 +133,7 @@ public class SimplifyCFGPass {
             if (block.getFirstInst() instanceof Instruction.Jump) {
                 BasicBlock suc = block.getSucBlocks().get(0);
                 if (suc.equals(block)) continue;
-                if (!(suc.getFirstInst() instanceof Instruction.Phi) && block.getPreBlocks().size() != 0) {
+                if (!(suc.getFirstInst() instanceof Instruction.Phi) && !block.getPreBlocks().isEmpty()) {
                     onlyJumpBlocks.add(block);
                 }
             }

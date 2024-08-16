@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Math.*;
-import static java.lang.Math.max;
 
 
 public class I32RangeAnalysis {
@@ -16,18 +15,18 @@ public class I32RangeAnalysis {
     /**
      * 存储当前块定义的非Any的I32Range
      */
-    public HashMap<BasicBlock, HashMap<Instruction, I32Range>> I32RangeBufferMap = new HashMap<>();
+    public final HashMap<BasicBlock, HashMap<Instruction, I32Range>> I32RangeBufferMap = new HashMap<>();
 
     /**
      * 基本块入口的I32Range
      */
-    public HashMap<BasicBlock, HashMap<Value, I32Range>> BlockEntryRange = new HashMap<>();
+    public final HashMap<BasicBlock, HashMap<Value, I32Range>> BlockEntryRange = new HashMap<>();
 
-    private DGinfo DGinfo;
+    private final DGinfo DGinfo;
 
     public static class I32Range {
-        private int minValue;
-        private int maxValue;
+        private final int minValue;
+        private final int maxValue;
 
         private I32Range(int min, int max) {
             this.minValue = min;
@@ -55,9 +54,9 @@ public class I32RangeAnalysis {
             return "[" + minValue + ", " + maxValue + "]";
         }
 
-        private static I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+        private static final I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-        private static HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
+        private static final HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
 
 
         public static I32Range Any() {
@@ -208,8 +207,6 @@ public class I32RangeAnalysis {
     /**
      * 对于给定的Inst 计算 I32Range
      *
-     * @param inst
-     * @return
      */
     private I32Range calculateI32Range(Instruction inst) {
 //        System.out.println(value);
@@ -424,9 +421,6 @@ public class I32RangeAnalysis {
     /**
      * 仅被calculateI32Range调用
      *
-     * @param value
-     * @param bb
-     * @return
      */
     private I32Range getOperandRange(Value value, BasicBlock bb) {
         if (!value.getType().isInt32Ty())

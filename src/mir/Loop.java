@@ -12,14 +12,14 @@ public class Loop {
     private static int loopCounter = 0;
     private final int hash;
     public Loop parent = null;
-    public HashSet<Loop> children = new HashSet<>();
-    public LinkedHashSet<BasicBlock> nowLevelBB = new LinkedHashSet<>();
+    public final HashSet<Loop> children = new HashSet<>();
+    public final LinkedHashSet<BasicBlock> nowLevelBB = new LinkedHashSet<>();
     public BasicBlock header = null;
     public BasicBlock preHeader = null;
     public LinkedHashSet<BasicBlock> enterings = new LinkedHashSet<>(); //enterings -> preheader
-    public LinkedHashSet<BasicBlock> exitings = new LinkedHashSet<>();
+    public final LinkedHashSet<BasicBlock> exitings = new LinkedHashSet<>();
     public LinkedHashSet<BasicBlock> exits = new LinkedHashSet<>();
-    public LinkedHashSet<BasicBlock> latchs = new LinkedHashSet<>();// 1 latch
+    public final LinkedHashSet<BasicBlock> latchs = new LinkedHashSet<>();// 1 latch
 
     public int tripCount = -1;
     //todo: cond

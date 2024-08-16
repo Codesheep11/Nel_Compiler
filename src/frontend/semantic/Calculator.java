@@ -189,7 +189,7 @@ public class Calculator {
         }
 
         if (!(initValue instanceof InitValue.ValueInit)) {
-            throw new SemanticError("Expected Value but got "+initValue.getClass().toString());
+            throw new SemanticError("Expected Value but got "+ initValue.getClass());
         }
 
         Value val = ((InitValue.ValueInit) initValue).getValue();

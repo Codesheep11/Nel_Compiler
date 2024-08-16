@@ -23,9 +23,9 @@ import java.util.HashMap;
  */
 public class StoreEliminate {
 
-    private static HashMap<Value, HashMap<Value, Instruction.Store>> StoreMap = new HashMap<>();
-    private static HashMap<Value, Instruction.Store> GlobalStoreMap = new HashMap<>();
-    private static ArrayList<Instruction> delList = new ArrayList<>();
+    private static final HashMap<Value, HashMap<Value, Instruction.Store>> StoreMap = new HashMap<>();
+    private static final HashMap<Value, Instruction.Store> GlobalStoreMap = new HashMap<>();
+    private static final ArrayList<Instruction> delList = new ArrayList<>();
 
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {

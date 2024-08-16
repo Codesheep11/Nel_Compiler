@@ -84,7 +84,7 @@ public class ShortInstrConvert {
 
         }
         for (Pair<RiscvInstruction, ShortInst> pair : needReplace) {
-            block.riscvInstructions.insertBefore(pair.second, pair.first);
+            block.insertInstBefore(pair.second, pair.first);
             pair.first.remove();
         }
     }

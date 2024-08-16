@@ -46,7 +46,7 @@ public class RemovePhi {
                     Instruction term = pre.getLastInst();
                     Instruction.PhiCopy phiCopy = new Instruction.PhiCopy(pre, new ArrayList<>(), new ArrayList<>());
                     phiCopy.remove();
-                    pre.getInstructions().insertBefore(phiCopy, term);
+                    pre.insertInstBefore(phiCopy, term);
                 }
             }
             for (Instruction.Phi phi : bb.getPhiInstructions()) {
@@ -67,9 +67,6 @@ public class RemovePhi {
     /**
      * 添加关键边：在pre和bb之间插入一个新的基本块，将phiCopy插入到新的基本块中
      *
-     * @param pre
-     * @param phiCopy
-     * @param bb
      */
     public static void addMidBB(BasicBlock pre, Instruction.PhiCopy phiCopy, BasicBlock bb) {
         BasicBlock mid = new BasicBlock(pre.getParentFunction().getBBName(), pre.getParentFunction());
@@ -126,7 +123,7 @@ public class RemovePhi {
             }
             end = bb.getLastInst();
             for (Instruction.Move move : seq) {
-                bb.getInstructions().insertBefore(move, end);
+                bb.insertInstBefore(move, end);
             }
         }
     }

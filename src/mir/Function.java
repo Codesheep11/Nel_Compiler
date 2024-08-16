@@ -8,7 +8,7 @@ import utils.NelLinkedList;
 
 import java.util.*;
 
-
+@SuppressWarnings("unused")
 public class Function extends Value {
 
     //Note that Function is a GlobalValue and therefore also a Constant.
@@ -45,7 +45,7 @@ public class Function extends Value {
     public boolean isParallelLoopBody = false;
 
     private Type retType; // 返回值类型
-    private ArrayList<Argument> funcRArguments = new ArrayList<>(); //
+    private ArrayList<Argument> funcRArguments; //
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
     private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
@@ -92,7 +92,7 @@ public class Function extends Value {
     }
 
     public BasicBlock getEntry() {
-        return getBlocks().getFirst();
+        return blocks.getFirst();
     }
 
     public BasicBlock getFirstBlock() {
@@ -111,8 +111,30 @@ public class Function extends Value {
         if (blocks.isEmpty()) {
             entry = block;
         }
-        blocks.addLast(block);
+        new FunctionAsNelListFriend().addLast(block);
+        block.setParentFunction(this);
     }
+
+    public void addBlockFirst(BasicBlock block) {
+        new FunctionAsNelListFriend().addFirst(block);
+        block.setParentFunction(this);
+    }
+
+    public void addBlockLast(BasicBlock block) {
+        new FunctionAsNelListFriend().addLast(block);
+        block.setParentFunction(this);
+    }
+
+    public void insertBlockBefore(BasicBlock block, BasicBlock pos) {
+        new FunctionAsNelListFriend().insertBefore(block, pos);
+        block.setParentFunction(this);
+    }
+
+    public void insertBlockAfter(BasicBlock block, BasicBlock pos) {
+        new FunctionAsNelListFriend().insertAfter(block, pos);
+        block.setParentFunction(this);
+    }
+
 
     //region outputLLVMIR
     public String FArgsToString() {
@@ -132,7 +154,7 @@ public class Function extends Value {
         Iterator<Argument> iter = getFuncRArguments().iterator();
         while (iter.hasNext()) {
             Argument arg = iter.next();
-            str.append(arg.getType().toString() + " ");
+            str.append(arg.getType().toString()).append(" ");
             str.append(arg.getDescriptor());
             if (iter.hasNext()) {
                 str.append(", ");
@@ -245,7 +267,7 @@ public class Function extends Value {
                 if (inst instanceof Instruction.Return && ((Instruction.Return) inst).hasValue()) {
                     Instruction jumpToRetBB = new Instruction.Jump(needFixBB, retBB);
                     jumpToRetBB.remove();
-                    needFixBB.getInstructions().insertBefore(jumpToRetBB, inst);
+                    needFixBB.insertInstBefore(jumpToRetBB, inst);
                     //instr.insertBefore(jumpToRetBB);
 //                    retBB.getPreBlocks().add(needFixBB);
 //                    needFixBB.setSucBlocks(retSucc);
@@ -264,7 +286,7 @@ public class Function extends Value {
                 else if (inst instanceof Instruction.Return) {
                     Instruction jumpToRetBB = new Instruction.Jump(needFixBB, retBB);
                     jumpToRetBB.remove();
-                    needFixBB.getInstructions().insertBefore(jumpToRetBB, inst);
+                    needFixBB.insertInstBefore(jumpToRetBB, inst);
                     //instr.insertBefore(jumpToRetBB);
 //                    retBB.getPreBlocks().add(needFixBB);
 //                    needFixBB.setSucBlocks(retSucc);
@@ -342,8 +364,6 @@ public class Function extends Value {
 
     /**
      * 获取函数的dom树层序遍历
-     *
-     * @return
      */
     public ArrayList<BasicBlock> getDomTreeLayerSort() {
         if (entry == null) return new ArrayList<>();
@@ -398,7 +418,6 @@ public class Function extends Value {
     /**
      * 获取函数的反向后序遍历，即dfs的反序
      *
-     * @return
      */
     public ArrayList<BasicBlock> buildReversePostOrderTraversal() {
         ArrayList<BasicBlock> rpot = new ArrayList<>();
@@ -425,6 +444,25 @@ public class Function extends Value {
         }
         Collections.reverse(rpot);
         return rpot;
+    }
+
+    private final class FunctionAsNelListFriend extends NelLinkedList.NelList_Friend {
+        private void insertBefore(BasicBlock newNode, BasicBlock node) {
+            super.insertBefore(blocks, newNode, node);
+        }
+
+        private void insertAfter(BasicBlock newNode, BasicBlock node) {
+            super.insertAfter(blocks, newNode, node);
+        }
+
+        private void addFirst(BasicBlock newNode) {
+            super.addFirst(blocks, newNode);
+        }
+
+        private void addLast(BasicBlock newNode) {
+            super.addLast(blocks, newNode);
+        }
+
     }
 
     @Override

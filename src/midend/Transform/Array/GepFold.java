@@ -15,9 +15,7 @@ public class GepFold {
             ArrayList<Instruction.GetElementPtr> geps = new ArrayList<>();
             for (BasicBlock block : func.getDomTreeLayerSort()) {
                 for (Instruction inst : block.getInstructions()) {
-                    if (inst instanceof Instruction.GetElementPtr) {
-                        Instruction.GetElementPtr gep = (Instruction.GetElementPtr) inst;
-//                        System.out.println("gep: " + gep);
+                    if (inst instanceof Instruction.GetElementPtr gep) {
                         if (isFoldGep(gep)) {
 //                            System.out.println("geps add: " + gep);
                             geps.add(gep);
@@ -27,7 +25,7 @@ public class GepFold {
             }
             Collections.reverse(geps);
             for (Instruction.GetElementPtr gep : geps) {
-                if (gep.getUses().size() == 0) continue;
+                if (gep.getUses().isEmpty()) continue;
 //                System.out.println("GepFold: " + gep);
                 BasicBlock block = gep.getParentBlock();
                 ArrayList<Instruction.GetElementPtr> gepChain = new ArrayList<>();
@@ -38,8 +36,7 @@ public class GepFold {
                 }
                 Collections.reverse(gepChain);
 //                gepChain.forEach(System.out::println);
-                ArrayList<Value> offsets = new ArrayList<>();
-                offsets.addAll(gepChain.get(0).getOffsets());
+                ArrayList<Value> offsets = new ArrayList<>(gepChain.get(0).getOffsets());
                 for (int i = 1; i < gepChain.size(); i++) {
                     Instruction.GetElementPtr cur = gepChain.get(i);
                     Value lastIdx = offsets.get(offsets.size() - 1);
@@ -47,7 +44,7 @@ public class GepFold {
                         if (!(lastIdx instanceof Constant.ConstantInt c && c.isZero())) {
                             Instruction add = new Instruction.Add(block, lastIdx.getType(), lastIdx, cur.getOffsets().get(0));
                             add.remove();
-                            block.getInstructions().insertBefore(add, gep);
+                            block.insertInstBefore(add, gep);
                             offsets.set(offsets.size() - 1, add);
                         }
                         else {
@@ -64,12 +61,12 @@ public class GepFold {
                 for (int i = 0; i < offsets.size(); i++) {
                     Value offset = offsets.get(i);
                     if (!(offset instanceof Constant.ConstantInt c && c.isZero())) {
-                        Value mul = null;
+                        Value mul;
                         if (baseType.isArrayTy()) {
                             mul = new Instruction.Mul(block, offset.getType(),
                                     Constant.ConstantInt.get(((Type.ArrayType) baseType).getFlattenSize()), offset);
                             mul.remove();
-                            block.getInstructions().insertBefore((Instruction) mul, gep);
+                            block.insertInstBefore((Instruction) mul, gep);
                             offsets.set(i, Constant.ConstantInt.get(0));
                         }
                         else mul = offset;
@@ -77,7 +74,7 @@ public class GepFold {
                         else {
                             Instruction add = new Instruction.Add(block, sum.getType(), sum, mul);
                             add.remove();
-                            block.getInstructions().insertBefore(add, gep);
+                            block.insertInstBefore(add, gep);
                             sum = add;
                         }
                     }
@@ -87,7 +84,7 @@ public class GepFold {
                 Instruction.GetElementPtr newGep = new Instruction.GetElementPtr(block, address, gep.getEleType(), offsets);
                 newGep.remove();
 //                System.out.println("newGep: " + newGep.getType() + newGep);
-                block.getInstructions().insertBefore(newGep, gep);
+                block.insertInstBefore(newGep, gep);
                 gep.replaceAllUsesWith(newGep);
                 gep.delete();
             }
@@ -95,7 +92,6 @@ public class GepFold {
     }
 
     private static boolean isFoldGep(Instruction.GetElementPtr gep) {
-        if (gep.getBase() instanceof Instruction.GetElementPtr) return true;
-        return false;
+        return gep.getBase() instanceof Instruction.GetElementPtr;
     }
 }

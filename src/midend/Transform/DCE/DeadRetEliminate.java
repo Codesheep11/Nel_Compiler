@@ -23,7 +23,7 @@ public class DeadRetEliminate {
         // 如果函数的返回值没有用到，那么将其ret消除
         boolean hasUse = false;
         for (Instruction call : function.getUsers()) {
-            if (call.getUsers().size() != 0) {
+            if (!call.getUsers().isEmpty()) {
                 hasUse = true;
                 break;
             }

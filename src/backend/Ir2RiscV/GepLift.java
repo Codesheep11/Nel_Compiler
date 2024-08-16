@@ -173,7 +173,7 @@ public class GepLift {
             offset.add(Constant.ConstantInt.get(offsetPair.offset));
             Instruction.GetElementPtr add = new Instruction.GetElementPtr(block, offsetPair.gepBase, offsetPair.gepBase.getEleType(), offset);
             add.remove();
-            block.getInstructions().insertBefore(add, gep);
+            block.insertInstBefore(add, gep);
             // 将使用gep的替换为add
             gep.replaceAllUsesWith(add);
             gep.delete();

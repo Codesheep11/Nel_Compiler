@@ -4,7 +4,6 @@ import midend.Analysis.AnalysisManager;
 import midend.Analysis.MemDepAnalysis;
 import midend.Analysis.PointerBaseAnalysis;
 import midend.Transform.DCE.SimplifyCFGPass;
-import midend.Util.Print;
 import mir.Module;
 import mir.*;
 

@@ -49,7 +49,7 @@ public class Branch2MinMax {
                         BasicBlock endBlock = thenJump.getTargetBlock();
                         if (endBlock.getPreBlocks().size() > 2) return;
                         br2MinMax(endBlock, thenBlock, icmp, branch);
-                        if (endBlock.getPhiInstructions().size() == 0) {
+                        if (endBlock.getPhiInstructions().isEmpty()) {
                             if (thenBlock.getInstructions().size() == 1 && elseBlock.getInstructions().size() == 1) {
                                 block.getLastInst().delete();
                                 new Instruction.Jump(block, endBlock);
@@ -65,7 +65,7 @@ public class Branch2MinMax {
                     visited.add(passBlock);
                     thenBlock = thenBlock.equals(endBlock) ? block : thenBlock;
                     br2MinMax(endBlock, thenBlock, icmp, branch);
-                    if (endBlock.getPhiInstructions().size() == 0) {
+                    if (endBlock.getPhiInstructions().isEmpty()) {
                         if (passBlock.getInstructions().size() == 1) {
                             block.getLastInst().delete();
                             new Instruction.Jump(block, endBlock);

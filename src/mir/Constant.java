@@ -10,7 +10,6 @@ public abstract class Constant extends User {
      * llvm 中的常量
      * 抽象概念，包括整数常量，浮点数常量，数组常量，指针常量
      * 由静态内部类实现
-     * @param type
      */
     public Constant(Type type) {
         super(type);
@@ -45,7 +44,7 @@ public abstract class Constant extends User {
             return val ? _CONST_TRUE : _CONST_FALSE;
         }
 
-        int boolValue;//0 or 1
+        final int boolValue;//0 or 1
 
         private ConstantBool(int val) {
             super(Type.BasicType.I1_TYPE);
@@ -231,7 +230,6 @@ public abstract class Constant extends User {
 
         /***
          * 仅仅是展平， 对于展平后的每一个元素，类型为 Constant
-         * @return
          */
         public ArrayList<Constant> getFlattenedArray() {
             ArrayList<Constant> flatten = new ArrayList<>();
@@ -255,8 +253,6 @@ public abstract class Constant extends User {
         /**
          * 根据展平后的索引找到元素
          *
-         * @param idx
-         * @return
          */
         public Constant getIdxEle(int idx) {
             int v = idx;
@@ -274,7 +270,7 @@ public abstract class Constant extends User {
                 eleType = ((Type.ArrayType) eleType).getEleType();
             }
             ret = ((ConstantArray) ret).getEle(v);
-            if (!(ret instanceof Constant)) {
+            if (ret == null) {
                 throw new RuntimeException("Index out of bound");
             }
             return ret;
@@ -283,8 +279,6 @@ public abstract class Constant extends User {
         /**
          * 根据展平后的索引设置元素
          *
-         * @param idx
-         * @param value
          */
         public void setIdxEle(int idx, Constant value) {
             int v = idx;
@@ -301,7 +295,7 @@ public abstract class Constant extends User {
                 ret = ((ConstantArray) ret).getEle(i);
                 eleType = ((Type.ArrayType) eleType).getEleType();
             }
-            if (!(((ConstantArray) ret).getEle(v) instanceof Constant)) {
+            if (((ConstantArray) ret).getEle(v) == null) {
                 throw new RuntimeException("Index out of bound");
             }
             ((ConstantArray) ret).setEle(v, value);

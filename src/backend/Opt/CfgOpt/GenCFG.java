@@ -142,7 +142,7 @@ public class GenCFG {
         }
 
         ArrayList<Double> d = solve(n, a);
-        if (d.size() == 0) {
+        if (d.isEmpty()) {
             for (RiscvBlock block : func.blocks) {
                 res.put(block, 1.0);
             }

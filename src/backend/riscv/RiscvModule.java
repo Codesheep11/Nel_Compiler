@@ -2,17 +2,16 @@ package backend.riscv;
 
 import backend.Opt.GPpooling.GPpool;
 import backend.parallel.ExternLib;
-import manager.Manager;
 
 import java.util.ArrayList;
 
 public class RiscvModule {
-    public ArrayList<RiscvFunction> funcList = new ArrayList<>();
-    public ArrayList<RiscvGlobalVar> globList = new ArrayList<>();
+    public final ArrayList<RiscvFunction> funcList = new ArrayList<>();
+    public final ArrayList<RiscvGlobalVar> globList = new ArrayList<>();
     public RiscvFunction mainFunc;
     public static GPpool gPpool = null;
 
-    public ArrayList<RiscvFunction> TopoSort = new ArrayList<>();
+    public final ArrayList<RiscvFunction> TopoSort = new ArrayList<>();
 
     public RiscvModule() {
 
@@ -62,13 +61,13 @@ public class RiscvModule {
         sb.append(".bss\n");
         for (RiscvGlobalVar glob : globList) {
             if (!glob.hasInit()) {
-                sb.append(glob.toString());
+                sb.append(glob);
             }
         }
         sb.append(".data\n");
         for (RiscvGlobalVar glob : globList) {
             if (glob.hasInit()) {
-                sb.append(glob.toString());
+                sb.append(glob);
             }
         }
         if (gPpool != null) {

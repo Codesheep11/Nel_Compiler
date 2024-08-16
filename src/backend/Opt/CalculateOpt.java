@@ -1,7 +1,7 @@
 package backend.Opt;
 
 import backend.Ir2RiscV.VirRegMap;
-import backend.allocater.LivenessAnalyze;
+import backend.allocator.LivenessAnalyze;
 import backend.operand.Address;
 import backend.operand.Imm;
 import backend.operand.Reg;
@@ -65,7 +65,7 @@ public class CalculateOpt {
         }
         for (var pair : needRemove) {
             for (RiscvInstruction ri : pair.second) {
-                block.riscvInstructions.insertBefore(ri, pair.first.first);
+                block.insertInstBefore(ri, pair.first.first);
             }
             pair.first.first.remove();
             pair.first.second.remove();
@@ -161,7 +161,7 @@ public class CalculateOpt {
             }
         }
         for (var pair : need.keySet()) {
-            block.riscvInstructions.insertBefore(need.get(pair), pair.first);
+            block.insertInstBefore(need.get(pair), pair.first);
             pair.first.remove();
             pair.second.remove();
         }
@@ -184,7 +184,7 @@ public class CalculateOpt {
             }
         }
         for (var pair : needReplace) {
-            block.riscvInstructions.insertBefore(pair.second, pair.first);
+            block.insertInstBefore(pair.second, pair.first);
             pair.first.remove();
         }
     }
@@ -284,7 +284,7 @@ public class CalculateOpt {
         }
         block.riscvInstructions.clear();
         for (RiscvInstruction ri : newList) {
-            block.riscvInstructions.addLast(ri);
+            block.addInstLast(ri);
         }
     }
 
@@ -328,7 +328,7 @@ public class CalculateOpt {
         }
         riscvBlock.riscvInstructions.clear();
         for (RiscvInstruction ri : newList) {
-            riscvBlock.riscvInstructions.addLast(ri);
+            riscvBlock.addInstLast(ri);
         }
     }
 
@@ -343,7 +343,7 @@ public class CalculateOpt {
             }
         }
         for (Li key : needReplace.keySet()) {
-            block.riscvInstructions.insertBefore(needReplace.get(key), key);
+            block.insertInstBefore(needReplace.get(key), key);
             key.remove();
         }
     }
@@ -413,7 +413,7 @@ public class CalculateOpt {
             }
         }
         for (var pair : needReplace.entrySet()) {
-            block.riscvInstructions.insertBefore(pair.getValue(), pair.getKey());
+            block.insertInstBefore(pair.getValue(), pair.getKey());
             pair.getKey().remove();
         }
     }
@@ -457,7 +457,7 @@ public class CalculateOpt {
         }
         riscvBlock.riscvInstructions.clear();
         for (RiscvInstruction ri : newList) {
-            riscvBlock.riscvInstructions.addLast(ri);
+            riscvBlock.addInstLast(ri);
         }
     }
 
@@ -535,7 +535,7 @@ public class CalculateOpt {
             }
         }
         for (Pair<Li, R2> pair : needReplace) {
-            block.riscvInstructions.insertBefore(pair.second, pair.first);
+            block.insertInstBefore(pair.second, pair.first);
             pair.first.remove();
         }
     }
@@ -622,7 +622,7 @@ public class CalculateOpt {
         }
         for (var key : needReplace.keySet()) {
             for (RiscvInstruction ri : needReplace.get(key)) {
-                block.riscvInstructions.insertBefore(ri, key);
+                block.insertInstBefore(ri, key);
             }
             key.remove();
         }

@@ -2,7 +2,7 @@ package backend.Opt.BackLoop;
 
 import backend.Opt.GPpooling.GlobalFloat2roPool;
 import backend.Opt.MemoryOpt.UnknownBaseLSOpt;
-import backend.allocater.LivenessAnalyze;
+import backend.allocator.LivenessAnalyze;
 import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
@@ -62,7 +62,7 @@ public class LoopConstLift {
                         function.blocks.add(newBlock);
                         riscLoop.enterings.remove(block);
                         riscLoop.enterings.add(newBlock);
-                        newBlock.riscvInstructions.addLast(new J(newBlock, J.JType.j, b.targetBlock));
+                        newBlock.addInstLast(new J(newBlock, J.JType.j, b.targetBlock));
                         newBlock.preBlock.add(block);
                         newBlock.succBlock.add(b.targetBlock);
                         b.targetBlock = newBlock;
@@ -104,7 +104,7 @@ public class LoopConstLift {
                 throw new RuntimeException("wrong type");
             }
             for (RiscvInstruction ri : arrayList) {
-                block.riscvInstructions.insertBefore(ri.myCopy(block), j);
+                block.insertInstBefore(ri.myCopy(block), j);
             }
         }
         for (RiscvInstruction ri : arrayList) {
@@ -125,7 +125,7 @@ public class LoopConstLift {
                     ArrayList<UnknownBaseLSOpt.UBRecord> list = UnknownBaseLSOpt.queryByOff(ls.val, ls.base, off);
                     UnknownBaseLSOpt.removeByReg(ls.val);
                     UnknownBaseLSOpt.removeByBase(ls.val);
-                    if (list.size() != 0) {
+                    if (!list.isEmpty()) {
                         ls2move.add(ls);
                         if (!list.get(0).getReg().equals(ls.val)) list.get(0).getReg().mergeReg(ls.val);
                     } else {
