@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 public class LoopInfo {
-    private Function function;
-    public ArrayList<Loop> TopLevelLoops = new ArrayList<>();
+    private final Function function;
+    public final ArrayList<Loop> TopLevelLoops = new ArrayList<>();
 
     public LoopInfo(Function function) {
         this.function = function;

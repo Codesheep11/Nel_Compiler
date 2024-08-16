@@ -1,6 +1,5 @@
 package midend.Analysis;
 
-import midend.Transform.Function.FuncCache;
 import midend.Transform.GlobalVarLocalize;
 import midend.Util.FuncInfo;
 import mir.*;
@@ -15,13 +14,13 @@ public class FuncAnalysis {
 
     public static boolean FuncAnalysisOpen = false;
 
-    public static HashMap<Function, HashSet<Function>> callGraph = new HashMap<>();
+    public static final HashMap<Function, HashSet<Function>> callGraph = new HashMap<>();
 
     public static Function main;
 
     private static boolean topoSortFlag = false;
 
-    private static ArrayList<Function> funcTopoSort = new ArrayList<>();
+    private static final ArrayList<Function> funcTopoSort = new ArrayList<>();
 
     public static void run(Module module) {
         if (!FuncAnalysisOpen) FuncAnalysisOpen = true;
@@ -37,7 +36,7 @@ public class FuncAnalysis {
                     addCall(caller, callee);
                 }
             }
-            if (callee.getUsers().size() != 0) {
+            if (!callee.getUsers().isEmpty()) {
                 FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
                 calleeInfo.isLeaf = true;
             }
@@ -166,9 +165,6 @@ public class FuncAnalysis {
     /**
      * sideEffect 只考虑是否对传入的参数进行了地址写入
      *
-     * @param addr
-     * @param function
-     * @return
      */
     public static boolean isSideEffect(Value addr, Function function) {
         while (addr instanceof Instruction.GetElementPtr gep) {

@@ -59,10 +59,10 @@ public class DivRemByConstant {
             int x = log2(divisor);
             if (x == 0) {
                 // 如果是/1的话直接一个mv解决
-                block.riscvInstructions.addLast(new R2(block, ans, src, R2.R2Type.mv));
+                block.addInstLast(new R2(block, ans, src, R2.R2Type.mv));
             } else if (x >= 1 && x <= 30) {
                 // 否则直接逻辑位移
-                block.riscvInstructions.addLast(new R3(block, ans, src, new Imm(x), R3.R3Type.srliw));
+                block.addInstLast(new R3(block, ans, src, new Imm(x), R3.R3Type.srliw));
             } else {
                 return false;
             }
@@ -86,11 +86,11 @@ public class DivRemByConstant {
                 Reg op2 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op3 = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-                block.riscvInstructions.addLast(new Li(block, tmp, new Imm(high)));
-                block.riscvInstructions.addLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
-                block.riscvInstructions.addLast(new R3(block, op2, op1, new Imm(32 + sh), R3.R3Type.srai));
-                block.riscvInstructions.addLast(new R3(block, op3, op2, new Imm(31), R3.R3Type.sraiw));
-                block.riscvInstructions.addLast(new R3(block, ans, op2, op3, R3.R3Type.subw));
+                block.addInstLast(new Li(block, tmp, new Imm(high)));
+                block.addInstLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
+                block.addInstLast(new R3(block, op2, op1, new Imm(32 + sh), R3.R3Type.srai));
+                block.addInstLast(new R3(block, op3, op2, new Imm(31), R3.R3Type.sraiw));
+                block.addInstLast(new R3(block, ans, op2, op3, R3.R3Type.subw));
             } else {
                 high = high - (1L << 32);
                 // %1 = mul %src, #high
@@ -105,13 +105,13 @@ public class DivRemByConstant {
                 Reg op4 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op5 = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-                block.riscvInstructions.addLast(new Li(block, tmp, new Imm(high)));
-                block.riscvInstructions.addLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
-                block.riscvInstructions.addLast(new R3(block, op2, op1, new Imm(32), R3.R3Type.srai));
-                block.riscvInstructions.addLast(new R3(block, op3, op2, src, R3.R3Type.addw));
-                block.riscvInstructions.addLast(new R3(block, op4, op3, new Imm(sh), R3.R3Type.sraiw));
-                block.riscvInstructions.addLast(new R3(block, op5, src, new Imm(31), R3.R3Type.sraiw));
-                block.riscvInstructions.addLast(new R3(block, ans, op4, op5, R3.R3Type.subw));
+                block.addInstLast(new Li(block, tmp, new Imm(high)));
+                block.addInstLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
+                block.addInstLast(new R3(block, op2, op1, new Imm(32), R3.R3Type.srai));
+                block.addInstLast(new R3(block, op3, op2, src, R3.R3Type.addw));
+                block.addInstLast(new R3(block, op4, op3, new Imm(sh), R3.R3Type.sraiw));
+                block.addInstLast(new R3(block, op5, src, new Imm(31), R3.R3Type.sraiw));
+                block.addInstLast(new R3(block, ans, op4, op5, R3.R3Type.subw));
             }
         }
         return true;
@@ -125,16 +125,16 @@ public class DivRemByConstant {
         if (isPowerOf2(divisor)) {
             int x = log2(divisor);
             if (x == 0) {
-                block.riscvInstructions.addLast(new R2(block, ans, src, R2.R2Type.mv));
+                block.addInstLast(new R2(block, ans, src, R2.R2Type.mv));
             } else if (x >= 1 && x <= 30) {
                 // %1 = srli %src, #(64-x)
                 // %2 = addw %src, %1
                 // %ans = sraiw %2, #x
                 Reg op1 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op2 = Reg.getPreColoredReg(Reg.PhyReg.t0, 32);
-                block.riscvInstructions.addLast(new R3(block, op1, src, new Imm(64 - x), R3.R3Type.srli));
-                block.riscvInstructions.addLast(new R3(block, op2, src, op1, R3.R3Type.addw));
-                block.riscvInstructions.addLast(new R3(block, ans, op2, new Imm(x), R3.R3Type.sraiw));
+                block.addInstLast(new R3(block, op1, src, new Imm(64 - x), R3.R3Type.srli));
+                block.addInstLast(new R3(block, op2, src, op1, R3.R3Type.addw));
+                block.addInstLast(new R3(block, ans, op2, new Imm(x), R3.R3Type.sraiw));
             } else {
                 return false;
             }
@@ -158,11 +158,11 @@ public class DivRemByConstant {
                 Reg op2 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op3 = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-                block.riscvInstructions.addLast(new Li(block, tmp, new Imm(high)));
-                block.riscvInstructions.addLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
-                block.riscvInstructions.addLast(new R3(block, op2, op1, new Imm(32 + sh), R3.R3Type.srai));
-                block.riscvInstructions.addLast(new R3(block, op3, op2, new Imm(31), R3.R3Type.sraiw));
-                block.riscvInstructions.addLast(new R3(block, ans, op2, op3, R3.R3Type.subw));
+                block.addInstLast(new Li(block, tmp, new Imm(high)));
+                block.addInstLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
+                block.addInstLast(new R3(block, op2, op1, new Imm(32 + sh), R3.R3Type.srai));
+                block.addInstLast(new R3(block, op3, op2, new Imm(31), R3.R3Type.sraiw));
+                block.addInstLast(new R3(block, ans, op2, op3, R3.R3Type.subw));
             } else {
                 high = high - (1L << 32);
                 // %1 = mul %src, #high
@@ -177,17 +177,17 @@ public class DivRemByConstant {
                 Reg op4 = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Reg op5 = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
-                block.riscvInstructions.addLast(new Li(block, tmp, new Imm(high)));
-                block.riscvInstructions.addLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
-                block.riscvInstructions.addLast(new R3(block, op2, op1, new Imm(32), R3.R3Type.srai));
-                block.riscvInstructions.addLast(new R3(block, op3, op2, src, R3.R3Type.addw));
-                block.riscvInstructions.addLast(new R3(block, op4, op3, new Imm(sh), R3.R3Type.sraiw));
-                block.riscvInstructions.addLast(new R3(block, op5, src, new Imm(31), R3.R3Type.sraiw));
-                block.riscvInstructions.addLast(new R3(block, ans, op4, op5, R3.R3Type.subw));
+                block.addInstLast(new Li(block, tmp, new Imm(high)));
+                block.addInstLast(new R3(block, op1, src, tmp, R3.R3Type.mul));
+                block.addInstLast(new R3(block, op2, op1, new Imm(32), R3.R3Type.srai));
+                block.addInstLast(new R3(block, op3, op2, src, R3.R3Type.addw));
+                block.addInstLast(new R3(block, op4, op3, new Imm(sh), R3.R3Type.sraiw));
+                block.addInstLast(new R3(block, op5, src, new Imm(31), R3.R3Type.sraiw));
+                block.addInstLast(new R3(block, ans, op4, op5, R3.R3Type.subw));
             }
         }
         if (isDivisorNeg) {
-            block.riscvInstructions.addLast(new R3(
+            block.addInstLast(new R3(
                     block, regAns, Reg.getPreColoredReg
                     (Reg.PhyReg.zero, 64), ans, R3.R3Type.subw));
         }
@@ -201,10 +201,10 @@ public class DivRemByConstant {
             int mask = divisor - 1;
             if (mask >= 2047) {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                block.riscvInstructions.addLast(new Li(block, tmp, new Imm(mask)));
-                block.riscvInstructions.addLast(new R3(block, ans, src, tmp, R3.R3Type.and));
+                block.addInstLast(new Li(block, tmp, new Imm(mask)));
+                block.addInstLast(new R3(block, ans, src, tmp, R3.R3Type.and));
             } else {
-                block.riscvInstructions.addLast(new R3(block, ans, src, new Imm(mask), R3.R3Type.andi));
+                block.addInstLast(new R3(block, ans, src, new Imm(mask), R3.R3Type.andi));
             }
         } else {
             // 当作一个除法+乘法+减法优化
@@ -214,10 +214,10 @@ public class DivRemByConstant {
             Reg store = Reg.getVirtualReg(Reg.RegType.GPR, 32);
             boolean ret = SignDiv(store, src, divisor);
             if (!ret) {// 如果失败,补偿一个divw
-                block.riscvInstructions.addLast(new R3(block, store, src, tmp, R3.R3Type.divw));
+                block.addInstLast(new R3(block, store, src, tmp, R3.R3Type.divw));
             }
             MulPlaner.MulConst(tmp, store, divisor);
-            block.riscvInstructions.addLast(new R3(block, ans, src, tmp, R3.R3Type.subw));
+            block.addInstLast(new R3(block, ans, src, tmp, R3.R3Type.subw));
         }
     }
 }

@@ -149,6 +149,7 @@ public class ConstrainReduce {
         runOnBlock(func.getEntry(), new Constrain());
     }
 
+    @SuppressWarnings({"SwitchStatementWithTooFewBranches"})
     private static void runOnBlock(BasicBlock block, Constrain constrain) {
         constrainMap.put(block, constrain);
         if (idMap.size() >= ANALYSIS_DEPTH) return;

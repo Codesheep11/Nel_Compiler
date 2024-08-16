@@ -6,8 +6,8 @@ import backend.riscv.RiscvInstruction.*;
 public abstract class ScheduleClass {
 
 
-    public static int RISCVIDivPipeline = 1;
-    public static int RISCVFPDivPipeline = 2;
+    public static final int RISCVIDivPipeline = 1;
+    public static final int RISCVFPDivPipeline = 2;
 
     // 这里是俩流水线，A和B
 
@@ -181,7 +181,7 @@ public abstract class ScheduleClass {
 
     static class RISCVScheduleClassFP extends ScheduleClass {
 
-        public int latency;
+        public final int latency;
 
         public RISCVScheduleClassFP(int latency) {
             this.latency = latency;

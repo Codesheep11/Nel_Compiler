@@ -1,20 +1,20 @@
 package backend.riscv.RiscvInstruction;
 
-import backend.allocater.LivenessAnalyze;
+import backend.allocator.LivenessAnalyze;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import utils.NelLinkedList;
 
 import java.util.HashSet;
 
-import static backend.allocater.LivenessAnalyze.Def;
-import static backend.allocater.LivenessAnalyze.Use;
+import static backend.allocator.LivenessAnalyze.Def;
+import static backend.allocator.LivenessAnalyze.Use;
 
 public class RiscvInstruction extends NelLinkedList.NelLinkNode {
 
     public RiscvBlock block;
     public static int cnt = 0;
-    public int id = cnt++;
+    public final int id = cnt++;
 
     public int getInstFlag() {
         return 0;
@@ -68,6 +68,7 @@ public class RiscvInstruction extends NelLinkedList.NelLinkNode {
         return (getInstFlag() & flag) != 0;
     }
 
+    @SuppressWarnings("PointlessBitwiseExpression")
     public enum InstFlag {
         None(0),
         Load(1 << 0),

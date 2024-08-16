@@ -169,7 +169,7 @@ public class GlobalCodeMotion {
         if (!instr.latest.equals(instr.getParentBlock())) {
             // ConcurrentModification!
             instr.remove();
-            instr.latest.getInstructions().insertBefore(instr, findPos(instr, instr.latest));
+            instr.latest.insertInstBefore(instr, findPos(instr, instr.latest));
             if (instr.getNext() == null)
                 System.out.println(instr);
             instr.setParentBlock(instr.latest);

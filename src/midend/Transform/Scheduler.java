@@ -4,37 +4,33 @@ import midend.Analysis.AnalysisManager;
 import midend.Util.FuncInfo;
 import mir.Module;
 import mir.*;
-import utils.NelLinkedList;
 
 import java.util.*;
 
 public class Scheduler {
     //全局的，维护每个Block出口活跃的指令
-    private static HashMap<BasicBlock, HashSet<Instruction>> outLiveMap = new HashMap<>();
+    private static final HashMap<BasicBlock, HashSet<Instruction>> outLiveMap = new HashMap<>();
     //维护每个Block的活跃指令 Use - User
-    private static HashMap<Instruction, HashSet<Instruction>> LiveMap = new HashMap<>();
+    private static final HashMap<Instruction, HashSet<Instruction>> LiveMap = new HashMap<>();
     //维护每个指令的分数，分数越小越先出队，即放在后面
-    private static HashMap<Instruction, Integer> ScoreMap = new HashMap<>();
+    private static final HashMap<Instruction, Integer> ScoreMap = new HashMap<>();
     //在当前队列中的指令，便于查询
-    private static HashSet<Instruction> InQueueInstrs = new HashSet<>();
+    private static final HashSet<Instruction> InQueueInstrs = new HashSet<>();
     //User - Use
-    private static HashMap<Instruction, HashSet<Instruction>> useMap = new HashMap<>();
+    private static final HashMap<Instruction, HashSet<Instruction>> useMap = new HashMap<>();
     //Use  - User
-    private static HashMap<Instruction, HashSet<Instruction>> userMap = new HashMap<>();
+    private static final HashMap<Instruction, HashSet<Instruction>> userMap = new HashMap<>();
 
     //按照分数和时间戳排序的指令队列
-    private static PriorityQueue<SchedulerInstr> afterScheduler = new PriorityQueue<>(new Comparator<SchedulerInstr>() {
-        @Override
-        public int compare(SchedulerInstr o1, SchedulerInstr o2) {
-            if (o1.score == o2.score) return o2.timestamp - o1.timestamp;
-            return o1.score - o2.score;
-        }
+    private static final PriorityQueue<SchedulerInstr> afterScheduler = new PriorityQueue<>((o1, o2) -> {
+        if (o1.score == o2.score) return o2.timestamp - o1.timestamp;
+        return o1.score - o2.score;
     });
 
     private static class SchedulerInstr {
-        public Instruction instr;
-        public int score;
-        public int timestamp;
+        public final Instruction instr;
+        public final int score;
+        public final int timestamp;
         private static int total_timestamp = 0;
 
         public SchedulerInstr(Instruction instr, int score)
@@ -102,19 +98,17 @@ public class Scheduler {
         for (Instruction instr : block.getMainInstructions()) {
             instr.remove();
             ScoreMap.put(instr, 0);
-            if (userMap.get(instr).size() == 0) afterScheduler.add(new SchedulerInstr(instr, 0));
+            if (userMap.get(instr).isEmpty()) afterScheduler.add(new SchedulerInstr(instr, 0));
             if (instr.getType() != Type.VoidType.VOID_TYPE) updateScore(instr, -1);
         }
-        LiveMap.forEach((instruction, users) -> {
-            updateScore(users.iterator().next(), 1);
-        });
+        LiveMap.forEach((instruction, users) -> updateScore(users.iterator().next(), 1));
         outLiveMap.get(block).addAll(LiveMap.keySet());
-        outLiveMap.get(block).removeAll(block.getInstructionsSnap());
+        block.getInstructionsSnap().forEach(outLiveMap.get(block)::remove);
         Instruction pos = block.getTerminator();
         while (true) {
             Instruction instr = getNextFromQueue();
             if (instr == null) break;
-            block.getInstructions().insertBefore(instr, pos);
+            block.insertInstBefore(instr, pos);
             pos = instr;
             updateLiveMap(instr);
             updateUseUserMap(instr);
@@ -139,7 +133,7 @@ public class Scheduler {
         for (Instruction use : useMap.get(instr)) {
             var users = userMap.get(use);
             users.remove(instr);
-            if (users.size() == 0) {
+            if (users.isEmpty()) {
                 afterScheduler.add(new SchedulerInstr(use, ScoreMap.get(use)));
                 InQueueInstrs.add(use);
             }
@@ -204,7 +198,6 @@ public class Scheduler {
     /**
      * block所有operand的非出口活跃指令
      *
-     * @param block
      */
     private static void InitLiveMap(BasicBlock block) {
         HashSet<Instruction> exitLive = outLiveMap.get(block);
@@ -223,8 +216,6 @@ public class Scheduler {
     /**
      * 更新分数
      *
-     * @param instr
-     * @param score
      */
     private static void updateScore(Instruction instr, int score) {
         ScoreMap.put(instr, ScoreMap.get(instr) + score);

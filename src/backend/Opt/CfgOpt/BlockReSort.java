@@ -13,9 +13,9 @@ import java.util.function.Function;
 public class BlockReSort {
 
     static class BranchEdge {
-        public int source;
-        public int target;
-        public double prob;
+        public final int source;
+        public final int target;
+        public final double prob;
 
         public BranchEdge(int source, int target, double prob) {
             this.source = source;

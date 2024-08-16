@@ -70,7 +70,7 @@ public class AfterRAScheduler {
         }
         block.riscvInstructions.clear();
         for (RiscvInstruction instr : newList) {
-            block.riscvInstructions.addLast(instr);
+            block.addInstLast(instr);
         }
     }
 

@@ -6,7 +6,6 @@ import midend.Analysis.result.SCEVinfo;
 import midend.Analysis.result.CoRInfo;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.function.Consumer;
 
 /**
  * Scalar Evolution Analysis <br>

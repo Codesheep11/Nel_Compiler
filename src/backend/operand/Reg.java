@@ -1,6 +1,6 @@
 package backend.operand;
 
-import backend.allocater.LivenessAnalyze;
+import backend.allocator.LivenessAnalyze;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import manager.Manager;
 
@@ -10,9 +10,9 @@ import java.util.HashSet;
 public class Reg extends Operand {
     private static int Cnt = 0;
 
-    public int regCnt;
+    public final int regCnt;
 
-    public int bits;
+    public final int bits;
 
     public enum PhyReg {
         zero, ra, sp, gp, tp, t0, t1, t2, s0, s1, a0, a1, a2, a3, a4, a5, a6, a7, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, t3, t4, t5, t6,
@@ -87,7 +87,7 @@ public class Reg extends Operand {
 
     public PhyReg phyReg = null;
 
-    public RegType regType;
+    public final RegType regType;
 
     public boolean preColored = false;
 
@@ -110,7 +110,7 @@ public class Reg extends Operand {
         }
     }
 
-    private static HashMap<String, Reg> preColoredRegs = new HashMap<String, Reg>();
+    private static final HashMap<String, Reg> preColoredRegs = new HashMap<String, Reg>();
 
     public static void initPreColoredRegs() {
         for (int i = 0; i < 64; i++) {

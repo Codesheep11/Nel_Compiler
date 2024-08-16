@@ -131,7 +131,7 @@ public class J extends RiscvInstruction {
 
     @Override
     public boolean isUse(int idx) {
-        return false;
+        return super.isUse(idx);
     }
 
     @Override

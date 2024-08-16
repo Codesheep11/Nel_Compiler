@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class StringHandler {
-    private BufferedInputStream src;
-    private CharType type = new CharType();
+    private final BufferedInputStream src;
+    private final CharType type = new CharType();
     public StringHandler(BufferedInputStream src){
         this.src = src;
     }
@@ -35,7 +35,6 @@ public class StringHandler {
     /**
      * the function will skip all the blank characters and comments
      * @return string read from src
-     * @throws IOException
      */
     public String scanf() throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
@@ -89,9 +88,7 @@ public class StringHandler {
                         }
                         return stringBuilder.toString();
                     }
-                    default -> {
-                        stringBuilder.append(cur);
-                    }
+                    default -> stringBuilder.append(cur);
                 }
             } else if (cur == '"') {
                 stringBuilder.append(cur);

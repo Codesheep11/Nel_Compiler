@@ -1,7 +1,6 @@
 package midend.Transform.Loop;
 
 import midend.Analysis.AnalysisManager;
-import midend.Analysis.PointerBaseAnalysis;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.LocalValueNumbering;

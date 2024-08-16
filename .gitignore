@@ -10,4 +10,3 @@ compiler2024-nel.iml
 *.jar
 *.bat
 qodana.yaml
-*.ll

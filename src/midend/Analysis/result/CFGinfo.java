@@ -23,6 +23,7 @@ public final class CFGinfo {
             this.predBlocks = new ArrayList<>();
             this.succBlocks = new ArrayList<>();
         }
+        @SuppressWarnings({"FieldCanBeLocal", "unused"})
         private final BasicBlock block;
         final ArrayList <BasicBlock> predBlocks;
         final ArrayList <BasicBlock> succBlocks;

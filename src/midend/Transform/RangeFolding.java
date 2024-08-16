@@ -2,7 +2,6 @@ package midend.Transform;
 
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.I32RangeAnalysis;
-import midend.Util.Print;
 import mir.Module;
 import mir.*;
 

@@ -1,6 +1,5 @@
 package midend.Transform;
 
-import mir.Function;
 import mir.Module;
 import mir.*;
 import utils.Pair;
@@ -12,8 +11,8 @@ import java.util.*;
  * v * v * v * v * v -> v * (v*v) * (v*v)
  */
 public class Reassociate {
-    private static HashMap<Value, ArrayList<Pair<Integer, Value>>> map = new HashMap<>();
-    private static HashMap<Value, Integer> number = new HashMap<>();
+    private static final HashMap<Value, ArrayList<Pair<Integer, Value>>> map = new HashMap<>();
+    private static final HashMap<Value, Integer> number = new HashMap<>();
 
     public static void run(Module module) {
         for (Function function : module.getFuncSet()) {
@@ -85,16 +84,13 @@ public class Reassociate {
                 next.setKey(0);
             }
         }
-        Iterator<Pair<Integer, Value>> it = args.iterator();
-        while (it.hasNext()) {
-            if (it.next().getKey() == 0) it.remove();
-        }
+        args.removeIf(integerValuePair -> integerValuePair.getKey() == 0);
         Instruction firstUser = inst.getUsers().get(0);
         if (inst.getUsers().size() == 1 && firstUser.getInstType().equals(instType)) {
             map.put(inst, args);
             return;
         }
-        map.put(inst, new ArrayList<>(Arrays.asList(new Pair<>(1, inst))));
+        map.put(inst, new ArrayList<>(List.of(new Pair<>(1, inst))));
         boolean needRebuild = false;
         int cnt = 0;
         for (Pair<Integer, Value> pair : args) {
@@ -115,7 +111,7 @@ public class Reassociate {
                         Instruction mul = new Instruction.Mul(block, pair.getValue().getType(),
                                 pair.getValue(), Constant.ConstantInt.get(pair.getKey()));
                         mul.remove();
-                        block.getInstructions().insertBefore(mul, inst);
+                        block.insertInstBefore(mul, inst);
                         reductionStorage.add(mul);
                     }
                 }
@@ -134,7 +130,7 @@ public class Reassociate {
                             if (c != 0) {
                                 Instruction mul = new Instruction.Mul(block, v.getType(), v, v);
                                 mul.remove();
-                                block.getInstructions().insertBefore(mul, inst);
+                                block.insertInstBefore(mul, inst);
                                 v = mul;
                             }
                             else break;
@@ -150,7 +146,7 @@ public class Reassociate {
 //                        Instruction mul = new Instruction.FMul(block, pair.getValue().getType(),
 //                                pair.getValue(), new Constant.ConstantFloat(pair.getKey()));
 //                        mul.remove();
-//                        block.getInstructions().insertBefore(mul, inst);
+//                        block.insertInstBefore(mul, inst);
 //                        reductionStorage.add(mul);
 //                    }
 //                }
@@ -169,19 +165,19 @@ public class Reassociate {
                 if (inst instanceof Instruction.Add) {
                     Instruction add = new Instruction.Add(block, v.getType(), reducedStorage, v);
                     add.remove();
-                    block.getInstructions().insertBefore(add, inst);
+                    block.insertInstBefore(add, inst);
                     reducedStorage = add;
                 }
                 else if (inst instanceof Instruction.Mul) {
                     Instruction mul = new Instruction.Mul(block, v.getType(), reducedStorage, v);
                     mul.remove();
-                    block.getInstructions().insertBefore(mul, inst);
+                    block.insertInstBefore(mul, inst);
                     reducedStorage = mul;
                 }
 //                else if (inst instanceof Instruction.FAdd) {
 //                    Instruction fadd = new Instruction.FAdd(block, v.getType(), reducedStorage, v);
 //                    fadd.remove();
-//                    block.getInstructions().insertBefore(fadd, inst);
+//                    block.insertInstBefore(fadd, inst);
 //                    reducedStorage = fadd;
 //                }
                 else {

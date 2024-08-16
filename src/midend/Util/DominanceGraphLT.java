@@ -127,10 +127,10 @@ public class DominanceGraphLT {
         Node parent; // dfs
         Node semi;
         Node idom;
-        BasicBlock block;
+        final BasicBlock block;
         int dfn;
-        ArrayList<Node> bucket = new ArrayList<>(); // 以当前节点为半支配点的节点
-        WeightedDisjointSetUnion.DsuNode dsuNode;
+        final ArrayList<Node> bucket = new ArrayList<>(); // 以当前节点为半支配点的节点
+        final WeightedDisjointSetUnion.DsuNode dsuNode;
         boolean hasDumped;
 
         Node(BasicBlock block) {
@@ -147,7 +147,7 @@ public class DominanceGraphLT {
         private static class DsuNode {
             DsuNode father;
             Node weight; // 权重的含义: 该点到当前祖先中拥有最小的semi节点
-            Node represent;
+            final Node represent;
 
             public DsuNode(Node node) {
                 this.father = this;

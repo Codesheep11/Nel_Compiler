@@ -12,7 +12,7 @@ import backend.Opt.GPpooling.GlobalFloat2roPool;
 import backend.Opt.MemoryOpt.KnownBaseLSOpt;
 import backend.Opt.MemoryOpt.RegAftExternCallLoadOpt;
 import backend.Opt.MemoryOpt.UnknownBaseLSOpt;
-import backend.allocater.Allocater;
+import backend.allocator.Allocator;
 import backend.riscv.RiscvModule;
 import frontend.Visitor;
 import frontend.exception.SemanticError;
@@ -107,6 +107,8 @@ public class Manager {
         StillLoopMotion.run(module);
         CertainLoopExtract.run(module);
         LoopBuildAndNormalize();
+        LICMMemory.run(module);
+        LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
         LCSSA.remove(module);
@@ -158,7 +160,7 @@ public class Manager {
         GlobalFloat2roPool.run(riscvmodule);
         LoopConstLift.run(riscvmodule);
         CalculateOpt.runBeforeRA(riscvmodule);
-        Allocater.run(riscvmodule);
+        Allocator.run(riscvmodule);
         AfterRA.run(riscvmodule);
         BlockInline.run(riscvmodule);
         KnownBaseLSOpt.run(riscvmodule);
@@ -279,29 +281,30 @@ public class Manager {
         for (GlobalVariable gv : globalVariables) {
             outputList.add(gv.toString());
         }
-        outputList.add("declare i32 @llvm.smax.i32(i32, i32)\n" +
-                "declare i32 @llvm.smin.i32(i32, i32)\n" +
-                "declare float @llvm.fmuladd.f32(float, float, float)\n" +
-                "define float @fmulsub(float %a, float %b, float %c) {\n" +
-                "entry:\n" +
-                "    %mul = fmul float %a, %b\n" +
-                "    %sub = fsub float %mul, %c\n" +
-                "    ret float %sub\n" +
-                "}\n" +
-                "define float @fnmadd(float %a, float %b, float %c) {\n" +
-                "entry:\n" +
-                "    %mul = fmul float %a, %b\n" +
-                "    %add = fadd float %mul, %c\n" +
-                "    %neg = fneg float %add\n" +
-                "    ret float %neg\n" +
-                "}\n" +
-                "define float @fnmsub(float %a, float %b, float %c) {\n" +
-                "entry:\n" +
-                "    %mul = fmul float %a, %b\n" +
-                "    %sub = fsub float %mul, %c\n" +
-                "    %neg = fneg float %sub\n" +
-                "    ret float %neg\n" +
-                "}"
+        outputList.add("""
+                declare i32 @llvm.smax.i32(i32, i32)
+                declare i32 @llvm.smin.i32(i32, i32)
+                declare float @llvm.fmuladd.f32(float, float, float)
+                define float @fmulsub(float %a, float %b, float %c) {
+                entry:
+                    %mul = fmul float %a, %b
+                    %sub = fsub float %mul, %c
+                    ret float %sub
+                }
+                define float @fnmadd(float %a, float %b, float %c) {
+                entry:
+                    %mul = fmul float %a, %b
+                    %add = fadd float %mul, %c
+                    %neg = fneg float %add
+                    ret float %neg
+                }
+                define float @fnmsub(float %a, float %b, float %c) {
+                entry:
+                    %mul = fmul float %a, %b
+                    %sub = fsub float %mul, %c
+                    %neg = fneg float %sub
+                    ret float %neg
+                }"""
         );
         //函数声明
         for (Map.Entry<String, Function> functionEntry : functions.entrySet()) {
@@ -358,7 +361,7 @@ public class Manager {
         CodeGen codeGen = new CodeGen();
         RiscvModule riscvmodule = codeGen.genCode(module);
         CalculateOpt.runBeforeRA(riscvmodule);
-        Allocater.run(riscvmodule);
+        Allocator.run(riscvmodule);
         AfterRA.run(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);

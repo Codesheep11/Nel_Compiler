@@ -1,4 +1,4 @@
-package backend.allocater;
+package backend.allocator;
 
 import backend.operand.Reg;
 import backend.riscv.RiscvInstruction.LS;
@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class RegCost {
-    public static HashMap<Reg, Integer> RegCostMap = new HashMap<>();
+    public static final HashMap<Reg, Integer> RegCostMap = new HashMap<>();
 
     public static void buildSpillCost(HashSet<Reg> regs) {
         RegCostMap.clear();

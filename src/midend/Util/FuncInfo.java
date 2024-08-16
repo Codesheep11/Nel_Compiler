@@ -4,13 +4,12 @@ import mir.Function;
 import mir.GlobalVariable;
 import mir.Type;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
 public class FuncInfo {
 
-    public Function function;
+    public final Function function;
     public boolean isRecursive = false;
     public boolean isLeaf = false;
     /**
@@ -34,7 +33,7 @@ public class FuncInfo {
      */
     public boolean isStateless = true;
 
-    public HashSet<GlobalVariable> usedGlobalVariables = new HashSet<>();
+    public final HashSet<GlobalVariable> usedGlobalVariables = new HashSet<>();
 
     public FuncInfo(Function function) {
         this.function = function;

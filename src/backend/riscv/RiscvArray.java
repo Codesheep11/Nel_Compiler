@@ -14,7 +14,7 @@ public class RiscvArray extends RiscvGlobalVar {
 
     //压缩后的数组值
     //如果是浮点数则就将其强制
-    public ArrayList<Integer> values;
+    public final ArrayList<Integer> values;
 
     //没有初始化的数组构造方法
     public RiscvArray(String name, int size, GlobType type) {
@@ -44,7 +44,7 @@ public class RiscvArray extends RiscvGlobalVar {
     // 问题,是否能传递的时候精确的和0比较?
     // 最后一个0的位置
     public int indexOfLastNotZero() {
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return -1;
         }
 //        System.out.println(values.size());
@@ -70,7 +70,7 @@ public class RiscvArray extends RiscvGlobalVar {
             sb.append("\n\t.zero ");
             sb.append(4 * (size - index - 1));
         }
-        return sb.toString() + "\n";
+        return sb + "\n";
     }
 
     @Override

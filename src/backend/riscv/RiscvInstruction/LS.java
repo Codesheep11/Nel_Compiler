@@ -10,7 +10,7 @@ import midend.Analysis.AlignmentAnalysis;
 import java.util.HashSet;
 
 public class LS extends RiscvInstruction {
-    public LSType type;
+    public final LSType type;
 
     public AlignmentAnalysis.AlignType align;
     // 该属性代表了基指针的对齐程度,是4还是8
@@ -99,9 +99,9 @@ public class LS extends RiscvInstruction {
             if (address.getOffset() >= 2048 || address.getOffset() <= -2048) {
                 Reg tmp = Reg.getPreColoredReg(Reg.PhyReg.t0, 64);
                 Li li = new Li(block, tmp, addr);
-                block.riscvInstructions.insertBefore(li, this);
+                block.insertInstBefore(li, this);
                 R3 add = new R3(block, tmp, base, tmp, R3.R3Type.add);
-                block.riscvInstructions.insertBefore(add, this);
+                block.insertInstBefore(add, this);
                 this.addr = new Imm(0);
                 this.base = tmp;
                 if (align == AlignmentAnalysis.AlignType.ALIGN_BYTE_8) {
