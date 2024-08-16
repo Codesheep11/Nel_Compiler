@@ -71,7 +71,7 @@ public class GlobalValueNumbering {
     private static String generateExpressionKey(Instruction inst) {
         return switch (inst.getInstType()) {
             // 满足交换律的操作符
-            case FADD, FMUL, ADD, MUL, MAX, MIN -> {
+            case FADD, FMUL, ADD, MUL, MAX, MIN, FMAX, FMIN -> {
                 Instruction.BinaryOperation binaryOperation = (Instruction.BinaryOperation) inst;
                 String operand1 = binaryOperation.getOperand_1().getDescriptor();
                 String operand2 = binaryOperation.getOperand_2().getDescriptor();
