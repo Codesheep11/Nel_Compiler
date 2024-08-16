@@ -128,13 +128,6 @@ public class GlobalCodeMotion {
                         }
                     }
                 }
-                try {
-                    userBlock.getDomDepth();
-                } catch (NullPointerException e) {
-                    System.out.println(userBlock.getLabel());
-                    Print.output(module, "debug.txt");
-                    throw new RuntimeException("null pointer exception");
-                }
                 if (userBlock == null || instr.earliest.getDomDepth() > userBlock.getDomDepth())
                     continue;
                 instr.latest = getDomLCA(instr.latest, userBlock);

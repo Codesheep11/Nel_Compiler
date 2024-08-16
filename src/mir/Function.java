@@ -47,7 +47,6 @@ public class Function extends Value {
     private Type retType; // 返回值类型
     private ArrayList<Argument> funcRArguments; //
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
-    private BasicBlock entry; // 入口基本块
     public LoopInfo loopInfo = null; // 循环信息
 
     public Module module;
@@ -56,7 +55,6 @@ public class Function extends Value {
 
     public Function(Type type, String name, Type... argumentTypes) {
         super(Type.FunctionType.FUNC_TYPE);
-        entry = null;
         setName(name);
         retType = type;
         blocks = new NelLinkedList<>();
@@ -72,7 +70,6 @@ public class Function extends Value {
     public Function(Type type, String name, ArrayList<Type> argumentTypes) {
         super(Type.FunctionType.FUNC_TYPE);
         setName(name);
-        entry = null;
         retType = type;
         blocks = new NelLinkedList<>();
         ArrayList<Argument> arguments = new ArrayList<>();
@@ -108,9 +105,6 @@ public class Function extends Value {
     }
 
     public void appendBlock(BasicBlock block) {
-        if (blocks.isEmpty()) {
-            entry = block;
-        }
         new FunctionAsNelListFriend().addLast(block);
         block.setParentFunction(this);
     }
@@ -366,7 +360,7 @@ public class Function extends Value {
      * 获取函数的dom树层序遍历
      */
     public ArrayList<BasicBlock> getDomTreeLayerSort() {
-        if (entry == null) return new ArrayList<>();
+        if (getEntry() == null) return new ArrayList<>();
         BasicBlock entry = getEntry();
         ArrayList<BasicBlock> layerSort = new ArrayList<>();
         Queue<BasicBlock> queue = new LinkedList<>();
@@ -387,12 +381,12 @@ public class Function extends Value {
      * @return 返回支配树后序遍历顺序的基本块列表
      */
     public ArrayList<BasicBlock> getDomTreePostOrder() {
-        if (entry == null) return new ArrayList<>();
+        if (getEntry() == null) return new ArrayList<>();
         ArrayList<BasicBlock> postOrder = new ArrayList<>();
         Stack<BasicBlock> stack = new Stack<>();
-        stack.push(entry);
+        stack.push(getEntry());
         Set<BasicBlock> visited = new HashSet<>();
-        visited.add(entry);
+        visited.add(getEntry());
 
         while (!stack.isEmpty()) {
             BasicBlock cur = stack.peek();
@@ -444,6 +438,73 @@ public class Function extends Value {
         }
         Collections.reverse(rpot);
         return rpot;
+    }
+
+    /**
+     * 获取不考虑latch边的cfg图的拓扑排序
+     *
+     */
+    public ArrayList<BasicBlock> getTopoSortWithoutLatch() {
+        ArrayList<BasicBlock> blocks = new ArrayList<>();
+        HashMap<BasicBlock, Integer> bbMap = new HashMap<>();
+        for (BasicBlock bb : getBlocks()) {
+            // 如果是循环的头结点，那么入度不考虑latch边
+            Loop loop = bb.loop;
+            if (loop == null || !loop.header.equals(bb)) {
+                bbMap.put(bb, bb.getPreBlocks().size());
+            }
+            else {
+                int inNum = 0;
+                for (BasicBlock pre : bb.getPreBlocks()) {
+                    if (!loop.latchs.contains(pre)) {
+                        inNum++;
+                    }
+                }
+                bbMap.put(bb, inNum);
+            }
+        }
+        Queue<BasicBlock> queue = new LinkedList<>();
+        queue.add(getEntry());
+        while (!queue.isEmpty()) {
+            BasicBlock now = queue.poll();
+            blocks.add(now);
+            for (BasicBlock succ : now.getSucBlocks()) {
+                Loop loop = succ.loop;
+                if (loop != null && loop.header.equals(succ) && loop.latchs.contains(now)) {
+                    continue;
+                }
+                bbMap.put(succ, bbMap.get(succ) - 1);
+                if (bbMap.get(succ) == 0)
+                    queue.offer(succ);
+                if (bbMap.get(succ) < 0)
+                    throw new IllegalStateException("negative degree!");
+            }
+        }
+        if (blocks.size() != getBlocks().size()) {
+            for (BasicBlock block : bbMap.keySet()) {
+                if (bbMap.get(block) > 0) {
+                    System.err.println("remain: " + block.getLabel());
+                }
+            }
+            throw new RuntimeException("not accessed node");
+        }
+//        while (!bbMap.isEmpty()) {
+//            for (BasicBlock bb : bbMap.keySet()) {
+//                if (bbMap.get(bb) == 0) {
+//                    blocks.add(bb);
+//                    bbMap.remove(bb);
+//                    for (BasicBlock succ : bb.getSucBlocks()) {
+//                        Loop loop = succ.loop;
+//                        if (loop != null && loop.header.equals(succ) && loop.latchs.contains(bb)) {
+//                            continue;
+//                        }
+//                        bbMap.put(succ, bbMap.get(succ) - 1);
+//                    }
+//                    break;
+//                }
+//            }
+//        }
+        return blocks;
     }
 
     private final class FunctionAsNelListFriend extends NelLinkedList.NelList_Friend {
