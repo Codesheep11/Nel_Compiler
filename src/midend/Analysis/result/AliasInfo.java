@@ -59,7 +59,7 @@ public class AliasInfo {
 
     public boolean appendAttr(Value value, ArrayList<Integer> newAttrs) {
         if (newAttrs.isEmpty()) return false;
-        if (!mPointerAttributes.containsKey(value)) throw new RuntimeException("wrong!");
+        if (!mPointerAttributes.containsKey(value)) mPointerAttributes.put(value, new ArrayList<>());
         var attrs = mPointerAttributes.get(value);
         int oldSize = attrs.size();
         attrs.addAll(newAttrs);
@@ -71,7 +71,7 @@ public class AliasInfo {
     }
 
     public boolean appendAttr(Value value, int newAttr) {
-        if (!mPointerAttributes.containsKey(value)) throw new RuntimeException("wrong!");
+        if (!mPointerAttributes.containsKey(value)) mPointerAttributes.put(value, new ArrayList<>());
         var attr = mPointerAttributes.get(value);
         if (!attr.contains(newAttr)) {
             attr.add(newAttr);
