@@ -19,7 +19,7 @@ public class Parser {
     }
 
     public Ast parseAst() throws SyntaxError {
-        ArrayList<Ast.CompUnit> compUnits = new ArrayList<Ast.CompUnit>();
+        ArrayList<Ast.CompUnit> compUnits = new ArrayList<>();
         while (!tokenArray.isEnd()) {
             compUnits.add(parseDecl());
         }
@@ -58,7 +58,7 @@ public class Parser {
     private Ast.ConstDecl parseConstDecl() throws SyntaxError {
         tokenArray.consumeToken(TokenType.CONST);
         Ast.Btype btype = parseBtype();
-        ArrayList<Ast.ConstDef> constDefs = new ArrayList<Ast.ConstDef>();
+        ArrayList<Ast.ConstDef> constDefs = new ArrayList<>();
         do {
             Ast.ConstDef constDef = parseConstDef();
             constDefs.add(constDef);
@@ -70,7 +70,7 @@ public class Parser {
     private Ast.ConstDef parseConstDef() throws SyntaxError {
         Ast.Ident ident = parseIdent();
         if (tokenArray.checkAndSkip(TokenType.L_BRACK)) {
-            ArrayList<Ast.AddExp> addExps = new ArrayList<Ast.AddExp>();
+            ArrayList<Ast.AddExp> addExps = new ArrayList<>();
             do {
                 Ast.AddExp addExp = parseAddExp();
                 addExps.add(addExp);
@@ -97,7 +97,7 @@ public class Parser {
                 return new Ast.ConstInitVal();
             }
             else {
-                ArrayList<Ast.ConstInitVal> constInitVals = new ArrayList<Ast.ConstInitVal>();
+                ArrayList<Ast.ConstInitVal> constInitVals = new ArrayList<>();
                 do {
                     Ast.ConstInitVal constInitVal = parseConstInitVal();
                     constInitVals.add(constInitVal);
@@ -114,7 +114,7 @@ public class Parser {
 
     private Ast.VarDecl parseVarDecl() throws SyntaxError {
         Ast.Btype btype = parseBtype();
-        ArrayList<Ast.VarDef> varDefs = new ArrayList<Ast.VarDef>();
+        ArrayList<Ast.VarDef> varDefs = new ArrayList<>();
         do {
             Ast.VarDef varDef = parseVarDef();
             varDefs.add(varDef);
@@ -125,7 +125,7 @@ public class Parser {
 
     private Ast.VarDef parseVarDef() throws SyntaxError {
         Ast.Ident ident = parseIdent();
-        ArrayList<Ast.VarSuffix> varSuffixes = new ArrayList<Ast.VarSuffix>();
+        ArrayList<Ast.VarSuffix> varSuffixes = new ArrayList<>();
         ArrayList<Ast.AddExp> addExps = new ArrayList<>();
         if (tokenArray.check(TokenType.L_BRACK)) {
             do {
@@ -157,7 +157,7 @@ public class Parser {
                 return new Ast.VarInitVal();
             }
             else {
-                ArrayList<Ast.VarInitVal> initVals = new ArrayList<Ast.VarInitVal>();
+                ArrayList<Ast.VarInitVal> initVals = new ArrayList<>();
                 do {
                     Ast.VarInitVal initVal = parseInitVal();
                     initVals.add(initVal);
@@ -174,7 +174,7 @@ public class Parser {
 
     private Ast.Block parseBlock() throws SyntaxError {
         tokenArray.consumeToken(TokenType.L_BRACE);
-        ArrayList<Ast.BlockItem> blockItems = new ArrayList<Ast.BlockItem>();
+        ArrayList<Ast.BlockItem> blockItems = new ArrayList<>();
         while (!tokenArray.checkAndSkip(TokenType.R_BRACE)) {
             Ast.BlockItem blockItem = parseBlockItem();
             blockItems.add(blockItem);
@@ -285,7 +285,7 @@ public class Parser {
     }
 
     private Ast.LOrExp parseLOrExp() throws SyntaxError {
-        ArrayList<Ast.LAndExp> lAndExps = new ArrayList<Ast.LAndExp>();
+        ArrayList<Ast.LAndExp> lAndExps = new ArrayList<>();
         do {
             Ast.LAndExp lAndExp = parseLAndExp();
             lAndExps.add(lAndExp);
@@ -294,7 +294,7 @@ public class Parser {
     }
 
     private Ast.LAndExp parseLAndExp() throws SyntaxError {
-        ArrayList<Ast.EqExp> eqExps = new ArrayList<Ast.EqExp>();
+        ArrayList<Ast.EqExp> eqExps = new ArrayList<>();
         do {
             Ast.EqExp eqExp = parseEqExp();
             eqExps.add(eqExp);
@@ -303,7 +303,7 @@ public class Parser {
     }
 
     private Ast.EqExp parseEqExp() throws SyntaxError {
-        ArrayList<Ast.RelExp> relExps = new ArrayList<Ast.RelExp>();
+        ArrayList<Ast.RelExp> relExps = new ArrayList<>();
         ArrayList<Token> eqOps = new ArrayList<>();
         do {
             Ast.RelExp relExp = parseRelExp();
@@ -317,7 +317,7 @@ public class Parser {
     }
 
     private Ast.RelExp parseRelExp() throws SyntaxError {
-        ArrayList<Ast.AddExp> addExps = new ArrayList<Ast.AddExp>();
+        ArrayList<Ast.AddExp> addExps = new ArrayList<>();
         ArrayList<Token> relOps = new ArrayList<>();
         do {
             Ast.AddExp addExp = parseAddExp();
@@ -332,7 +332,7 @@ public class Parser {
 
 
     private ArrayList<Ast.FuncFParam> parseFuncFParams() throws SyntaxError {
-        ArrayList<Ast.FuncFParam> funcFParams = new ArrayList<Ast.FuncFParam>();
+        ArrayList<Ast.FuncFParam> funcFParams = new ArrayList<>();
         do {
             Ast.FuncFParam funcFParam = parseFuncFParam();
             funcFParams.add(funcFParam);
@@ -470,7 +470,7 @@ public class Parser {
     }
 
     private Ast.FuncRParams parseFuncRParams() throws SyntaxError {
-        ArrayList<Ast.AddExp> funcRparams = new ArrayList<Ast.AddExp>();
+        ArrayList<Ast.AddExp> funcRparams = new ArrayList<>();
         do {
             Ast.AddExp addExp = parseAddExp();
             funcRparams.add(addExp);

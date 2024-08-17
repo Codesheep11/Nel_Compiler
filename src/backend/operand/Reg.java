@@ -110,7 +110,7 @@ public class Reg extends Operand {
         }
     }
 
-    private static final HashMap<String, Reg> preColoredRegs = new HashMap<String, Reg>();
+    private static final HashMap<String, Reg> preColoredRegs = new HashMap<>();
 
     public static void initPreColoredRegs() {
         for (int i = 0; i < 64; i++) {

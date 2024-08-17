@@ -171,8 +171,7 @@ public class LocalArrayLift {
     private static Value getBaseAddr(Value inst) {
         Value ret = inst;
         while (ret instanceof Instruction.GetElementPtr || ret instanceof Instruction.BitCast) {
-            if (ret instanceof Instruction.GetElementPtr) {
-                Instruction.GetElementPtr gep = (Instruction.GetElementPtr) ret;
+            if (ret instanceof Instruction.GetElementPtr gep) {
                 ret = gep.getBase();
             }
             if (ret instanceof Instruction.BitCast) {

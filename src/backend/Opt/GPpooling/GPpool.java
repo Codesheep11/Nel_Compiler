@@ -5,6 +5,7 @@ import backend.riscv.RiscvGlobalVar;
 import backend.riscv.RiscvModule;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 
 public class GPpool extends RiscvGlobalVar {
@@ -24,7 +25,7 @@ public class GPpool extends RiscvGlobalVar {
 
     public void init() {
         RiscvModule.gPpool = this;
-        glos.sort((a, b) -> a.getData().compareTo(b.getData()));
+        glos.sort(Comparator.comparing(RiscvFloat::getData));
         for (RiscvFloat rb : glos) {
             gv2offset.put(rb, size);
             size += rb.size();

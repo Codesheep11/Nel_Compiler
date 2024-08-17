@@ -1,7 +1,6 @@
 package midend.Analysis;
 
 import midend.Analysis.result.SCEVinfo;
-import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.Loop.LoopInfo;
 import midend.Transform.RangeFolding;
 import mir.*;
@@ -11,7 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Math.*;
-import static java.lang.Math.max;
 
 
 public class I32RangeAnalysis {
@@ -19,23 +17,23 @@ public class I32RangeAnalysis {
     /**
      * 存储当前块定义的非Any的I32Range
      */
-    public HashMap<BasicBlock, HashMap<Instruction, I32Range>> I32RangeBufferMap = new HashMap<>();
+    public final HashMap<BasicBlock, HashMap<Instruction, I32Range>> I32RangeBufferMap = new HashMap<>();
 
     /**
      * 通过branch语句的icmp计算的Value值域
      */
-    public HashMap<BasicBlock, HashMap<Value, I32Range>> BlockEntryRange = new HashMap<>();
+    public final HashMap<BasicBlock, HashMap<Value, I32Range>> BlockEntryRange = new HashMap<>();
 
-    private DGinfo DGinfo;
+    private final DGinfo DGinfo;
 
-    private SCEVinfo SCEVinfo;
+    private final SCEVinfo SCEVinfo;
 
     /**
      * 值域 闭区间
      */
     public static class I32Range {
-        private int minValue;
-        private int maxValue;
+        private final int minValue;
+        private final int maxValue;
 
         private I32Range(int min, int max) {
             this.minValue = min;
@@ -63,10 +61,10 @@ public class I32RangeAnalysis {
             return "[" + minValue + ", " + maxValue + "]";
         }
 
-        private static I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+        private static final I32Range Any = new I32Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
         //常量区间复用
-        private static HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
+        private static final HashMap<Integer, I32Range> ConstantRangePool = new HashMap<>();
 
 
         public static I32Range Any() {

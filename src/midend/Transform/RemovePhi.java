@@ -89,8 +89,7 @@ public class RemovePhi {
             Instruction end = bb.getLastInst();
             ArrayList<Instruction.Move> seq = new ArrayList<>();
             ArrayList<Instruction.PhiCopy> phiCopies = new ArrayList<>();
-            while (end.getPrev() instanceof Instruction.PhiCopy) {
-                Instruction.PhiCopy phiCopy = (Instruction.PhiCopy) end.getPrev();
+            while (end.getPrev() instanceof Instruction.PhiCopy phiCopy) {
                 phiCopies.add(phiCopy);
                 ArrayList<Value> LHS = new ArrayList<>(phiCopy.getLHS());
                 ArrayList<Value> RHS = new ArrayList<>(phiCopy.getRHS());

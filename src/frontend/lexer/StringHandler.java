@@ -120,8 +120,8 @@ public class StringHandler {
     }
 
     public ArrayList<String> SplitString(String str) {
-        ArrayList<String> subStrings = new ArrayList<String>();
-        ArrayList<StringBuilder> builders = new ArrayList<StringBuilder>();
+        ArrayList<String> subStrings = new ArrayList<>();
+        ArrayList<StringBuilder> builders = new ArrayList<>();
         StringBuilder builder = null;
         int len = str.length();
         char last = 0;

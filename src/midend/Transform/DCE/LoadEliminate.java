@@ -87,8 +87,7 @@ public class LoadEliminate {
         if (baseAddr instanceof Instruction.Load) {
             return;
         }
-        if (baseAddr instanceof Instruction.GetElementPtr) {
-            Instruction.GetElementPtr gep = (Instruction.GetElementPtr) baseAddr;
+        if (baseAddr instanceof Instruction.GetElementPtr gep) {
             baseAddr = gep.getBase();
             Value idx = gep.getIdx();
             if (idx instanceof Constant.ConstantInt) {
@@ -121,8 +120,7 @@ public class LoadEliminate {
         if (addr instanceof Instruction.Load) {
             return;
         }
-        if (addr instanceof Instruction.GetElementPtr) {
-            Instruction.GetElementPtr gep = (Instruction.GetElementPtr) addr;
+        if (addr instanceof Instruction.GetElementPtr gep) {
             addr = gep.getBase();
             HashMap<Value, Value> arrayStore = Address2Idx2Store.getOrDefault(addr, new HashMap<>());
             HashMap<Value, Value> arrayLoad = Address2Idx2Load.getOrDefault(addr, new HashMap<>());
@@ -193,8 +191,7 @@ public class LoadEliminate {
     private static Value getBaseAddr(Value inst) {
         Value ret = inst;
         while (ret instanceof Instruction.GetElementPtr || ret instanceof Instruction.BitCast) {
-            if (ret instanceof Instruction.GetElementPtr) {
-                Instruction.GetElementPtr gep = (Instruction.GetElementPtr) ret;
+            if (ret instanceof Instruction.GetElementPtr gep) {
                 ret = gep.getBase();
             }
             if (ret instanceof Instruction.BitCast) {
