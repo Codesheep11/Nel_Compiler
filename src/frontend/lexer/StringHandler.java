@@ -12,13 +12,11 @@ public class StringHandler {
     }
 
     private int getchar() throws IOException {
-        int c = src.read();
-        return c;
+        return src.read();
     }
 
     public boolean reachEOF() throws IOException {
-        boolean tmp = (src.available() <= 0);
-        return tmp;
+        return (src.available() <= 0);
     }
 
 //    public String scanf(int c) throws IOException {

@@ -30,6 +30,7 @@ import midend.Transform.Array.GepFold;
 import midend.Transform.Array.LocalArrayLift;
 import midend.Transform.Array.SroaPass;
 import midend.Transform.DCE.*;
+import midend.Transform.Function.FuncCache;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
@@ -116,7 +117,7 @@ public class Manager {
         ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-//        LoopParallel.run(module);
+        LoopParallel.run(module);
         LCSSA.remove(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -128,7 +129,7 @@ public class Manager {
         ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
-//        FuncCache.run(module);
+        FuncCache.run(module);
         FuncAnalysis.run(module);
         LoopBuildAndNormalize();
         GepLift.run(module);
@@ -141,7 +142,7 @@ public class Manager {
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
-//        AggressivePass();
+        AggressivePass();
         SCCP();
         DeadCodeEliminate();
         FuncAnalysis.run(module);
