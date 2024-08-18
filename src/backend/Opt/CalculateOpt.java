@@ -337,7 +337,7 @@ public class CalculateOpt {
         for (RiscvInstruction ri : block.riscvInstructions) {
             if (ri instanceof Li li) {
                 long value = li.getVal();
-                if (value <= Integer.MAX_VALUE && ((value >> 12) << 12) == value) {
+                if (value >= 0 && value <= Integer.MAX_VALUE && ((value >> 12) << 12) == value) {
                     needReplace.put(li, new Lui(block, li.reg, new Imm(li.getVal() >> 12)));
                 }
             }
