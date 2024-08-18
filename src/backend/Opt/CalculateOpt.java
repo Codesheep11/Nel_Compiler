@@ -29,6 +29,7 @@ public class CalculateOpt {
                 addZero2Mv(block);
                 addiLS2LSoffset(block);
                 One2ZeroBeq(block);
+//                seqzBranchReverse(block);
             }
         }
         for (RiscvFunction function : riscvModule.funcList) {
@@ -42,6 +43,38 @@ public class CalculateOpt {
         }
     }
 
+    private static void seqzBranchReverse(RiscvBlock block) {
+        Iterator<RiscvInstruction> iterator = block.riscvInstructions.iterator();
+        while (iterator.hasNext()) {
+            RiscvInstruction ri = iterator.next();
+            if (ri instanceof R2 r2 && r2.type == R2.R2Type.seqz) {
+                HashSet<RiscvInstruction> used = LivenessAnalyze.RegUse.get((Reg) r2.rd);
+                boolean canReplace = true;
+                for (RiscvInstruction user : used) {
+                    if (!(user instanceof B b && ((Reg) b.rs2).phyReg == Reg.PhyReg.zero
+                            && (b.type == B.BType.bne || b.type == B.BType.beq))) {
+                        canReplace = false;
+                        break;
+                    }
+                }
+                if (canReplace) {
+                    iterator.remove();
+                    for (RiscvInstruction next : used) {
+                        if (next instanceof B b && ((Reg) b.rs2).phyReg == Reg.PhyReg.zero) {
+                            if (b.type == B.BType.bne) {
+                                b.type = B.BType.beq;
+                                b.rs1 = r2.rs;
+                            } else if (b.type == B.BType.beq) {
+                                b.type = B.BType.bne;
+                                b.rs1 = r2.rs;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private static void SraSll2And(RiscvBlock block) {
         ArrayList<Pair<Pair<R3, R3>, ArrayList<RiscvInstruction>>> needRemove = new ArrayList<>();
         for (int i = 0; i < block.riscvInstructions.size() - 1; i++) {
@@ -50,14 +83,11 @@ public class CalculateOpt {
                     if (((Imm) r1.rs2).getVal() == ((Imm) r2.rs2).getVal()) {
                         if (r1.rd.equals(r2.rs1)) {
                             int ans = -(1 << ((Imm) r2.rs2).getVal());
-                            var pair = new Pair<>(new Pair<>(r1, r2), new ArrayList<RiscvInstruction>());
-                            if (ans <= -2047) {
-                                pair.second.add(new Li(block, (Reg) r2.rd, new Imm(ans)));
-                                pair.second.add(new R3(block, r2.rd, r1.rs1, r2.rd, R3.R3Type.and));
-                            } else {
+                            if (ans >= -2047) {
+                                var pair = new Pair<>(new Pair<>(r1, r2), new ArrayList<RiscvInstruction>());
                                 pair.second.add(new R3(block, r2.rd, r1.rs1, new Imm(ans), R3.R3Type.andi));
+                                needRemove.add(pair);
                             }
-                            needRemove.add(pair);
                         }
                     }
                 }
@@ -470,10 +500,22 @@ public class CalculateOpt {
             for (RiscvBlock block : function.blocks) {
                 AftBinConstValueReuse(block);
                 removeSameMv(block);
+                subZeroRemove(block);
             }
         }
     }
 
+    private static void subZeroRemove(RiscvBlock block) {
+        Iterator<RiscvInstruction> iterator = block.riscvInstructions.iterator();
+        while (iterator.hasNext()) {
+            RiscvInstruction ri = iterator.next();
+            if (ri instanceof R3 r3 && (r3.type == R3.R3Type.sub || r3.type == R3.R3Type.subw)) {
+                if (r3.rd.equals(r3.rs1) && r3.rs2 instanceof Reg reg && reg.phyReg == Reg.PhyReg.zero) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
 
     private static void removeSameMv(RiscvBlock riscvBlock) {
         Iterator<RiscvInstruction> iterator = riscvBlock.riscvInstructions.iterator();
