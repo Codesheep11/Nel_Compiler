@@ -118,8 +118,7 @@ public class GlobalVarLocalize {
      */
 
     public static Value isGlobalAddr(Value addr) {
-        if (addr instanceof Instruction.GetElementPtr) {
-            Instruction.GetElementPtr gep = (Instruction.GetElementPtr) addr;
+        if (addr instanceof Instruction.GetElementPtr gep) {
             addr = gep.getBase();
         }
         if (addr instanceof GlobalVariable) return addr;

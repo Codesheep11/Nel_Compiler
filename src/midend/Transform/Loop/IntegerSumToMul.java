@@ -107,8 +107,7 @@ public class IntegerSumToMul {
         Instruction sum_inc_inst = null;
         Value rem_mod = null;
         for (Instruction inst : body.getInstructions()) {
-            if (inst instanceof Instruction.Add) {
-                Instruction.Add addInst = (Instruction.Add) inst;
+            if (inst instanceof Instruction.Add addInst) {
                 if (addInst.getOperand_1() == indvar || addInst.getOperand_2() == indvar) {
                     continue;
                 }
@@ -118,8 +117,7 @@ public class IntegerSumToMul {
                     sum_inc_inst = addInst;
                     if (loop.defValue(sum_inc)) return;
                 }
-            } else if (inst instanceof Instruction.Rem) {
-                Instruction.Rem remInst = (Instruction.Rem) inst;
+            } else if (inst instanceof Instruction.Rem remInst) {
                 if (remInst.getOperand_1() == sum_inc_inst) {
                     if (rem_mod != null) return;
                     rem_mod = remInst.getOperand_2();

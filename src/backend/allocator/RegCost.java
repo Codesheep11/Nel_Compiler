@@ -5,6 +5,7 @@ import backend.riscv.RiscvInstruction.LS;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -18,7 +19,7 @@ public class RegCost {
 
     public static ArrayList<Reg> getSpillArray() {
         ArrayList<Reg> regs = new ArrayList<>(RegCostMap.keySet());
-        regs.sort((r1, r2) -> RegCostMap.get(r1) - RegCostMap.get(r2));
+        regs.sort(Comparator.comparingInt(RegCostMap::get));
         if (regs.size() > 20) regs = new ArrayList<>(regs.subList(0, regs.size() / 2));
         return regs;
     }

@@ -42,8 +42,7 @@ public class TailCall2Loop {
             // 入口块不可能递归，否则会无限循环
             if (block == curFunc.getEntry()) continue;
             Instruction.Terminator term = block.getTerminator();
-            if (term instanceof Instruction.Return) {
-                Instruction.Return ret = (Instruction.Return) term;
+            if (term instanceof Instruction.Return ret) {
                 Instruction.Call lastRecursiveCall = getLastRecursiveCall(block);
                 if (lastRecursiveCall != null) {
                     //本身已经是尾递归的形式
@@ -96,8 +95,7 @@ public class TailCall2Loop {
     private static Instruction.Call getLastRecursiveCall(BasicBlock block) {
         int size = block.getInstructions().size();
         for (int i = size - 1; i >= 0; i--) {
-            if (block.getInstructions().get(i) instanceof Instruction.Call) {
-                Instruction.Call call = (Instruction.Call) block.getInstructions().get(i);
+            if (block.getInstructions().get(i) instanceof Instruction.Call call) {
                 if (isRecurseCall(call)) return call;
             }
         }
@@ -107,8 +105,7 @@ public class TailCall2Loop {
     private static ArrayList<Instruction.Call> getAllRecursiveCall(BasicBlock block) {
         ArrayList<Instruction.Call> res = new ArrayList<>();
         for (Instruction inst : block.getInstructions()) {
-            if (inst instanceof Instruction.Call) {
-                Instruction.Call call = (Instruction.Call) inst;
+            if (inst instanceof Instruction.Call call) {
                 if (isRecurseCall(call)) res.add(call);
             }
         }

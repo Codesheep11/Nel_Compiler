@@ -103,8 +103,7 @@ public class SimplifyCFGPass {
         boolean modified = false;
         for (BasicBlock block : function.getBlocks()) {
             Instruction.Terminator term = (Instruction.Terminator) block.getLastInst();
-            if (term instanceof Instruction.Branch) {
-                Instruction.Branch br = (Instruction.Branch) term;
+            if (term instanceof Instruction.Branch br) {
                 if (br.getElseBlock().equals(br.getThenBlock())) {
                     new Instruction.Jump(block, br.getElseBlock());
                     br.delete();
@@ -145,8 +144,7 @@ public class SimplifyCFGPass {
             for (BasicBlock pre : onlyJumpBlock.getPreBlocks()) {
                 Instruction.Terminator term = (Instruction.Terminator) pre.getLastInst();
                 term.replaceTarget(onlyJumpBlock, suc);
-                if (term instanceof Instruction.Branch) {
-                    Instruction.Branch br = (Instruction.Branch) term;
+                if (term instanceof Instruction.Branch br) {
                     if (br.getElseBlock().equals(br.getThenBlock())) {
                         new Instruction.Jump(pre, br.getElseBlock());
                         br.delete();

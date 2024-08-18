@@ -462,6 +462,7 @@ public class GPRallocator {
             conflictGraph.get(neighbor).add(newReg);
         }
         conflictGraph.remove(oldReg);
+
         if (callSaved.contains(oldReg)) callSaved.add(newReg);
     }
 
@@ -565,10 +566,8 @@ public class GPRallocator {
         }
         //检查conflictGraph是否有自环
         for (Reg reg : conflictGraph.keySet()) {
-            if (conflictGraph.get(reg).contains(reg)) {
-//                System.out.println("self conflict: " + reg);
-                conflictGraph.get(reg).remove(reg);
-            }
+            //                System.out.println("self conflict: " + reg);
+            conflictGraph.get(reg).remove(reg);
         }
 //        System.out.println(conflictGraph);
     }

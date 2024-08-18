@@ -87,6 +87,7 @@ public class Manager {
         GlobalVarLocalize.run(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
+        ConstrainReduce.run(module);
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);

@@ -49,10 +49,9 @@ public class DeadArgEliminate {
             LinkedList<Instruction.Call> calls = new LinkedList<>();
             for (Use use : function.getUses()) {
                 User user = use.getUser();
-                if (!(user instanceof Instruction.Call)) {
+                if (!(user instanceof Instruction.Call call)) {
                     throw new RuntimeException("DeadArgEliminate: user is not Call");
                 }
-                Instruction.Call call = (Instruction.Call) user;
                 calls.add(call);
             }
             for (Instruction.Call call : calls) {
