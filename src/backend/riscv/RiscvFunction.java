@@ -4,6 +4,7 @@ import backend.Opt.BackLoop.RiscLoop;
 import backend.operand.Reg;
 import backend.riscv.RiscvInstruction.J;
 import mir.Function;
+import utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,14 +45,11 @@ public class RiscvFunction {
         isExternal = irFunction.isExternal();
         if (irFunction.getRetType().equals(VOID_TYPE)) {
             retTypeCode = 0;
-        }
-        else if (irFunction.getRetType().isInt32Ty()) {
+        } else if (irFunction.getRetType().isInt32Ty()) {
             retTypeCode = 1;
-        }
-        else if (irFunction.getRetType().isFloatTy()) {
+        } else if (irFunction.getRetType().isFloatTy()) {
             retTypeCode = -1;
-        }
-        else {
+        } else {
             retTypeCode = 1;
         }
     }
@@ -92,9 +90,9 @@ public class RiscvFunction {
     public static String funcNameWrap(String str) {
         return switch (str) {
             case "memset", "getint", "putint", "getch",
-                 "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
-                 "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main"
-            , "NELCacheLookup", "NELParallelFor", "NELReduceAddF32" -> str;
+                    "getfloat", "putch", "putfloat", "_sysy_starttime", "getfarray",
+                    "_sysy_stoptime", "getarray", "putarray", "putfarray", "putf", "main"
+                    , "NELCacheLookup", "NELParallelFor", "NELReduceAddF32" -> str;
             default -> "f_" + str;
         };
     }
