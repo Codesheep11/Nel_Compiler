@@ -179,6 +179,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
         }
 
         /**
+         * fail-fast 机制
          * 检查是否在迭代过程中被非迭代器方法修改
          *
          * @throws ConcurrentModificationException 并发修改异常
