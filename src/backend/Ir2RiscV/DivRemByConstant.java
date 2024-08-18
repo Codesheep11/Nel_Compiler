@@ -26,7 +26,7 @@ public class DivRemByConstant {
 
     private static final String head = "rem_helper_temp_BB";
 
-    private static final boolean Branch_Rem = false;
+    private static final boolean Branch_Rem = true;
 
     /**
      * 计算log2(x) 向下取整
@@ -215,14 +215,13 @@ public class DivRemByConstant {
                     block.addInstLast(new R3(block, ans, src, new Imm(mask), R3.R3Type.andi));
                 }
             } else {
-                Reg reg = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                block.addInstLast(new ConstRemHelper(block, head + cnt++, src, reg, divisor));
+                block.addInstLast(new ConstRemHelper(block, head + cnt++, src, ans, divisor));
                 if (divisor >= 2047) {
                     int x = log2(divisor);
-                    block.addInstLast(new R3(block, reg, src, new Imm(x), R3.R3Type.sraiw));
-                    block.addInstLast(new R3(block, ans, reg, new Imm(x), R3.R3Type.slliw));
+                    block.addInstLast(new R3(block, ans, ans, new Imm(x), R3.R3Type.sraiw));
+                    block.addInstLast(new R3(block, ans, ans, new Imm(x), R3.R3Type.slli));
                 } else {
-                    block.addInstLast(new R3(block, ans, reg, new Imm(-divisor), R3.R3Type.andi));
+                    block.addInstLast(new R3(block, ans, ans, new Imm(-divisor), R3.R3Type.andi));
                 }
                 block.addInstLast(new R3(block, ans, src, ans, R3.R3Type.subw));
             }

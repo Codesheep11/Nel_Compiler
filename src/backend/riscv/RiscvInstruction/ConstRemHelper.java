@@ -67,12 +67,20 @@ public class ConstRemHelper extends RiscvInstruction {
     }
 
     @Override
+    public HashSet<Reg> getReg() {
+        HashSet<Reg> tmp = new HashSet<>();
+        tmp.add(src);
+        tmp.add(reg);
+        return tmp;
+    }
+
+    @Override
     public RiscvInstruction myCopy(RiscvBlock newBlock) {
         return new ConstRemHelper(block, name, src, reg, imm);
     }
 
     @Override
     public String toString() {
-        return "\tcrh\t" + name + " " + src + " " + reg;
+        return "\tcrh\t" + name + " " + src + " " + reg + " " + imm;
     }
 }
