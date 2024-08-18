@@ -1,4 +1,4 @@
-package backend.Ir2RiscV;
+package midend.Transform.Array;
 
 import mir.Module;
 import mir.*;

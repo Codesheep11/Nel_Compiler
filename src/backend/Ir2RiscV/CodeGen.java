@@ -38,12 +38,10 @@ public class CodeGen {
     // 因为branch和jump需要存的属性是riscvBlock,所以需要提前将所有llvm块和其翻译后的riscv块对应好
     public final HashMap<BasicBlock, RiscvBlock> blockMap = new HashMap<>();
 
-    public CodeGen()
-    {
+    public CodeGen() {
         if (Manager.isO1) {
             alignMap = AnalysisManager.getAlignMap();
-        }
-        else {
+        } else {
             alignMap = new AlignmentAnalysis.AlignMap();
         }
     }
@@ -135,8 +133,7 @@ public class CodeGen {
                     nowFunc.defs.add(Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(fa0order + count_flot), 32));
                     count_flot++;
                 }
-            }
-            else {
+            } else {
                 if (argument.getType().isPointerTy() || argument.getType().isInt64Ty()) {
                     if (count_int < 8) {
                         Reg reg = VirRegMap.VRM.ensureRegForValue(argument);
@@ -149,8 +146,7 @@ public class CodeGen {
                         nowFunc.defs.add(Reg.getPreColoredReg(Reg.PhyReg.getPhyRegByOrder(a0order + count_int), 64));
                         count_int++;
                     }
-                }
-                else {
+                } else {
                     if (count_int < 8) {
                         Reg reg = VirRegMap.VRM.ensureRegForValue(argument);
                         int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
@@ -202,8 +198,7 @@ public class CodeGen {
             Reg fa0 = Reg.getPreColoredReg(Reg.PhyReg.fa0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
             nowBlock.addInstLast(new R2(nowBlock, fa0, src, R2.R2Type.fmv));
-        }
-        else if (type.isInt32Ty()) {
+        } else if (type.isInt32Ty()) {
             Reg a0 = Reg.getPreColoredReg(Reg.PhyReg.a0, 32);
             Reg src = VirRegMap.VRM.ensureRegForValue(rtInstr.getRetValue());
             nowBlock.addInstLast(new R2(nowBlock, a0, src, R2.R2Type.mv));
@@ -265,8 +260,7 @@ public class CodeGen {
                             paraReg,
                             R2.R2Type.fmv));
                     count_float++;
-                }
-                else {
+                } else {
                     // 获取当前的偏移地址
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 4);
@@ -276,8 +270,7 @@ public class CodeGen {
                             address,
                             LS.LSType.fsw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
-            }
-            else if (para.getType().isPointerTy()) {
+            } else if (para.getType().isPointerTy()) {
                 if (count_int < 8) {
                     int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
                     nowBlock.addInstLast(new R2(nowBlock,
@@ -286,8 +279,7 @@ public class CodeGen {
                             R2.R2Type.mv
                     ));
                     count_int++;
-                }
-                else {
+                } else {
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 8);
                     nowBlock.addInstLast(new LS(nowBlock,
@@ -296,8 +288,7 @@ public class CodeGen {
                             address,
                             LS.LSType.sd, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
-            }
-            else if (para.getType().isInt32Ty()) {
+            } else if (para.getType().isInt32Ty()) {
                 if (count_int < 8) {
                     int a0order = Reg.PhyReg.getOrder(Reg.PhyReg.a0);
                     nowBlock.addInstLast(new R2(nowBlock,
@@ -306,8 +297,7 @@ public class CodeGen {
                             R2.R2Type.mv
                     ));
                     count_int++;
-                }
-                else {
+                } else {
                     Address address = StackManager.getInstance().
                             getArgOffset(nowFunc.name, callInstr, paraReg.toString(), 4);
                     nowBlock.addInstLast(new LS(nowBlock,
@@ -325,11 +315,9 @@ public class CodeGen {
         if (reg != null) {
             if (type.isInt32Ty()) {
                 nowBlock.addInstLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.a0, 32), R2.R2Type.mv));
-            }
-            else if (type.isFloatTy()) {
+            } else if (type.isFloatTy()) {
                 nowBlock.addInstLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.fa0, 32), R2.R2Type.fmv));
-            }
-            else {
+            } else {
                 nowBlock.addInstLast(new R2(nowBlock, reg, Reg.getPreColoredReg(Reg.PhyReg.a0, 64), R2.R2Type.mv));
             }
         }
@@ -360,8 +348,7 @@ public class CodeGen {
         Type type = loadInstr.getInnerType();
         if (type.isArrayTy()) {
             throw new RuntimeException("load an array!");
-        }
-        else {
+        } else {
             // 给load的值分配一个虚拟寄存器
             Reg reg = VirRegMap.VRM.ensureRegForValue(loadInstr);
             if (StackManager.getInstance().canBeCalAsOffset(nowFunc.name, loadInstr.getAddr())) {
@@ -370,11 +357,9 @@ public class CodeGen {
                 LS.LSType lstype;
                 if (type.isInt64Ty() || type.isPointerTy()) {
                     lstype = LS.LSType.ld;
-                }
-                else if (type.isInt32Ty() || type.isInt1Ty()) {
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
                     lstype = LS.LSType.lw;
-                }
-                else {
+                } else {
                     lstype = LS.LSType.flw;
                 }
                 nowBlock.addInstLast(new LS(nowBlock, reg, sp, address, lstype, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
@@ -387,22 +372,18 @@ public class CodeGen {
                 nowBlock.addInstLast(new La(nowBlock, tmp, label));
                 if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
                     nowBlock.addInstLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.flw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
-                }
-                else {
+                } else {
                     nowBlock.addInstLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.lw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
-            }
-            else {
+            } else {
                 //否则我们获得了一个指针，这个指针可以通过查询得到
                 Reg addr = VirRegMap.VRM.ensureRegForValue(loadInstr.getAddr());
                 AlignmentAnalysis.AlignType align = alignMap.get(loadInstr.getAddr());
                 if (type.isInt64Ty() || type.isPointerTy()) {
                     nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.ld, align));
-                }
-                else if (type.isInt32Ty() || type.isInt1Ty()) {
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
                     nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.lw, align));
-                }
-                else {
+                } else {
                     nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.flw, align));
                 }
             }
@@ -416,8 +397,7 @@ public class CodeGen {
         Type type = ((Type.PointerType) storeInstr.getAddr().getType()).getInnerType();
         if (type.isArrayTy()) {
             throw new RuntimeException("load an array!");
-        }
-        else {
+        } else {
             // 获取store的值的寄存器
             Reg reg = VirRegMap.VRM.ensureRegForValue(storeInstr.getValue());
             if (StackManager.getInstance().canBeCalAsOffset(nowFunc.name, storeInstr.getAddr())) {
@@ -426,11 +406,9 @@ public class CodeGen {
                 LS.LSType lstype;
                 if (type.isInt64Ty() || type.isPointerTy()) {
                     lstype = LS.LSType.sd;
-                }
-                else if (type.isInt32Ty() || type.isInt1Ty()) {
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
                     lstype = LS.LSType.sw;
-                }
-                else {
+                } else {
                     lstype = LS.LSType.fsw;
                 }
                 nowBlock.addInstLast(new LS(nowBlock, reg, sp, address, lstype, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
@@ -443,22 +421,18 @@ public class CodeGen {
                 nowBlock.addInstLast(new La(nowBlock, tmp, label));
                 if (label.type == RiscvGlobalVar.GlobType.FLOAT) {
                     nowBlock.addInstLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.fsw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
-                }
-                else {
+                } else {
                     nowBlock.addInstLast(new LS(nowBlock, reg, tmp, new Imm(0), LS.LSType.sw, AlignmentAnalysis.AlignType.ALIGN_BYTE_8));
                 }
-            }
-            else {
+            } else {
                 //否则我们获得了一个指针，这个指针可以通过查询得到
                 Reg addr = VirRegMap.VRM.ensureRegForValue(storeInstr.getAddr());
                 AlignmentAnalysis.AlignType align = alignMap.get(storeInstr.getAddr());
                 if (type.isInt64Ty() || type.isPointerTy()) {
                     nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sd, align));
-                }
-                else if (type.isInt32Ty() || type.isInt1Ty()) {
+                } else if (type.isInt32Ty() || type.isInt1Ty()) {
                     nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.sw, align));
-                }
-                else {
+                } else {
                     nowBlock.addInstLast(new LS(nowBlock, reg, addr, new Imm(0), LS.LSType.fsw, align));
                 }
             }
@@ -477,15 +451,13 @@ public class CodeGen {
         Reg pointer = VirRegMap.VRM.ensureRegForValue(getElementPtr);
         Reg base;
         if (getElementPtr.getBase() instanceof GlobalVariable || getElementPtr.getBase() instanceof Function.Argument
-                || !StackManager.getInstance().valueHasOffset(nowFunc.name, getElementPtr.getBase()))
-        {
+                || !StackManager.getInstance().valueHasOffset(nowFunc.name, getElementPtr.getBase())) {
             // 这两种情况是可以直接用指针的情况
             if (getElementPtr.getBase() instanceof GlobalVariable) {
                 base = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                 RiscvGlobalVar globalVar = gloMap.get(((GlobalVariable) getElementPtr.getBase()).label);
                 nowBlock.addInstLast(new La(nowBlock, base, globalVar));
-            }
-            else {
+            } else {
                 base = VirRegMap.VRM.ensureRegForValue(getElementPtr.getBase());
             }
             if (offset instanceof Constant.ConstantInt) {
@@ -493,23 +465,20 @@ public class CodeGen {
                 int byte_off = of * size;
                 if (byte_off >= -2047 && byte_off <= 2047) {
                     nowBlock.addInstLast(new R3(nowBlock, pointer, base, new Imm(byte_off), R3.R3Type.addi));
-                }
-                else {
+                } else {
                     Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 64);
                     nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(byte_off)));
                     nowBlock.addInstLast(new R3(nowBlock, pointer, base, tmp, R3.R3Type.add));
                 }
                 return;
             }
-        }
-        else {
+        } else {
             // 不是全局的或者是参数那就说明是一个局部变量指针,
             // 这种情况下仅仅记录了这个局部变量在栈上的偏移，需要通过计算来得到
             if (offset instanceof Constant.ConstantInt) {
                 StackManager.getInstance().calAsOffset(nowFunc.name, getElementPtr.getBase(), offset, size, getElementPtr);
                 return;
-            }
-            else {
+            } else {
                 // 如果不是常数的话，则就需要计算出来指针了
                 int baseOffset = StackManager.getInstance().getPointerAddress(nowFunc.name, getElementPtr.getBase());
                 base = new Reg(Reg.RegType.GPR, 64);
@@ -526,18 +495,15 @@ public class CodeGen {
             if (shift == 1) {
                 nowBlock.addInstLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh1add));
                 return;
-            }
-            else if (shift == 2) {
+            } else if (shift == 2) {
                 nowBlock.addInstLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh2add));
                 return;
-            }
-            else if (shift == 3) {
+            } else if (shift == 3) {
                 nowBlock.addInstLast(new R3(nowBlock, pointer, reg_for_offset, base, R3.R3Type.sh3add));
                 return;
             }
             nowBlock.addInstLast(new R3(nowBlock, tmp_offset, reg_for_offset, new Imm(shift), R3.R3Type.slliw));
-        }
-        else {
+        } else {
             MulPlaner.MulConst(tmp_offset, reg_for_offset, size);
         }
         nowBlock.addInstLast(new R3(nowBlock, pointer, base, tmp_offset, R3.R3Type.add));
@@ -565,8 +531,7 @@ public class CodeGen {
             nowBlock.addInstLast(new B(nowBlock, B.BType.beq, reg, Reg.getPreColoredReg
                     (Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getElseBlock()), 1 - prob));
             nowBlock.addInstLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getThenBlock())));
-        }
-        else {
+        } else {
             nowBlock.addInstLast(new B(nowBlock, B.BType.bne, reg, Reg.getPreColoredReg
                     (Reg.PhyReg.zero, 32), blockMap.get(branchInstr.getThenBlock()), prob));
             nowBlock.addInstLast(new J(nowBlock, J.JType.j, blockMap.get(branchInstr.getElseBlock())));
@@ -701,8 +666,7 @@ public class CodeGen {
             Reg reg = VirRegMap.VRM.ensureRegForValue(bitCast.getSrc());
             Reg ans = VirRegMap.VRM.ensureRegForValue(bitCast);
             nowBlock.addInstLast(new R2(nowBlock, ans, reg, R2.R2Type.fmvxw));
-        }
-        else {
+        } else {
             VirRegMap.VRM.binding(bitCast.getSrc(), bitCast);
         }
     }
@@ -715,35 +679,30 @@ public class CodeGen {
         Reg ans = VirRegMap.VRM.ensureRegForValue(add);
         boolean all32 = add.getOperand_1().getType().isInt32Ty() && add.getOperand_2().getType().isInt32Ty();
         if (add.getOperand_1() instanceof Constant.ConstantInt
-                || add.getOperand_2() instanceof Constant.ConstantInt)
-        {
+                || add.getOperand_2() instanceof Constant.ConstantInt) {
             // 有且仅有一个会是常数,否则会在中端消掉
             int value;
             Reg op;
             if (add.getOperand_1() instanceof Constant.ConstantInt) {
                 op = VirRegMap.VRM.ensureRegForValue(add.getOperand_2());
                 value = (int) ((Constant.ConstantInt) add.getOperand_1()).getConstValue();
-            }
-            else {
+            } else {
                 op = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
                 value = (int) ((Constant.ConstantInt) add.getOperand_2()).getConstValue();
             }
             if (value >= -2047 && value <= 2047) {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(value), all32 ? R3.R3Type.addiw : R3.R3Type.addi));
-            }
-            else {
+            } else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(value)));
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, all32 ? R3.R3Type.addw : R3.R3Type.add));
             }
-        }
-        else {
+        } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(add.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(add.getOperand_2());
             if (all32) {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.addw));
-            }
-            else {
+            } else {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.add));
             }
         }
@@ -760,20 +719,17 @@ public class CodeGen {
             int value = (int) ((Constant.ConstantInt) sub.getOperand_2()).getConstValue();
             if (value >= -2047 && value <= 2047) {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(-1 * value), all32 ? R3.R3Type.addiw : R3.R3Type.addi));
-            }
-            else {
+            } else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(-1 * value)));
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, all32 ? R3.R3Type.addw : R3.R3Type.add));
             }
-        }
-        else {
+        } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(sub.getOperand_2());
             if (all32) {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.subw));
-            }
-            else {
+            } else {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.sub));
             }
         }
@@ -784,8 +740,7 @@ public class CodeGen {
      */
     private void solveFAdd(Instruction.FAdd fAdd) {
         if (!fAdd.getOperand_1().getType().isFloatTy() ||
-                !fAdd.getOperand_2().getType().isFloatTy())
-        {
+                !fAdd.getOperand_2().getType().isFloatTy()) {
             throw new RuntimeException("not all oper of fAdd is float");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fAdd.getOperand_1());
@@ -799,8 +754,7 @@ public class CodeGen {
      */
     private void solveFSub(Instruction.FSub fSub) {
         if (!fSub.getOperand_1().getType().isFloatTy() ||
-                !fSub.getOperand_2().getType().isFloatTy())
-        {
+                !fSub.getOperand_2().getType().isFloatTy()) {
             throw new RuntimeException("not all oper of fSub is float");
         }
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fSub.getOperand_1());
@@ -815,18 +769,15 @@ public class CodeGen {
         if (mul.getOperand_2() instanceof Constant.ConstantInt c && all32) {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
             MulPlaner.MulConst(ans, op1, c.getIntValue());
-        }
-        else if (mul.getOperand_1() instanceof Constant.ConstantInt c && all32) {
+        } else if (mul.getOperand_1() instanceof Constant.ConstantInt c && all32) {
             Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
             MulPlaner.MulConst(ans, op2, c.getIntValue());
-        }
-        else {
+        } else {
             Reg op1 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_1());
             Reg op2 = VirRegMap.VRM.ensureRegForValue(mul.getOperand_2());
             if (all32) {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mulw));
-            }
-            else {
+            } else {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.mul));
             }
         }
@@ -843,8 +794,7 @@ public class CodeGen {
         Reg op2 = VirRegMap.VRM.ensureRegForValue(div.getOperand_2());
         if (all32) {
             nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.divw));
-        }
-        else {
+        } else {
             nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.div));
         }
     }
@@ -877,8 +827,7 @@ public class CodeGen {
         Reg op2 = VirRegMap.VRM.ensureRegForValue(rem.getOperand_2());
         if (all32) {
             nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.remw));
-        }
-        else {
+        } else {
             nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.rem));
         }
 
@@ -916,8 +865,7 @@ public class CodeGen {
         Reg dst = VirRegMap.VRM.ensureRegForValue(move.getTarget());
         if (move.getSrc().getType().isFloatTy()) {
             nowBlock.addInstLast(new R2(nowBlock, dst, src, R2.R2Type.fmv));
-        }
-        else {
+        } else {
             nowBlock.addInstLast(new R2(nowBlock, dst, src, R2.R2Type.mv));
         }
     }
@@ -942,8 +890,7 @@ public class CodeGen {
             int val = ((Constant.ConstantInt) value2).getIntValue();
             if (val >= -2047 && val <= 2047) {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.andi));
-            }
-            else {
+            } else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(val)));
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.and));
@@ -982,8 +929,7 @@ public class CodeGen {
             int val = ((Constant.ConstantInt) value2).getIntValue();
             if (val >= -2047 && val <= 2047) {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.xoriw));
-            }
-            else {
+            } else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(val)));
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.xorw));
@@ -1000,8 +946,7 @@ public class CodeGen {
             int val = ((Constant.ConstantInt) value2).getIntValue();
             if (val >= -2047 && val <= 2047) {
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, new Imm(val), R3.R3Type.ori));
-            }
-            else {
+            } else {
                 Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 nowBlock.addInstLast(new Li(nowBlock, tmp, new Imm(val)));
                 nowBlock.addInstLast(new R3(nowBlock, ans, op, tmp, R3.R3Type.or));
@@ -1083,32 +1028,28 @@ public class CodeGen {
         nowBlock.addInstLast(new R2(nowBlock, ans, reg, R2.R2Type.mv));
     }
 
-    private void solveAtomicAdd(Instruction.AtomicAdd atomicAdd)
-    {
+    private void solveAtomicAdd(Instruction.AtomicAdd atomicAdd) {
         Reg ans = Reg.getPreColoredReg(Reg.PhyReg.zero, 32);
         Reg addr = VirRegMap.VRM.ensureRegForValue(atomicAdd.getPtr());
         Reg val = VirRegMap.VRM.ensureRegForValue(atomicAdd.getInc());
         nowBlock.addInstLast(new AMOadd(nowBlock, ans, val, addr));
     }
 
-    private void solveFmax(Instruction.FMax fMax)
-    {
+    private void solveFmax(Instruction.FMax fMax) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fMax);
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fMax.getOperand_1());
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fMax.getOperand_2());
         nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmax));
     }
 
-    private void solveFmin(Instruction.FMin fMin)
-    {
+    private void solveFmin(Instruction.FMin fMin) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fMin);
         Reg op1 = VirRegMap.VRM.ensureRegForValue(fMin.getOperand_1());
         Reg op2 = VirRegMap.VRM.ensureRegForValue(fMin.getOperand_2());
         nowBlock.addInstLast(new R3(nowBlock, ans, op1, op2, R3.R3Type.fmin));
     }
 
-    private void solveFAbs(Instruction.FAbs fAbs)
-    {
+    private void solveFAbs(Instruction.FAbs fAbs) {
         Reg ans = VirRegMap.VRM.ensureRegForValue(fAbs);
         Reg op = VirRegMap.VRM.ensureRegForValue(fAbs.getOperand());
         nowBlock.addInstLast(new R2(nowBlock, ans, op, R2.R2Type.fabs));
@@ -1120,137 +1061,93 @@ public class CodeGen {
             // 加入注释语句
             if (instruction instanceof Instruction.Return) {
                 solveReturn((Instruction.Return) instruction);
-            }
-            else if (instruction instanceof Instruction.Call) {
+            } else if (instruction instanceof Instruction.Call) {
                 solveCall((Instruction.Call) instruction);
-            }
-            else if (instruction instanceof Instruction.Alloc) {
+            } else if (instruction instanceof Instruction.Alloc) {
                 solveAlloc((Instruction.Alloc) instruction);
-            }
-            else if (instruction instanceof Instruction.Load) {
+            } else if (instruction instanceof Instruction.Load) {
                 solveLoad((Instruction.Load) instruction);
-            }
-            else if (instruction instanceof Instruction.Store) {
+            } else if (instruction instanceof Instruction.Store) {
                 solveStore((Instruction.Store) instruction);
-            }
-            else if (instruction instanceof Instruction.Branch) {
+            } else if (instruction instanceof Instruction.Branch) {
                 solveBranch((Instruction.Branch) instruction);
-            }
-            else if (instruction instanceof Instruction.Jump) {
+            } else if (instruction instanceof Instruction.Jump) {
                 solveJump((Instruction.Jump) instruction);
-            }
-            else if (instruction instanceof Instruction.SItofp) {
+            } else if (instruction instanceof Instruction.SItofp) {
                 solveSItofp((Instruction.SItofp) instruction);
-            }
-            else if (instruction instanceof Instruction.FPtosi) {
+            } else if (instruction instanceof Instruction.FPtosi) {
                 solveFPtosi((Instruction.FPtosi) instruction);
-            }
-            else if (instruction instanceof Instruction.Zext) {
+            } else if (instruction instanceof Instruction.Zext) {
                 solveZext((Instruction.Zext) instruction);
-            }
-            else if (instruction instanceof Instruction.Icmp) {
+            } else if (instruction instanceof Instruction.Icmp) {
                 solveIcmp((Instruction.Icmp) instruction);
-            }
-            else if (instruction instanceof Instruction.Fcmp) {
+            } else if (instruction instanceof Instruction.Fcmp) {
                 solveFcmp((Instruction.Fcmp) instruction);
-            }
-            else if (instruction instanceof Instruction.GetElementPtr) {
+            } else if (instruction instanceof Instruction.GetElementPtr) {
                 solveGEP((Instruction.GetElementPtr) instruction);
-            }
-            else if (instruction instanceof Instruction.BitCast) {
+            } else if (instruction instanceof Instruction.BitCast) {
                 solveBitCast((Instruction.BitCast) instruction);
-            }
-            else if (instruction instanceof Instruction.Add) {
+            } else if (instruction instanceof Instruction.Add) {
                 solveAdd((Instruction.Add) instruction);
-            }
-            else if (instruction instanceof Instruction.Sub) {
+            } else if (instruction instanceof Instruction.Sub) {
                 solveSub((Instruction.Sub) instruction);
-            }
-            else if (instruction instanceof Instruction.FAdd) {
+            } else if (instruction instanceof Instruction.FAdd) {
                 solveFAdd((Instruction.FAdd) instruction);
-            }
-            else if (instruction instanceof Instruction.FSub) {
+            } else if (instruction instanceof Instruction.FSub) {
                 solveFSub((Instruction.FSub) instruction);
-            }
-            else if (instruction instanceof Instruction.Mul) {
+            } else if (instruction instanceof Instruction.Mul) {
                 solveMul((Instruction.Mul) instruction);
-            }
-            else if (instruction instanceof Instruction.FMul) {
+            } else if (instruction instanceof Instruction.FMul) {
                 solveFMul((Instruction.FMul) instruction);
-            }
-            else if (instruction instanceof Instruction.FDiv) {
+            } else if (instruction instanceof Instruction.FDiv) {
                 solveFDiv((Instruction.FDiv) instruction);
-            }
-            else if (instruction instanceof Instruction.Div) {
+            } else if (instruction instanceof Instruction.Div) {
                 solveDiv((Instruction.Div) instruction);
-            }
-            else if (instruction instanceof Instruction.Rem) {
+            } else if (instruction instanceof Instruction.Rem) {
                 solveRem((Instruction.Rem) instruction);
-            }
-            else if (instruction instanceof Instruction.FRem) {
+            } else if (instruction instanceof Instruction.FRem) {
                 solveFRem((Instruction.FRem) instruction);
-            }
-            else if (instruction instanceof Instruction.Move) {
+            } else if (instruction instanceof Instruction.Move) {
                 solveMove((Instruction.Move) instruction);
-            }
-            else if (instruction instanceof Instruction.And) {
+            } else if (instruction instanceof Instruction.And) {
                 solveAnd((Instruction.And) instruction);
-            }
-            else if (instruction instanceof Instruction.Shl) {
+            } else if (instruction instanceof Instruction.Shl) {
                 solveShl((Instruction.Shl) instruction);
-            }
-            else if (instruction instanceof Instruction.LShr) {
+            } else if (instruction instanceof Instruction.LShr) {
                 solveLShr((Instruction.LShr) instruction);
-            }
-            else if (instruction instanceof Instruction.AShr) {
+            } else if (instruction instanceof Instruction.AShr) {
                 solveAShr((Instruction.AShr) instruction);
-            }
-            else if (instruction instanceof Instruction.Or) {
+            } else if (instruction instanceof Instruction.Or) {
                 solveOr((Instruction.Or) instruction);
-            }
-            else if (instruction instanceof Instruction.Xor) {
+            } else if (instruction instanceof Instruction.Xor) {
                 solveXor((Instruction.Xor) instruction);
-            }
-            else if (instruction instanceof Instruction.Min) {
+            } else if (instruction instanceof Instruction.Min) {
                 solveMin((Instruction.Min) instruction);
-            }
-            else if (instruction instanceof Instruction.Max) {
+            } else if (instruction instanceof Instruction.Max) {
                 solveMax((Instruction.Max) instruction);
-            }
-            else if (instruction instanceof Instruction.Fmadd) {
+            } else if (instruction instanceof Instruction.Fmadd) {
                 solveFmadd((Instruction.Fmadd) instruction);
-            }
-            else if (instruction instanceof Instruction.Fmsub) {
+            } else if (instruction instanceof Instruction.Fmsub) {
                 solveFmsub((Instruction.Fmsub) instruction);
-            }
-            else if (instruction instanceof Instruction.Fnmadd) {
+            } else if (instruction instanceof Instruction.Fnmadd) {
                 solveFnmadd((Instruction.Fnmadd) instruction);
-            }
-            else if (instruction instanceof Instruction.Fnmsub) {
+            } else if (instruction instanceof Instruction.Fnmsub) {
                 solveFnmsub((Instruction.Fnmsub) instruction);
-            }
-            else if (instruction instanceof Instruction.Fneg) {
+            } else if (instruction instanceof Instruction.Fneg) {
                 solveFneg((Instruction.Fneg) instruction);
-            }
-            else if (instruction instanceof Instruction.Sext) {
+            } else if (instruction instanceof Instruction.Sext) {
                 solveSext((Instruction.Sext) instruction);
-            }
-            else if (instruction instanceof Instruction.Trunc) {
+            } else if (instruction instanceof Instruction.Trunc) {
                 solveTrunc((Instruction.Trunc) instruction);
-            }
-            else if (instruction instanceof Instruction.AtomicAdd) {
+            } else if (instruction instanceof Instruction.AtomicAdd) {
                 solveAtomicAdd((Instruction.AtomicAdd) instruction);
-            }
-            else if (instruction instanceof Instruction.FAbs) {
+            } else if (instruction instanceof Instruction.FAbs) {
                 solveFAbs((Instruction.FAbs) instruction);
-            }
-            else if (instruction instanceof Instruction.FMax) {
+            } else if (instruction instanceof Instruction.FMax) {
                 solveFmax((Instruction.FMax) instruction);
-            }
-            else if (instruction instanceof Instruction.FMin) {
+            } else if (instruction instanceof Instruction.FMin) {
                 solveFmin((Instruction.FMin) instruction);
-            }
-            else {
+            } else {
                 throw new RuntimeException("wrong class " + instruction.getClass());
             }
         }

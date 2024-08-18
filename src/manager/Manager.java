@@ -2,7 +2,7 @@ package manager;
 
 import backend.Ir2RiscV.AfterRA;
 import backend.Ir2RiscV.CodeGen;
-import backend.Ir2RiscV.GepLift;
+import backend.Ir2RiscV.RemoveCRH;
 import backend.Opt.BackLoop.LoopConstLift;
 import backend.Opt.CalculateOpt;
 import backend.Opt.CfgOpt.BlockInline;
@@ -25,10 +25,7 @@ import midend.Analysis.AlignmentAnalysis;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.FuncAnalysis;
 import midend.Transform.*;
-import midend.Transform.Array.ConstIdx2Value;
-import midend.Transform.Array.GepFold;
-import midend.Transform.Array.LocalArrayLift;
-import midend.Transform.Array.SroaPass;
+import midend.Transform.Array.*;
 import midend.Transform.DCE.*;
 import midend.Transform.Function.FuncCache;
 import midend.Transform.Function.FunctionInline;
@@ -174,6 +171,7 @@ public class Manager {
         CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
+        RemoveCRH.run(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }
 
