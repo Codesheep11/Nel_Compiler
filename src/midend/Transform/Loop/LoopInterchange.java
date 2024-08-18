@@ -5,12 +5,14 @@ import midend.Analysis.result.SCEVinfo;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.LocalValueNumbering;
+import midend.Util.Print;
 import mir.*;
 import midend.Analysis.AnalysisManager;
 import mir.Module;
 import utils.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 public class LoopInterchange {
@@ -52,6 +54,7 @@ public class LoopInterchange {
             for (var loop : function.loopInfo.TopLevelLoops) {
                 modified |= tryInterchangeLoop(loop);
             }
+            Print.output(function, "debug.txt");
             DeadLoopEliminate.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
             LocalValueNumbering.runOnFunc(function);
@@ -168,6 +171,7 @@ public class LoopInterchange {
             }
         }
         if (!downOuterInst(loop, child)) return false;
+        if (!embedOuterInst(loop, child)) return false;
         // 判断outer和inner为完美嵌套循环
         BasicBlock innerExitBlock = child.getExit();
         if (innerExitBlock != loop.getLatch()) return false;
@@ -190,7 +194,7 @@ public class LoopInterchange {
         if (val instanceof Instruction.Add add) {
             dfsEval(add.getOperand_1(), cost, loop);
             dfsEval(add.getOperand_2(), cost, loop);
-        } else if (val instanceof Instruction.Mul mul){
+        } else if (val instanceof Instruction.Mul mul) {
             dfsEval(mul.getOperand_1(), cost + 1, loop);
             dfsEval(mul.getOperand_2(), cost + 1, loop);
         } else if (val instanceof Instruction.Phi phi) {
@@ -222,6 +226,83 @@ public class LoopInterchange {
         return true;
     }
 
+    /**
+     * 将外循环的latch指令嵌入到内循环中
+     * assert child.getExit() == father.getLatch()
+     *
+     * @param father 外循环
+     * @param child  内循环
+     * @return 是否成功
+     */
+    private static boolean embedOuterInst(Loop father, Loop child) {
+        BasicBlock block = child.getExit();
+        for (Instruction.Phi phi : block.getPhiInstructions()) {
+            if (phi.isLCSSA) {
+                if (!isOnlySum(phi.getOptionalValue(child.header), child))
+                    return false;
+                if (phi.getUsers().size() > 1) return false;
+                User user = phi.getUsers().iterator().next();
+                if (user instanceof Instruction.Store store) {
+                    if (store.getValue() != phi) {
+                        return false;
+                    }
+                } else return false;
+                ArrayList<Instruction> list = new ArrayList<>();
+                if (!collectOperands(father, block, store.getAddr(), list)) return false;
+                Collections.reverse(list);
+                for (Instruction inst : list) {
+                    inst.remove();
+                    onlySum_add.addPrev(inst);
+                }
+                Instruction.Load ld = new Instruction.Load(onlySum_add.getParentBlock(), store.getAddr());
+                ld.remove();
+                onlySum_add.addPrev(ld);
+                onlySum_add.replaceUseOfWith(phi.getOptionalValue(child.header), ld);
+                store.remove();
+                onlySum_add.addNext(store);
+                store.replaceUseOfWith(phi, onlySum_add);
+                phi.delete();
+            }
+            else return false;
+        }
+        return true;
+    }
+
+
+    private static Instruction onlySum_add;
+    /**
+     * 判断phi是否为一条简单的累加指令
+     */
+    private static boolean isOnlySum(Value inst, Loop loop) {
+        if (!(inst instanceof Instruction.Phi phi)) return false;
+        // TODO: 可以加强 不必非得是0
+        if (!phi.getOptionalValue(loop.getPreHeader()).equals(Constant.ConstantInt.get(0))) return false;
+        if (phi.getUsers().size() > 2) return false;
+        Value val = phi.getOptionalValue(loop.getLatch());
+        if (val instanceof Instruction.Add add) {
+            if (!(add.getOperand_1() == phi) && !(add.getOperand_2() == phi)) return false;
+            onlySum_add = add;
+        } else return false;
+        return true;
+    }
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private static boolean collectOperands(Loop loop, BasicBlock block, Value val, ArrayList<Instruction> ret) {
+        if (!loop.defValue(val)) return true;
+        if (val instanceof Instruction inst) {
+            if (inst.getParentBlock() == block) {
+                if (inst instanceof Instruction.Phi phi){
+                    return phi.isLCSSA;
+                }
+                ret.add(inst);
+                for (Value operand : inst.getOperands()) {
+                    if (!collectOperands(loop, block, operand, ret)) return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public static boolean tryInterchangeLoop(Loop loop) {
         boolean modified = false;
         for (Loop child : loop.getChildrenSnap()) {
@@ -237,7 +318,7 @@ public class LoopInterchange {
             }
         }
         Loop child = loop.children.iterator().next();
-        System.out.println("Interchange: " + loop.header.getLabel() + " " + child.header.getLabel());
+//        System.out.println("Interchange: " + loop.header.getLabel() + " " + child.header.getLabel());
         // 父循环视角
         outer_indvar.remove();
         child.header.addInstFirst(outer_indvar);
@@ -271,3 +352,60 @@ public class LoopInterchange {
         LCSSA.runOnFunc(func);
     }
 }
+/*
+main_BB18:
+	%phi_7 = phi i32 [ 0, %main_BB16 ], [ %add_44, %main_BB19 ]
+	%icmp_6 = icmp slt i32 %phi_7, 1000
+	br i1 %icmp_6, label %main_BB19, label %main_BB20 ;1.000000
+
+
+main_BB19:
+	%mul_19 = mul i32 1000, %phi_7
+	%add_15 = add i32 %mul_19, %phi_16
+	%add_13 = add i32 %mul_17, %phi_7
+	%gep_6 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @a, i32 0, i32 0, i32 %add_13
+	%load_21 = load i32, i32* %gep_4
+	%load_24 = load i32, i32* %gep_6
+	%gep_7 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @b, i32 0, i32 0, i32 %add_15
+	%load_27 = load i32, i32* %gep_7
+	%mul_6 = mul i32 %load_24, %load_27
+	%add_16 = add i32 %load_21, %mul_6
+	store i32 %add_16, i32* %gep_4
+	%add_44 = add i32 1, %phi_7
+	br label %main_BB18
+
+
+main_BB20:
+	%add_45 = add i32 1, %phi_16
+	br label %main_BB15
+ */
+/*
+main_BB18:
+	%phi_10 = phi i32 [ 0, %main_BB16 ], [ %add_42, %main_BB19 ]
+	%phi_5 = phi i32 [ 0, %main_BB16 ], [ %add_12, %main_BB19 ]
+	%icmp_6 = icmp slt i32 %phi_10, 1000
+	br i1 %icmp_6, label %main_BB19, label %main_BB20 ;0.500000
+
+
+main_BB19:
+	%add_9 = add i32 %mul_16, %phi_10
+	%gep_4 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @a, i32 0, i32 0, i32 %add_9
+	%load_20 = load i32, i32* %gep_4
+	%mul_18 = mul i32 1000, %phi_10
+	%add_11 = add i32 %mul_18, %phi_19
+	%gep_5 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @b, i32 0, i32 0, i32 %add_11
+	%load_23 = load i32, i32* %gep_5
+	%mul_4 = mul i32 %load_20, %load_23
+	%add_12 = add i32 %phi_5, %mul_4
+	%add_42 = add i32 1, %phi_10
+	br label %main_BB18
+
+
+main_BB20:
+	%phi_62 = phi i32 [ %phi_5, %main_BB18 ] ; [isLCSSA]
+	%add_15 = add i32 %mul_16, %phi_19
+	%gep_6 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @c, i32 0, i32 0, i32 %add_15
+	store i32 %phi_62, i32* %gep_6
+	%add_43 = add i32 1, %phi_19
+	br label %main_BB15
+ */
