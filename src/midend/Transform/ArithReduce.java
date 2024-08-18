@@ -235,11 +235,20 @@ public class ArithReduce {
 
     private static void reduceSub(Instruction.Sub inst) {
         if (inst.getOperand_1() instanceof Constant c1) {
-            //0 - (0 - a) -> a
             if (c1.isZero() && inst.getOperand_2() instanceof Instruction.Sub sub) {
+                //0 - (0 - a) -> a
                 if (sub.getOperand_1() instanceof Constant c2 && c2.isZero()) {
                     inst.replaceAllUsesWith(sub.getOperand_2());
                     delList.add(inst);
+                    return;
+                }
+                //0 - (a - b) -> (b - a)
+                if(sub.getUsers().size() == 1){
+                    Instruction.Sub newSub = new Instruction.Sub(inst.getParentBlock(), inst.getType(),
+                            sub.getOperand_2(), sub.getOperand_1());
+                    inst.replaceAllUsesWith(newSub);
+                    delList.add(inst);
+                    snap.add(idx + 1, newSub);
                     return;
                 }
             }

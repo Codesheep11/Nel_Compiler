@@ -3,6 +3,7 @@ package backend.Ir2RiscV;
 import backend.operand.Imm;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
+import backend.riscv.RiscvInstruction.ConstRemHelper;
 import backend.riscv.RiscvInstruction.Li;
 import backend.riscv.RiscvInstruction.R2;
 import backend.riscv.RiscvInstruction.R3;
@@ -19,7 +20,10 @@ public class DivRemByConstant {
 
     private static RiscvBlock block;
 
-    private static final boolean doOpt=true;
+    private static final boolean doOpt = true;
+
+
+    private static final boolean Branch_Rem = true;
 
     /**
      * 计算log2(x) 向下取整
@@ -36,7 +40,7 @@ public class DivRemByConstant {
     }
 
     public static boolean Div(Reg reg, Reg me, int val, Value value, BasicBlock par) {
-        if (!Manager.isO1||!doOpt) return false;
+        if (!Manager.isO1 || !doOpt) return false;
         I32RangeAnalysis.I32Range ir = AnalysisManager.getValueRange(value, par);
         block = CodeGen.nowBlock;
         if (ir.getMinValue() >= 0 && val >= 0) {
@@ -47,7 +51,7 @@ public class DivRemByConstant {
     }
 
     public static boolean Rem(Reg reg, Reg me, int val, Value value, BasicBlock par) {
-        if (!Manager.isO1||!doOpt) return false;
+        if (!Manager.isO1 || !doOpt) return false;
         block = CodeGen.nowBlock;
         SignRem(reg, me, val, value, par);
         return true;
@@ -197,14 +201,26 @@ public class DivRemByConstant {
 
     private static void SignRem(Reg ans, Reg src, int divisor, Value value, BasicBlock par) {
         I32RangeAnalysis.I32Range ir = AnalysisManager.getValueRange(value, par);
-        if (ir.getMinValue() >= 0 && isPowerOf2(divisor)) {
-            int mask = divisor - 1;
-            if (mask >= 2047) {
-                Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
-                block.addInstLast(new Li(block, tmp, new Imm(mask)));
-                block.addInstLast(new R3(block, ans, src, tmp, R3.R3Type.and));
+        if (isPowerOf2(divisor) && (ir.getMinValue() >= 0 || Branch_Rem)) {
+            if (ir.getMinValue() >= 0) {
+                int mask = divisor - 1;
+                if (mask >= 2047) {
+                    Reg tmp = Reg.getVirtualReg(Reg.RegType.GPR, 32);
+                    block.addInstLast(new Li(block, tmp, new Imm(mask)));
+                    block.addInstLast(new R3(block, ans, src, tmp, R3.R3Type.and));
+                } else {
+                    block.addInstLast(new R3(block, ans, src, new Imm(mask), R3.R3Type.andi));
+                }
             } else {
-                block.addInstLast(new R3(block, ans, src, new Imm(mask), R3.R3Type.andi));
+                block.addInstLast(new ConstRemHelper(block, src, ans, divisor));
+                if (divisor >= 2047) {
+                    int x = log2(divisor);
+                    block.addInstLast(new R3(block, ans, ans, new Imm(x), R3.R3Type.sraiw));
+                    block.addInstLast(new R3(block, ans, ans, new Imm(x), R3.R3Type.slli));
+                } else {
+                    block.addInstLast(new R3(block, ans, ans, new Imm(-divisor), R3.R3Type.andi));
+                }
+                block.addInstLast(new R3(block, ans, src, ans, R3.R3Type.subw));
             }
         } else {
             // 当作一个除法+乘法+减法优化
