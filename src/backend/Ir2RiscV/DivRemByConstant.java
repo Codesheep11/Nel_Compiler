@@ -26,7 +26,7 @@ public class DivRemByConstant {
 
     private static final String head = "rem_helper_temp_BB";
 
-    private static final boolean Branch_Rem = true;
+    private static final boolean Branch_Rem = false;
 
     /**
      * 计算log2(x) 向下取整
