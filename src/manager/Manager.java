@@ -109,7 +109,7 @@ public class Manager {
         LoopBuildAndNormalize();
         LICMMemory.run(module);
         LoopBuildAndNormalize();
-        LoopNestTemp.run(module);
+//        LoopNestTemp.run(module);
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
@@ -118,7 +118,7 @@ public class Manager {
         ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-        LoopParallel.run(module);
+//        LoopParallel.run(module);
         LCSSA.remove(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -133,7 +133,7 @@ public class Manager {
         FuncCache.run(module);
         FuncAnalysis.run(module);
         LoopBuildAndNormalize();
-        GepLift.run(module);
+//        GepLift.run(module);
         AlignmentAnalysis.run(module);
         LoopInfo.run(module);
         GlobalCodeMotion.run(module);
@@ -143,7 +143,7 @@ public class Manager {
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
-        AggressivePass();
+//        AggressivePass();
         SCCP();
         DeadCodeEliminate();
         FuncAnalysis.run(module);
@@ -237,7 +237,7 @@ public class Manager {
         FuncAnalysis.run(module);
         GepFold.run(module);
         LoadEliminate.run(module);
-        StoreEliminate.run(module);
+//        StoreEliminate.run(module);
         SCCP();
         SroaPass.run(module);
         LocalArrayLift.run(module);

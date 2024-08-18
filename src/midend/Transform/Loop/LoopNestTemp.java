@@ -27,6 +27,7 @@ public class LoopNestTemp {
 
     public static void runOnFunc(Function function) {
         scevInfo = AnalysisManager.getSCEV(function);
+        PointerBaseAnalysis.runOnFunc(function);
         for (Loop loop : function.loopInfo.TopLevelLoops) {
             runMem2Temp4Loop(loop);
         }
@@ -59,6 +60,15 @@ public class LoopNestTemp {
         }
         //似乎只要循环的出口只有一个，就可以进行这个优化
         if (loop.exits.size() != 1) return;
+        boolean hasCallInLoop = false;
+        for (BasicBlock block : loop.getAllBlocks()) {
+            for (Instruction inst : block.getMainInstructions()) {
+                if (inst instanceof Instruction.Call) {
+                    hasCallInLoop = true;
+                    break;
+                }
+            }
+        }
         HashMap<Value, Integer> loadStoreMap = new HashMap<>();
         HashMap<Value, Value> baseMap = new HashMap<>();
         boolean hasStore = false;
@@ -69,6 +79,7 @@ public class LoopNestTemp {
                     //获得指针的基地址
                     Value base = PointerBaseAnalysis.getBaseOrNull(ptr);
                     if (base == null) continue;
+                    if (hasCallInLoop && base instanceof GlobalVariable) continue;
                     if (baseMap.containsKey(base) && baseMap.get(base) != ptr) {
                         loadStoreMap.remove(baseMap.get(base));
                         baseMap.put(base, null);
@@ -82,6 +93,7 @@ public class LoopNestTemp {
                     Value ptr = store.getAddr();
                     Value base = PointerBaseAnalysis.getBaseOrNull(ptr);
                     if (base == null) continue;
+                    if (hasCallInLoop && base instanceof GlobalVariable) continue;
                     if (baseMap.containsKey(base) && baseMap.get(base) != ptr) {
                         loadStoreMap.remove(baseMap.get(base));
                         baseMap.put(base, null);
@@ -130,9 +142,6 @@ public class LoopNestTemp {
                         }
                     }
                 }
-//                else if (loadStoreMap.get(ptr) == 2) {
-//
-//                }
             }
         }
     }

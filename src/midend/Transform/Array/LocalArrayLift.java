@@ -42,7 +42,7 @@ public class LocalArrayLift {
         clear();
         LocalArrayLift.func = func;
         FindAllLiftArray();
-        if (func.getName().equals("main")) FindOnceLiftArray();
+//        if (func.getName().equals("main")) FindOnceLiftArray();
         LiftArray();
     }
 

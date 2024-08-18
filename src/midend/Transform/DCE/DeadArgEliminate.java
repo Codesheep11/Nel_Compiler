@@ -36,7 +36,7 @@ public class DeadArgEliminate {
             else if (AnalysisManager.getFuncInfo(function).isRecursive) {
                 boolean hasUse = false;
                 for (Instruction user : arg.getUsers()) {
-                    if (!isRecurseUser(user, i)) {
+                    if (!isRecurseUser(user, i, arg)) {
                         hasUse = true;
                         break;
                     }
@@ -73,10 +73,14 @@ public class DeadArgEliminate {
         return !removeList.isEmpty();
     }
 
-    private static boolean isRecurseUser(User user, int idx) {
+    private static boolean isRecurseUser(Instruction user, int idx, Value arg) {
+        while (!(user instanceof Instruction.Call) && user.getUsers().size() == 1) {
+            arg = user;
+            user = user.getUsers().get(0);
+        }
         return user instanceof Instruction.Call
-                && ((Instruction.Call) user).getDestFunction() == ((Instruction.Call) user).getParentBlock().getParentFunction()
-                && ((Instruction.Call) user).getParams().get(idx) == ((Instruction.Call) user).getParentBlock().getParentFunction().getFuncRArguments().get(idx);
+                && ((Instruction.Call) user).getDestFunction() == user.getParentBlock().getParentFunction()
+                && ((Instruction.Call) user).getParams().get(idx) == arg;
     }
 
 }

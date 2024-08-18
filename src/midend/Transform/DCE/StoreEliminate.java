@@ -69,10 +69,11 @@ public class StoreEliminate {
             Value idx = gep.getIdx();
             StoreMap.putIfAbsent(base, new HashMap<>());
             if (idx instanceof Constant.ConstantInt) {
-                if (StoreMap.get(base).containsKey(base)) delList.add(StoreMap.get(addr).get(base));
+                if (StoreMap.get(base).containsKey(idx)) delList.add(StoreMap.get(base).get(idx));
                 StoreMap.get(base).put(idx, store);
             }
             else {
+                if (StoreMap.get(base).containsKey(idx)) delList.add(StoreMap.get(base).get(idx));
                 StoreMap.get(base).clear();
                 StoreMap.get(base).put(idx, store);
             }
