@@ -42,7 +42,7 @@ public class LocalArrayLift {
         clear();
         LocalArrayLift.func = func;
         FindAllLiftArray();
-//        if (func.getName().equals("main")) FindOnceLiftArray();
+        if (func.getName().equals("main")) FindOnceLiftArray();
         LiftArray();
     }
 
@@ -69,11 +69,14 @@ public class LocalArrayLift {
             Instruction useInst = use.remove(0);
             if (useInst instanceof Instruction.Load) loads.add(useInst);
             else if (useInst instanceof Instruction.Store store) {
-                Instruction.GetElementPtr addr = (Instruction.GetElementPtr) store.getAddr();
-                Value idx = addr.getIdx();
-                Value val = store.getValue();
-                if (idx instanceof Constant && val instanceof Constant) stores.add(useInst);
-                else return;
+                if (store.getAddr() instanceof Instruction.GetElementPtr addr) {
+                    Value idx = addr.getIdx();
+                    Value val = store.getValue();
+                    if (idx instanceof Constant && val instanceof Constant) stores.add(useInst);
+                    else return;
+                }
+                else
+                    return;
             }
             else if (useInst instanceof Instruction.Call call) {
                 Function callee = call.getDestFunction();
