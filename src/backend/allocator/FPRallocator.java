@@ -83,7 +83,7 @@ public class FPRallocator {
             clear();
             buildCurCG();
             //标记第几轮循环
-            System.out.println(func.name + " FPR round: " + pass++);
+//            System.out.println(func.name + " FPR round: " + pass++);
 //            System.out.println(func);
             //建立冲突图
             while (!curCG.isEmpty()) {

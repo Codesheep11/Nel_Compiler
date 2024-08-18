@@ -60,15 +60,16 @@ public class LoopNestTemp {
         }
         //似乎只要循环的出口只有一个，就可以进行这个优化
         if (loop.exits.size() != 1) return;
-        boolean hasCallInLoop = false;
+        boolean hasCallOrRetInLoop = false;
         for (BasicBlock block : loop.getAllBlocks()) {
             for (Instruction inst : block.getMainInstructions()) {
-                if (inst instanceof Instruction.Call) {
-                    hasCallInLoop = true;
+                if (inst instanceof Instruction.Call || inst instanceof Instruction.Return) {
+                    hasCallOrRetInLoop = true;
                     break;
                 }
             }
         }
+        if (hasCallOrRetInLoop) return;
         HashMap<Value, Integer> loadStoreMap = new HashMap<>();
         HashMap<Value, Value> baseMap = new HashMap<>();
         boolean hasStore = false;
@@ -79,7 +80,6 @@ public class LoopNestTemp {
                     //获得指针的基地址
                     Value base = PointerBaseAnalysis.getBaseOrNull(ptr);
                     if (base == null) continue;
-                    if (hasCallInLoop && base instanceof GlobalVariable) continue;
                     if (baseMap.containsKey(base) && baseMap.get(base) != ptr) {
                         loadStoreMap.remove(baseMap.get(base));
                         baseMap.put(base, null);
@@ -93,7 +93,6 @@ public class LoopNestTemp {
                     Value ptr = store.getAddr();
                     Value base = PointerBaseAnalysis.getBaseOrNull(ptr);
                     if (base == null) continue;
-                    if (hasCallInLoop && base instanceof GlobalVariable) continue;
                     if (baseMap.containsKey(base) && baseMap.get(base) != ptr) {
                         loadStoreMap.remove(baseMap.get(base));
                         baseMap.put(base, null);

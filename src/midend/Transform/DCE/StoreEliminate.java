@@ -109,12 +109,10 @@ public class StoreEliminate {
         Function callee = call.getDestFunction();
         //传入数组写
         FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
-        if (calleeInfo.hasSideEffect) {
-            for (Value arg : call.getParams()) {
-                if (arg.getType().isPointerTy()) {
-                    Value baseAddr = getBaseAddr(arg);
-                    StoreMap.remove(baseAddr);
-                }
+        for (Value arg : call.getParams()) {
+            if (arg.getType().isPointerTy()) {
+                Value baseAddr = getBaseAddr(arg);
+                StoreMap.remove(baseAddr);
             }
         }
         //全局变量写
@@ -134,7 +132,7 @@ public class StoreEliminate {
                 ret = gep.getBase();
             }
             if (ret instanceof Instruction.BitCast) {
-                Instruction.BitCast bitCast = (Instruction.BitCast) inst;
+                Instruction.BitCast bitCast = (Instruction.BitCast) ret;
                 ret = bitCast.getSrc();
             }
         }
