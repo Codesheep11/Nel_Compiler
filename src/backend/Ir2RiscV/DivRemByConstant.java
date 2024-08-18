@@ -22,9 +22,6 @@ public class DivRemByConstant {
 
     private static final boolean doOpt = true;
 
-    private static int cnt = 0;
-
-    private static final String head = "rem_helper_temp_BB";
 
     private static final boolean Branch_Rem = true;
 
@@ -215,7 +212,7 @@ public class DivRemByConstant {
                     block.addInstLast(new R3(block, ans, src, new Imm(mask), R3.R3Type.andi));
                 }
             } else {
-                block.addInstLast(new ConstRemHelper(block, head + cnt++, src, ans, divisor));
+                block.addInstLast(new ConstRemHelper(block, src, ans, divisor));
                 if (divisor >= 2047) {
                     int x = log2(divisor);
                     block.addInstLast(new R3(block, ans, ans, new Imm(x), R3.R3Type.sraiw));

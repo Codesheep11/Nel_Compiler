@@ -22,6 +22,10 @@ public class RemoveCRH {
     // bge -> 继续的
     // j ->额外的,放addiw的
 
+    private static int cnt = 0;
+
+    private static String head = "rem_helper_BB";
+
     private static void runOnFunc(RiscvFunction function) {
         for (int i = 0; i < function.blocks.size(); i++) {
             RiscvBlock block = function.blocks.get(i);
@@ -29,7 +33,7 @@ public class RemoveCRH {
             while (iterator.hasNext()) {
                 RiscvInstruction r = iterator.next();
                 if (r instanceof ConstRemHelper c) {
-                    RiscvBlock newBlock = new RiscvBlock(function, c.name);
+                    RiscvBlock newBlock = new RiscvBlock(function, head + cnt++);
                     // 放addiw
                     // 放后面的
                     function.blocks.add(i + 1, newBlock);

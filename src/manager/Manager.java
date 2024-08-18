@@ -5,6 +5,7 @@ import backend.Ir2RiscV.CodeGen;
 import backend.Ir2RiscV.RemoveCRH;
 import backend.Opt.BackLoop.LoopConstLift;
 import backend.Opt.CalculateOpt;
+import backend.Opt.CfgOpt.BlockInline;
 import backend.Opt.CfgOpt.BlockReSort;
 import backend.Opt.CfgOpt.SimplifyCFG;
 import backend.Opt.GPpooling.GlobalFloat2roPool;
@@ -91,7 +92,7 @@ public class Manager {
         LocalValueNumbering.run(module);
         SCCP();
         DeadCodeEliminate();
-//        ConstLoopUnRoll.run(module);
+        ConstLoopUnRoll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
         ArrayPasses();
@@ -113,7 +114,7 @@ public class Manager {
         ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-//        LoopParallel.run(module);
+        LoopParallel.run(module);
         LCSSA.remove(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -122,7 +123,7 @@ public class Manager {
         LoopUnroll.run(module);
         LCSSA.remove(module);
         ArrayPasses();
-//        ConstLoopUnRoll.run(module);
+        ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
         FuncCache.run(module);
@@ -159,7 +160,7 @@ public class Manager {
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocator.run(riscvmodule);
         AfterRA.run(riscvmodule);
-////        BlockInline.run(riscvmodule);
+        BlockInline.run(riscvmodule);
         KnownBaseLSOpt.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
         RegAftExternCallLoadOpt.run(riscvmodule);
