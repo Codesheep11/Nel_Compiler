@@ -60,9 +60,10 @@ public final class Loop {
      *
      */
     public boolean defValue(Value value) {
-        if (value instanceof Constant.ConstantInt) return false;
-        if (value instanceof Constant.ConstantBool) return false;
-        if (value instanceof Constant.ConstantFloat) return false;
+        if (value instanceof Constant) return false;
+//        if (value instanceof Constant.ConstantInt) return false;
+//        if (value instanceof Constant.ConstantBool) return false;
+//        if (value instanceof Constant.ConstantFloat) return false;
         if (value instanceof Function.Argument) return false;
         if (!(value instanceof Instruction))
             throw new RuntimeException("defValue:" + value + "value is not an instruction\n");
@@ -109,6 +110,14 @@ public final class Loop {
             throw new RuntimeException("getExit: exits.size() != 1 size:" + exits.size() + "\n");
         }
         return exits.iterator().next();
+    }
+
+    public BasicBlock getBodyEntry() {
+        for (var block : header.getSucBlocks()) {
+            if (exits.contains(block)) continue;
+            return block;
+        }
+        throw new RuntimeException("getBodyEntry: no body entry\n");
     }
 
     public BasicBlock getPreHeader() {
