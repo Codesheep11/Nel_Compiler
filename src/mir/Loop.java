@@ -111,6 +111,14 @@ public final class Loop {
         return exits.iterator().next();
     }
 
+    public BasicBlock getBodyEntry() {
+        for (var block : header.getSucBlocks()) {
+            if (exits.contains(block)) continue;
+            return block;
+        }
+        throw new RuntimeException("getBodyEntry: no body entry\n");
+    }
+
     public BasicBlock getPreHeader() {
         if (enterings.size() != 1) {
             throw new RuntimeException("getPreHeader: enterings.size() != 1\n");
