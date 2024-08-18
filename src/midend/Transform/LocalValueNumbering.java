@@ -118,7 +118,7 @@ public class LocalValueNumbering {
                 }
                 yield inst.getInstType().name() + "," + operand1 + "," + operand2 + "," + operand3;
             }
-            case FNEG, LOAD -> inst.getInstType().name() + "," + inst.getOperands().get(0).getDescriptor();
+            case FNEG, LOAD, FABS -> inst.getInstType().name() + "," + inst.getOperands().get(0).getDescriptor();
             case Fcmp, Icmp -> {
                 Instruction.Condition compare = (Instruction.Condition) inst;
                 String operand1 = compare.getSrc1().getDescriptor();
