@@ -32,6 +32,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Module;
@@ -109,12 +110,13 @@ public class Manager {
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
+        LoopInterchange.run(module);
         LCSSA.remove(module);
         SCCP();
         ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-        LoopParallel.run(module);
+//        LoopParallel.run(module);
         LCSSA.remove(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -126,7 +128,7 @@ public class Manager {
         ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
-        FuncCache.run(module);
+//        FuncCache.run(module);
         FuncAnalysis.run(module);
         LoopBuildAndNormalize();
         GepLift.run(module);
@@ -139,7 +141,7 @@ public class Manager {
         /*--------------------------------------------------------------------------*/
         SCCP();
         DeadCodeEliminate();
-        AggressivePass();
+//        AggressivePass();
         SCCP();
         DeadCodeEliminate();
         FuncAnalysis.run(module);
