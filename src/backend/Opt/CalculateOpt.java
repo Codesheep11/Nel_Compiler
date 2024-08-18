@@ -29,7 +29,7 @@ public class CalculateOpt {
                 addZero2Mv(block);
                 addiLS2LSoffset(block);
                 One2ZeroBeq(block);
-                seqzBranchReverse(block);
+//                seqzBranchReverse(block);
             }
         }
         for (RiscvFunction function : riscvModule.funcList) {
@@ -49,17 +49,25 @@ public class CalculateOpt {
             RiscvInstruction ri = iterator.next();
             if (ri instanceof R2 r2 && r2.type == R2.R2Type.seqz) {
                 HashSet<RiscvInstruction> used = LivenessAnalyze.RegUse.get((Reg) r2.rd);
-                if (used.size() == 1) {
-                    RiscvInstruction next = used.iterator().next();
-                    if (next instanceof B b && ((Reg) b.rs2).phyReg == Reg.PhyReg.zero) {
-                        if (b.type == B.BType.bne) {
-                            iterator.remove();
-                            b.type = B.BType.beq;
-                            b.rs1 = r2.rs;
-                        } else if (b.type == B.BType.beq) {
-                            iterator.remove();
-                            b.type = B.BType.bne;
-                            b.rs1 = r2.rs;
+                boolean canReplace = true;
+                for (RiscvInstruction user : used) {
+                    if (!(user instanceof B b && ((Reg) b.rs2).phyReg == Reg.PhyReg.zero
+                            && (b.type == B.BType.bne || b.type == B.BType.beq))) {
+                        canReplace = false;
+                        break;
+                    }
+                }
+                if (canReplace) {
+                    iterator.remove();
+                    for (RiscvInstruction next : used) {
+                        if (next instanceof B b && ((Reg) b.rs2).phyReg == Reg.PhyReg.zero) {
+                            if (b.type == B.BType.bne) {
+                                b.type = B.BType.beq;
+                                b.rs1 = r2.rs;
+                            } else if (b.type == B.BType.beq) {
+                                b.type = B.BType.bne;
+                                b.rs1 = r2.rs;
+                            }
                         }
                     }
                 }
@@ -362,7 +370,7 @@ public class CalculateOpt {
         for (RiscvInstruction ri : block.riscvInstructions) {
             if (ri instanceof Li li) {
                 long value = li.getVal();
-                if (value <= Integer.MAX_VALUE && ((value >> 12) << 12) == value) {
+                if (value >= 0 && value <= Integer.MAX_VALUE && ((value >> 12) << 12) == value) {
                     needReplace.put(li, new Lui(block, li.reg, new Imm(li.getVal() >> 12)));
                 }
             }

@@ -2,7 +2,7 @@ package manager;
 
 import backend.Ir2RiscV.AfterRA;
 import backend.Ir2RiscV.CodeGen;
-import backend.Ir2RiscV.GepLift;
+import midend.Transform.Array.GepLift;
 import backend.Ir2RiscV.RemoveCRH;
 import backend.Opt.BackLoop.LoopConstLift;
 import backend.Opt.CalculateOpt;
@@ -10,7 +10,6 @@ import backend.Opt.CfgOpt.BlockInline;
 import backend.Opt.CfgOpt.BlockReSort;
 import backend.Opt.CfgOpt.SimplifyCFG;
 import backend.Opt.GPpooling.GlobalFloat2roPool;
-import backend.Opt.Liveness.LivelessDCE;
 import backend.Opt.MemoryOpt.KnownBaseLSOpt;
 import backend.Opt.MemoryOpt.RegAftExternCallLoadOpt;
 import backend.Opt.MemoryOpt.UnknownBaseLSOpt;
@@ -96,7 +95,7 @@ public class Manager {
         LocalValueNumbering.run(module);
         SCCP();
         DeadCodeEliminate();
-        ConstLoopUnRoll.run(module);
+//        ConstLoopUnRoll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
         ArrayPasses();
@@ -118,7 +117,7 @@ public class Manager {
         ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
-        LoopParallel.run(module);
+//        LoopParallel.run(module);
         LCSSA.remove(module);
         FuncAnalysis.run(module);
         DeadCodeEliminate();
@@ -127,7 +126,7 @@ public class Manager {
         LoopUnroll.run(module);
         LCSSA.remove(module);
         ArrayPasses();
-        ConstLoopUnRoll.run(module);
+//        ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
         FuncCache.run(module);
@@ -161,17 +160,17 @@ public class Manager {
         RiscvModule riscvmodule = codeGen.genCode(module);
         GlobalFloat2roPool.run(riscvmodule);
         LoopConstLift.run(riscvmodule);
-        RemoveCRH.run(riscvmodule);
         CalculateOpt.runBeforeRA(riscvmodule);
         Allocator.run(riscvmodule);
         AfterRA.run(riscvmodule);
-        BlockInline.run(riscvmodule);
+//        BlockInline.run(riscvmodule);
         KnownBaseLSOpt.run(riscvmodule);
         UnknownBaseLSOpt.run(riscvmodule);
         RegAftExternCallLoadOpt.run(riscvmodule);
         CalculateOpt.runAftBin(riscvmodule);
         BlockReSort.blockSort(riscvmodule);
         SimplifyCFG.run(riscvmodule);
+        RemoveCRH.run(riscvmodule);
         outputRiscv(arg.outPath, riscvmodule);
     }
 

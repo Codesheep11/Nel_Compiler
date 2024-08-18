@@ -6,22 +6,22 @@ import backend.riscv.RiscvBlock;
 import java.util.HashSet;
 
 public class ConstRemHelper extends RiscvInstruction {
-    public String name1;
-    public String name2;
+    public String name;
     public Reg src;
     public Reg reg;
+    public int imm;
 
     @Override
     public int getInstFlag() {
         return 0;
     }
 
-    public ConstRemHelper(RiscvBlock block, String name1, String name2, Reg src, Reg reg) {
+    public ConstRemHelper(RiscvBlock block, String name, Reg src, Reg reg, int imm) {
         super(block);
-        this.name1 = name1;
-        this.name2 = name2;
+        this.name = name;
         this.src = src;
         this.reg = reg;
+        this.imm = imm;
     }
 
     @Override
@@ -68,11 +68,11 @@ public class ConstRemHelper extends RiscvInstruction {
 
     @Override
     public RiscvInstruction myCopy(RiscvBlock newBlock) {
-        return new ConstRemHelper(block, name1, name2, src, reg);
+        return new ConstRemHelper(block, name, src, reg, imm);
     }
 
     @Override
     public String toString() {
-        return "\tcrh\t" + name1 + " " + name2 + " " + src + " " + reg;
+        return "\tcrh\t" + name + " " + src + " " + reg;
     }
 }
