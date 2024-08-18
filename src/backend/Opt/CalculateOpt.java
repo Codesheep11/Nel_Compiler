@@ -83,14 +83,11 @@ public class CalculateOpt {
                     if (((Imm) r1.rs2).getVal() == ((Imm) r2.rs2).getVal()) {
                         if (r1.rd.equals(r2.rs1)) {
                             int ans = -(1 << ((Imm) r2.rs2).getVal());
-                            var pair = new Pair<>(new Pair<>(r1, r2), new ArrayList<RiscvInstruction>());
-                            if (ans <= -2047) {
-                                pair.second.add(new Li(block, (Reg) r2.rd, new Imm(ans)));
-                                pair.second.add(new R3(block, r2.rd, r1.rs1, r2.rd, R3.R3Type.and));
-                            } else {
+                            if (ans >= -2047) {
+                                var pair = new Pair<>(new Pair<>(r1, r2), new ArrayList<RiscvInstruction>());
                                 pair.second.add(new R3(block, r2.rd, r1.rs1, new Imm(ans), R3.R3Type.andi));
+                                needRemove.add(pair);
                             }
-                            needRemove.add(pair);
                         }
                     }
                 }

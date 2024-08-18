@@ -204,7 +204,7 @@ public class DivRemByConstant {
 
     private static void SignRem(Reg ans, Reg src, int divisor, Value value, BasicBlock par) {
         I32RangeAnalysis.I32Range ir = AnalysisManager.getValueRange(value, par);
-        if (isPowerOf2(divisor) && (ir.getMinValue() >= 0 || (Branch_Rem && divisor < 2047))) {
+        if (isPowerOf2(divisor) && (ir.getMinValue() >= 0 || Branch_Rem)) {
             if (ir.getMinValue() >= 0) {
                 int mask = divisor - 1;
                 if (mask >= 2047) {
@@ -218,8 +218,9 @@ public class DivRemByConstant {
                 Reg reg = Reg.getVirtualReg(Reg.RegType.GPR, 32);
                 block.addInstLast(new ConstRemHelper(block, head + cnt++, src, reg, divisor));
                 if (divisor >= 2047) {
-                    block.addInstLast(new Li(block, ans, new Imm(-divisor)));
-                    block.addInstLast(new R3(block, ans, reg, ans, R3.R3Type.and));
+                    int x = log2(divisor);
+                    block.addInstLast(new R3(block, reg, src, new Imm(x), R3.R3Type.sraiw));
+                    block.addInstLast(new R3(block, ans, reg, new Imm(x), R3.R3Type.slliw));
                 } else {
                     block.addInstLast(new R3(block, ans, reg, new Imm(-divisor), R3.R3Type.andi));
                 }

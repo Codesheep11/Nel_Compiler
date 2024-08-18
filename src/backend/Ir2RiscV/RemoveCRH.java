@@ -18,6 +18,9 @@ public class RemoveCRH {
             runOnFunc(function);
         }
     }
+    // crh->
+    // bge -> 继续的
+    // j ->额外的,放addiw的
 
     private static void runOnFunc(RiscvFunction function) {
         for (int i = 0; i < function.blocks.size(); i++) {
