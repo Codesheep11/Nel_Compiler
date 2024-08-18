@@ -79,8 +79,7 @@ public class ArithReduce {
                 return;
             }
             //c2 + (c1 + x) + -> (c1 + c2) + x
-            if (inst.getOperand_2() instanceof Instruction.Add) {
-                Instruction.Add add = (Instruction.Add) inst.getOperand_2();
+            if (inst.getOperand_2() instanceof Instruction.Add add) {
                 if (add.getOperand_1() instanceof Constant) {
                     Instruction.Add newAdd = new Instruction.Add(inst.getParentBlock(), inst.getType(),
                             Constant.ConstantInt.get(((int) ((Constant) inst.getOperand_1()).getConstValue()) + ((int) (((Constant) add.getOperand_1()).getConstValue()))), add.getOperand_2());
@@ -116,8 +115,7 @@ public class ArithReduce {
             }
         }
         // a + (0 - b) -> a - b
-        if (inst.getOperand_2() instanceof Instruction.Sub) {
-            Instruction.Sub sub = (Instruction.Sub) inst.getOperand_2();
+        if (inst.getOperand_2() instanceof Instruction.Sub sub) {
             if (sub.getOperand_1() instanceof Constant && ((Constant) sub.getOperand_1()).isZero()) {
                 Instruction.Sub newSub = new Instruction.Sub(inst.getParentBlock(), inst.getType(),
                         inst.getOperand_1(), sub.getOperand_2());
@@ -265,8 +263,7 @@ public class ArithReduce {
                 delList.add(inst);
                 return;
             }
-            if (inst.getOperand_1() instanceof Instruction.Sub) {
-                Instruction.Sub sub = (Instruction.Sub) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.Sub sub) {
                 //(x - c1) - c2 -> x + -(c1 + c2)
                 if (sub.getOperand_2() instanceof Constant) {
                     Instruction.Add add = new Instruction.Add(inst.getParentBlock(), inst.getType(),
@@ -288,8 +285,7 @@ public class ArithReduce {
                 }
             }
             //(c1 + x) - c2 -> (c1 - c2) + x
-            if (inst.getOperand_1() instanceof Instruction.Add) {
-                Instruction.Add add = (Instruction.Add) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.Add add) {
                 if (add.getOperand_1() instanceof Constant) {
                     Instruction.Add newAdd = new Instruction.Add(inst.getParentBlock(), inst.getType(),
                             Constant.ConstantInt.get(((int) ((Constant) add.getOperand_1()).getConstValue()) - ((int) c2.getConstValue())),
@@ -316,8 +312,7 @@ public class ArithReduce {
             return;
         }
         //a - (0 - b) -> a + b
-        if (inst.getOperand_2() instanceof Instruction.Sub) {
-            Instruction.Sub sub = (Instruction.Sub) inst.getOperand_2();
+        if (inst.getOperand_2() instanceof Instruction.Sub sub) {
             if (sub.getOperand_1() instanceof Constant && ((Constant) sub.getOperand_1()).isZero()) {
                 Instruction.Add add = new Instruction.Add(inst.getParentBlock(), inst.getType(), inst.getOperand_1(), sub.getOperand_2());
 //                add.remove();
@@ -460,8 +455,7 @@ public class ArithReduce {
                 return;
             }
             // (c1 * x) / c2 -> (c1 / c2) * x if c1 % c2 == 0, 确保 c1 * x 只有一个作用点
-            if (inst.getOperand_1() instanceof Instruction.Mul) {
-                Instruction.Mul mul = (Instruction.Mul) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.Mul mul) {
                 if (mul.getUsers().size() == 1) {
                     if (mul.getOperand_1() instanceof Constant c1) {
                         if (((int) c1.getConstValue()) % ((int) constant.getConstValue()) == 0) {
@@ -477,8 +471,7 @@ public class ArithReduce {
                 }
             }
             // (0 - x) / c -> x / -c
-            if (inst.getOperand_1() instanceof Instruction.Sub) {
-                Instruction.Sub sub = (Instruction.Sub) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.Sub sub) {
                 if (sub.getOperand_1() instanceof Constant c && c.isZero()) {
                     Instruction.Div newDiv = new Instruction.Div(inst.getParentBlock(), inst.getType(),
                             sub.getOperand_2(), Constant.ConstantInt.get(-1 * (int) constant.getConstValue()));
@@ -496,8 +489,7 @@ public class ArithReduce {
             return;
         }
         //v / (0 - v) -> -1
-        if (inst.getOperand_2() instanceof Instruction.Sub) {
-            Instruction.Sub sub = (Instruction.Sub) inst.getOperand_2();
+        if (inst.getOperand_2() instanceof Instruction.Sub sub) {
             if (sub.getOperand_1() instanceof Constant c && c.isZero() && sub.getOperand_2().equals(inst.getOperand_1())) {
                 inst.replaceAllUsesWith(Constant.ConstantInt.get(-1));
                 delList.add(inst);
@@ -505,8 +497,7 @@ public class ArithReduce {
             }
         }
         //( 0 - v ) / v -> -1
-        if (inst.getOperand_1() instanceof Instruction.Sub) {
-            Instruction.Sub sub = (Instruction.Sub) inst.getOperand_1();
+        if (inst.getOperand_1() instanceof Instruction.Sub sub) {
             if (sub.getOperand_1() instanceof Constant c && c.isZero() && sub.getOperand_2().equals(inst.getOperand_2())) {
                 inst.replaceAllUsesWith(Constant.ConstantInt.get(-1));
                 delList.add(inst);
@@ -514,8 +505,7 @@ public class ArithReduce {
             }
         }
         //v / (v * a) or (a * v) -> 1 / a 确保 v * a 只有一个作用点
-        if (inst.getOperand_2() instanceof Instruction.Mul) {
-            Instruction.Mul mul = (Instruction.Mul) inst.getOperand_2();
+        if (inst.getOperand_2() instanceof Instruction.Mul mul) {
             if (mul.getUsers().size() == 1) {
                 if (mul.getOperand_1().equals(inst.getOperand_1())) {
                     Instruction.Div newDiv = new Instruction.Div(inst.getParentBlock(), inst.getType(),
@@ -536,8 +526,7 @@ public class ArithReduce {
             }
         }
         //v / a / b -> v / (a * b) 确保 a / b 只有一个作用点
-        if (inst.getOperand_1() instanceof Instruction.Div) {
-            Instruction.Div div = (Instruction.Div) inst.getOperand_1();
+        if (inst.getOperand_1() instanceof Instruction.Div div) {
             if (div.getUsers().size() == 1) {
                 Instruction.Mul mul = new Instruction.Mul(inst.getParentBlock(), inst.getType(),
                         div.getOperand_2(), inst.getOperand_2());
@@ -576,8 +565,7 @@ public class ArithReduce {
                 return;
             }
             // (c1 * x) % c2 -> 0 if c1 % c2 == 0
-            if (inst.getOperand_1() instanceof Instruction.Mul) {
-                Instruction.Mul mul = (Instruction.Mul) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.Mul mul) {
                 if (mul.getOperand_1() instanceof Constant c1) {
                     if (((int) c1.getConstValue()) % ((int) constant.getConstValue()) == 0) {
                         inst.replaceAllUsesWith(Constant.ConstantInt.get(0));
@@ -693,8 +681,7 @@ public class ArithReduce {
                 return;
             }
             //c2 + (c1 + x) + -> (c1 + c2) + x
-            if (inst.getOperand_2() instanceof Instruction.FAdd) {
-                Instruction.FAdd fadd = (Instruction.FAdd) inst.getOperand_2();
+            if (inst.getOperand_2() instanceof Instruction.FAdd fadd) {
                 if (fadd.getOperand_1() instanceof Constant) {
                     Instruction.FAdd newFAdd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
                             new Constant.ConstantFloat(((float) ((Constant) inst.getOperand_1()).getConstValue())
@@ -731,8 +718,7 @@ public class ArithReduce {
             }
         }
         // a + (0 - b) -> a - b
-        if (inst.getOperand_2() instanceof Instruction.FSub) {
-            Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_2();
+        if (inst.getOperand_2() instanceof Instruction.FSub fsub) {
             if (fsub.getOperand_1() instanceof Constant && ((Constant) fsub.getOperand_1()).isZero()) {
                 Instruction.FSub newFSub = new Instruction.FSub(inst.getParentBlock(), inst.getType(),
                         inst.getOperand_1(), fsub.getOperand_2());
@@ -882,8 +868,7 @@ public class ArithReduce {
                 delList.add(inst);
                 return;
             }
-            if (inst.getOperand_1() instanceof Instruction.FSub) {
-                Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.FSub fsub) {
                 //(x - c1) - c2 -> x + -(c1 + c2)
                 if (fsub.getOperand_2() instanceof Constant) {
                     Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
@@ -905,8 +890,7 @@ public class ArithReduce {
                 }
             }
             //(c1 + x) - c2 -> (c1 - c2) + x
-            if (inst.getOperand_1() instanceof Instruction.FAdd) {
-                Instruction.FAdd fadd = (Instruction.FAdd) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.FAdd fadd) {
                 if (fadd.getOperand_1() instanceof Constant) {
                     Instruction.FAdd newFAdd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(),
                             new Constant.ConstantFloat(((float) ((Constant) fadd.getOperand_1()).getConstValue()) - ((float) c2.getConstValue())),
@@ -933,8 +917,7 @@ public class ArithReduce {
             return;
         }
         //a - (0 - b) -> a + b
-        if (inst.getOperand_2() instanceof Instruction.FSub) {
-            Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_2();
+        if (inst.getOperand_2() instanceof Instruction.FSub fsub) {
             if (fsub.getOperand_1() instanceof Constant c && c.isZero()) {
                 Instruction.FAdd fadd = new Instruction.FAdd(inst.getParentBlock(), inst.getType(), inst.getOperand_1(), fsub.getOperand_2());
 //                add.remove();
@@ -1077,8 +1060,7 @@ public class ArithReduce {
                 return;
             }
             // (c1 * x) / c2 -> 0 if c1 % c2 == 0
-            if (inst.getOperand_1() instanceof Instruction.FMul) {
-                Instruction.FMul mul = (Instruction.FMul) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.FMul mul) {
                 if (mul.getUsers().size() == 1) {
                     if (mul.getOperand_1() instanceof Constant c1) {
                         if (((float) c1.getConstValue()) % ((float) constant.getConstValue()) == 0) {
@@ -1090,8 +1072,7 @@ public class ArithReduce {
                 }
             }
             // (0 - x) / c -> x / -c
-            if (inst.getOperand_1() instanceof Instruction.FSub) {
-                Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_1();
+            if (inst.getOperand_1() instanceof Instruction.FSub fsub) {
                 if (fsub.getOperand_1() instanceof Constant c && c.isZero()) {
                     Instruction.FDiv newFDiv = new Instruction.FDiv(inst.getParentBlock(), inst.getType(),
                             fsub.getOperand_2(), new Constant.ConstantFloat(-1 * (float) constant.getConstValue()));
@@ -1109,8 +1090,7 @@ public class ArithReduce {
             return;
         }
         //v / (0 - v) -> -1
-        if (inst.getOperand_2() instanceof Instruction.FSub) {
-            Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_2();
+        if (inst.getOperand_2() instanceof Instruction.FSub fsub) {
             if (fsub.getOperand_1() instanceof Constant c && c.isZero() && fsub.getOperand_2().equals(inst.getOperand_1())) {
                 inst.replaceAllUsesWith(new Constant.ConstantFloat(-1));
                 delList.add(inst);
@@ -1118,8 +1098,7 @@ public class ArithReduce {
             }
         }
         //( 0 - v ) / v -> -1
-        if (inst.getOperand_1() instanceof Instruction.FSub) {
-            Instruction.FSub fsub = (Instruction.FSub) inst.getOperand_1();
+        if (inst.getOperand_1() instanceof Instruction.FSub fsub) {
             if (fsub.getOperand_1() instanceof Constant c && c.isZero() && fsub.getOperand_2().equals(inst.getOperand_2())) {
                 inst.replaceAllUsesWith(new Constant.ConstantFloat(-1));
                 delList.add(inst);
@@ -1127,8 +1106,7 @@ public class ArithReduce {
             }
         }
         //v / (v * a) or (a * v) -> 1 / a 确保 v * a 只有一个作用点
-        if (inst.getOperand_2() instanceof Instruction.FMul) {
-            Instruction.FMul mul = (Instruction.FMul) inst.getOperand_2();
+        if (inst.getOperand_2() instanceof Instruction.FMul mul) {
             if (mul.getUsers().size() == 1) {
                 if (mul.getOperand_1().equals(inst.getOperand_1())) {
                     Instruction.FDiv newFDiv = new Instruction.FDiv(inst.getParentBlock(), inst.getType(),
@@ -1149,8 +1127,7 @@ public class ArithReduce {
             }
         }
         //v / a / b -> v / (a * b) 确保 a / b 只有一个作用点
-        if (inst.getOperand_1() instanceof Instruction.FDiv) {
-            Instruction.FDiv div = (Instruction.FDiv) inst.getOperand_1();
+        if (inst.getOperand_1() instanceof Instruction.FDiv div) {
             if (div.getUsers().size() == 1) {
                 Instruction.FMul mul = new Instruction.FMul(inst.getParentBlock(), inst.getType(),
                         div.getOperand_2(), inst.getOperand_2());

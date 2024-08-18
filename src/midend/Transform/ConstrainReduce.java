@@ -76,8 +76,8 @@ public class ConstrainReduce {
         public Result checkRelation(int a, int b, Instruction.Icmp.CondCode condCode) {
             return switch (condCode) {
                 case EQ -> {
-                     if (eqSet[a].get(b)) yield Result.TRUE;
-                     if (ltSet[a].get(b) || ltSet[b].get(a)) yield Result.FALSE;
+                    if (eqSet[a].get(b)) yield Result.TRUE;
+                    if (ltSet[a].get(b) || ltSet[b].get(a)) yield Result.FALSE;
                     yield Result.UNKNOWN;
                 }
                 case SLT -> {
@@ -107,6 +107,19 @@ public class ConstrainReduce {
                 }
                 default -> Result.UNKNOWN;
             };
+        }
+
+        public void localInfer() {
+            for (int i = 0; i < idMap.cnt; ++i) {
+                for (int j = i + 1; j < idMap.cnt; ++j) {
+                    if (eqSet[i].get(j)) {
+                        ltSet[i].or(ltSet[j]);
+                        ltSet[j].or(ltSet[i]);
+                        leqSet[i].or(leqSet[j]);
+                        leqSet[j].or(leqSet[i]);
+                    }
+                }
+            }
         }
 
         public void floydSpread() {
@@ -143,7 +156,7 @@ public class ConstrainReduce {
     private static void runOnFunction(Function func) {
         cfginfo = AnalysisManager.getCFG(func);
         dginfo = AnalysisManager.getDG(func);
-
+        AnalysisManager.refreshI32Range(func);
         idMap = new IdMap();
         constrainMap = new HashMap<>();
         runOnBlock(func.getEntry(), new Constrain());
@@ -225,6 +238,7 @@ public class ConstrainReduce {
     private static void reduceConstrain(BasicBlock block) {
         Constrain constrain = constrainMap.get(block);
         constrain.floydSpread();
+        constrain.localInfer();
 
         if (block.getTerminator() instanceof Instruction.Branch branch) {
             Value cond = branch.getCond();

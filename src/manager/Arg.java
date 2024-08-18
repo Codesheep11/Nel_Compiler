@@ -31,8 +31,7 @@ public class Arg {
             }
         }
         try {
-            Arg arg = new Arg(src, out, opt, LLVM);
-            return arg;
+            return new Arg(src, out, opt, LLVM);
         } catch (FileNotFoundException e) {
             printHelp();
             throw new RuntimeException(e);

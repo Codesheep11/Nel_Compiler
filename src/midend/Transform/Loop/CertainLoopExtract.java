@@ -3,7 +3,6 @@ package midend.Transform.Loop;
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.MemDepAnalysis;
 import midend.Analysis.PointerBaseAnalysis;
-import midend.Pass;
 import midend.Transform.DCE.SimplifyCFGPass;
 import mir.Module;
 import mir.*;

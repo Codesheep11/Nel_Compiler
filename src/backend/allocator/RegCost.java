@@ -20,7 +20,7 @@ public class RegCost {
     public static ArrayList<Reg> getSpillArray() {
         ArrayList<Reg> regs = new ArrayList<>(RegCostMap.keySet());
         regs.sort(Comparator.comparingInt(RegCostMap::get));
-        if (regs.size() > 20) regs = new ArrayList<>(regs.subList(0, regs.size() / 3));
+        if (regs.size() > 20) regs = new ArrayList<>(regs.subList(0, regs.size() / 2));
         return regs;
     }
 
