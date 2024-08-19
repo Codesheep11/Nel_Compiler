@@ -5,11 +5,9 @@ import midend.Analysis.result.SCEVinfo;
 import midend.Transform.DCE.DeadLoopEliminate;
 import midend.Transform.DCE.SimplifyCFGPass;
 import midend.Transform.LocalValueNumbering;
-import midend.Util.Print;
 import mir.*;
 import midend.Analysis.AnalysisManager;
 import mir.Module;
-import utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
