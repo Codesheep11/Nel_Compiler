@@ -135,6 +135,14 @@ public class FuncAnalysis {
                     }
                     else if (isSideEffect(store.getAddr(), function)) hasSideEffect = true;
                 }
+                else if (inst instanceof Instruction.AtomicAdd atmoicadd) {
+                    Value val = GlobalVarLocalize.isGlobalAddr(atmoicadd.getPtr());
+                    if (val != null) {
+                        funcInfo.usedGlobalVariables.add((GlobalVariable) val);
+                        hasMemoryWrite = true;
+                    }
+                    else if (isSideEffect(atmoicadd.getPtr(), function)) hasSideEffect = true;
+                }
                 else if (inst instanceof Instruction.Call call) {
                     Function callee = call.getDestFunction();
                     if (Objects.equals(callee.getName(), function.getName())) {

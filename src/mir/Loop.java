@@ -57,7 +57,6 @@ public final class Loop {
 
     /**
      * 判断value是否在循环中被定义
-     *
      */
     public boolean defValue(Value value) {
         if (value instanceof Constant) return false;
