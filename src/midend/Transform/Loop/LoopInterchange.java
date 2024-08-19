@@ -12,19 +12,15 @@ import mir.Module;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Optional;
 
 public class LoopInterchange {
 
     private static SCEVinfo scevInfo;
-    private static int outer_init;
-    @SuppressWarnings("FieldCanBeLocal")
-    private static int outer_step;
     private static Instruction.Phi outer_indvar;
     private static Instruction.Icmp outer_indvar_cmp;
     private static Instruction outer_inc;
-    private static int inner_init;
-    @SuppressWarnings("FieldCanBeLocal")
-    private static int inner_step;
+
     private static Instruction.Phi inner_indvar;
     private static Instruction.Icmp inner_indvar_cmp;
     private static Instruction inner_inc;
@@ -75,38 +71,32 @@ public class LoopInterchange {
         if (!(outerTer instanceof Instruction.Branch br)) return false;
         Value outerCond = br.getCond();
         if (!(outerCond instanceof Instruction.Icmp icmp)) return false;
-        if (!(icmp.getSrc2() instanceof Constant.ConstantInt) && scevInfo.contains(icmp.getSrc2()))
+//        if (!(icmp.getSrc2() instanceof Constant.ConstantInt) && scevInfo.contains(icmp.getSrc2()))
+        if (!loop.defValue(icmp.getSrc1()))
             icmp.swap();
         if (!scevInfo.contains(icmp.getSrc1()))
-            return false;
-        if (!scevInfo.query(icmp.getSrc1()).isNotNegative())
             return false;
         if (!(icmp.getSrc1() instanceof Instruction))
             return false;
         outer_indvar_cmp = icmp;
         if (!(icmp.getSrc1() instanceof Instruction.Phi)) return false;
         outer_indvar = (Instruction.Phi) icmp.getSrc1();
-        outer_init = scevInfo.query(icmp.getSrc1()).getInit();
-        outer_step = scevInfo.query(icmp.getSrc1()).getStep();
         outer_inc = (Instruction) outer_indvar.getOptionalValue(loop.getLatch());
 
         Instruction innerTer = child.header.getTerminator();
         if (!(innerTer instanceof Instruction.Branch innerBr)) return false;
         Value innerBrCond = innerBr.getCond();
         if (!(innerBrCond instanceof Instruction.Icmp innerIcmp)) return false;
-        if (!(innerIcmp.getSrc2() instanceof Constant.ConstantInt) && scevInfo.contains(innerIcmp.getSrc2()))
+//        if (!(innerIcmp.getSrc2() instanceof Constant.ConstantInt) && scevInfo.contains(innerIcmp.getSrc2()))
+        if (!child.defValue(innerIcmp.getSrc1()))
             innerIcmp.swap();
         if (!scevInfo.contains(innerIcmp.getSrc1()))
-            return false;
-        if (!scevInfo.query(innerIcmp.getSrc1()).isNotNegative())
             return false;
         if (!(innerIcmp.getSrc1() instanceof Instruction))
             return false;
         inner_indvar_cmp = innerIcmp;
         if (!(innerIcmp.getSrc1() instanceof Instruction.Phi)) return false;
         inner_indvar = (Instruction.Phi) innerIcmp.getSrc1();
-        inner_init = scevInfo.query(innerIcmp.getSrc1()).getInit();
-        inner_step = scevInfo.query(innerIcmp.getSrc1()).getStep();
         inner_inc = (Instruction) inner_indvar.getOptionalValue(child.getLatch());
 
         BasicBlock innerExit = child.getExit();
@@ -126,7 +116,11 @@ public class LoopInterchange {
                     if (ptr instanceof Instruction.GetElementPtr gep) {
                         dfsEval(gep.getIdx(), 0, loop);
                     }
-                    if (isComplex) return false;
+                    if (isComplex) {
+//                        System.out.println(loop.header.getLabel());
+//                        System.out.println(inst);
+                        return false;
+                    }
                 } else if (inst instanceof Instruction.Store store) {
                     Value ptr = store.getAddr();
                     Value baseAddr = PointerBaseAnalysis.getBaseOrNull(ptr);
@@ -134,8 +128,15 @@ public class LoopInterchange {
                     if (ptr instanceof Instruction.GetElementPtr gep) {
                         dfsEval(gep.getIdx(), 0, loop);
                     }
-                    if (isComplex) return false;
+
+                    if (isComplex) {
+//                        System.out.println(loop.header.getLabel());
+//                        System.out.println(inst);
+                        return false;
+                    }
                 } else if (!inst.isNoSideEffect()) {
+//                    System.out.println(loop.header.getLabel());
+//                    System.out.println(inst);
                     return false;
                 }
             }
@@ -144,32 +145,43 @@ public class LoopInterchange {
 //        System.out.println("outer_cost: " + outer_cost + " inner_cost: " + inner_cost);
         if (inner_cost <= outer_cost) return false;
 
-        for (Value key : loadStoreMap.keySet()) {
-            if (loadStoreMap.get(key) == 3) {
-                Instruction.Load load = null;
-                for (BasicBlock block : loop.getAllBlocks()) {
-                    for (Instruction inst : block.getInstructions()) {
-                        if (inst instanceof Instruction.Load) {
-                            Value base = PointerBaseAnalysis.getBaseOrNull(((Instruction.Load) inst).getAddr());
-                            if (base == key) {
-                                if (load != null) return false;
-                                load = (Instruction.Load) inst;
-                            }
-                        } else if (inst instanceof Instruction.Store store) {
-                            Value base = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
-                            if (base == key) {
-                                if (load == null) return false;
-                                load = null;
-                            }
-                        }
-                    }
-                }
-                if (load != null) return false;
-            }
+//        for (Value key : loadStoreMap.keySet()) {
+//            if (loadStoreMap.get(key) == 3) {
+//                Instruction.Load load = null;
+//                for (BasicBlock block : loop.getAllBlocks()) {
+//                    for (Instruction inst : block.getInstructions()) {
+//                        if (inst instanceof Instruction.Load) {
+//                            Value base = PointerBaseAnalysis.getBaseOrNull(((Instruction.Load) inst).getAddr());
+//                            if (base == key) {
+//                                if (load != null) return false;
+//                                load = (Instruction.Load) inst;
+//                            }
+//                        } else if (inst instanceof Instruction.Store store) {
+//                            Value base = PointerBaseAnalysis.getBaseOrNull(store.getAddr());
+//                            if (base == key) {
+//                                if (load == null) return false;
+//                                load = null;
+//                            }
+//                        }
+//                    }
+//                }
+//                if (load != null) return false;
+//            }
+//        }
+        if (!downOuterInst(loop, child)) {
+//            System.out.println("downOuterInst");
+            return false;
         }
-        if (!downOuterInst(loop, child)) return false;
-        if (!embedOuterInst(loop, child)) return false;
+        if (!embedOuterInst(loop, child)) {
+//            System.out.println("embedOuterInst");
+            return false;
+        }
         // 判断outer和inner为完美嵌套循环
+        BasicBlock outerBodyEntry = loop.getBodyEntry();
+        for (Instruction inst : outerBodyEntry.getInstructions()) {
+            if (inst instanceof Instruction.Terminator) break;
+            return false;
+        }
         BasicBlock innerExitBlock = child.getExit();
         if (innerExitBlock != loop.getLatch()) return false;
         for (Instruction inst : innerExitBlock.getInstructions()) {
@@ -197,7 +209,7 @@ public class LoopInterchange {
         } else if (val instanceof Instruction.Phi phi) {
             if (phi == outer_indvar) outer_cost += cost;
             else if (phi == inner_indvar) inner_cost += cost;
-            else isComplex = true;
+            else if (!scevInfo.contains(phi)) isComplex = true;
         } else {
             isComplex = true;
         }
@@ -215,7 +227,14 @@ public class LoopInterchange {
             Instruction firstInst = innerBodyEntry.getFirstInst();
             for (Instruction inst : outerBodyEntry.getInstructionsSnap()) {
                 if (inst instanceof Instruction.Terminator) break;
-                // 需要判断inst没有副作用？
+                if (!inst.isNoSideEffect()) return false;
+                boolean notMove = false;
+                for (Use use : inst.getUses()) {
+                    if (use.getUser() instanceof Instruction _inst) {
+                        if (_inst.getParentBlock() == child.header) notMove = true;
+                    }
+                }
+                if (notMove) continue;
                 inst.remove();
                 firstInst.addPrev(inst);
             }
@@ -235,12 +254,17 @@ public class LoopInterchange {
         BasicBlock block = child.getExit();
         for (Instruction.Phi phi : block.getPhiInstructions()) {
             if (phi.isLCSSA) {
+                Addr = null;
+                Load = null;
                 if (!isOnlySum(phi.getOptionalValue(child.header), child))
                     return false;
                 if (phi.getUsers().size() > 1) return false;
                 User user = phi.getUsers().iterator().next();
                 if (user instanceof Instruction.Store store) {
                     if (store.getValue() != phi) {
+                        return false;
+                    }
+                    if (Addr != null && !store.getAddr().equals(Addr)) {
                         return false;
                     }
                 } else return false;
@@ -251,6 +275,8 @@ public class LoopInterchange {
                     inst.remove();
                     onlySum_add.addPrev(inst);
                 }
+                if (Load != null)
+                    Load.delete();
                 Instruction.Load ld = new Instruction.Load(onlySum_add.getParentBlock(), store.getAddr());
                 ld.remove();
                 onlySum_add.addPrev(ld);
@@ -259,26 +285,41 @@ public class LoopInterchange {
                 onlySum_add.addNext(store);
                 store.replaceUseOfWith(phi, onlySum_add);
                 phi.delete();
-            }
-            else return false;
+            } else return false;
         }
         return true;
     }
 
 
     private static Instruction onlySum_add;
+    private static Value Load;
+    private static Value Addr;
+//    private static Value baseAddr;
+//    private static Value offset;
+
     /**
      * 判断phi是否为一条简单的累加指令
      */
     private static boolean isOnlySum(Value inst, Loop loop) {
         if (!(inst instanceof Instruction.Phi phi)) return false;
-        // TODO: 可以加强 不必非得是0
-        if (!phi.getOptionalValue(loop.getPreHeader()).equals(Constant.ConstantInt.get(0))) return false;
+
+        Value initPhi = phi.getOptionalValue(loop.getPreHeader());
+        if (!initPhi.equals(Constant.ConstantInt.get(0))) {
+            if (initPhi instanceof Instruction.Load load) {
+                Load = load;
+                Addr = load.getAddr();
+//                return false;
+            } else
+                return false;
+        }
         if (phi.getUsers().size() > 2) return false;
         Value val = phi.getOptionalValue(loop.getLatch());
         if (val instanceof Instruction.Add add) {
             if (!(add.getOperand_1() == phi) && !(add.getOperand_2() == phi)) return false;
             onlySum_add = add;
+        } else if (val instanceof Instruction.Sub sub) {
+            if (!(sub.getOperand_1() == phi)) return false;
+            onlySum_add = sub;
         } else return false;
         return true;
     }
@@ -288,7 +329,7 @@ public class LoopInterchange {
         if (!loop.defValue(val)) return true;
         if (val instanceof Instruction inst) {
             if (inst.getParentBlock() == block) {
-                if (inst instanceof Instruction.Phi phi){
+                if (inst instanceof Instruction.Phi phi) {
                     return phi.isLCSSA;
                 }
                 ret.add(inst);
