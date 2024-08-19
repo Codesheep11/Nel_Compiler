@@ -166,6 +166,10 @@ public class BasicBlock extends Value {
         return loop.getDepth();
     }
 
+    public boolean isLoopHeader() {
+        return loop != null && loop.header == this;
+    }
+
     public boolean isTerminated() {
         if (instructions.isEmpty()) {
             return false;

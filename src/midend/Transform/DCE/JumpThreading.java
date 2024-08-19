@@ -2,31 +2,36 @@ package midend.Transform.DCE;
 
 import midend.Analysis.AnalysisManager;
 import midend.Analysis.I32RangeAnalysis;
+import midend.Analysis.result.CFGinfo;
 import midend.Util.CloneInfo;
 import mir.Module;
 import mir.*;
 import midend.Analysis.result.DGinfo;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 import static manager.Manager.module;
 
 /**
- * 此过程执行“跳跃线程”，查看具有多个前任和多个后继的块。
+ * 此过程执行 "跳跃线程" ,查看具有多个前任和多个后继的块。
  * <p>
- * 如果可以证明块的一个或多个前任总是跳转到后任之一，我们通过复制该块的内容将边从前任转发到后任。
+ * 如果可以证明块的一个或多个前任总是跳转到后任之一, 我们通过复制该块的内容将边从前任转发到后任。
  * <p>
- * 发生这种情况的一个例子是如下代码：
+ * 发生这种情况的一个例子是如下代码:
  * if () { ... X = 4; } if (X < 3) { ... }
  **/
-public class JumpThread {
+public class JumpThreading {
 
     private static I32RangeAnalysis irAnalyzer;
 
     private static final ArrayList<BasicBlock> workList = new ArrayList<>();
 
     private static final int LIMIT_BLOCK_SIZE = 1;
+
+    private static CFGinfo cfginfo;
 
     public static void run(Module module) {
         AnalysisManager.runI32Range(module);
@@ -37,6 +42,8 @@ public class JumpThread {
     }
 
     public static void runOnFunc(Function function) {
+        AnalysisManager.refreshCFG(function);
+        cfginfo = AnalysisManager.getCFG(function);
         irAnalyzer = AnalysisManager.getI32Range(function);
         workList.clear();
         //考虑迭代
@@ -45,6 +52,21 @@ public class JumpThread {
             BasicBlock block = workList.remove(0);
             if (!block.getInstructions().isEmpty())
                 runOnBlock(block);
+        }
+    }
+
+    private static void collectBlock(Function function) {
+        ArrayList<BasicBlock> blocks = new ArrayList<>();
+
+        for (BasicBlock block : function.getBlocks()) {
+            if (block.getInstructions().size() > LIMIT_BLOCK_SIZE) continue;
+            if (cfginfo.getPredBlocks(block).size() < 2) continue;
+            if (cfginfo.getSuccBlocks(block).size() < 2) continue;
+            if (block.isLoopHeader()) continue;
+            Instruction.Terminator term = block.getTerminator();
+            if (!(term instanceof Instruction.Branch branch)) continue;
+            if (!(branch.getCond() instanceof Instruction.Icmp icmp)) continue;
+            blocks.add(block);
         }
     }
 
