@@ -5,9 +5,7 @@ import backend.operand.Address;
 import backend.operand.Reg;
 import backend.riscv.RiscvBlock;
 import backend.riscv.RiscvFunction;
-import backend.riscv.RiscvInstruction.LS;
-import backend.riscv.RiscvInstruction.R2;
-import backend.riscv.RiscvInstruction.RiscvInstruction;
+import backend.riscv.RiscvInstruction.*;
 import midend.Analysis.AlignmentAnalysis;
 
 import java.util.*;
@@ -120,7 +118,6 @@ public class GPRallocator {
         ArrayList<Reg> spills = RegCost.getSpillArray();
         ArrayList<Reg> newNodes = new ArrayList<>();
         for (Reg reg : spills) {
-//            System.out.println("spill: " + reg);
             ArrayList<RiscvInstruction> contains = new ArrayList<>(RegUse.get(reg));
             ArrayList<RiscvInstruction> uses = new ArrayList<>();
             ArrayList<RiscvInstruction> defs = new ArrayList<>();
@@ -131,42 +128,60 @@ public class GPRallocator {
                 else if (Def.get(ins).contains(reg)) defs.add(ins);
                 else if (Use.get(ins).contains(reg)) uses.add(ins);
             }
-            for (RiscvInstruction ud : uds) {
-                Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
-                newNodes.add(tmp);
-                Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                RiscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                RiscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                ud.replaceUseReg(reg, tmp);
-                ud.block.insertInstAfter(store, ud);
-                ud.block.insertInstBefore(load, ud);
+            if (defs.size() == 1 &&
+                    defs.get(0) instanceof Li ||
+                    defs.get(0) instanceof La ||
+                    defs.get(0) instanceof Lui)
+            {
+                RiscvInstruction def = defs.get(0);
+                def.remove();
+                for (RiscvInstruction use : uses) {
+                    Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                    newNodes.add(tmp);
+                    RiscvInstruction defCopy = def.myCopy(use.block);
+                    defCopy.replaceUseReg(reg, tmp);
+                    use.replaceUseReg(reg, tmp);
+                    use.block.insertInstBefore(defCopy, use);
+                }
             }
-            for (RiscvInstruction def : defs) {
-                //如果定义点是lw或者ld指令，则不需要sw保护？
-                //其实应该是溢出点不能重复保护，之后需要对寄存器增加cost属性来进行限制
-                //错误的，定义点也可能会溢出，比如call多个load或者多个arg
-                //非 ssa 在使用点使用新的虚拟寄存器
+            else {
+                for (RiscvInstruction ud : uds) {
+                    Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                    newNodes.add(tmp);
+                    Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                    StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
+                    RiscvInstruction store = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                    RiscvInstruction load = new LS(ud.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                    ud.replaceUseReg(reg, tmp);
+                    ud.block.insertInstAfter(store, ud);
+                    ud.block.insertInstBefore(load, ud);
+                }
+                for (RiscvInstruction def : defs) {
+                    //如果定义点是lw或者ld指令，则不需要sw保护？
+                    //其实应该是溢出点不能重复保护，之后需要对寄存器增加cost属性来进行限制
+                    //错误的，定义点也可能会溢出，比如call多个load或者多个arg
+                    //非 ssa 在使用点使用新的虚拟寄存器
 //                System.out.println("def: " + def);
-                RiscvInstruction store;
-                Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
-                newNodes.add(tmp);
-                Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                def.replaceUseReg(reg, tmp);
-                def.block.insertInstAfter(store, def);
-            }
-            for (RiscvInstruction use : uses) {
-                //在使用点使用新的虚拟寄存器
-                RiscvInstruction load;
-                Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
-                newNodes.add(tmp);
-                Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
-                StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
-                load = new LS(use.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true,AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
-                use.replaceUseReg(reg, tmp);
-                use.block.insertInstBefore(load, use);
+                    RiscvInstruction store;
+                    Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                    newNodes.add(tmp);
+                    Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                    StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
+                    store = new LS(def.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.sw : LS.LSType.sd, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                    def.replaceUseReg(reg, tmp);
+                    def.block.insertInstAfter(store, def);
+                }
+                for (RiscvInstruction use : uses) {
+                    //在使用点使用新的虚拟寄存器
+                    RiscvInstruction load;
+                    Reg tmp = Reg.getVirtualReg(reg.regType, reg.bits);
+                    newNodes.add(tmp);
+                    Address offset = StackManager.getInstance().getRegOffset(curFunc.name, reg.toString(), reg.bits / 8);
+                    StackManager.getInstance().blingRegOffset(curFunc.name, tmp.toString(), reg.bits / 8, offset);
+                    load = new LS(use.block, tmp, sp, offset, reg.bits == 32 ? LS.LSType.lw : LS.LSType.ld, true, AlignmentAnalysis.AlignType.ALIGN_BYTE_8);
+                    use.replaceUseReg(reg, tmp);
+                    use.block.insertInstBefore(load, use);
+                }
             }
             DeleteNode(reg, conflictGraph);
         }
@@ -488,7 +503,6 @@ public class GPRallocator {
 
     /**
      * 判断两个节点是否可以合并
-     *
      */
     public static boolean CanBeMerged(Reg r1, Reg r2) {
         if (r1.equals(r2)) return true;
@@ -582,7 +596,6 @@ public class GPRallocator {
 
     /**
      * 向冲突图中添加冲突
-     *
      */
     private static void addConflict(Reg reg1, Reg reg2) {
         if (reg1.equals(reg2)) return;
