@@ -195,7 +195,7 @@ public class LoadEliminate {
                 ret = gep.getBase();
             }
             if (ret instanceof Instruction.BitCast) {
-                Instruction.BitCast bitCast = (Instruction.BitCast) inst;
+                Instruction.BitCast bitCast = (Instruction.BitCast) ret;
                 ret = bitCast.getSrc();
             }
         }

@@ -20,6 +20,8 @@ public class MemDepAnalysis {
         if (base == null) return false;
         HashSet<BasicBlock> visitedA = new HashSet<>();
         HashSet<BasicBlock> visitedB = new HashSet<>();
+        visitedA.add(A);
+        visitedB.add(B);
         dfs(A, visitedA, false);
         dfs(B, visitedB, true);
         visitedA.retainAll(visitedB);
@@ -31,7 +33,8 @@ public class MemDepAnalysis {
                     if (storeBase == null || storeBase.equals(base)) {
                         return false;
                     }
-                } else if (instruction instanceof Instruction.Call call) {
+                }
+                else if (instruction instanceof Instruction.Call call) {
                     FuncInfo funcInfo = AnalysisManager.getFuncInfo(call.getDestFunction());
                     if (funcInfo.hasMemoryWrite || funcInfo.hasSideEffect) {
                         return false;

@@ -97,7 +97,7 @@ public class FABSPass {
                 }
             }
             if (!isABSPhi) continue;
-            System.out.println("ABSPhi run!");
+//            System.out.println("ABSPhi run!");
             delPhiList.add(phi);
             Instruction.FAbs fAbs = new Instruction.FAbs(endBlock, LHS.getType(), LHS);
             fAbs.remove();

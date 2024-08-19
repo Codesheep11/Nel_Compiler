@@ -11,6 +11,7 @@ public class GepFold {
     public static void run(Module module) {
         for (Function func : module.getFuncSet()) {
             if (func.isExternal()) continue;
+            AnalysisManager.refreshCFG(func);
             AnalysisManager.refreshDG(func);
             ArrayList<Instruction.GetElementPtr> geps = new ArrayList<>();
             for (BasicBlock block : func.getDomTreeLayerSort()) {
