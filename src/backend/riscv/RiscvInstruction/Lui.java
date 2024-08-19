@@ -17,6 +17,7 @@ public class Lui extends RiscvInstruction {
         super(block);
         this.imm = value;
         this.reg = reg;
+        this.reg.temp = true;
     }
 
     @Override

@@ -19,6 +19,7 @@ public class Li extends RiscvInstruction {
         super(block);
         this.imm = value;
         this.reg = reg;
+        this.reg.temp = true;
     }
 
     @Override
@@ -79,8 +80,10 @@ public class Li extends RiscvInstruction {
     public long getVal() {
         if (imm instanceof Address) {
             return -((Address) imm).getOffset();
-        } else if (imm instanceof Imm) {
+        }
+        else if (imm instanceof Imm) {
             return ((Imm) imm).getVal();
-        } else throw new RuntimeException("wrong type");
+        }
+        else throw new RuntimeException("wrong type");
     }
 }
