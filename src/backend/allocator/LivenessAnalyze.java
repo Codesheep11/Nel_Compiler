@@ -123,9 +123,13 @@ public class LivenessAnalyze {
                         In.put(ins, inSet);
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException("Block Size: " + function.blocks.size() +
+                    String errMessage = "Block Size: " + function.blocks.size() +
                             " Inst Size: " + instSize +
-                            " REG Size: " + Reg.Cnt);
+                            " REG Size: " + Reg.Cnt;
+                    if (topoSort.size() != function.blocks.size()) {
+                        errMessage += "& TopoSort Size Error";
+                    }
+                    throw new RuntimeException(errMessage);
                 }
             }
         }
