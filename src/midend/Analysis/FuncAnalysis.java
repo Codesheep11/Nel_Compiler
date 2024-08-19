@@ -36,6 +36,14 @@ public class FuncAnalysis {
                     addCall(caller, callee);
                 }
             }
+            if (callee.getName().equals("NELParallelFor")) {
+                for (Instruction user : callee.getUsers()) {
+                    if (user instanceof Instruction.Call call) {
+                        Function body = (Function) call.getParams().get(2);
+                        addCall(callee, body);
+                    }
+                }
+            }
             if (!callee.getUsers().isEmpty()) {
                 FuncInfo calleeInfo = AnalysisManager.getFuncInfo(callee);
                 calleeInfo.isLeaf = true;
@@ -164,7 +172,6 @@ public class FuncAnalysis {
 
     /**
      * sideEffect 只考虑是否对传入的参数进行了地址写入
-     *
      */
     public static boolean isSideEffect(Value addr, Function function) {
         while (addr instanceof Instruction.GetElementPtr gep) {
@@ -194,6 +201,7 @@ public class FuncAnalysis {
                 funcInfo.hasReadIn |= calleeInfo.hasReadIn;
                 funcInfo.hasPutOut |= calleeInfo.hasPutOut;
                 funcInfo.hasSideEffect |= calleeInfo.hasSideEffect;
+                funcInfo.usedGlobalVariables.addAll(calleeInfo.usedGlobalVariables);
             }
             funcInfo.isStateless = funcInfo.isStateless && !funcInfo.hasMemoryWrite && !funcInfo.hasMemoryRead && !funcInfo.hasSideEffect;
         }
