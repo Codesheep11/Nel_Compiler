@@ -111,6 +111,7 @@ public class Manager {
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
         LoopBuildAndNormalize();
+        Print.output(module, "debug.txt");
         LoopInterchange.run(module);
         LCSSA.remove(module);
         SCCP();
