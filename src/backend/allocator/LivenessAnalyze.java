@@ -100,6 +100,7 @@ public class LivenessAnalyze {
                 }
             }
         }
+        int instSize = 0;
         for (RiscvBlock block : topoSort) {
             if (block.riscvInstructions.isEmpty()) continue;
             In.put(block.getFirst(), BlockIn.get(block));
@@ -107,8 +108,9 @@ public class LivenessAnalyze {
             int size = block.riscvInstructions.size();
             for (int i = size - 1; i >= 0; i--) {
                 RiscvInstruction ins = block.riscvInstructions.get(i);
-                try {
+                instSize++;
 //                System.out.println("ins num: " + i + " size: " + size);
+                try {
                     if (i != size - 1) {
                         //out[i] = in[i+1]
                         Out.put(ins, In.get(block.riscvInstructions.get(i + 1)));
@@ -121,7 +123,9 @@ public class LivenessAnalyze {
                         In.put(ins, inSet);
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException("TOO MANY REGS! REG CNT:" + Reg.Cnt + "/" + function.blocks.size());
+                    throw new RuntimeException("Block Size: " + function.blocks.size() +
+                            " Inst Size: " + instSize +
+                            " REG Size: " + Reg.Cnt);
                 }
             }
         }
