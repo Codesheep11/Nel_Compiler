@@ -172,7 +172,7 @@ public class LoopInterchange {
             return false;
         }
         if (!embedOuterInst(loop, child)) {
-            System.out.println("embedOuterInst");
+//            System.out.println("embedOuterInst");
             return false;
         }
         // 判断outer和inner为完美嵌套循环
@@ -341,7 +341,7 @@ public class LoopInterchange {
             }
         }
         Loop child = loop.children.iterator().next();
-        System.out.println("Interchange: " + loop.header.getLabel() + " " + child.header.getLabel());
+//        System.out.println("Interchange: " + loop.header.getLabel() + " " + child.header.getLabel());
         // 父循环视角
         outer_indvar.remove();
         child.header.addInstFirst(outer_indvar);
