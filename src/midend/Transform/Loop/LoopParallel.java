@@ -230,6 +230,19 @@ public class LoopParallel {
             }
         }
         new Instruction.Jump(funcEntry, cloneLoop.header);
+        //outPayLoad的初始值要存进去
+        for (Value v : OutPayLoad) {
+            Value h = ((Instruction.Phi) v).getOptionalValue(loop.header);
+            if (h instanceof Instruction.Phi phi) {
+                Value init = phi.getOptionalValue(loop.getPreHeader());
+                if (init.equals(Constant.ConstantInt.get(0)) && loop.getDepth() == 1) continue;
+                ArrayList<Value> offsets = new ArrayList<>();
+                offsets.add(Constant.ConstantInt.get(0));
+                offsets.add(Constant.ConstantInt.get(payLoad.get(v) / 4));
+                Value ptr = new Instruction.GetElementPtr(callBlock, payloadVar, Type.BasicType.I32_TYPE, new ArrayList<>(offsets));
+                new Instruction.Store(callBlock, init, ptr);
+            }
+        }
         //添加Call指令
         ArrayList<Value> args = new ArrayList<>();
         args.add(Constant.ConstantInt.get(init));

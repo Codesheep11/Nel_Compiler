@@ -35,6 +35,7 @@ public class RegCost {
             else cost += 1 * 100 * loopDepth;
         }
         if (reg.preColored) cost += 50;
+//        if (reg.temp) cost /= 20;
         RegCostMap.put(reg, cost);
     }
 }
