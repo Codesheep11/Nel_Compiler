@@ -93,7 +93,7 @@ public class Manager {
         LocalValueNumbering.run(module);
         SCCP();
         DeadCodeEliminate();
-        ConstLoopUnRoll.run(module);
+//        ConstLoopUnRoll.run(module);
         DeadCodeEliminate();
         LCSSA.remove(module);
         ArrayPasses();
@@ -111,7 +111,6 @@ public class Manager {
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
         LoopBuildAndNormalize();
-        Print.output(module, "debug.txt");
         LoopInterchange.run(module);
         LCSSA.remove(module);
         SCCP();
@@ -132,7 +131,7 @@ public class Manager {
         LoopUnroll.run(module);
         LCSSA.remove(module);
         ArrayPasses();
-        ConstLoopUnRoll.run(module);
+//        ConstLoopUnRoll.run(module);
         SCCP();
         DeadCodeEliminate();
         FuncCache.run(module);

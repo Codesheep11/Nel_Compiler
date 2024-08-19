@@ -356,7 +356,7 @@ public class LoopInterchange {
             }
         }
         Loop child = loop.children.iterator().next();
-//        System.out.println("Interchange: " + loop.header.getLabel() + " " + child.header.getLabel());
+        System.out.println("Interchange: " + loop.header.getLabel() + " " + child.header.getLabel());
         // 父循环视角
         outer_indvar.remove();
         child.header.addInstFirst(outer_indvar);
