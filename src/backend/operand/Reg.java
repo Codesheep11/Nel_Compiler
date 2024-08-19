@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class Reg extends Operand {
-    private static int Cnt = 0;
+    public static int Cnt = 0;
 
     public final int regCnt;
 

@@ -106,18 +106,22 @@ public class LivenessAnalyze {
             Out.put(block.getLast(), BlockOut.get(block));
             int size = block.riscvInstructions.size();
             for (int i = size - 1; i >= 0; i--) {
-//                System.out.println("ins num: " + i + " size: " + size);
                 RiscvInstruction ins = block.riscvInstructions.get(i);
-                if (i != size - 1) {
-                    //out[i] = in[i+1]
-                    Out.put(ins, In.get(block.riscvInstructions.get(i + 1)));
-                }
-                if (i != 0) {
-                    //in[i] = use[i] U (out[i] - def[i])
-                    HashSet<Reg> inSet = new HashSet<>(Out.get(ins));
-                    inSet.removeAll(Def.get(ins));
-                    inSet.addAll(Use.get(ins));
-                    In.put(ins, inSet);
+                try {
+//                System.out.println("ins num: " + i + " size: " + size);
+                    if (i != size - 1) {
+                        //out[i] = in[i+1]
+                        Out.put(ins, In.get(block.riscvInstructions.get(i + 1)));
+                    }
+                    if (i != 0) {
+                        //in[i] = use[i] U (out[i] - def[i])
+                        HashSet<Reg> inSet = new HashSet<>(Out.get(ins));
+                        inSet.removeAll(Def.get(ins));
+                        inSet.addAll(Use.get(ins));
+                        In.put(ins, inSet);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("TOO MANY REGS! REG CNT:" + Reg.Cnt + "/" + function.blocks.size());
                 }
             }
         }
