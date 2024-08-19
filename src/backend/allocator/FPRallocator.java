@@ -108,9 +108,6 @@ public class FPRallocator {
     private static void ReWrite() {
         RegCost.buildSpillCost(spillNodes);
         ArrayList<Reg> spills = RegCost.getSpillArray();
-        for (Reg reg : spills) {
-            System.out.println("spill: " + reg);
-        }
         ArrayList<Reg> newNodes = new ArrayList<>();
         for (Reg reg : spills) {
 //            System.out.println("spill: " + reg);

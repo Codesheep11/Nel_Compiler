@@ -54,7 +54,6 @@ public class LoopInterchange {
             for (var loop : function.loopInfo.TopLevelLoops) {
                 modified |= tryInterchangeLoop(loop);
             }
-            Print.output(function, "debug.txt");
             DeadLoopEliminate.runOnFunc(function);
             SimplifyCFGPass.runOnFunc(function);
             LocalValueNumbering.runOnFunc(function);
