@@ -52,6 +52,8 @@ public abstract class Instruction extends User {
         MAX,
         // Paralllel
         ATOMICADD,
+        ATOMICMIN,
+        ATOMICMAX,
         // bitwise operation
         SHL,
         LSHR,
@@ -1590,6 +1592,94 @@ public abstract class Instruction extends User {
         @Override
         public AtomicAdd cloneToBB(BasicBlock block) {
             return new AtomicAdd(block, getType(), ptr, inc);
+        }
+    }
+
+    public static final class AtomicMin extends Instruction {
+
+        private Value ptr;
+        private Value value;
+
+        public AtomicMin(BasicBlock parentBlock, Type resType, Value ptr, Value value) {
+            super(parentBlock, resType, InstType.ATOMICMIN);
+            this.ptr = ptr;
+            this.value = value;
+            addOperand(ptr);
+            addOperand(value);
+        }
+
+        public Value getValue() {
+            return value;
+        }
+
+        public Value getPtr() {
+            return ptr;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (ptr.equals(value)) {
+                ptr = v;
+            }
+            if (this.value.equals(value)) {
+                this.value = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("atomicrmw min %s %s, %s %s monotonic",
+                    ptr.getType(), ptr.getDescriptor(), value.getType(), value.getDescriptor());
+        }
+
+        @Override
+        public AtomicMin cloneToBB(BasicBlock block) {
+            return new AtomicMin(block, getType(), ptr, value);
+        }
+    }
+
+    public static final class AtomicMax extends Instruction {
+
+        private Value ptr;
+        private Value value;
+
+        public AtomicMax(BasicBlock parentBlock, Type resType, Value ptr, Value value) {
+            super(parentBlock, resType, InstType.ATOMICMAX);
+            this.ptr = ptr;
+            this.value = value;
+            addOperand(ptr);
+            addOperand(value);
+        }
+
+        public Value getValue() {
+            return value;
+        }
+
+        public Value getPtr() {
+            return ptr;
+        }
+
+        @Override
+        public void replaceUseOfWith(Value value, Value v) {
+            super.replaceUseOfWith(value, v);
+            if (ptr.equals(value)) {
+                ptr = v;
+            }
+            if (this.value.equals(value)) {
+                this.value = v;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("atomicrmw max %s %s, %s %s monotonic",
+                    ptr.getType(), ptr.getDescriptor(), value.getType(), value.getDescriptor());
+        }
+
+        @Override
+        public AtomicMax cloneToBB(BasicBlock block) {
+            return new AtomicMax(block, getType(), ptr, value);
         }
     }
 

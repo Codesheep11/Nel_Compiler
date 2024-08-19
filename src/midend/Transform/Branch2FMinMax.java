@@ -90,7 +90,7 @@ public class Branch2FMinMax {
                     }
                 }
                 if (!isMinMaxPhi) continue;
-                System.out.println("MinMaxPhi run!");
+//                System.out.println("MinMaxPhi run!");
                 delPhiList.add(phi);
                 Value thenValue = phi.getOptionalValue(thenBlock);
                 Instruction.BinaryOperation inst = null;

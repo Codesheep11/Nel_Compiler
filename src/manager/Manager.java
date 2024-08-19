@@ -109,9 +109,14 @@ public class Manager {
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
+        LoopBuildAndNormalize();
         LoopInterchange.run(module);
         LCSSA.remove(module);
         SCCP();
+//        LoopBuildAndNormalize();
+//        LoopNestTemp.run(module);
+//        LCSSA.run(module);
+//        SCCP();
         ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
@@ -121,6 +126,7 @@ public class Manager {
         DeadCodeEliminate();
         LoopBuildAndNormalize();
         FinalReplacement.run(module);
+        LocalValueNumbering.run(module);
         LoopUnroll.run(module);
         LCSSA.remove(module);
         ArrayPasses();
@@ -224,6 +230,7 @@ public class Manager {
 
     private void FuncPasses() {
         FuncAnalysis.run(module);
+        DeadArgEliminate.run();
         TailCall2Loop.run(module);
         FunctionInline.run(module);
         FuncAnalysis.run(module);
@@ -312,7 +319,8 @@ public class Manager {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(FuncInfo.ExternFunc.PUTF.getName())) {
                     outputList.add("declare void @" + FuncInfo.ExternFunc.PUTF.getName() + "(ptr, ...)");
-                } else {
+                }
+                else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }

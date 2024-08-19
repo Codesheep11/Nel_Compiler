@@ -169,6 +169,7 @@ public class GepLift {
         HashSet<Instruction> toRemove = new HashSet<>();
         for (Instruction.GetElementPtr gep : myBaseOffset.keySet()) {
             OffsetPair offsetPair = myBaseOffset.get(gep);
+            if (!gep.getType().equals(offsetPair.gepBase.getType())) continue;
             ArrayList<Value> offset = new ArrayList<>();
             offset.add(Constant.ConstantInt.get(offsetPair.offset));
             Instruction.GetElementPtr add = new Instruction.GetElementPtr(block, offsetPair.gepBase, offsetPair.gepBase.getEleType(), offset);

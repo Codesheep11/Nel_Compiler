@@ -69,11 +69,14 @@ public class LocalArrayLift {
             Instruction useInst = use.remove(0);
             if (useInst instanceof Instruction.Load) loads.add(useInst);
             else if (useInst instanceof Instruction.Store store) {
-                Instruction.GetElementPtr addr = (Instruction.GetElementPtr) store.getAddr();
-                Value idx = addr.getIdx();
-                Value val = store.getValue();
-                if (idx instanceof Constant && val instanceof Constant) stores.add(useInst);
-                else return;
+                if (store.getAddr() instanceof Instruction.GetElementPtr addr) {
+                    Value idx = addr.getIdx();
+                    Value val = store.getValue();
+                    if (idx instanceof Constant && val instanceof Constant) stores.add(useInst);
+                    else return;
+                }
+                else
+                    return;
             }
             else if (useInst instanceof Instruction.Call call) {
                 Function callee = call.getDestFunction();
@@ -175,7 +178,7 @@ public class LocalArrayLift {
                 ret = gep.getBase();
             }
             if (ret instanceof Instruction.BitCast) {
-                Instruction.BitCast bitCast = (Instruction.BitCast) inst;
+                Instruction.BitCast bitCast = (Instruction.BitCast) ret;
                 ret = bitCast.getSrc();
             }
         }

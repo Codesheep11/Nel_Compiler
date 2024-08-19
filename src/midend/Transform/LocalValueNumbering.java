@@ -62,15 +62,18 @@ public class LocalValueNumbering {
                             inst.replaceAllUsesWith(record);
                             delList.add(inst);
                             modified = true;
-                        } else {
+                        }
+                        else {
                             recordInstructions.put(key, inst);
                         }
-                    } else {
+                    }
+                    else {
                         inst.replaceAllUsesWith(recordInstructions.get(key));
                         delList.add(inst);
                         modified = true;
                     }
-                } else {
+                }
+                else {
                     records.add(key);
                     recordInstructions.put(key, inst);
                 }
