@@ -88,7 +88,7 @@ public class Manager {
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
-//        LoopUnSwitching.run(module);
+        LoopUnSwitching.run(module);
         LCSSA.remove(module);
         LocalValueNumbering.run(module);
         SCCP();
@@ -230,8 +230,8 @@ public class Manager {
     }
 
     private void FuncPasses() {
-//        FuncAnalysis.run(module);
-//        Multiply.run(module);
+        FuncAnalysis.run(module);
+        Multiply.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         TailCall2Loop.run(module);
