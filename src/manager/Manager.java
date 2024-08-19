@@ -32,6 +32,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Module;
@@ -87,7 +88,7 @@ public class Manager {
         Cond2MinMax.run(module);
         LoopBuildAndNormalize();
         GlobalCodeMotion.run(module);
-        LoopUnSwitching.run(module);
+//        LoopUnSwitching.run(module);
         LCSSA.remove(module);
         LocalValueNumbering.run(module);
         SCCP();
