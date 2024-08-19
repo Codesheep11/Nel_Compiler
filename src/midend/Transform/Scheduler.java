@@ -165,6 +165,24 @@ public class Scheduler {
                     userMap.get(opInstr).add(instr);
                 }
             }
+            if (instr instanceof Instruction.Call call) {
+                if (call.getDestFunction().getName().equals("starttime") || call.getDestFunction().getName().equals("stoptime")) {
+                    //时间戳不可调度
+                    for (Instruction passInstr : passList) {
+                        useMap.get(call).add(passInstr);
+                        userMap.get(passInstr).add(call);
+                    }
+                    while (call.getNext() instanceof Instruction nextInstr) {
+                        if (nextInstr instanceof Instruction.Terminator) {
+                            break;
+                        }
+                        else {
+                            userMap.get(nextInstr).add(call);
+                            useMap.get(call).add(nextInstr);
+                        }
+                    }
+                }
+            }
             //维护严格次序的指令
             if (isPinedInstr(instr)) {
                 if (lastPinedInstr != null) {

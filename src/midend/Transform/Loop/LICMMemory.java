@@ -64,6 +64,7 @@ public class LICMMemory {
         }
         for (Instruction.Store store : stores) {
             if (store.getAddr() instanceof Instruction i && allBlocks.contains(i.getParentBlock())) continue;
+            if (loop.defValue(store.getValue())) return false;
             // 如果没有人和他可能冲突的话
             boolean notConflict = !maybeConflict(store.getAddr(), usedPointers);
             for (Instruction.Store other : stores) {

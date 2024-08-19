@@ -1,5 +1,6 @@
 package backend.riscv;
 
+import backend.operand.Reg;
 import backend.riscv.RiscvInstruction.RiscvInstruction;
 import mir.BasicBlock;
 import utils.NelLinkedList;
@@ -84,6 +85,11 @@ public class RiscvBlock {
         StringBuilder sb = new StringBuilder(".p2align 2\n" + name + ":\n");
         for (RiscvInstruction ri : riscvInstructions) {
             sb.append(ri).append("\n");
+//            sb.append(ri).append("\t#");
+//            for (Reg reg: ri.getReg()) {
+//                sb.append(reg.regCnt).append(" ");
+//            }
+//            sb.append("\n");
         }
         return sb.toString();
     }
