@@ -51,7 +51,7 @@ public class LoopUnSwitching {
     }
 
     // NOTE: 最好不要超过6
-    private static final int threshold = 5;
+    private static final int threshold = 3;
 
     private static HashSet<BasicBlock> handled = new HashSet<>();
 
