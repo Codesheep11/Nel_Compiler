@@ -114,10 +114,10 @@ public class Manager {
         LoopInterchange.run(module);
         LCSSA.remove(module);
         SCCP();
-//        LoopBuildAndNormalize();
-//        LoopNestTemp.run(module);
-//        LCSSA.run(module);
-//        SCCP();
+        LoopBuildAndNormalize();
+        LoopNestTemp.run(module);
+        LCSSA.run(module);
+        SCCP();
         ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
