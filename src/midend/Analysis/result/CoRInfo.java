@@ -16,7 +16,8 @@ public class CoRInfo {
     public CoR query(Value value, Loop loop) {
         if (!map.containsKey(value)) {
             if (!loop.defValue(value)) {
-                addCoR(value, new CoR(CoR.CoRType.Value, value));
+                return new CoR(CoR.CoRType.Value, value);
+//                addCoR(value, new CoR(CoR.CoRType.Value, value));
             }
         }
         return map.get(value);
