@@ -32,6 +32,7 @@ import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
 import midend.Transform.Loop.*;
 import midend.Util.FuncInfo;
+import midend.Util.Print;
 import mir.Function;
 import mir.GlobalVariable;
 import mir.Module;
@@ -110,6 +111,7 @@ public class Manager {
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
         LoopBuildAndNormalize();
+        Print.output(module, "debug.txt");
         LoopInterchange.run(module);
         LCSSA.remove(module);
         SCCP();
