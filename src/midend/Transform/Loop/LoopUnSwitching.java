@@ -24,6 +24,7 @@ public class LoopUnSwitching {
 
     private static int count = 0;
 
+    private static final int MAXIMUM_LINE = 2000;
 
     public static void run(Module module) {
         handled = new HashSet<>();
@@ -51,7 +52,7 @@ public class LoopUnSwitching {
     }
 
     // NOTE: 最好不要超过6
-    private static final int threshold = 5;
+    private static int threshold = 3;
 
     private static HashSet<BasicBlock> handled = new HashSet<>();
 
@@ -62,6 +63,10 @@ public class LoopUnSwitching {
             if(unSwitching(child))
                 return true;
         }
+        threshold = 3;
+        int size = loop.getSize();
+        while (threshold > 0 && size * (1 << threshold) > MAXIMUM_LINE)
+            threshold--;
         return collectBranch(loop);
     }
 

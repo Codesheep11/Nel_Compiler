@@ -17,6 +17,7 @@ public class La extends RiscvInstruction {
         super(block);
         this.content = rb;
         this.reg = reg;
+        this.reg.temp = true;
     }
 
     @Override
