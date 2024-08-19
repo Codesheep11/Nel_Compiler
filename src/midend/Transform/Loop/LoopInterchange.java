@@ -12,6 +12,7 @@ import mir.Module;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Optional;
 
 public class LoopInterchange {
 
@@ -253,12 +254,17 @@ public class LoopInterchange {
         BasicBlock block = child.getExit();
         for (Instruction.Phi phi : block.getPhiInstructions()) {
             if (phi.isLCSSA) {
+                Addr = null;
+                Load = null;
                 if (!isOnlySum(phi.getOptionalValue(child.header), child))
                     return false;
                 if (phi.getUsers().size() > 1) return false;
                 User user = phi.getUsers().iterator().next();
                 if (user instanceof Instruction.Store store) {
                     if (store.getValue() != phi) {
+                        return false;
+                    }
+                    if (Addr != null && !store.getAddr().equals(Addr)) {
                         return false;
                     }
                 } else return false;
@@ -269,6 +275,8 @@ public class LoopInterchange {
                     inst.remove();
                     onlySum_add.addPrev(inst);
                 }
+                if (Load != null)
+                    Load.delete();
                 Instruction.Load ld = new Instruction.Load(onlySum_add.getParentBlock(), store.getAddr());
                 ld.remove();
                 onlySum_add.addPrev(ld);
@@ -284,7 +292,10 @@ public class LoopInterchange {
 
 
     private static Instruction onlySum_add;
-//    private static
+    private static Value Load;
+    private static Value Addr;
+//    private static Value baseAddr;
+//    private static Value offset;
 
     /**
      * 判断phi是否为一条简单的累加指令
@@ -295,8 +306,9 @@ public class LoopInterchange {
         Value initPhi = phi.getOptionalValue(loop.getPreHeader());
         if (!initPhi.equals(Constant.ConstantInt.get(0))) {
             if (initPhi instanceof Instruction.Load load) {
-                // TODO: 可以加强 不必非得是0
-                return false;
+                Load = load;
+                Addr = load.getAddr();
+//                return false;
             } else
                 return false;
         }
@@ -305,6 +317,9 @@ public class LoopInterchange {
         if (val instanceof Instruction.Add add) {
             if (!(add.getOperand_1() == phi) && !(add.getOperand_2() == phi)) return false;
             onlySum_add = add;
+        } else if (val instanceof Instruction.Sub sub) {
+            if (!(sub.getOperand_1() == phi)) return false;
+            onlySum_add = sub;
         } else return false;
         return true;
     }
