@@ -74,7 +74,7 @@ public class LivenessAnalyze {
                 BlockDef.get(block).addAll(Def.get(ins));
             }
         }
-        ArrayList<RiscvBlock> topoSort = function.getTopoSort();
+        ArrayList<RiscvBlock> topoSort = function.getReversePostOrder();
         int time = 0;
         boolean changed = true;
         while (changed) {

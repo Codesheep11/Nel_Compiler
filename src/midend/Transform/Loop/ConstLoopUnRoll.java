@@ -14,7 +14,7 @@ import java.util.Map;
 
 
 public class ConstLoopUnRoll {
-    private static final int MAXIMUM_LINE = 1500;
+    private static final int MAXIMUM_LINE = 1000;
 
     private static SCEVinfo scevInfo;
 
