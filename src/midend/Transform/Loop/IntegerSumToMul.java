@@ -7,6 +7,9 @@ import mir.Module;
 
 import java.util.ArrayList;
 
+/**
+ * 循环整数求和变乘法
+ */
 //Note: 在4路Unroll之前跑
 public class IntegerSumToMul {
 
@@ -72,16 +75,6 @@ public class IntegerSumToMul {
         return true;
     }
 
-    //cond_block:
-    //    %i_before = phi i32 [ %i_after, %body_block ], [ %initial_i, %initial_entry ]
-    //    %sum_before = phi i32 [ %sum_after, %body_block ], [ %initial_sum, %initial_entry ]
-    //    %loop_cond = icmp slt i32 %i_before, %limit_i ; 为了控制循环次数，此处强制要求符号为 <
-    //    br i1 %loop_cond, label %body_block, label %exit_block
-    //body_block:
-    //    %sum_added = add i32 %sum_before, %external_constant
-    //    %sum_after = srem i32 %sum_added, %external_module
-    //    %i_after = add i32 %i_before, 1 ; 为了控制循环次数，此处强制要求操作为+1
-    //    br label %cond_block
     private static void runLoop(Loop loop) {
         for (Loop child : loop.children) {
             runLoop(child);

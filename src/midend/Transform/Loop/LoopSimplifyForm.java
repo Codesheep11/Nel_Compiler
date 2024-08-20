@@ -16,7 +16,7 @@ import java.util.LinkedHashSet;
  * 2. 循环的latch唯一 <br>
  * 3. 所有 exit 块被 header支配 <br>
  *
- * @author Srchycz
+ * @see <a href="https://llvm.org/docs/LoopTerminology.html#id10">Loop Terminology</a>
  */
 public class LoopSimplifyForm {
 

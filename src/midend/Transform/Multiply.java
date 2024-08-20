@@ -10,6 +10,10 @@ import java.util.ArrayList;
 
 import static mir.Type.BasicType.*;
 
+/**
+ * 乘法的多次取模利用 64 位的寄存器优化
+ */
+
 public class Multiply {
 
     private static Value Rem_Value;

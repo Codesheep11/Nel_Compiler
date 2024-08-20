@@ -6,8 +6,9 @@ import mir.*;
 import java.util.*;
 
 /**
- * 参考自cmmc的别名分析
+ * 参考了LLVM官方 和 CMMC 的别名分析设计
  *
+ * @see <a href="https://llvm.org/docs/AliasAnalysis.html">Alias Analysis</a>
  * @see <a href=“https://gitlab.eduxiji.net/educg-group-17291-1894922/202314325201374-1031/-/blob/riscv_fix/src/cmmc/Analysis/AliasAnalysis.cpp”></a>
  */
 

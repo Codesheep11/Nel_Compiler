@@ -10,7 +10,7 @@ import java.util.Queue;
 import java.util.function.BiConsumer;
 
 /**
- * 参考自cmmc的基指针分析
+ * 参考了 CMMC 的基指针分析
  *
  * @see <a href="https://gitlab.eduxiji.net/educg-group-17291-1894922/202314325201374-1031/-/blob/riscv_fix/src/cmmc/Analysis/PointerBaseAnalysis.cpp"> </a>
  */

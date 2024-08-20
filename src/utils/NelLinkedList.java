@@ -274,7 +274,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
     }
 
     /**
-     * java 实现友元访问
+     * 实现友元访问
      */
     public static abstract class NelList_Friend {
 

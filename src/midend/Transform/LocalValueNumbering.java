@@ -11,9 +11,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
- * 全局值编号
+ * 值编号
  *
- * @author Srchycz
  */
 public class LocalValueNumbering {
 
