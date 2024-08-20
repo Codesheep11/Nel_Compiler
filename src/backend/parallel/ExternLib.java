@@ -3,6 +3,11 @@ package backend.parallel;
 import backend.riscv.RiscvFunction;
 import backend.riscv.RiscvModule;
 
+/**
+ * 本文件引自往届优秀开源作品CMMC实现的运行时库
+ *
+ * @see <a href="https://gitlab.eduxiji.net/educg-group-17291-1894922/202314325201374-1031/-/blob/riscv_fix/src/RISCV/SysYRuntime.hpp">CMMC优秀作品</a>
+ */
 public class ExternLib {
 
     public static boolean need(RiscvModule riscvModule) {

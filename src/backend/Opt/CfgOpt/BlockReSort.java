@@ -10,6 +10,11 @@ import utils.Pair;
 import java.util.*;
 import java.util.function.Function;
 
+/**
+ * 重新排列基本块
+ *
+ * @see <a href="https://www.cs.cornell.edu/courses/cs6120/2019fa/blog/codestitcher/">CodeStitcher</a>
+ */
 public class BlockReSort {
 
     static class BranchEdge {

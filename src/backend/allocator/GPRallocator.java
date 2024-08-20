@@ -12,6 +12,12 @@ import java.util.*;
 
 import static backend.allocator.LivenessAnalyze.*;
 
+/**
+ * 基于图着色算法改进
+ *
+ * @see <a href="https://en.wikipedia.org/wiki/Graph_coloring">Graph coloring</a>
+ * @see <a href="https://www.sciencedirect.com/science/article/abs/pii/0096055181900485">Register allocation via coloring</a>
+ */
 public class GPRallocator {
 
     public static RiscvFunction curFunc; //当前分配的函数

@@ -9,6 +9,11 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 
+/**
+ * 参考自cmmc的基指针分析
+ *
+ * @see <a href="https://gitlab.eduxiji.net/educg-group-17291-1894922/202314325201374-1031/-/blob/riscv_fix/src/cmmc/Analysis/PointerBaseAnalysis.cpp"> </a>
+ */
 public class PointerBaseAnalysis {
 
     public static Value getBaseOrNull(Value value) {
@@ -18,7 +23,7 @@ public class PointerBaseAnalysis {
 
     private static final HashMap<Value, Value> pointBaseInfo = new HashMap<>();
 
-    private static final int max_depth = 8;
+    private static final int max_depth = 7;
 
     /**
      * 输入:函数,参数
@@ -68,9 +73,11 @@ public class PointerBaseAnalysis {
         if (instruction instanceof Instruction.GetElementPtr gep) {
             Value parm = gep.getOffsets().get(gep.getOffsets().size() - 1);
             traceInterProceduralVal(function, parm, depth + 1);
-        } else if (instruction instanceof Instruction.BitCast bitCast) {
+        }
+        else if (instruction instanceof Instruction.BitCast bitCast) {
             traceInterProceduralVal(function, bitCast.getSrc(), depth + 1);
-        } else if (instruction instanceof Instruction.Phi phi) {
+        }
+        else if (instruction instanceof Instruction.Phi phi) {
             Value commonSrc = null;
             for (Value entry : phi.getIncomingValues()) {
                 if (entry.equals(instruction)) continue;
@@ -102,10 +109,12 @@ public class PointerBaseAnalysis {
                 if (instruction instanceof Instruction.GetElementPtr gep) {
                     graphAdd(graph, gep.getBase(), gep);
                     degree.put(gep, 1);
-                } else if (instruction instanceof Instruction.BitCast bitcast) {
+                }
+                else if (instruction instanceof Instruction.BitCast bitcast) {
                     graphAdd(graph, bitcast.getSrc(), bitcast);
                     degree.put(bitcast, 1);
-                } else if (instruction instanceof Instruction.Phi phi) {
+                }
+                else if (instruction instanceof Instruction.Phi phi) {
                     degree.put(phi, phi.getSize());
                     for (var entry : phi.getIncomingValues()) {
                         graphAdd(graph, entry, phi);
@@ -156,9 +165,11 @@ public class PointerBaseAnalysis {
             Instruction instruction = q.poll();
             if (instruction instanceof Instruction.GetElementPtr gep) {
                 setStorage.accept(gep, gep.getBase());
-            } else if (instruction instanceof Instruction.BitCast bitCast) {
+            }
+            else if (instruction instanceof Instruction.BitCast bitCast) {
                 setStorage.accept(bitCast, bitCast.getSrc());
-            } else if (instruction instanceof Instruction.Phi phi) {
+            }
+            else if (instruction instanceof Instruction.Phi phi) {
                 Value src = null;
                 boolean same = true;
                 for (Value entry : phi.getIncomingValues()) {

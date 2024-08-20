@@ -10,8 +10,9 @@ import java.util.HashSet;
 /**
  * Scalar Evolution Analysis <br>
  * 标量演化分析 <br>
+ * 参考了一部分往届优秀队伍CMMC的实现思路
  *
- * @author Srchycz
+ * @see <a href="https://gitlab.eduxiji.net/educg-group-17291-1894922/202314325201374-1031/-/blob/riscv_fix/src/cmmc/Analysis/SCEVAnalysis.hpp">CMMC优秀作品</a>
  * NOTE: 互相依赖无法处理
  * 必须经过 LSF
  */
