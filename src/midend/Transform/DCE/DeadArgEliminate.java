@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
- * 死参数消除，
+ * 死参数消除
  */
 public class DeadArgEliminate {
 

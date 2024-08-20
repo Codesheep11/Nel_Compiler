@@ -13,6 +13,8 @@ import java.util.HashSet;
  * 数据迭代求DG <br>
  * 由于时空开销较大 已弃用 <br>
  * 保留以防万一 <br>
+ *
+ * @see <a href="https://oi-wiki.org/graph/dominator-tree/#%E6%95%B0%E6%8D%AE%E6%B5%81%E8%BF%AD%E4%BB%A3%E6%B3%95">数据流迭代法</a>
  */
 @Deprecated
 public class DominanceGraph {

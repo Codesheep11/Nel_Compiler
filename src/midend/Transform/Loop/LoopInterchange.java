@@ -12,7 +12,12 @@ import mir.Module;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Optional;
+
+/**
+ * 循环交换
+ *
+ * @see <a href="https://en.wikipedia.org/wiki/Loop_interchange">Loop interchange</a>
+ */
 
 public class LoopInterchange {
 
@@ -390,60 +395,3 @@ public class LoopInterchange {
         LCSSA.runOnFunc(func);
     }
 }
-/*
-main_BB18:
-	%phi_7 = phi i32 [ 0, %main_BB16 ], [ %add_44, %main_BB19 ]
-	%icmp_6 = icmp slt i32 %phi_7, 1000
-	br i1 %icmp_6, label %main_BB19, label %main_BB20 ;1.000000
-
-
-main_BB19:
-	%mul_19 = mul i32 1000, %phi_7
-	%add_15 = add i32 %mul_19, %phi_16
-	%add_13 = add i32 %mul_17, %phi_7
-	%gep_6 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @a, i32 0, i32 0, i32 %add_13
-	%load_21 = load i32, i32* %gep_4
-	%load_24 = load i32, i32* %gep_6
-	%gep_7 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @b, i32 0, i32 0, i32 %add_15
-	%load_27 = load i32, i32* %gep_7
-	%mul_6 = mul i32 %load_24, %load_27
-	%add_16 = add i32 %load_21, %mul_6
-	store i32 %add_16, i32* %gep_4
-	%add_44 = add i32 1, %phi_7
-	br label %main_BB18
-
-
-main_BB20:
-	%add_45 = add i32 1, %phi_16
-	br label %main_BB15
- */
-/*
-main_BB18:
-	%phi_10 = phi i32 [ 0, %main_BB16 ], [ %add_42, %main_BB19 ]
-	%phi_5 = phi i32 [ 0, %main_BB16 ], [ %add_12, %main_BB19 ]
-	%icmp_6 = icmp slt i32 %phi_10, 1000
-	br i1 %icmp_6, label %main_BB19, label %main_BB20 ;0.500000
-
-
-main_BB19:
-	%add_9 = add i32 %mul_16, %phi_10
-	%gep_4 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @a, i32 0, i32 0, i32 %add_9
-	%load_20 = load i32, i32* %gep_4
-	%mul_18 = mul i32 1000, %phi_10
-	%add_11 = add i32 %mul_18, %phi_19
-	%gep_5 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @b, i32 0, i32 0, i32 %add_11
-	%load_23 = load i32, i32* %gep_5
-	%mul_4 = mul i32 %load_20, %load_23
-	%add_12 = add i32 %phi_5, %mul_4
-	%add_42 = add i32 1, %phi_10
-	br label %main_BB18
-
-
-main_BB20:
-	%phi_62 = phi i32 [ %phi_5, %main_BB18 ] ; [isLCSSA]
-	%add_15 = add i32 %mul_16, %phi_19
-	%gep_6 = getelementptr [1000 x [1000 x i32]], [1000 x [1000 x i32]]* @c, i32 0, i32 0, i32 %add_15
-	store i32 %phi_62, i32* %gep_6
-	%add_43 = add i32 1, %phi_19
-	br label %main_BB15
- */

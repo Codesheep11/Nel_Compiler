@@ -4,11 +4,8 @@ import backend.Opt.BackLoop.RiscLoop;
 import backend.operand.Reg;
 import backend.riscv.RiscvInstruction.J;
 import mir.Function;
-import utils.Pair;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.*;
 
 import static mir.Type.VoidType.VOID_TYPE;
 
@@ -71,19 +68,36 @@ public class RiscvFunction {
         ArrayList<RiscvBlock> res = new ArrayList<>();
         HashSet<RiscvBlock> vis = new HashSet<>();
         for (RiscvBlock exit : getExits()) {
-            dfs(exit, res, vis);
+            dfs4topo(exit, res, vis);
         }
         Collections.reverse(res);
         return res;
     }
 
-    private void dfs(RiscvBlock rb, ArrayList<RiscvBlock> res, HashSet<RiscvBlock> vis) {
+    private void dfs4topo(RiscvBlock rb, ArrayList<RiscvBlock> res, HashSet<RiscvBlock> vis) {
         if (vis.contains(rb)) return;
         vis.add(rb);
         for (RiscvBlock prev : rb.preBlock) {
-            dfs(prev, res, vis);
+            dfs4topo(prev, res, vis);
         }
         res.add(rb);
+    }
+
+    public ArrayList<RiscvBlock> getReversePostOrder() {
+        ArrayList<RiscvBlock> res = new ArrayList<>();
+        HashSet<RiscvBlock> vis = new HashSet<>();
+        dfs(getEntry(), res, vis);
+        Collections.reverse(res);
+        return res;
+    }
+
+    private void dfs(RiscvBlock now, ArrayList<RiscvBlock> res, HashSet<RiscvBlock> vis) {
+        if (vis.contains(now)) return;
+        vis.add(now);
+        for (RiscvBlock succ : now.succBlock) {
+            dfs(succ, res, vis);
+        }
+        res.add(now);
     }
 
     // 如果是外部定义的话就不加f_,否则为了防止鬼畜函数名出现，需要加一个f_前缀

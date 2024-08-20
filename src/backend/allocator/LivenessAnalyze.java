@@ -74,7 +74,7 @@ public class LivenessAnalyze {
                 BlockDef.get(block).addAll(Def.get(ins));
             }
         }
-        ArrayList<RiscvBlock> topoSort = function.getTopoSort();
+        ArrayList<RiscvBlock> topoSort = function.getReversePostOrder();
         int time = 0;
         boolean changed = true;
         while (changed) {
@@ -100,24 +100,36 @@ public class LivenessAnalyze {
                 }
             }
         }
+        int instSize = 0;
         for (RiscvBlock block : topoSort) {
             if (block.riscvInstructions.isEmpty()) continue;
             In.put(block.getFirst(), BlockIn.get(block));
             Out.put(block.getLast(), BlockOut.get(block));
             int size = block.riscvInstructions.size();
             for (int i = size - 1; i >= 0; i--) {
-//                System.out.println("ins num: " + i + " size: " + size);
                 RiscvInstruction ins = block.riscvInstructions.get(i);
-                if (i != size - 1) {
-                    //out[i] = in[i+1]
-                    Out.put(ins, In.get(block.riscvInstructions.get(i + 1)));
-                }
-                if (i != 0) {
-                    //in[i] = use[i] U (out[i] - def[i])
-                    HashSet<Reg> inSet = new HashSet<>(Out.get(ins));
-                    inSet.removeAll(Def.get(ins));
-                    inSet.addAll(Use.get(ins));
-                    In.put(ins, inSet);
+                instSize++;
+//                System.out.println("ins num: " + i + " size: " + size);
+                try {
+                    if (i != size - 1) {
+                        //out[i] = in[i+1]
+                        Out.put(ins, In.get(block.riscvInstructions.get(i + 1)));
+                    }
+                    if (i != 0) {
+                        //in[i] = use[i] U (out[i] - def[i])
+                        HashSet<Reg> inSet = new HashSet<>(Out.get(ins));
+                        inSet.removeAll(Def.get(ins));
+                        inSet.addAll(Use.get(ins));
+                        In.put(ins, inSet);
+                    }
+                } catch (Exception e) {
+                    String errMessage = "Block Size: " + function.blocks.size() +
+                            " Inst Size: " + instSize +
+                            " REG Size: " + Reg.Cnt;
+                    if (topoSort.size() != function.blocks.size()) {
+                        errMessage += "& TopoSort Size Error";
+                    }
+                    throw new RuntimeException(errMessage);
                 }
             }
         }

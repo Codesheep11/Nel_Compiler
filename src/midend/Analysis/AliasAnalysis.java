@@ -5,6 +5,13 @@ import mir.*;
 
 import java.util.*;
 
+/**
+ * 参考了LLVM官方 和 CMMC 的别名分析设计
+ *
+ * @see <a href="https://llvm.org/docs/AliasAnalysis.html">Alias Analysis</a>
+ * @see <a href=“https://gitlab.eduxiji.net/educg-group-17291-1894922/202314325201374-1031/-/blob/riscv_fix/src/cmmc/Analysis/AliasAnalysis.cpp”></a>
+ */
+
 public class AliasAnalysis {
 
     private static class InheritEdge {
@@ -60,7 +67,8 @@ public class AliasAnalysis {
                     stackGroups.add(id);
                     aliasInfo.addPair(id, argID);
                     aliasInfo.addValue(alloc, new ArrayList<>(List.of(stackID, id)));
-                } else if (instruction instanceof Instruction.GetElementPtr gep) {
+                }
+                else if (instruction instanceof Instruction.GetElementPtr gep) {
                     //todo:由于GEP被规约,因此判断优化时有巨大的局限性
                     ArrayList<Integer> attrs = new ArrayList<>();
                     Instruction.GetElementPtr cur = gep;
@@ -82,17 +90,22 @@ public class AliasAnalysis {
                         }
                         if (base instanceof Instruction.GetElementPtr) {
                             cur = (Instruction.GetElementPtr) base;
-                        } else {
+                        }
+                        else {
                             break;
                         }
                         aliasInfo.addValue(gep, attrs);
                     }
-                } else if (instruction instanceof Instruction.BitCast bitcast) {
+                }
+                else if (instruction instanceof Instruction.BitCast bitcast) {
                     aliasInfo.addValue(bitcast, new ArrayList<>());
-                } else if (instruction instanceof Instruction.Load ||
-                        instruction instanceof Instruction.Call) {
+                }
+                else if (instruction instanceof Instruction.Load ||
+                        instruction instanceof Instruction.Call)
+                {
                     aliasInfo.addValue(instruction, new ArrayList<>());
-                } else if (instruction instanceof Instruction.Phi phi) {
+                }
+                else if (instruction instanceof Instruction.Phi phi) {
                     aliasInfo.addValue(phi, new ArrayList<>());
                     HashSet<Value> inheritSet = new HashSet<>();
                     for (Value value : phi.getIncomingValues()) {
@@ -103,7 +116,8 @@ public class AliasAnalysis {
                     Iterator<Value> iterator = inheritSet.iterator();
                     if (inheritSet.size() == 1) {
                         inheritGraph.add(new InheritEdge(phi, iterator.next()));
-                    } else if (inheritSet.size() == 2) {
+                    }
+                    else if (inheritSet.size() == 2) {
                         inheritGraph.add(new InheritEdge(phi, iterator.next(), iterator.next()));
                     }
                 }
@@ -143,7 +157,8 @@ public class AliasAnalysis {
                     ArrayList<Integer> insc = new ArrayList<>(lhs);
                     insc.retainAll(rhs);
                     modify |= aliasInfo.appendAttr(inheritEdge.dst, insc);
-                } else {
+                }
+                else {
                     modify |= aliasInfo.appendAttr(inheritEdge.dst, aliasInfo.inheritFrom(inheritEdge.src1));
                 }
             }
@@ -159,7 +174,8 @@ public class AliasAnalysis {
             Type.ArrayType arrayType = (Type.ArrayType) a;
             Type next = b.isArrayTy() ? arrayType.getEleType() : arrayType.getBasicEleType();
             return TBAAincludes(next, b);
-        } else {
+        }
+        else {
             throw new RuntimeException("unreachable!");
         }
     }

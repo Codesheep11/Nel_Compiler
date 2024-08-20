@@ -11,7 +11,8 @@ import java.util.HashSet;
 /**
  * 全局值编号
  *
- * @author Srchycz
+ * @see <a href="https://en.wikipedia.org/wiki/Global_value_numbering">Global Value Numbering</a>
+ * @see <a href="https://dl.acm.org/doi/pdf/10.1145/207110.207154">GVN/GCM</a>
  */
 public class GlobalValueNumbering {
 
