@@ -27,6 +27,7 @@ import midend.Analysis.FuncAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.*;
 import midend.Transform.DCE.*;
+import midend.Transform.Function.CountArg2Ret;
 import midend.Transform.Function.FuncCache;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
@@ -233,6 +234,8 @@ public class Manager {
         FuncAnalysis.run(module);
         Multiply.run(module);
         FuncAnalysis.run(module);
+//        CountArg2Ret.run(module);
+//        FuncAnalysis.run(module);
         DeadArgEliminate.run();
         TailCall2Loop.run(module);
         FunctionInline.run(module);

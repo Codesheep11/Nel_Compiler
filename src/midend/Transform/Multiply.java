@@ -10,47 +10,6 @@ import java.util.ArrayList;
 
 import static mir.Type.BasicType.*;
 
-//define i32 @multiply(i32 %arg_0, i32 %arg_1) {
-//multiply_BB0:
-//	%icmp_0 = icmp eq i32 %arg_1, 0
-//	br i1 %icmp_0, label %multiply_BB1, label %multiply_BB2 ;0.200000
-//
-//
-//multiply_BB1:
-//	ret i32 0
-//
-//
-//multiply_BB2:
-//	%icmp_1 = icmp eq i32 %arg_1, 1
-//	br i1 %icmp_1, label %multiply_BB3, label %multiply_BB4 ;0.200000
-//
-//
-//multiply_BB3:
-//	%rem_0 = srem i32 %arg_0, 998244353
-//	ret i32 %rem_0
-//
-//
-//multiply_BB4:
-//	%div_0 = sdiv i32 %arg_1, 2
-//	%call_0 = call i32 @multiply(i32 %arg_0, i32 %div_0)
-//	%mul_2 = mul i32 2, %call_0
-//	%rem_1 = srem i32 %mul_2, 998244353
-//	%rem_2 = srem i32 %arg_1, 2
-//	%icmp_2 = icmp eq i32 %rem_2, 1
-//	br i1 %icmp_2, label %multiply_BB5, label %multiply_BB6 ;0.200000
-//
-//
-//multiply_BB5:
-//	%add_1 = add i32 %rem_1, %arg_0
-//	%rem_3 = srem i32 %add_1, 998244353
-//	ret i32 %rem_3
-//
-//
-//multiply_BB6:
-//	ret i32 %rem_1
-//
-//
-//}
 public class Multiply {
 
     private static Value Rem_Value;
