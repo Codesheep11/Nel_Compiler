@@ -6,6 +6,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+/**
+ * Value类是所有中间代码的基类，包括Instruction和BasicBlock
+ * <p>
+ * Value类继承自NelLinkedList.NelLinkNode，是一个双向链表的节点
+ * </p>
+ */
 public class Value extends NelLinkedList.NelLinkNode {
     // TODO: value 应该是 abstract 的 但是mem2reg中存在value的实例化
     protected String name;

@@ -15,6 +15,11 @@ import mir.Value;
 
 import java.math.BigInteger;
 
+/**
+ * 用于处理除法和取余的优化
+ *
+ * @see <a href="https://dl.acm.org/doi/abs/10.1145/178243.178249">Division by Invariant Integers using Multiplication</a>
+ */
 public class DivRemByConstant {
 
 

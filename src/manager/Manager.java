@@ -27,6 +27,7 @@ import midend.Analysis.FuncAnalysis;
 import midend.Transform.*;
 import midend.Transform.Array.*;
 import midend.Transform.DCE.*;
+import midend.Transform.Function.CountArgCache;
 import midend.Transform.Function.FuncCache;
 import midend.Transform.Function.FunctionInline;
 import midend.Transform.Function.TailCall2Loop;
@@ -111,14 +112,13 @@ public class Manager {
         FinalReplacement.run(module);
         IntegerSumToMul.run(module);
         LoopBuildAndNormalize();
-        Print.output(module, "debug.txt");
         LoopInterchange.run(module);
         LCSSA.remove(module);
         SCCP();
-//        LoopBuildAndNormalize();
-//        LoopNestTemp.run(module);
-//        LCSSA.run(module);
-//        SCCP();
+        LoopBuildAndNormalize();
+        LoopNestTemp.run(module);
+        LCSSA.run(module);
+        SCCP();
         ConstrainReduce.run(module);
         DeadCodeEliminate();
         LoopBuildAndNormalize();
@@ -231,6 +231,10 @@ public class Manager {
     }
 
     private void FuncPasses() {
+        FuncAnalysis.run(module);
+        Multiply.run(module);
+        FuncAnalysis.run(module);
+        CountArgCache.run(module);
         FuncAnalysis.run(module);
         DeadArgEliminate.run();
         TailCall2Loop.run(module);

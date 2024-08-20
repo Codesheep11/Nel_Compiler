@@ -44,6 +44,8 @@ public class Function extends Value {
 
     public boolean isParallelLoopBody = false;
 
+    public boolean isCached = false;
+
     private Type retType; // 返回值类型
     private ArrayList<Argument> funcRArguments; //
     private final NelLinkedList<BasicBlock> blocks; // 内含基本块链表
@@ -411,7 +413,6 @@ public class Function extends Value {
 
     /**
      * 获取函数的反向后序遍历，即dfs的反序
-     *
      */
     public ArrayList<BasicBlock> buildReversePostOrderTraversal() {
         ArrayList<BasicBlock> rpot = new ArrayList<>();
@@ -442,7 +443,6 @@ public class Function extends Value {
 
     /**
      * 获取不考虑latch边的cfg图的拓扑排序
-     *
      */
     public ArrayList<BasicBlock> getTopoSortWithoutLatch() {
         ArrayList<BasicBlock> blocks = new ArrayList<>();

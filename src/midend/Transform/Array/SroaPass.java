@@ -21,6 +21,7 @@ public class SroaPass {
             if (func.isExternal()) continue;
             RunOnFunction(func);
         }
+
     }
 
     private static void clear() {

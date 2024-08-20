@@ -20,6 +20,7 @@ public class FuncCache {
         FuncCache.module = module;
         for (Function function : module.getFuncSet()) {
             if (function.isExternal()) continue;
+            if (function.isCached) continue;
             FuncInfo funcInfo = AnalysisManager.getFuncInfo(function);
             if (funcInfo.hasMemoryAlloc || funcInfo.hasSideEffect || funcInfo.hasMemoryWrite)
                 continue;

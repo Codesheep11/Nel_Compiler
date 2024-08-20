@@ -8,7 +8,6 @@ import java.util.NoSuchElementException;
  * NEL-链表
  *
  * @param <Type>
- * @author Srchycz
  * <br>
  * Note: 如需增加需求最好不要自行修改，以免破坏链表结构的安全性与稳定性
  */
@@ -275,7 +274,7 @@ public class NelLinkedList<Type extends NelLinkedList.NelLinkNode> implements It
     }
 
     /**
-     * java 实现友元访问
+     * 实现友元访问
      */
     public static abstract class NelList_Friend {
 

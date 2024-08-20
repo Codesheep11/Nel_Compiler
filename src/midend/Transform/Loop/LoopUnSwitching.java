@@ -19,12 +19,13 @@ import java.util.Map;
  * 请在执行该优化前先执行 GCM/LICM 优化
  * </p>
  * Note: 该优化会改变循环的结构，执行后需要重建loop <br>
+ *
  */
 public class LoopUnSwitching {
 
     private static int count = 0;
 
-    private static final int MAXIMUM_LINE = 2000;
+    private static final int MAXIMUM_LINE = 200;
 
     public static void run(Module module) {
         handled = new HashSet<>();
@@ -52,7 +53,7 @@ public class LoopUnSwitching {
     }
 
     // NOTE: 最好不要超过6
-    private static int threshold = 3;
+    private static int threshold = 2;
 
     private static HashSet<BasicBlock> handled = new HashSet<>();
 
@@ -63,7 +64,7 @@ public class LoopUnSwitching {
             if(unSwitching(child))
                 return true;
         }
-        threshold = 3;
+        threshold = 2;
         int size = loop.getSize();
         while (threshold > 0 && size * (1 << threshold) > MAXIMUM_LINE)
             threshold--;

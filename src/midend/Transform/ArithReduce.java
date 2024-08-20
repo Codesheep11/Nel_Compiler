@@ -243,7 +243,7 @@ public class ArithReduce {
                     return;
                 }
                 //0 - (a - b) -> (b - a)
-                if(sub.getUsers().size() == 1){
+                if (sub.getUsers().size() == 1) {
                     Instruction.Sub newSub = new Instruction.Sub(inst.getParentBlock(), inst.getType(),
                             sub.getOperand_2(), sub.getOperand_1());
                     inst.replaceAllUsesWith(newSub);
@@ -505,12 +505,23 @@ public class ArithReduce {
                 return;
             }
         }
-        //( 0 - v ) / v -> -1
         if (inst.getOperand_1() instanceof Instruction.Sub sub) {
-            if (sub.getOperand_1() instanceof Constant c && c.isZero() && sub.getOperand_2().equals(inst.getOperand_2())) {
-                inst.replaceAllUsesWith(Constant.ConstantInt.get(-1));
-                delList.add(inst);
-                return;
+            if (sub.getOperand_1() instanceof Constant c && c.isZero()) {
+                //( 0 - v ) / v -> -1
+                if (sub.getOperand_2().equals(inst.getOperand_2())) {
+                    inst.replaceAllUsesWith(Constant.ConstantInt.get(-1));
+                    delList.add(inst);
+                    return;
+                }
+                //( 0 - v ) / c -> v / -c
+                if (inst.getOperand_2() instanceof Constant constant) {
+                    Instruction.Div newDiv = new Instruction.Div(inst.getParentBlock(), inst.getType(),
+                            sub.getOperand_2(), Constant.ConstantInt.get(-1 * (int) constant.getConstValue()));
+                    inst.replaceAllUsesWith(newDiv);
+                    delList.add(inst);
+                    snap.add(idx + 1, newDiv);
+                    return;
+                }
             }
         }
         //v / (v * a) or (a * v) -> 1 / a 确保 v * a 只有一个作用点
