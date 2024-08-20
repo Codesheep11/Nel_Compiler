@@ -18,7 +18,7 @@ import static manager.Manager.module;
 /**
  * 全局代码移动
  *
- * @author Srchycz
+ * @see <a href="https://dl.acm.org/doi/pdf/10.1145/207110.207154">GVN/GCM</a>
  */
 public class GlobalCodeMotion {
 

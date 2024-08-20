@@ -10,8 +10,10 @@ import java.util.HashSet;
 /**
  * Scalar Evolution Analysis <br>
  * 标量演化分析 <br>
+ * 参考 CoR 的相关论文和往届优秀队伍 CMMC 的部分实现思路
  *
- * @author Srchycz
+ * @see <a href="https://dl.acm.org/doi/abs/10.1145/190347.190423">Chain of Recurrence</a>
+ * @see <a href="https://gitlab.eduxiji.net/educg-group-17291-1894922/202314325201374-1031/-/blob/riscv_fix/src/cmmc/Analysis/SCEVAnalysis.hpp">CMMC优秀作品</a>
  * NOTE: 互相依赖无法处理
  * 必须经过 LSF
  */

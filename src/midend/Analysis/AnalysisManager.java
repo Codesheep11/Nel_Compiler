@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
- *
+ * 分析管理器
  */
 public final class AnalysisManager {
 

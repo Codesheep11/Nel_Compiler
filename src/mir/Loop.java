@@ -20,7 +20,6 @@ public final class Loop {
     public final LinkedHashSet<BasicBlock> latchs = new LinkedHashSet<>();// 1 latch
 
     public int tripCount = -1;
-    //todo: cond
     public boolean isRoot = false;
 
 
